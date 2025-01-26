@@ -9,7 +9,7 @@ priority = -10
 [[patches]]
 [patches.regex]
 target = "functions/common_events.lua"
-pattern = '''(?<indent>[\t ]*)if G\.F_NO_ACHIEVEMENTS then return end\n\n[\s\S]{4}--\|FROM LOCAL SETTINGS FILE'''
+pattern = '''(?<indent>[\t ]*)if G\.F_NO_ACHIEVEMENTS then return end[\n\s]*?--\|FROM LOCAL SETTINGS FILE'''
 position = 'before'
 # match_indent = true
 line_prepend = '$indent'
@@ -22,7 +22,8 @@ for k, v in pairs(G.ACHIEVEMENTS) do
             G.ACHIEVEMENTS[kk].earned = true
         end
     end
-end'''
+end
+'''
 
 # check_for_unlock
 [[patches]]
@@ -45,7 +46,7 @@ match_indent = true
 target = "functions/common_events.lua"
 pattern = '''if G.PROFILES[G.SETTINGS.profile].all_unlocked then return end'''
 position = "at"
-payload = '''if G.PROFILES[G.SETTINGS.profile].all_unlocked and (G.ACHIEVEMENTS and G.ACHIEVEMENTS[achievement_name] and not G.ACHIEVEMENTS[achievement_name].bypass_all_unlocked and SMODS.config.achievements < 3) or (SMODS.config.achievements < 3 and (G.GAME.seeded or G.GAME.challenge)) then return end'''
+payload = '''if G.PROFILES[G.SETTINGS.profile].all_unlocked and (G.ACHIEVEMENTS and G.ACHIEVEMENTS[achievement_name] and not G.ACHIEVEMENTS[achievement_name].bypass_all_unlocked and SMODS.config.achievements < 3) or (SMODS.config.achievements < 3 and (G.GAME.seeded or G.GAME.challenge)) then return true end'''
 match_indent = true
 
 # unlock_achievement() - fix event queue leaking
@@ -53,21 +54,11 @@ match_indent = true
 [[patches]]
 [patches.pattern]
 target = "functions/common_events.lua"
-pattern = '''if G.F_NO_ACHIEVEMENTS then return end'''
+pattern = '''local achievement_set = false
+if G.F_NO_ACHIEVEMENTS then return end'''
 position = "at"
-payload = '''if G.F_NO_ACHIEVEMENTS and not (G.ACHIEVEMENTS[achievement_name] or {}).mod then return true end'''
-match_indent = true
-
-[[patches]]
-[patches.regex]
-target = "functions/common_events.lua"
-pattern = '''(?<indent>[\t ]*)if G\.F_NO_ACHIEVEMENTS then return end\n[\s\S][\s\S]{16}--\|LOCAL SETTINGS FILE'''
-position = 'before'
-# match_indent = true
-line_prepend = '$indent'
-payload = '''
+payload = '''local achievement_set = false
 if not G.ACHIEVEMENTS then fetch_achievements() end
-
 G.SETTINGS.ACHIEVEMENTS_EARNED[achievement_name] = true
 G:save_progress()
 
@@ -83,7 +74,9 @@ end
 if achievement_set then 
     notify_alert(achievement_name)
     return true
-end'''
+end
+if G.F_NO_ACHIEVEMENTS and not (G.ACHIEVEMENTS[achievement_name] or {}).mod then return true end'''
+match_indent = true
 
 # create_UIBox_notify_alert
 [[patches]]

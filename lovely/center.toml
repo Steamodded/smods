@@ -115,10 +115,13 @@ position = 'at'
 payload = '''
 local res = {}
 if _c.locked_loc_vars and type(_c.locked_loc_vars) == 'function' then
-    res = _c:locked_loc_vars(info_queue) or {}
+    local _card = _c.create_fake_card and _c:create_fake_card()
+    res = _c:locked_loc_vars(info_queue, _card) or {}
     loc_vars = res.vars or {}
     specific_vars = specific_vars or {}
     specific_vars.not_hidden = res.not_hidden or specific_vars.not_hidden
+    if res.main_start then desc_nodes[#desc_nodes+1] = res.main_start end
+    main_end = res.main_end or main_end
 elseif $rest'''
 
 [[patches]]

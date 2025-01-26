@@ -36,16 +36,6 @@ elseif self.ability.name:find('Arcana') then
     if G.GAME.used_vouchers.v_omen_globe and pseudorandom('omen_globe') > 0.8 then'''
 line_prepend = '$indent'
 
-## Stop cards from boosters getting double emplaced
-# Card:open
-[[patches]]
-[patches.pattern]
-target = "functions/button_callbacks.lua"
-pattern = "G.pack_cards:emplace(v)"
-position = "at"
-payload = "--G.pack_cards:emplace(v)"
-match_indent = true
-
 # Game:set_globals
 [[patches]]
 [patches.regex]

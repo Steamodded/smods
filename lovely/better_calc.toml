@@ -717,6 +717,14 @@ end
 
 '''
 
+[[patches]]
+[patches.regex]
+target = 'card.lua'
+line_prepend = '$indent'
+position = 'at'
+pattern = '(?<indent>[\t ]*)for i = 1, #G.jokers.cards do[\n\s]*G.jokers.cards\[i\]:calculate_joker\(\{remove_playing_cards = true, removed = destroyed_cards\}\)[\s\n]*end'
+payload = '''SMODS.calculate_context({ remove_playing_cards = true, removed = destroyed_cards })'''
+
 # context.remove_playing_cards from discard
 [[patches]]
 [patches.pattern]

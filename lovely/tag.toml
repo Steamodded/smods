@@ -118,3 +118,22 @@ position = "after"
 match_indent = true
 payload = '''specific_vars = specific_vars or Tag.get_uibox_table({ name = _c.name, config = _c.config, ability = { orbital_hand = '['..localize('k_poker_hand')..']' }}, nil, true)
 '''
+
+# Prevent Boss Tag from crashing when triggered at a bad time
+# by quietly rerolling it if blind select UI is not there
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "G.FUNCS.reroll_boss = function(e)"
+position = "after"
+match_indent = true
+payload = '''if not G.blind_select_opts then
+    G.GAME.round_resets.boss_rerolled = true
+    if not G.from_boss_tag then ease_dollars(-10) end
+    G.from_boss_tag = nil
+    G.GAME.round_resets.blind_choices.Boss = get_new_boss()
+    for i = 1, #G.GAME.tags do
+        if G.GAME.tags[i]:apply_to_run({type = 'new_blind_choice'}) then break end
+    end
+    return true
+end'''

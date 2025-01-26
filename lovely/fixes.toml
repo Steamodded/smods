@@ -593,7 +593,6 @@ target = "functions/button_callbacks.lua"
 pattern = '''and \(G\.hand\.cards\[1\] or \(G\.hand\.config\.card_limit <= 0\)\)'''
 position = "at"
 payload = ''' '''
-match_indent = true
 
 # Fixes Steam API not loading on unix
 [[patches]]

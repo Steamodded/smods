@@ -1206,7 +1206,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.Voucher:take_ownership('observatory', {
         calculate = function(self, card, context)
-            if context.joker_main then return { mult = 20 } end
             if 
                 context.other_consumeable and
                 context.other_consumeable.ability.set == 'Planet' and

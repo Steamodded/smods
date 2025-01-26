@@ -834,7 +834,11 @@ end
 function Card:calculate_sticker(context, key)
     local sticker = SMODS.Stickers[key]
     if self.ability[key] and type(sticker.calculate) == 'function' then
-        return sticker:calculate(self, context)
+        local o = sticker:calculate(self, context)
+        if o then
+            if not o.card then o.card = self end
+            return o
+        end
     end
 end
 
@@ -843,7 +847,10 @@ function Card:calculate_enhancement(context)
     local center = self.config.center
     if center.calculate and type(center.calculate) == 'function' then
         local o = center:calculate(self, context)
-        if o then return o end
+        if o then
+            if not o.card then o.card = self end
+            return o
+        end
     end
 end
 
@@ -1152,7 +1159,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return true
     end
     
-    if (key == 'x_mult' or key == 'xmult' or key == 'x_mult_mod' or key == 'Xmult_mod') and amount ~= 1 then 
+    if (key == 'x_mult' or key == 'xmult' or key == 'Xmult' or key == 'x_mult_mod' or key == 'Xmult_mod') and amount ~= 1 then 
         mult = mod_mult(mult * amount)
         update_hand_text({delay = 0}, {chips = hand_chips, mult = mult})
         if not effect.remove_default_message then
@@ -1195,11 +1202,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     end
 
     if key == 'extra' then
-        local extra_calc = false
-        for key_ex, amount_ex in pairs(amount) do
-            extra_calc = SMODS.calculate_individual_effect(amount, scored_card, key_ex, amount_ex)
-        end
-        return extra_calc
+        return SMODS.calculate_effect(amount, scored_card)
     end
 
     if key == 'saved' then
@@ -1224,7 +1227,6 @@ end
 
 SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
     local calculated = false
-    local message = false
     for _, key in ipairs(SMODS.calculation_keys) do
         if effect[key] then
             calculated = SMODS.calculate_individual_effect(effect, scored_card, key, effect[key], from_edition, pre_jokers)
@@ -1233,8 +1235,7 @@ SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
     end
     if effect.juice_card then G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function () effect.juice_card:juice_up(0.1); scored_card:juice_up(0.1) return true end})) end
     if effect.effect then calculated = true end
-				if effect.remove then calculated = true end
-    -- if effect.message then calculated = SMODS.calculate_individual_effect(effect, scored_card, 'message', effect.message, from_edition, pre_jokers) end
+    if effect.remove then calculated = true end
     return calculated
 end
 
@@ -1322,7 +1323,10 @@ function Card:calculate_edition(context)
         local edition = G.P_CENTERS[self.edition.key]
         if edition.calculate and type(edition.calculate) == 'function' then
             local o = edition:calculate(self, context)
-            if o then return o end
+            if o then
+                if not o.card then o.card = self end    
+                return o
+            end
         end
     end
 end
@@ -1355,8 +1359,11 @@ function SMODS.calculate_context(context, return_table)
                 end
                 context.retrigger_joker = false
             end
-            if return_table then 
-                for _,v in ipairs(effects) do return_table[#return_table+1] = v end
+            if return_table then
+                for _,v in ipairs(effects) do 
+                    if v.jokers and not v.jokers.card then v.jokers.card = _card end
+                    return_table[#return_table+1] = v
+                end
             else
                 SMODS.trigger_effects(effects, _card)
             end
