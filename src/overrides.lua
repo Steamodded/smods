@@ -544,81 +544,70 @@ end
 
 --#endregion
 --#region straights and view deck UI
-function get_straight(hand)
-	local ret = {}
-	local four_fingers = next(SMODS.find_card('j_four_fingers'))
-	local can_skip = next(SMODS.find_card('j_shortcut'))
-	if #hand < (5 - (four_fingers and 1 or 0)) then return ret end
-	local t = {}
-	local RANKS = {}
-	for i = 1, #hand do
-		if hand[i]:get_id() > 0 then
-			local rank = hand[i].base.value
-			RANKS[rank] = RANKS[rank] or {}
-			RANKS[rank][#RANKS[rank] + 1] = hand[i]
-		end
-	end
-	local straight_length = 0
-	local straight = false
-	local skipped_rank = false
-	local vals = {}
-	for k, v in pairs(SMODS.Ranks) do
-		if v.straight_edge then
-			table.insert(vals, k)
-		end
-	end
-	local init_vals = {}
-	for _, v in ipairs(vals) do
-		init_vals[v] = true
-	end
-	if not next(vals) then table.insert(vals, 'Ace') end
-	local initial = true
-	local br = false
-	local end_iter = false
-	local i = 0
-	while 1 do
-		end_iter = false
-		if straight_length >= (5 - (four_fingers and 1 or 0)) then
-			straight = true
-		end
-		i = i + 1
-		if br or (i > #SMODS.Rank.obj_buffer + 1) then break end
-		if not next(vals) then break end
-		for _, val in ipairs(vals) do
-			if init_vals[val] and not initial then br = true end
-			if RANKS[val] then
-				straight_length = straight_length + 1
-				skipped_rank = false
-				for _, vv in ipairs(RANKS[val]) do
-					t[#t + 1] = vv
-				end
-				vals = SMODS.Ranks[val].next
-				initial = false
-				end_iter = true
-				break
-			end
-		end
-		if not end_iter then
-			local new_vals = {}
-			for _, val in ipairs(vals) do
-				for _, r in ipairs(SMODS.Ranks[val].next) do
-					table.insert(new_vals, r)
-				end
-			end
-			vals = new_vals
-			if can_skip and not skipped_rank then
-				skipped_rank = true
-			else
-				straight_length = 0
-				skipped_rank = false
-				if not straight then t = {} end
-				if straight then break end
-			end
-		end
-	end
-	if not straight then return ret end
-	table.insert(ret, t)
-	return ret
+
+function get_straight(hand, min_length, skip, wrap)
+    min_length = min_length or 5
+    if min_length < 2 then min_length = 2 end
+    if #hand < min_length then return {} end
+    local ranks = {}
+    for k,_ in pairs(SMODS.Ranks) do ranks[k] = {} end
+    for _,card in ipairs(hand) do
+        local id = card:get_id()
+        if id > 0 then
+            for k,v in pairs(SMODS.Ranks) do
+                if v.id == id then table.insert(ranks[k], card); break end
+            end
+        end
+    end
+    local function next_ranks(key)
+        local rank = SMODS.Ranks[key]
+        local ret = {}
+        for _,v in ipairs(rank.next) do
+            ret[#ret+1] = v
+            if skip then 
+                for _,w in ipairs(SMODS.Ranks[v].next) do
+                    ret[#ret+1] = w
+                end
+            end
+        end
+        return ret
+    end
+    local tuples = {}
+    local ret = {}
+    for _,k in ipairs(SMODS.Rank.obj_buffer) do
+        if next(ranks[k]) then
+            tuples[#tuples+1] = {k}
+        end
+    end
+    for i = 2, #hand+1 do
+        local new_tuples = {}
+        for _, tuple in ipairs(tuples) do
+            local any_tuple
+            if (not SMODS.Ranks[tuple[i-1]].straight_edge or i == 2 or wrap) and i ~= #hand+1 then
+                for _,l in ipairs(next_ranks(tuple[i-1])) do
+                    if next(ranks[l]) then
+                        local new_tuple = {}
+                        for _,v in ipairs(tuple) do new_tuple[#new_tuple+1] = v end
+                        new_tuple[#new_tuple+1] = l
+                        new_tuples[#new_tuples+1] = new_tuple
+                        any_tuple = true
+                    end
+                end
+            end
+            if i > min_length and not any_tuple then
+                local straight = {}
+                for _,v in ipairs(tuple) do
+                    for _,card in ipairs(ranks[v]) do
+                        straight[#straight+1] = card
+                    end
+                end
+                ret[#ret+1] = straight
+            end
+        end
+        tuples = new_tuples
+    end
+    table.sort(ret, function(a,b) return #a > #b end)
+    return ret
 end
 
 function G.UIDEF.deck_preview(args)

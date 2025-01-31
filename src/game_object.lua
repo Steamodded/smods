@@ -1851,6 +1851,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             ignore = false
         },
         next = {},
+        prev = {},
         straight_edge = false,
         -- TODO we need a better system for what this is doing.
         -- We should allow setting a playing card's atlas and position to any values,
@@ -1895,6 +1896,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     table.insert(self.obj_buffer, j, self.key)
                 else
                     table.insert(self.obj_buffer, self.key)
+                end
+                for _,v in ipairs(self.next) do
+                    local other = self.obj_table[v]
+                    if other then
+                        table.insert(other.prev, self.key)
+                    end
                 end
             end
         end,
@@ -2414,7 +2421,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
     SMODS.PokerHandPart {
         key = '_straight',
-        func = function(hand) return get_straight(hand) end
+        func = function(hand) return get_straight(hand, next(SMODS.find_card('j_four_fingers')) and 4 or 5, next(SMODS.find_card('j_shortcut'))) end
     }
     SMODS.PokerHandPart {
         key = '_flush',
