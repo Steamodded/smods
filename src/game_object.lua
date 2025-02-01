@@ -73,7 +73,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         if atlas_cfg ~= false then
             if type(atlas_cfg) ~= 'table' then atlas_cfg = {} end
             for _, v in ipairs({ 'atlas', 'hc_atlas', 'lc_atlas', 'hc_ui_atlas', 'lc_ui_atlas', 'sticker_atlas' }) do
-                if rawget(obj, v) then SMODS.modify_key(obj, mod and mod.prefix, atlas_cfg[v], v) end
+                if rawget(obj, v) then SMODS.modify_key(obj, mod and mod.prefix, atlas_cfg, v) end
+            end
+            local palettes = rawget(obj, 'palettes')
+            if palettes then
+                for _,v in ipairs(palettes) do
+                    SMODS.modify_key(v, mod and mod.prefix, atlas_cfg, 'atlas')
+                end
             end
         end
         local shader_cfg = obj.prefix_config.shader
@@ -1769,11 +1775,42 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.used_card_keys[self.card_key] = true
             self.max_nominal.value = self.max_nominal.value + 0.01
             self.suit_nominal = self.max_nominal.value
+            local def = 'default_'..self.key
+            if G.COLLABS.options[self.key] == nil then
+                G.COLLABS.options[self.key] = {def}
+            end
             SMODS.Suit.super.register(self)
+            self:create_default_deck_skin()
         end,
         inject = function(self)
             for _, rank in pairs(SMODS.Ranks) do
                 SMODS.inject_p_card(self, rank)
+            end
+        end,
+        create_default_deck_skin = function(self)
+            if self.key ~= "Hearts" and self.key ~= "Diamonds" and self.key ~= "Clubs" and self.key ~= "Spades" then
+                local contrast = self.lc_atlas == self.hc_atlas or not rawget(self, 'hc_atlas')
+                SMODS.DeckSkin{
+                    key = 'default_'..self.key,
+                    prefix_config = { key = false },
+                    suit = self.key,
+                    palettes = {
+                        {
+                            key = contrast and 'lc' or 'def',
+                            ranks = SMODS.Rank.obj_buffer,
+                            display_ranks = {'King', 'Queen', 'Jack'},
+                            atlas = self.lc_atlas,
+                            pos_style = 'deck'
+                        },
+                        contrast and {
+                            key = 'hc',
+                            ranks = SMODS.Rank.obj_buffer,
+                            display_ranks = {'King', 'Queen', 'Jack'},
+                            atlas = self.hc_atlas,
+                            pos_style = 'deck'
+                        } or nil,
+                    }
+                }
             end
         end,
         delete = function(self)
@@ -2266,81 +2303,199 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     ----- API CODE GameObject.DeckSkin
     -------------------------------------------------------------------------------------------------
 
-    local deck_skin_count_by_suit = {}
     SMODS.DeckSkins = {}
-    SMODS.DeckSkin =SMODS.GameObject:extend {
+    SMODS.DeckSkin = SMODS.GameObject:extend {
         obj_table = SMODS.DeckSkins,
         obj_buffer = {},
         required_params = {
             'key',
             'suit',
-            'ranks',
-            'lc_atlas',
         },
-        posStyle = 'deck',
+        pos_style = 'deck',
         set = 'DeckSkin',
+        count_by_suit = {},
         process_loc_text = function(self)
-            if G.localization.misc.collabs[self.suit] == nil then
-                G.localization.misc.collabs[self.suit] = {["1"] = 'Default'}
+            G.localization.misc.collabs[self.suit] = G.localization.misc.collabs[self.suit] or {["1"] = 'Default'}
+            G.localization.misc.collab_palettes = G.localization.misc.collab_palettes or {}
+            G.localization.misc.collab_palettes[self.key] = G.localization.misc.collab_palettes[self.key] or {}
+            if not self.outdated then
+                for i, p in ipairs(self.palettes) do
+                    if p.loc_txt then
+                        SMODS.process_loc_text(G.localization.misc.collab_palettes[self.key], i..'', p.loc_txt)
+                    elseif G.localization.misc.collab_palettes[self.key][i..''] then
+                    else
+                        G.localization.misc.collab_palettes[self.key][i..''] = ({ lc = true, hc = true, def = true })[p.key] and localize('b_deckskins_'..p.key) or p.key
+                    end
+                end
+            else
+                if self.lc_atlas == self.hc_atlas then
+                    G.localization.misc.collab_palettes[self.key]['1'] = localize('b_deckskins_def')
+                else
+                    G.localization.misc.collab_palettes[self.key]['1'] = localize('b_deckskins_lc')
+                    G.localization.misc.collab_palettes[self.key]['2'] = localize('b_deckskins_hc')
+                end
             end
+
             if not self.loc_txt then
                 G.localization.misc.collabs[self.suit][self.suit_index .. ''] = G.localization.misc.collabs[self.suit][self.suit_index .. ''] or self.key
                 return
             end
+
             SMODS.process_loc_text(G.localization.misc.collabs[self.suit], self.suit_index..'', self.loc_txt)
         end,
-        register = function (self)
+        register = function(self)
             if self.registered then
                 sendWarnMessage(('Detected duplicate register call on DeckSkin %s'):format(self.key), self.set)
                 return
             end
             if self:check_dependencies() then
-                self.hc_atlas = self.hc_atlas or self.lc_atlas
+                assert(not self.palettes ~= not (self.ranks and self.lc_atlas), 
+                    ('Error loading DeckSkin %s! Please define your palettes or use the old formatting'):format(self.key))
+                -- for compat with old format
+                self.pos_style = self.pos_style or self.posStyle
+                if self.palettes and not (self.ranks and self.lc_atlas) then
+                    local temp_palettes = self.palettes
+                    self.palettes = {}
+                    -- ensure all palettes are valid
+                    for _,v in ipairs(temp_palettes) do assert(self:add_palette(v)) end
 
-                if not (self.posStyle == 'collab' or self.posStyle == 'suit' or self.posStyle == 'deck') then
-                    sendWarnMessage(('%s is not a valid posStyle on DeckSkin %s. Supported posStyle values are \'collab\', \'suit\' and \'deck\''):format(self.posStyle, self.key), self.set)
+                elseif not self.palettes and (self.ranks and self.lc_atlas) then
+                    sendWarnMessage(('Old DeckSkin formatting detected on DeckSkin %s!'):format(self.key), self.set)
+                    self.outdated = true
+
+                    self.hc_atlas = self.hc_atlas or self.lc_atlas
+                    local valid_pos_styles = { ranks = true, collab = true, suit = true, deck = true}
+                    assert(valid_pos_styles[self.pos_style],
+                        ('%s is not a valid pos_style on DeckSkin %s. Supported pos_style values are \'ranks\', \'collab\', \'suit\' and \'deck\'')
+                        :format(self.pos_style, self.key), self.set)
                 end
 
-                self.obj_table[self.key] = self
-
-                if deck_skin_count_by_suit[self.suit] then
-                    self.suit_index  = deck_skin_count_by_suit[self.suit] + 1
-                else
-                    --start at 2 for default
-                    self.suit_index = 2
-                end
-                deck_skin_count_by_suit[self.suit] = self.suit_index
-
+                self.count_by_suit[self.suit] = (self.count_by_suit[self.suit] or 0) + 1
+                self.suit_index = self.count_by_suit[self.suit]
                 self.obj_buffer[#self.obj_buffer + 1] = self.key
+                self.obj_table[self.key] = self
                 self.registered = true
             end
         end,
-        inject = function (self)
-            if G.COLLABS.options[self.suit] == nil then
-                G.COLLABS.options[self.suit] = {'default'}
+        pre_inject_class = function(self)
+            G.COLLABS.options = {}
+        end,
+        inject = function(self)
+            local def = 'default_'..self.suit
+            G.COLLABS.options[self.suit] = G.COLLABS.options[self.suit] or {def}
+            G.COLLABS.colour_palettes = G.COLLABS.colour_palettes or {}
+            G.COLLABS.colour_palettes[self.key] = {}
+            if self.palettes then
+                for _,v in ipairs(self.palettes) do
+                    table.insert(G.COLLABS.colour_palettes[self.key], v.key)
+                end
+            else
+                if self.lc_atlas == self.hc_atlas then
+                    table.insert(G.COLLABS.colour_palettes[self.key], 'lc')
+                else
+                    table.insert(G.COLLABS.colour_palettes[self.key], 'lc')
+                    table.insert(G.COLLABS.colour_palettes[self.key], 'hc')
+                end
             end
-
+            G.COLLABS.options[self.suit] = G.COLLABS.options[self.suit] or {}
             local options = G.COLLABS.options[self.suit]
-            options[#options + 1] = self.key
+            if self.key ~= def then
+                options[#options + 1] = self.key
+            end
+        end,
+        add_palette = function(self, palette)
+            if not (self and self.key) then return false, 'Invalid DeckSkin object' end
+            local required_values = { 'key', 'ranks', 'atlas' }
+            -- for compat with old format
+            palette.pos_style = palette.pos_style or palette.posStyle
+            for _,v in ipairs(required_values) do
+                if not palette[v] then
+                    return false, ('Missing required value "%s" in Palette "%s" on DeckSkin "%s"'):format(v, palette.key or '(unknown)', self.key)
+                end
+            end
+            table.insert(self.palettes, palette)
+            self.palette_map = self.palette_map or {}
+            self.palette_map[palette.key] = palette
+            return true
+        end,
+        get_palette_loc_options = function(key, suit)
+            if type(key) == "number" then
+                key = G.COLLABS.options[suit][key]
+            end
+        
+            local conv_palette_loc_options = {}
+            for k, v in pairs(G.localization.misc.collab_palettes[key]) do
+                conv_palette_loc_options[tonumber(k)] = v
+            end
+        
+            return conv_palette_loc_options
+        end,
+        post_inject_class = function(self)
+            for _, k in ipairs(SMODS.Suit.obj_buffer) do
+                local val = G.SETTINGS.CUSTOM_DECK.Collabs[k] or ''
+                if not self.obj_table[val] then
+                    G.SETTINGS.CUSTOM_DECK.Collabs[k] = 'default_'..k
+                end
+            end
+                
         end
     }
 
     for suitName, options in pairs(G.COLLABS.options) do
-        --start at 2 to skip default
+        SMODS.DeckSkin{
+            key = options[1]..'_'..suitName,
+            suit = suitName,
+            palettes = {
+                {
+                    key = 'lc',
+                    ranks = {'2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', "King", "Ace",},
+                    display_ranks = {'King', 'Queen', 'Jack'},
+                    atlas = 'cards_1',
+                    pos_style = 'deck'
+                },
+                {
+                    key = 'hc',
+                    ranks = {'2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', "King", "Ace",},
+                    display_ranks = {'King', 'Queen', 'Jack'},
+                    atlas = 'cards_2',
+                    pos_style = 'deck'
+                },
+            }
+        }
+    end
+    for suitName, options in pairs(G.COLLABS.options) do
         for i = 2, #options do
             SMODS.DeckSkin{
                 key = options[i],
                 suit = suitName,
-                ranks = {'Jack', 'Queen', 'King'},
-                lc_atlas = options[i] .. '_1',
-                hc_atlas = options[i] .. '_2',
-                posStyle = 'collab'
+                palettes = {
+                    {
+                        key = 'lc',
+                        ranks = {'King', 'Queen', 'Jack'},
+                        atlas = options[i] .. '_1',
+                        pos_style = 'collab'
+                    },
+                    {
+                        key = 'hc',
+                        ranks = {'King', 'Queen', 'Jack'},
+                        atlas = options[i] .. '_2',
+                        pos_style = 'collab'
+                    },
+                },
             }
         end
     end
 
-    --Clear 'Friends of Jimbo' skins so they can be handled via the same pipeline
-    G.COLLABS.options = {}
+    if not G.SETTINGS.colour_palettes then
+        local val = G.SETTINGS.colourblind_option and 'hc' or 'lc'
+        G.SETTINGS.colour_palettes = {
+            Spades = val,
+            Hearts = val,
+            Clubs = val,
+            Diamonds = val,
+        }
+        G:save_settings()
+    end
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.PokerHand

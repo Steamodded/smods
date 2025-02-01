@@ -738,9 +738,20 @@ function G.UIDEF.deck_preview(args)
 
 	for k, v in ipairs(suit_map) do
 		if not hidden_suits[v] then
-			local t_s = Sprite(0, 0, 0.3, 0.3,
-				G.ASSET_ATLAS[SMODS.Suits[v][G.SETTINGS.colourblind_option and "hc_ui_atlas" or "lc_ui_atlas"]] or
-				G.ASSET_ATLAS[("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[v].ui_pos)
+			local deckskin = SMODS.DeckSkins[G.SETTINGS.CUSTOM_DECK.Collabs[v]]
+			local palette = deckskin.palette_map and deckskin.palette_map[G.SETTINGS.colour_palettes[v] or ''] or (deckskin.palettes or {})[1]
+			local t_s
+			if palette and palette.suit_icon and palette.suit_icon.atlas then
+				local _x = (v == 'Spades' and 3) or (v == 'Hearts' and 0) or (v == 'Clubs' and 2) or (v == 'Diamonds' and 1)
+				t_s = Sprite(0,0,0.3,0.3,G.ASSET_ATLAS[palette.suit_icon.atlas or 'ui_1'], (type(palette.suit_icon.pos) == "number" and {x=_x, y=palette.suit_icon.pos}) or palette.suit_icon.pos or {x=_x, y=0})
+			elseif G.SETTINGS.colour_palettes[v] == 'lc' or G.SETTINGS.colour_palettes[v] == 'hc' then
+				t_s = Sprite(0, 0, 0.3, 0.3,
+						G.ASSET_ATLAS[SMODS.Suits[v][G.SETTINGS.colour_palettes[v] == 'hc' and "hc_ui_atlas" or G.SETTINGS.colour_palettes[v] == 'lc' and "lc_ui_atlas"]] or
+						G.ASSET_ATLAS[("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[v].ui_pos)
+			else
+				t_s = Sprite(0, 0, 0.3, 0.3, G.ASSET_ATLAS[("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[v].ui_pos)
+			end
+
 			t_s.states.drag.can = false
 			t_s.states.hover.can = false
 			t_s.states.collide.can = false
@@ -778,6 +789,40 @@ function G.UIDEF.deck_preview(args)
 						scale = 0.3}},}}
 			or nil,}}}}
 	return t
+end
+
+function tally_sprite(pos, value, tooltip, suit)
+	local text_colour = G.C.BLACK
+	if type(value) == "table" and value[1].string==value[2].string then
+		text_colour = value[1].colour or G.C.WHITE
+		value = value[1].string
+	end
+	local deckskin = SMODS.DeckSkins[G.SETTINGS.CUSTOM_DECK.Collabs[suit]]
+	local palette = deckskin.palette_map and deckskin.palette_map[G.SETTINGS.colour_palettes[suit] or ''] or (deckskin.palettes or {})[1]
+	local t_s
+	if palette and palette.suit_icon and palette.suit_icon.atlas then
+		local _x = (suit == 'Spades' and 3) or (suit == 'Hearts' and 0) or (suit == 'Clubs' and 2) or (suit == 'Diamonds' and 1)
+		t_s = Sprite(0,0,0.3,0.3,G.ASSET_ATLAS[palette.suit_icon.atlas or 'ui_1'], (type(palette.suit_icon.pos) == "number" and {x=_x, y=palette.suit_icon.pos}) or palette.suit_icon.pos or {x=_x, y=0})
+	elseif G.SETTINGS.colour_palettes[suit] == 'lc' or G.SETTINGS.colour_palettes[suit] == 'hc' then
+		t_s = Sprite(0, 0, 0.3, 0.3,
+				G.ASSET_ATLAS[SMODS.Suits[suit][G.SETTINGS.colour_palettes[suit] == 'hc' and "hc_ui_atlas" or G.SETTINGS.colour_palettes[suit] == 'lc' and "lc_ui_atlas"]] or
+				G.ASSET_ATLAS[("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[suit].ui_pos)
+	else
+		t_s = Sprite(0,0,0.5,0.5, G.ASSET_ATLAS[suit and SMODS.Suits[suit][G.SETTINGS.colourblind_option and "hc_ui_atlas" or "lc_ui_atlas"]] or G.ASSET_ATLAS[("ui_"..(G.SETTINGS.colourblind_option and "2" or "1"))], {x=pos.x or 0, y=pos.y or 0})
+	end
+	t_s.states.drag.can = false
+	t_s.states.hover.can = false
+	t_s.states.collide.can = false
+	return
+	{n=G.UIT.C, config={align = "cm", padding = 0.07,force_focus = true,  focus_args = {type = 'tally_sprite'}, tooltip = {text = tooltip}}, nodes={
+		{n=G.UIT.R, config={align = "cm", r = 0.1, padding = 0.04, emboss = 0.05, colour = G.C.JOKER_GREY}, nodes={
+			{n=G.UIT.O, config={w=0.5,h=0.5 ,can_collide = false, object = t_s, tooltip = {text = tooltip}}}
+		}},
+		{n=G.UIT.R, config={align = "cm"}, nodes={
+			type(value) == "table" and {n=G.UIT.O, config={object = DynaText({string = value, colours = {G.C.RED}, scale = 0.4, silent = true, shadow = true, pop_in_rate = 10, pop_delay = 4})}} or
+					{n=G.UIT.T, config={text = value or 'NIL',colour = text_colour, scale = 0.4, shadow = true}},
+		}},
+	}}
 end
 
 function G.UIDEF.view_deck(unplayed_only)
@@ -1662,4 +1707,47 @@ end
 
 function playing_card_joker_effects(cards)
 	SMODS.calculate_context({playing_card_added = true, cards = cards})
+end
+
+G.FUNCS.change_collab = function(args)
+	G.SETTINGS.CUSTOM_DECK.Collabs[args.cycle_config.curr_suit] = G.COLLABS.options[args.cycle_config.curr_suit][args.to_key] or 'default'
+	local deckskin_key = G.COLLABS.options[args.cycle_config.curr_suit][args.to_key]
+	local palette_loc_options = SMODS.DeckSkin.get_palette_loc_options(args.to_key, args.cycle_config.curr_suit)
+	local swap_node = G.OVERLAY_MENU:get_UIE_by_ID('palette_selector')
+	local selected_palette = 1
+	for i, v in ipairs(G.COLLABS.colour_palettes[deckskin_key]) do
+		if G.SETTINGS.colour_palettes[args.cycle_config.curr_suit] == v then
+			selected_palette = i
+		end
+	end
+	G.FUNCS.update_suit_colours(args.cycle_config.curr_suit, deckskin_key, selected_palette)
+	G.FUNCS.update_collab_cards(args.to_key, args.cycle_config.curr_suit)
+	if swap_node then
+		for i=1, #swap_node.children do
+			swap_node.children[i]:remove()
+			swap_node.children[i] = nil
+		end
+		local new_palette_selector = {n=G.UIT.R, config={align = "cm", id = 'palette_selector'}, nodes={
+			create_option_cycle({options = palette_loc_options, w = 5.5, cycle_shoulders = false, curr_suit = args.cycle_config.curr_suit, curr_skin = deckskin_key, opt_callback = 'change_colour_palette', current_option = selected_palette, colour = G.C.ORANGE, focus_args = {snap_to = true, nav = 'wide'}}),
+		}}
+		swap_node.UIBox:add_child(new_palette_selector, swap_node)
+	end
+	for k, v in pairs(G.I.CARD) do
+		if v.config and v.config.card and v.children.front and v.ability.effect ~= 'Stone Card' then
+			v:set_sprites(nil, v.config.card)
+		end
+	end
+	G:save_settings()
+end
+
+G.FUNCS.change_colour_palette = function(args)
+	G.SETTINGS.colour_palettes[args.cycle_config.curr_suit] = G.COLLABS.colour_palettes[args.cycle_config.curr_skin][args.to_key]
+	G.FUNCS.update_suit_colours(args.cycle_config.curr_suit, args.cycle_config.curr_skin)
+	G.FUNCS.update_collab_cards(args.cycle_config.curr_skin, args.cycle_config.curr_suit)
+	for k, v in pairs(G.I.CARD) do
+		if v.config and v.config.card and v.children.front and v.ability.effect ~= 'Stone Card' then
+			v:set_sprites(nil, v.config.card)
+		end
+	end
+	G:save_settings()
 end

@@ -982,7 +982,78 @@ SMODS.find_mod = function(id)
     return ret
 end
 
+local function bufferCardLimitForSmallDS(cards, scaleFactor)
+    local cardCount = #cards
+    if type(scaleFactor) ~= "number" or scaleFactor <= 0 then
+        sendWarnMessage("scaleFactor must be a positive number")
+        return cardCount
+    end
+    -- Ensure card_limit is always at least the number of cards
+    G.cdds_cards.config.card_limit = math.max(G.cdds_cards.config.card_limit, cardCount)
+    -- Calculate the buffer size dynamically based on the scale factor
+    local buffer = 0
+    if cardCount < G.cdds_cards.rankCount then
+        -- Buffer decreases as cardCount approaches G.cdds_cards.rankCount, modulated by scaleFactor
+        buffer = math.ceil(((G.cdds_cards.rankCount - cardCount) / scaleFactor))
+    end
+    G.cdds_cards.config.card_limit = math.max(cardCount, cardCount + buffer)
 
+    return G.cdds_cards.config.card_limit
+end
+
+G.FUNCS.update_collab_cards = function(key, suit, silent)
+    if type(key) == "number" then
+        key = G.COLLABS.options[suit][key]
+    end
+    if not G.cdds_cards then return end
+    local cards = {}
+    local cards_order = {}
+    local deckskin = SMODS.DeckSkins[key]
+    local palette = deckskin.palette_map and deckskin.palette_map[G.SETTINGS.colour_palettes[suit] or ''] or (deckskin.palettes or {})[1]
+    local suit_data = SMODS.Suits[suit]
+    local d_ranks = (palette and (palette.display_ranks or palette.ranks)) or deckskin.display_ranks or deckskin.ranks
+
+    local diff_order
+    if #G.cdds_cards.cards ~= #d_ranks then
+        diff_order = true
+    else
+        for i,v in ipairs(G.cdds_cards.cards) do
+            if v.config.card_key ~= suit_data.card_key..'_'..SMODS.Ranks[d_ranks[i]].card_key then
+                diff_order = true
+                break
+            end
+        end
+    end
+
+    if diff_order then
+        for i = #G.cdds_cards.cards, 1, -1 do
+            G.cdds_cards:remove_card(G.cdds_cards.cards[i]):remove()
+        end
+        for i, r in ipairs(d_ranks) do
+            local rank = SMODS.Ranks[r]
+            local card_code = suit_data.card_key .. '_' .. rank.card_key
+            cards_order[#cards_order+1] = card_code
+            local card = Card(G.cdds_cards.T.x+G.cdds_cards.T.w/2, G.cdds_cards.T.y+G.cdds_cards.T.h/2, G.CARD_W*1.2, G.CARD_H*1.2, G.P_CARDS[card_code], G.P_CENTERS.c_base)
+            -- Instead of no ui it would be nice to pass info queue to this so that artist credits can be done?
+            card.no_ui = true
+    
+            G.cdds_cards:emplace(card)
+        end
+    end
+    G.cdds_cards.config.card_limit = bufferCardLimitForSmallDS(cards, 2.5)
+end
+
+G.FUNCS.update_suit_colours = function(suit, skin, palette_num)
+    skin = skin and SMODS.DeckSkins[skin] or nil
+    local new_colour_proto = G.C.SO_1[suit]
+    if G.SETTINGS.colour_palettes[suit] == 'lc' or G.SETTINGS.colour_palettes[suit] == 'hc' then
+        new_colour_proto = G.C["SO_"..((G.SETTINGS.colour_palettes[suit] == 'hc' and 2) or (G.SETTINGS.colour_palettes[suit] == 'lc' and 1))][suit]
+    elseif skin then
+        local palette = (palette_num and skin.palettes[palette_num]) or skin.palette_map and skin.palette_map[G.SETTINGS.colour_palettes[suit] or '']
+        new_colour_proto = palette and palette.colour or new_colour_proto
+    end
+    G.C.SUITS[suit] = new_colour_proto
+end
 
 -- This function handles the calculation of each effect returned to evaluate play.
 -- Can easily be hooked to add more calculation effects ala Talisman

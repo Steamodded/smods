@@ -21,6 +21,9 @@ end
 
 local gameMainMenuRef = Game.main_menu
 function Game:main_menu(change_context)
+    for k, v in pairs(G.C.SUITS) do
+        G.FUNCS.update_suit_colours(k, G.SETTINGS.CUSTOM_DECK.Collabs[k])
+    end
     gameMainMenuRef(self, change_context)
     UIBox({
         definition = {
