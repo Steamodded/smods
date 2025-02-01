@@ -1247,7 +1247,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     local function stake_mod(stake)
         return {
             inject = function(self)
-                self.unlock_condition.stake = SMODS.Stakes[stake].stake_level
+                self.unlock_condition.stake = SMODS.Stakes[stake].order
                 SMODS.Back.inject(self)
             end
         }
