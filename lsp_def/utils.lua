@@ -1,0 +1,408 @@
+---@meta
+
+--- Util Classes
+
+--- Internal class referring args passed as `context` in a SMODS object's `calculate` function. 
+--- Not all arguments typed here are present in all contexts, see [Calculate Function](https://github.com/Steamodded/smods/wiki/calculate_functions#contexts) for details. 
+---@class CalcContext: table 
+---@field cardarea? CardArea The CardArea currently being checked. 
+---@field full_hand? Card[]|table[] All play or selected cards. 
+---@field scoring_hand? Card[]|table[] All scoring cards in played hand. 
+---@field scoring_name? string Key to the scoring poker hand. 
+---@field poker_hands? table<string, Card[]|table[]> All poker hand parts the played hand can form. 
+---@field other_card? Card|table The individual card being checked during scoring. 
+---@field other_joker? Card|table The individual Joker being checked during scoring. 
+---@field card_effects? table Table of effects that have been calculated. 
+---@field destroy_card? Card|table The individual card being checked for destruction. 
+---@field destroying_card? Card|table The individual card being checked for destruction. Only present when calculating G.play. 
+---@field removed? Card[]|table[] Table of destroyed playing cards. 
+---@field game_over? boolean Whether the run is lost or not. 
+---@field blind? Blind|table Current blind being selected. 
+---@field hook? boolean `true` when "The Hook" discards cards. 
+---@field card? Card|table The individual card being checked outside of scoring. 
+---@field cards? table[]|Card[] Table of cards representing how many cards were created. 
+---@field consumable? Card|table The Consumable being used. Only a value when `context.using_consumeable` is `true`. 
+---@field blueprint_card? Card|table The card currently copying the eval effects. 
+---@field no_blueprint? true Effects akin to Blueprint or Brainstorm should not trigger in this context. 
+---@field other_context? CalcContext|table The context the last eval happened on. 
+---@field other_ret? table The return table from the last eval. 
+---@field before? true Check if `true` for effects that happen before hand scoring. 
+---@field after? true Check if `true` for effects that happen after hand scoring. 
+---@field main_scoring? true Check if `true` for effects that happen during scoring. 
+---@field individual? true Check if `true` for effects on individual playing cards during scoring. 
+---@field repetition? true Check if `true` for adding repetitions to playing cards. 
+---@field edition? true `true` for any Edition-specific context (e.x. context.pre_joker and context.post_joker). 
+---@field pre_joker? true Check if `true` for triggering editions on jokers before they score. 
+---@field post_joker? true Check if `true` for triggering editions on jokers after they score. 
+---@field joker_main? true Check if `true` for triggering normal scoring effects on Jokers. 
+---@field final_scoring_step? true Check if `true` for effects after cards are scored and before the score is totalled. 
+---@field remove_playing_cards? true Check if `true` for effects on removed cards. 
+---@field debuffed_hand? true Check if `true` for effects when playing a hand debuffed by a blind. 
+---@field end_of_round? true Check if `true` for effects at the end of the round. 
+---@field setting_blind? true Check if `true` for effects when the blind is selected. 
+---@field pre_discard? true Check if `true` for effects before cards are discarded. 
+---@field discard? true Check if `true` for effects on each individual card discarded. 
+---@field open_booster? true Check if `true` for effects when opening a Booster Pack. 
+---@field skipping_booster? true Check if `true` for effects after a Booster Pack is skipped. 
+---@field buying_card? true Check if `true` for effects after buying a card. 
+---@field selling_card? true Check if `true` for effects after selling a card. 
+---@field reroll_shop? true Check if `true` for effects after rerolling the shop. 
+---@field ending_shop? true Check if `true` for effects after leaving the shop. 
+---@field first_hand_drawn? true Check if `true` for effects after drawing the first hand. 
+---@field hand_drawn? true Check if `true` for effects after drawing a hand. 
+---@field using_consumeable? true Check if `true` for effects after using a Consumable. 
+---@field skip_blind? true Check if `true` for effects after skipping a blind. 
+---@field playing_card_added? true Check if `true` for effects after a playing card was added into the deck. 
+---@field check_enhancement? true Check if `true` for applying quantum enhancements. 
+---@field post_trigger? true Check if `true` for effects after another Joker is triggered. 
+---@field modify_scoring_hand? true Check if `true` for modifying the scoring hand. 
+---@field ending_booster? true Check if `true` for effects after a Booster Pack ends. 
+---@field starting_shop? true Check id `true` for effects when the shop is first opened. 
+
+--- Util Functions
+
+---@param ... table<integer, any>
+---@return table
+---Flattens given arrays into one, then adds elements from each table to a new one. Skips duplicates. 
+function SMODS.merge_lists(...) end
+
+--- A table of SMODS feature that mods can choose to enable. 
+---@class SMODS.optional_features: table
+---@field quantum_enhancements? boolean Enables "Quantum Enhancement" contexts. Cards can count as having multiple enhancements at once. 
+---@field retrigger_joker? boolean Enables "Joker Retrigger" contexts. Jokers can be retriggered by other jokers or effects. 
+---@field post_trigger? boolean Enables "Post Trigger" contexts. Allows calculating effects after a Joker has been calculated. 
+---@field cardarea? table<string, boolean> Enables additional CardArea calculation. Currently supports: `deck`, `discards`, `unscored`. 
+
+---@type SMODS.optional_features
+SMODS.optional_features = { cardarea = {} }
+
+--- Inserts all SMODS features enabled by loaded mods into `SMODS.optional_features`. 
+function SMODS.get_optional_features() end
+
+---@param context CalcContext|table 
+---@param return_table? table 
+--- Used to calculate contexts across `G.jokers`, `scoring_hand` (if present), `G.play` and `G.GAME.selected_back`.
+--- Hook this function to add different areas to MOST calculations
+function SMODS.calculate_context(context, return_table) end
+
+---@param card Card|table
+---@param context CalcContext|table
+--- Scores the provided `card`. 
+function SMODS.score_card(card, context) end
+
+---@param context CalcContext|table
+---@param scoring_hand Card[]|table[]?
+--- Handles calculating the scoring hand. Defaults to `context.cardarea.cards` if `scoring_hand` is not provided.
+function SMODS.calculate_main_scoring(context, scoring_hand) end
+
+---@param context CalcContext|table
+--- Handles calculating end of round effects. 
+function SMODS.calculate_end_of_round_effects(context) end
+
+---@param context CalcContext|table
+---@param cards_destroyed Card[]|table[]
+---@param scoring_hand Card[]|table[]
+--- Handles calculating destroyed cards. 
+function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand) end
+
+---@param effect table
+---@param scored_card Card|table
+---@param key string
+---@param amount number|boolean 
+---@param from_edition? boolean
+---@return boolean|table?
+--- This function handles the calculation of each effect returned to evaluate play.
+--- Can easily be hooked to add more calculation effects ala Talisman
+function SMODS.calculate_individual_effect(effect, scored_card, key, amount, from_edition) end
+
+---@param effect table
+---@param scored_card Card|table
+---@param from_edition? boolean 
+---@return table
+--- Handles calculating effects on provided `scored_card`. 
+function SMODS.calculate_effect(effect, scored_card, from_edition, pre_jokers) end
+
+---@param effects table
+---@param card Card|table
+--- Used to calculate a table of effects generated in evaluate_play
+function SMODS.trigger_effects(effects, card) end
+
+---@param card Card|table
+---@param context CalcContext|table
+---@param _ret table
+---@return number[]
+--- Calculate retriggers on provided `card`. 
+function SMODS.calculate_retriggers(card, context, _ret) end
+
+---@param card Card|table
+---@param context CalcContext|table
+---@param reps table[]
+---@return table[] reps
+function SMODS.calculate_repetitions(card, context, reps) end
+
+---@param _type string
+---@param _context string
+---@return CardArea[]|table[]
+--- Returns table of CardAreas. 
+function SMODS.get_card_areas(_type, _context) end
+
+---@param card Card|table
+---@param extra_only boolean? Return table will not have the card's actual enhancement. 
+---@return table<string, true> enhancements
+--- Returns table of enhancements the provided `card` has. 
+function SMODS.get_enhancements(card, extra_only) end
+
+---@param card Card|table
+---@param key string
+---@return boolean 
+--- Checks if this card a specific enhancement. 
+function SMODS.has_enhancement(card, key) end
+
+---@param card Card|table
+---@param effects table
+---@param context CalcContext|table
+--- Calculates quantum Enhancements. Require `SMODS.optional_features.quantum_enhancements` to be `true`. 
+function SMODS.calculate_quantum_enhancements(card, effects, context) end
+
+---@param card Card|table
+---@return boolean?
+--- Check if the card shoud shatter. 
+function SMODS.shatters(card) end
+
+---@param card Card|table
+---@return boolean?
+--- Checks if the card counts as having no suit. 
+function SMODS.has_no_suit(card) end
+
+---@param card Card|table
+---@return boolean?
+--- Checks if the card counts as having all suits. 
+function SMODS.has_any_suit(card) end
+
+---@param card Card|table
+---@return boolean?
+--- Checks if the card counts as having no rank. 
+function SMODS.has_no_rank(card) end
+
+---@param card Card|table
+---@return boolean?
+--- Checks if the card should score. 
+function SMODS.always_scores(card) end
+
+---@param card Card|table
+--- Checks if the card should not score. 
+function SMODS.never_scores(card) end
+
+---@param card Card|table
+---@param scoring_hand Card[]|table[]
+---@return true?
+--- Returns `true` if provided card is inside the scoring hand. 
+function SMODS.in_scoring(card, scoring_hand) end
+
+---@param path string Path to the file (excluding `mod.path`)
+---@param id string? Key to Mod ID. Default to `SMODS.current_mod` if not provided. 
+---@return function|nil 
+---@return nil|string err
+--- Loads the file from provided path. 
+function SMODS.load_file(path, id) end
+
+---@param table table 
+---@return string
+--- Shallow inspect a table. 
+function inspect(table) end
+
+---@param table table
+---@param indent number?
+---@param depth number? Cap depth of 5
+---@return string
+--- Deep inspect a table. 
+function inspectDepth(table, indent, depth) end
+
+---@param func function
+---@return string
+--- Inspect a function. 
+function inspectFunction(func) end
+
+--- Handles saving discovery and unlocks. 
+function SMODS.SAVE_UNLOCKS() end
+
+---@param ref_table table
+---@param ref_value string
+---@param loc_txt table|string
+---@param key string? Key to the value within `loc_txt`. 
+--- Injects `loc_txt` into `G.localization`. 
+function SMODS.process_loc_text(ref_table, ref_value, loc_txt, key) end
+
+---@param path string
+--- Handles injecting localization files. 
+function SMODS.handle_loc_file(path) end
+
+---@param pool table[]
+---@param center metatable
+---@param replace boolean?
+--- Injects an object into provided pool. 
+function SMODS.insert_pool(pool, center, replace) end
+
+---@param pool table
+---@param key string
+--- Removes an object from the provided pool. 
+function SMODS.remove_pool(pool, key) end
+
+--- Juices up blind. 
+function SMODS.juice_up_blind() end
+
+---@param card Card|table
+---@param suit? string Key to the suit. 
+---@param rank? string Key to the rank. 
+function SMODS.change_base(card, suit, rank) end
+
+---@param key string
+---@param count_debuffed true?
+---@return Card[]|table[]
+--- Returns all cards matching provided `key`. 
+function SMODS.find_card(key, count_debuffed) end
+
+---@class CreateCard
+---@field set? string Set of the card. 
+---@field area? CardArea|table CardArea to emplace this card to. 
+---@field legendary? boolean Pools legendary cards, if applicable. 
+---@field rarity? number|string Only spawns cards with provided rarity, if applicable. 
+---@field skip_materialize? boolean Skips materialization animations. 
+---@field soulable? boolean Card could be replace by a legendary version, if applicable. 
+---@field key? string Created card is forced to have a center matching this key. 
+---@field key_append? string Appends this string to seeds. 
+---@field no_edition? boolean Ignore natural edition application. 
+---@field edition? string Apply this edition. 
+---@field enhancement? string Apply this enhancement. 
+---@field seal? string Apply this seal. 
+---@field stickers? string[] Apply all stickers in this array. 
+
+---@param t CreateCard|table
+---@return Card|table
+--- Creates a card. 
+function SMODS.create_card(t) end
+
+---@param t CreateCard|table
+---@return Card|table
+--- Adds + creates a card into provided `area`. 
+function SMODS.add_card(t) end
+
+---@param card Card|table
+---@param debuff boolean|"reset"?
+---@param source string?
+--- Debuffs provided `card`. 
+function SMODS.debuff_card(card, debuff, source) end
+
+---@param card Card|table
+--- Recalculate card debuffs. 
+function SMODS.recalc_debuff(card) end
+
+--- Restarts the game. 
+function SMODS.restart_game() end
+
+---@param obj SMODS.GameObject|table
+---@param badges table[]
+--- Adds the mod badge into the `badges` of the provided `obj` description UIBox. 
+function SMODS.create_mod_badges(obj, badges) end
+
+--- Creates a localization dump. 
+function SMODS.create_loc_dump() end
+
+---@param t table
+---@param indent string?
+---@return string
+--- Serializes an input table in valid Lua syntax
+--- Keys must be of type number or string
+--- Values must be of type number, boolean, string or table
+function serialize(t, indent) end
+
+---@param s string
+---@return string
+--- Serializes provided string. 
+function serialize_strings(s) end
+
+---@param t false|table?
+---@param defaults false|table?
+---@return false|table?
+--- Starting with `t`, insert any key-value pairs from `defaults` that don't already
+--- exist in `t` into `t`. Modifies `t`.
+--- Returns `t`, the result of the merge.
+---
+--- `nil` inputs count as {}; `false` inputs count as a table where
+--- every possible key maps to `false`. Therefore,
+--- * `t == nil` is weak and falls back to `defaults`
+--- * `t == false` explicitly ignores `defaults`
+--- (This function might not return a table, due to the above)
+function SMODS.merge_defaults(t, defaults) end
+
+---@param num number
+---@param precision number
+---@return number
+--- Rounds provided `num`. 
+function round_number(num, precision) end
+
+---@param value number|string
+---@return string
+--- Format provided `value`
+function format_ui_value(value) end
+
+---@param ante number
+---@return number
+--- Returns the blind amount. 
+function SMODS.get_blind_amount(ante) end
+
+--- Converts save data for vanilla objects. 
+function convert_save_data() end
+
+---@param id string
+---@return Mod[]|table[]
+--- Returns table representing mods either matching provided `id` or can provide that mod. 
+function SMODS.find_mod(id) end
+
+---@param tbl table
+---@param val any
+---@param mode ("index"|"i")|("value"|"v")? Sets if the value is compared with the indexes or values of the table. 
+---@param immediate  boolean?
+---Seatch for val anywhere deep in tbl. Return a table of finds, or the first found if args.immediate is provided.
+function SMODS.deepfind(tbl, val, mode, immediate) end
+
+--- Enables debugging Joker calculations. 
+function SMODS.debug_calculation() end
+
+---@param card Card|table
+---@param pack SMODS.Booster|table
+---@return boolean
+--- Controls if the card should be selectable from a Booster Pack. 
+function Card.selectable_from_pack(card, pack) end
+
+---@param pool (string|"UNAVAILABLE")[]
+---@return number
+--- Returns size of the provided pool (excluding `"UNAVAILABLE"`). 
+function SMODS.size_of_pool(pool) end
+
+---@param vouchers {[number]: table, spawn: table<string, true>}?
+---@return {[number]: table, spawn: table<string, true>} vouchers
+--- Returns next vouchers to spawn. 
+function SMODS.get_next_vouchers(vouchers) end
+
+---@param key string
+---@return Card|table voucher
+--- Adds a Voucher with matching `key` to the shop. 
+function SMODS.add_voucher_to_shop(key) end
+
+---@param mod number
+--- Modifies the Voucher shop limit by `mod`. 
+function SMODS.change_voucher_limit(mod) end
+
+---@param key string 
+---@return Card|table booster
+--- Adds a Booster Pack with matching `key` to the shop. 
+function SMODS.add_booster_to_shop(key) end
+
+---@param mod number
+--- Modifies the Booster Pack shop limit by `mod`. 
+function SMODS.change_booster_limit(mod) end
+
+---@param mod number
+--- Modifies the current amount of free shop rerolls by `mod`. 
+function SMODS.change_free_rerolls(mod) end

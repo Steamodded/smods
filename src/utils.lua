@@ -257,7 +257,7 @@ function SMODS.juice_up_blind()
     G.GAME.blind:juice_up()
 end
 
--- @deprecated
+---@deprecated
 function SMODS.eval_this(_card, effects)
     sendWarnMessage('SMODS.eval_this is deprecated. All calculation stages now support returning effects directly. Effects evaluated using this function are out of order and may not use the correct sound pitch.', 'Util')
     if effects then
@@ -1769,7 +1769,8 @@ SMODS.deepfind = function(tbl, val, mode, immediate)
     return collector
 end
 
---backwards compat (remove later probably)
+---@deprecated
+---backwards compat (remove later probably)
 SMODS.deepfindbyindex = function(tbl, val, immediate)
     return SMODS.deepfind(tbl, val, "i", immediate)
 end

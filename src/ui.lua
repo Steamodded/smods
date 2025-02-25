@@ -224,7 +224,6 @@ function buildModDescTab(mod)
             table.insert(modNodes, {
                 n = G.UIT.R,
                 config = {
-                    padding = 0,
                     align = "cm",
                     r = 0.1,
                     emboss = 0.1,
@@ -1338,7 +1337,7 @@ function G.FUNCS.update_mod_list(args)
 end
 
 -- Same as Balatro base game code, but accepts a value to match against (rather than the index in the option list)
--- e.g. create_option_cycle({ current_option = 1 })  vs. SMODS.GUID.createOptionSelector({ current_option = "Page 1/2" })
+-- e.g. create_option_cycle({ current_option = 1 })  vs. SMODS.GUI.createOptionSelector({ current_option = "Page 1/2" })
 function SMODS.GUI.createOptionSelector(args)
     args = args or {}
     args.colour = args.colour or G.C.RED
