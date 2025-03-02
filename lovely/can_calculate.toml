@@ -23,7 +23,7 @@ position = "at"
 match_indent = true
 payload = '''
 function Card:calculate_dollar_bonus()
-    if not self:can_calculate() then return {} end'''
+    if not self:can_calculate() then return end'''
 
 [[patches]]
 [patches.pattern]
