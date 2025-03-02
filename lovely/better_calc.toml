@@ -34,7 +34,7 @@ position = 'at'
 match_indent = true
 payload = '''
 function eval_card(card, context)
-    if card.ability.set ~= 'Joker' and card.debuff then return {}, {} end
+    if card.ability.set ~= 'Joker' and not card:can_calculate() then return {}, {} end
     context = context or {}
     local ret = {}
 '''
@@ -586,7 +586,7 @@ for j = 1, #G.jokers.cards do
 
 end
 
-if SMODS.has_enhancement(scoring_hand[i], 'm_glass') and not scoring_hand[i].debuff and pseudorandom('glass') < G.GAME.probabilities.normal/(scoring_hand[i].ability.name == 'Glass Card' and scoring_hand[i].ability.extra or G.P_CENTERS.m_glass.config.extra) then
+if SMODS.has_enhancement(scoring_hand[i], 'm_glass') and scoring_hand[i]:can_calculate() and pseudorandom('glass') < G.GAME.probabilities.normal/(scoring_hand[i].ability.name == 'Glass Card' and scoring_hand[i].ability.extra or G.P_CENTERS.m_glass.config.extra) then
     destroyed = true
 end
 

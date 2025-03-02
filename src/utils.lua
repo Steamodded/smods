@@ -856,8 +856,14 @@ function Card:calculate_sticker(context, key)
     end
 end
 
+function Card:can_calculate(ignore_debuff)
+    local is_available = (not self.debuff or ignore_debuff) and not self.getting_sliced
+    -- TARGET : Add extra conditions here
+    return is_available
+end
+
 function Card:calculate_enhancement(context)
-    if self.debuff or self.ability.set ~= 'Enhanced' then return nil end
+    if not self:can_calculate() or self.ability.set ~= 'Enhanced' then return nil end
     local center = self.config.center
     if center.calculate and type(center.calculate) == 'function' then
         local o = center:calculate(self, context)
@@ -1331,7 +1337,7 @@ SMODS.calculate_retriggers = function(card, context, _ret)
 end
 
 function Card:calculate_edition(context)
-    if self.debuff then return end
+    if not self:can_calculate() then return end
     if self.edition then
         local edition = G.P_CENTERS[self.edition.key]
         if edition.calculate and type(edition.calculate) == 'function' then
@@ -1644,7 +1650,7 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
             if should_break then break end
         end
 
-        if scoring_hand and SMODS.has_enhancement(card, 'm_glass') and not card.debuff and pseudorandom('glass') < G.GAME.probabilities.normal/(card.ability.name == 'Glass Card' and card.ability.extra or G.P_CENTERS.m_glass.config.extra) then
+        if scoring_hand and SMODS.has_enhancement(card, 'm_glass') and card:can_calculate() and pseudorandom('glass') < G.GAME.probabilities.normal/(card.ability.name == 'Glass Card' and card.ability.extra or G.P_CENTERS.m_glass.config.extra) then
             destroyed = true
         end
 
