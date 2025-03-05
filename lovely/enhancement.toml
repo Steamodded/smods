@@ -80,7 +80,7 @@ target = "card.lua"
 pattern = 'if self.ability.name == "Wild Card" and not self.debuff then'
 match_indent = true
 position = "at"
-payload = '''if SMODS.has_any_suit(self) and not self.debuff then'''
+payload = '''if SMODS.has_any_suit(self) and self:can_calculate() then'''
 
 # check_for_unlock
 [[patches]]
