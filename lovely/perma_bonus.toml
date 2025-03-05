@@ -303,11 +303,15 @@ end
 [[patches]]
 [patches.pattern]
 target = "card.lua"
-pattern = '''if ret > 0 then
+pattern = '''end
+if ret > 0 then
     G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + ret'''
 position = "at"
 match_indent = true
-payload = '''ret = ret + (self.ability.perma_p_dollars) or 0
+payload = '''elseif self.ability.p_dollars < 0 then
+    ret = ret + self.ability.p_dollars
+end
+ret = ret + (self.ability.perma_p_dollars) or 0
 -- TARGET: get_p_dollars
 if ret ~= 0 then
     G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + ret'''
