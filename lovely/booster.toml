@@ -249,6 +249,7 @@ if card.ability.consumeable then
 '''
 payload = '''
 if select_to then
+    card:add_to_deck()
     G[select_to]:emplace(card)
     if card.config.center.on_select and type(card.config.center.on_select) == 'function' then
         card.config.center:on_select(card)
