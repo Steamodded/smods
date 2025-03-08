@@ -213,3 +213,25 @@ pattern = '''G.shop_jokers.T.w = G.GAME.shop.joker_max*1.01*G.CARD_W'''
 position = 'at'
 match_indent = true
 payload = '''G.shop_jokers.T.w = math.min(G.GAME.shop.joker_max*1.02*G.CARD_W,4.08*G.CARD_W)'''
+
+# for some reason shop_voucher is not saved/loaded so... that's what's gonna happen
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''ability = self.ability,'''
+position = "before"
+payload = '''
+shop_voucher = self.shop_voucher,
+'''
+match_indent = true
+
+# water is wet
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''self.ability = cardTable.ability'''
+position = "before"
+payload = '''
+self.shop_voucher = cardTable.shop_voucher
+'''
+match_indent = true
