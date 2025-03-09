@@ -2821,8 +2821,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ( not self.sets or self.sets[center.set or {}]) and
                 (
                     center[self.key..'_compat'] or -- explicit marker
-                    (self.default_compat and not self.compat_exceptions[center.key]) or -- default yes with no exception
-                    (not self.default_compat and self.compat_exceptions[center.key]) -- default no with exception
+                    (
+                        center[self.key..'_compat'] == nil and
+                        ((self.default_compat and not self.compat_exceptions[center.key]) or -- default yes with no exception
+                        (not self.default_compat and self.compat_exceptions[center.key]))
+                    ) -- default no with exception
                 ) and
                 (not self.needs_enable_flag or G.GAME.modifiers['enable_'..self.key])
             then
