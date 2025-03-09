@@ -1,7 +1,8 @@
 ---@meta
 
 ---@class SMODS.Tab: SMODS.GameObject
----@field order? number Sets the order. `Tab` objects are displayed left to right from lowest to highest order.
+---@field order number Sets the order. `Tab` objects in a group are displayed left to right from lowest to highest order.
+---@field tab_group string The name of the group to add the tab to. Tabs in the same tab group will be displayed on the same UIBox.
 ---@field chosen? boolean Whether the tab is the one initially selected in the tab group. The leftmost (lowest order) tab with chosen set to true is the default tab.
 ---@field conditions? table<string, any> Table of conditions. This object will not draw if any condition is not `true` when evaluated.
 ---@field __call? fun(self: SMODS.Tab|table, o: SMODS.Tab|table): nil|table|SMODS.Tab
