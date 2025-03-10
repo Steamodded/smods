@@ -125,7 +125,7 @@ function SMODS.generate_tabs_uibox(tab_group, args)
     end
     return {n = G.UIT.ROOT, config = {align="cm", colour = {G.C.GREY[1], G.C.GREY[2], G.C.GREY[3],0.7}}, nodes = {
         {n=G.UIT.R, config={padding = 0.0, align = "cm", colour = G.C.CLEAR}, nodes={
-            {n=G.UIT.T, config={config={text='!ERROR!', scale=1, colour=G.C.UI.TEXT_DARK}}}
+            {n=G.UIT.T, config={text='!ERROR!', scale=1, colour=G.C.UI.TEXT_DARK}}
         }}
     }}
 end
