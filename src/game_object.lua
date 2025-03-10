@@ -3361,6 +3361,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     assert(load(NFS.read(SMODS.path..'src/card_draw.lua'), ('=[SMODS _ "src/card_draw.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.Tab
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/ui_tabs.lua'), ('=[SMODS _ "src/ui_tabs.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
     ----- INTERNAL API CODE GameObject._Loc_Post
     -------------------------------------------------------------------------------------------------
 
