@@ -120,9 +120,8 @@ function SMODS.generate_tabs_uibox(tab_group, args)
                 snap_to_nav = true,
             }}
         }
-    else
-        sendDebugMessage("Tab group '" .. tab_group .. "' returned no matching tabs.", 'SMODS.Tabs')
     end
+    sendDebugMessage("Tab group '" .. tab_group .. "' returned no matching tabs.", 'SMODS.Tabs')
     return {n = G.UIT.ROOT, config = {align="cm", colour = {G.C.GREY[1], G.C.GREY[2], G.C.GREY[3],0.7}}, nodes = {
         {n=G.UIT.R, config={padding = 0.0, align = "cm", colour = G.C.CLEAR}, nodes={
             {n=G.UIT.T, config={text='!ERROR!', scale=1, colour=G.C.UI.TEXT_DARK}}
