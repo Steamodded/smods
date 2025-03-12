@@ -27,6 +27,10 @@ SMODS.UIBox = SMODS.GameObject:extend {
     padding = nil,
     snap_back = nil,
 
+    back_func = function(self, e)
+        return G.FUNCS.exit_overlay_menu(e)
+    end,
+
     contents = function(self, args)
         return nil
     end,
@@ -37,7 +41,7 @@ SMODS.UIBox = SMODS.GameObject:extend {
             return
         end
 
-        SMODS.TabDialog.super.register(self)
+        SMODS.UIBox.super.register(self)
 
         -- Add dialog functions to G.FUNCS so we can refer back to them by func_key()
         for _, v in ipairs(self.g_funcs) do
@@ -63,9 +67,11 @@ SMODS.UIBox = SMODS.GameObject:extend {
         -- Creates a tab dialog.
     create_UIBox = function(self, args)
         return create_UIBox_generic_options{
+            back_button = self.back_button,
             back_colour = self.back_colour,
             back_delay = self.back_delay,
-            back_func = self:func_key('back'),
+            back_func = self:func_key('back_func'),
+            back_id = self.back_id,
             back_label = self.back_label and localize(self.back_label) or localize('b_back'),
             bg_colour = self.bg_colour,
             colour = self.colour,

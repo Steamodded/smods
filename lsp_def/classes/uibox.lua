@@ -2,7 +2,7 @@
 
 ---@class SMODS.UIBox: SMODS.GameObject
 ---@field key string The key of this UIBox.
----@field g_funcs table Array of member functions to add to G.FUNCS.
+---@field g_funcs? table Array of member functions to add to G.FUNCS.
 ---@field back_button? string Controller button for backing out of the UIBox.
 ---@field back_colour? table HEX color fill of the back button.
 ---@field back_delay? number Button delay for the back button.
@@ -31,9 +31,9 @@
 ---@field take_ownership? fun(self: SMODS.UIBox|table, key: string, obj: SMODS.UIBox|table, silent?: boolean): nil|table|SMODS.UIBox Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.UIBox|table, key: string): SMODS.Tab|table? Returns an object if one matches the `key`.
 ---@field contents fun(self: SMODS.UIBox|table, args?: table): UINode? Generates the contents of the UIBox. Called automatically by create_UIBox.
----@field func_key fun(self: SMODS.UIBox|table, func_name: string): string Returns the key in G.FUNCS where this object's function of name func_name is available, if it was a member of the g_funcs array.
----@field generate_infotip fun(self: SMODS.UIBox|table, args?: table): table? Generates an optional, dynamic infotip to display with this UIBox. The returned value should be an table contaning an array of text lines and an optional lang code.
----@field create_UIBox fun(self: SMODS.UIBox|table, args?: table): UINode Returns the generated UIBox with the configured options.
+---@field func_key? fun(self: SMODS.UIBox|table, func_name: string): string Returns the key in G.FUNCS where this object's function of name func_name is available, if it was a member of the g_funcs array.
+---@field generate_infotip? fun(self: SMODS.UIBox|table, args?: table): table? Generates an optional, dynamic infotip to display with this UIBox. The returned value should be an table contaning an array of text lines and an optional lang code.
+---@field create_UIBox? fun(self: SMODS.UIBox|table, args?: table): UINode Returns the generated UIBox with the configured options.
 ---@overload fun(self: SMODS.UIBox): SMODS.UIBox
 SMODS.UIBox = setmetatable({}, {
     __call = function(self)

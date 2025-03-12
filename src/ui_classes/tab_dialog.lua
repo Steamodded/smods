@@ -1,7 +1,8 @@
 SMODS.TabDialogs = {}
-SMODS.TabDialog = SMODS.GameObject:extend {
+SMODS.TabDialog = SMODS.UIBox:extend {
     obj_table = SMODS.TabDialogs,
     obj_buffer = {},
+    key = 'tabdialog', -- Not sure how to make the LSP not complain about this.
     required_params = {
         'key',
     },
@@ -22,10 +23,6 @@ SMODS.TabDialog = SMODS.GameObject:extend {
     -- is_visible = function(self, args) end, -- -> bool
 
     set = "TabDialog",
-
-    back_func = function(self, e)
-        return G.FUNCS.exit_overlay_menu(e)
-    end,
 
     contents = function(self, args)
         args = args or {}

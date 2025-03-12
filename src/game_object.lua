@@ -3364,7 +3364,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     ----- API IMPORT GameObject.UIBox
     -------------------------------------------------------------------------------------------------
 
-    assert(load(NFS.read(SMODS.path..'src/ui_classes/uibox.lua'), ('=[SMODS _ "src/ui_taui_classes/uibox.lua"]')))()
+    assert(load(NFS.read(SMODS.path..'src/ui_classes/uibox.lua'), ('=[SMODS _ "src/ui_classes/uibox.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.TabDialog
