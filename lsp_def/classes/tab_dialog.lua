@@ -22,7 +22,7 @@
 ---@field content_padding? number The padding of the tab contents.
 ---@field no_loop? boolean Disables shoulder buttons looping around on controllers when switching tabs.
 ---@field no_shoulders? boolean Disables shoulder buttons on controllers from switching tabs.
----@field opt_callback? boolean = nil,
+---@field opt_callback? boolean Additional callback to call when tab is switched.
 ---@field scale? number The scale of the tab buttons.
 ---@field snap_to_nav? boolean Whether to snap the controller to the navigation buttons (tabs)
 ---@field tab_colour? table Background color of the tab buttons.
