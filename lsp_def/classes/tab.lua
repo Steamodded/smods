@@ -2,7 +2,7 @@
 
 ---@class SMODS.Tab: SMODS.GameObject
 ---@field order number Sets the order. `Tab` objects in a group are displayed left to right from lowest to highest order.
----@field tab_group string The name of the group to add the tab to. Tabs in the same tab group will be displayed on the same UIBox.
+---@field tab_dialog string The key of the dialog to add the tab to. Tabs in the same tab dialog will be displayed when that dialog is rendered, if the tabs are visible.
 ---@field chosen? boolean Whether the tab is the one initially selected in the tab group. The leftmost (lowest order) tab with chosen set to true is the default tab.
 ---@field conditions? table<string, any> Table of conditions. This object will not draw if any condition is not `true` when evaluated.
 ---@field __call? fun(self: SMODS.Tab|table, o: SMODS.Tab|table): nil|table|SMODS.Tab
@@ -19,7 +19,7 @@
 ---@field inject? fun(self: SMODS.Tab|table, i?: number) Called during `inject_class`. Injects the object into the game.
 ---@field take_ownership? fun(self: SMODS.Tab|table, key: string, obj: SMODS.Tab|table, silent?: boolean): nil|table|SMODS.Tab Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.Tab|table, key: string): SMODS.Tab|table? Returns an object if one matches the `key`.
----@field func? fun(self: SMODS.Tab|table) Handles generating the contents of the `Tab`. Must return a UI table starting from a G.UIT.ROOT element.
+---@field func? fun(self: SMODS.Tab|table): UINode Handles generating the contents of the `Tab`. Must return a UI table starting from a G.UIT.ROOT element.
 ---@field is_visible? fun(self: SMODS.Tab|table, args: table): boolean? If undefined or nil, the tab is always visible. Otherwise must be a function that returns true if the tab should be visible. Args are the table of arguments passed to the tab group function.
 ---@overload fun(self: SMODS.Tab): SMODS.Tab
 SMODS.Tab = setmetatable({}, {

@@ -3361,10 +3361,22 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     assert(load(NFS.read(SMODS.path..'src/card_draw.lua'), ('=[SMODS _ "src/card_draw.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.UIBox
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/ui_classes/uibox.lua'), ('=[SMODS _ "src/ui_taui_classes/uibox.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.TabDialog
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/ui_classes/tab_dialog.lua'), ('=[SMODS _ "src/ui_classes/tab_dialog.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.Tab
     -------------------------------------------------------------------------------------------------
 
-    assert(load(NFS.read(SMODS.path..'src/ui_tabs.lua'), ('=[SMODS _ "src/ui_tabs.lua"]')))()
+    assert(load(NFS.read(SMODS.path..'src/ui_classes/tab.lua'), ('=[SMODS _ "src/ui_classes/tab.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- INTERNAL API CODE GameObject._Loc_Post
