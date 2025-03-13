@@ -40,14 +40,12 @@ function Card:calculate_seal(context)
 [patches.pattern]
 target = "card.lua"
 pattern = '''function Card:calculate_joker(context)
-    if self.debuff then return nil end
-    if self.ability.set == "Planet" and not self.debuff then'''
+    if self.debuff then return nil end'''
 position = "at"
 match_indent = true
 payload = '''
 function Card:calculate_joker(context)
-    if not self:can_calculate() then return {} end
-    if self.ability.set == "Planet" and self:can_calculate() then'''
+    if not self:can_calculate() then return {} end'''
 
 [[patches]]
 [patches.pattern]
