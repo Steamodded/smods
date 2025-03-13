@@ -870,6 +870,21 @@ function G.UIDEF.view_deck(unplayed_only)
 		end
 	end
 
+	-- Add empty card area if there's none, to fix a visual issue with no cards left
+	if not next(deck_tables) then
+		local view_deck = CardArea(
+			G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h,
+			6.5*G.CARD_W,
+			0.6*G.CARD_H,
+			{card_limit = 1, type = 'title', view_deck = true, highlight_limit = 0, card_w = G.CARD_W*0.7, draw_layers = {'card'}})
+		table.insert(
+			deck_tables,
+			{n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
+				{n=G.UIT.O, config={object = view_deck}}
+			}}
+		)
+	end
+
 	local flip_col = G.C.WHITE
 
 	local suit_tallies = {}
