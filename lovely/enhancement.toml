@@ -282,3 +282,12 @@ pattern = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable
 position = "at"
 payload = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit and not self.ability.extra_enhancement then"
 match_indent = true
+
+# Reset extra_enhancements on set_ability
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:set_ability(center, initial, delay_sprites)"
+position = "after"
+payload = "self.extra_enhancements = nil"
+match_indent = true
