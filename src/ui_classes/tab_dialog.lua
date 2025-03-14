@@ -7,6 +7,8 @@ SMODS.TabDialog = SMODS.UIBox:extend {
         'key',
     },
 
+    g_funcs = {'back_func', 'opt_callback'},
+
     -- Tab-specific arguments
     content_alignment = nil,
     content_padding = nil,
@@ -33,6 +35,7 @@ SMODS.TabDialog = SMODS.UIBox:extend {
 
             no_loop = self.no_loop,
             no_shoulders = self.no_shoulders,
+            opt_callback = self.opt_callback and self:func_key('opt_callback') or nil,
             padding = self.content_padding,
             scale = self.scale,
             snap_to_nav = self.snap_to_nav,

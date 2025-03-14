@@ -34,6 +34,7 @@
 ---@field func_key? fun(self: SMODS.UIBox|table, func_name: string): string Returns the key in G.FUNCS where this object's function of name func_name is available, if it was a member of the g_funcs array.
 ---@field generate_infotip? fun(self: SMODS.UIBox|table, args?: table): table? Generates an optional, dynamic infotip to display with this UIBox. The returned value should be an table contaning an array of text lines and an optional lang code.
 ---@field create_UIBox? fun(self: SMODS.UIBox|table, args?: table): UINode Returns the generated UIBox with the configured options.
+---@field back_func? fun(self: SMODS.UIBox|table, e: table?) Called when the back button is pressed.
 ---@overload fun(self: SMODS.UIBox): SMODS.UIBox
 SMODS.UIBox = setmetatable({}, {
     __call = function(self)

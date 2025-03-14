@@ -22,7 +22,6 @@
 ---@field content_padding? number The padding of the tab contents.
 ---@field no_loop? boolean Disables shoulder buttons looping around on controllers when switching tabs.
 ---@field no_shoulders? boolean Disables shoulder buttons on controllers from switching tabs.
----@field opt_callback? boolean Additional callback to call when tab is switched.
 ---@field scale? number The scale of the tab buttons.
 ---@field snap_to_nav? boolean Whether to snap the controller to the navigation buttons (tabs)
 ---@field tab_colour? table Background color of the tab buttons.
@@ -41,11 +40,13 @@
 ---@field inject? fun(self: SMODS.TabDialog|table, i?: number) Called during `inject_class`. Injects the object into the game.
 ---@field take_ownership? fun(self: SMODS.TabDialog|table, key: string, obj: SMODS.Tab|table, silent?: boolean): nil|table|SMODS.Tab Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.TabDialog|table, key: string): SMODS.Tab|table? Returns an object if one matches the `key`.
----@field contents? fun(self: SMODS.TabDialog|table, args?: table): UINode? Generates the contents of the TabDialog. Called automatically by create_UIBox.
+---@field contents? fun(self: SMODS.TabDialog|table, args?: table): UINode? Generates the contents of the TabDialog. Called automatically by create_UIBox().
 ---@field func_key? fun(self: SMODS.TabDialog|table, func_name: string): string Returns the key in G.FUNCS where this object's function of name func_name is available, if it was a member of the g_funcs array.
 ---@field generate_infotip? fun(self: SMODS.TabDialog|table, args?: table): table? Generates an optional, dynamic infotip to display with this UIBox. The returned value should be an table contaning an array of text lines and an optional lang code.
 ---@field create_UIBox? fun(self: SMODS.TabDialog|table, args?: table): UINode Returns the generated UIBox with the configured options.
+---@field back_func? fun(self: SMODS.TabDialog|table, e: table?) Called when the back button is pressed.
 ---@field filter_visible_tabs? fun(self: SMODS.TabDialog|table, args?: table): table? Returns an ordered array of tabs compatible with args.tabs of create_tabs. Called automatically by contents().
+---@field opt_callback? fun(self: SMODS.TabDialog|table, e: table?) Additional callback to call when tab is switched.
 ---@overload fun(self: SMODS.TabDialog): SMODS.TabDialog
 SMODS.TabDialog = setmetatable({}, {
     __call = function(self)
