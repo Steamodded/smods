@@ -231,7 +231,7 @@ if not isThread then -- In main thread
 				sendMessageToConsole(msg.level, msg.logger .. "(" .. tostring(msg.id) .. ")", msg.msg)
 			elseif msgType == "cb" then -- NOTE: cb removes the thread so it must be the last message
 				t.cb(msg.code, msg.body, msg.headers)
-				threads[id] = nil
+				threads[msg.id] = nil
 			end
 		end
 	end
@@ -268,9 +268,10 @@ if not isThread then -- In main thread
 		assert(type(cb) == "function", "Callback is not a function")
 		checkAndHandleInput(url, options, true) -- That way we aren't erroring in the thread as much
 		local thread = love.thread.newThread(getContent())
-		local obj = {thread = thread, cb = cb, id = id}
-		threads[id] = obj
-		thread:start(userAgent, url, options, id)
+		local tID = tostring(id)
+		local obj = {thread = thread, cb = cb, id = tID}
+		threads[tID] = obj
+		thread:start(userAgent, url, options, tID)
 		id = id + 1
 	end
 

@@ -1526,8 +1526,9 @@ end
 
 function SMODS.calculate_main_scoring(context, scoring_hand)
     for _, card in ipairs(context.cardarea.cards) do
+        local in_scoring = scoring_hand and SMODS.in_scoring(card, context.scoring_hand)
         --add cards played to list
-        if scoring_hand and not SMODS.has_no_rank(card) and SMODS.in_scoring(card, context.scoring_hand) then
+        if scoring_hand and not SMODS.has_no_rank(card) and in_scoring then
             G.GAME.cards_played[card.base.value].total = G.GAME.cards_played[card.base.value].total + 1
             if not SMODS.has_no_suit(card) then
                 G.GAME.cards_played[card.base.value].suits[card.base.suit] = true
@@ -1535,15 +1536,17 @@ function SMODS.calculate_main_scoring(context, scoring_hand)
         end
         --if card is debuffed
         if scoring_hand and card.debuff then
-            G.GAME.blind.triggered = true
-            G.E_MANAGER:add_event(Event({
-                trigger = 'immediate',
-                func = (function() SMODS.juice_up_blind();return true end)
-            }))
-            card_eval_status_text(card, 'debuff')
+            if in_scoring then 
+                G.GAME.blind.triggered = true
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'immediate',
+                    func = (function() SMODS.juice_up_blind();return true end)
+                }))
+                card_eval_status_text(card, 'debuff')
+            end
         else
             if scoring_hand then
-                if SMODS.in_scoring(card, context.scoring_hand) then context.cardarea = G.play else context.cardarea = 'unscored' end
+                if in_scoring then context.cardarea = G.play else context.cardarea = 'unscored' end
             end
             SMODS.score_card(card, context)
         end
@@ -1905,7 +1908,7 @@ end
 
 function SMODS.change_voucher_limit(mod)
     G.GAME.modifiers.extra_vouchers = (G.GAME.modifiers.extra_vouchers or 0) + mod
-    if mod > 0 and G.STATE == G.STATES.SHOP then
+    if mod > 0 and (G.STATE == G.STATES.SHOP or G.TAROT_INTERRUPT == G.STATES.SHOP) then
         for i=1, mod do
             SMODS.add_voucher_to_shop()
         end
@@ -1925,7 +1928,7 @@ end
 
 function SMODS.change_booster_limit(mod)
     G.GAME.modifiers.extra_boosters = (G.GAME.modifiers.extra_boosters or 0) + mod
-    if mod > 0 and G.STATE == G.STATES.SHOP then
+    if mod > 0 and (G.STATE == G.STATES.SHOP or G.TAROT_INTERRUPT == G.STATES.SHOP) then
         for i = 1, mod do
             SMODS.add_booster_to_shop()
         end

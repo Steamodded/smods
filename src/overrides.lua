@@ -1542,7 +1542,8 @@ function poll_edition(_key, _mod, _no_neg, _guaranteed, _options)
 		if _key == "wheel_of_fortune" or _key == "aura" then -- set base game edition polling
 		else
 			for _, v in ipairs(G.P_CENTER_POOLS.Edition) do
-				if v.in_shop then
+				local in_pool = (v.in_pool and type(v.in_pool) == "function") and v:in_pool({source = _key})
+				if in_pool or v.in_shop then
 					table.insert(_options, v.key)
 				end
 			end
