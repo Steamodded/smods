@@ -1233,8 +1233,12 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return true
     end
     
-    if key == 'remove' or key == 'debuff' or key == 'prevent_debuff' or key == 'add_to_hand' or key == 'remove_from_hand' then
+    if key == 'remove' or key == 'prevent_debuff' or key == 'add_to_hand' or key == 'remove_from_hand' or key == 'stay_flipped' or key == 'prevent_stay_flipped' then
         return key
+    end
+
+    if key == 'debuff' then
+        return { [key] = amount, debuff_source = scored_card }
     end
 
     if key == 'debuff_text' then 
@@ -1286,6 +1290,7 @@ SMODS.calculation_keys = {
     'saved', 'effect', 'remove',
     'debuff', 'prevent_debuff', 'debuff_text',
     'add_to_hand', 'remove_from_hand',
+    'stay_flipped', 'prevent_stay_flipped',
     'message',
     'level_up', 'func', 'extra',
 }

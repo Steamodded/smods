@@ -1865,6 +1865,7 @@ end
 
 local debuff_hand = Blind.debuff_hand
 function Blind:debuff_hand(cards, hand, handname, check)
+	SMODS.hand_debuff_source = nil
 	local ret = debuff_hand(self, cards, hand, handname, check)
 	local _, _, _, scoring_hand = G.FUNCS.get_poker_hand_info(cards)
 	local final_scoring_hand = {}
@@ -1887,8 +1888,29 @@ function Blind:debuff_hand(cards, hand, handname, check)
 	if flags.prevent_debuff then return false end
 	if flags.debuff then
 		SMODS.debuff_text = flags.debuff_text
+		SMODS.hand_debuff_source = flags.debuff_source
 		return true
 	end
 	SMODS.debuff_text = nil
 	return ret
+end
+
+local stay_flipped = Blind.stay_flipped
+function Blind:stay_flipped(to_area, card, from_area)
+	local ret = stay_flipped(self, to_area, card, from_area)
+	local flags = SMODS.calculate_context({ to_area = to_area, from_area = from_area, other_card = card, stay_flipped = true })
+	local self_eval, self_post = eval_card(card, { to_area = to_area, from_area = from_area, other_card = card, stay_flipped = true })
+	local self_flags = SMODS.trigger_effects({ self_eval, self_post })
+	for k,v in pairs(self_flags) do flags[k] = flags[k] or v end
+	if flags.prevent_stay_flipped then return false end
+	if flags.stay_flipped then return true end
+	return ret
+end
+
+local modify_hand = Blind.modify_hand
+function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips, scoring_hand)
+	local modded
+	_G.mult, _G.hand_chips, modded = modify_hand(self, cards, poker_hands, text, mult, hand_chips, scoring_hand)
+	local flags = SMODS.calculate_context({ modify_hand = true, poker_hands = poker_hands, scoring_name = text, scoring_hand = scoring_hand, full_hand = cards })
+	return _G.mult, _G.hand_chips, modded or flags.calculated
 end
