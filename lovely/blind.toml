@@ -119,6 +119,15 @@ elseif not self.disabled and obj.debuff_card and type(obj.debuff_card) == 'funct
 end'''
 
 # Blind:stay_flipped()
+
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+pattern = "function Blind:stay_flipped(area, card)"
+position = 'at'
+match_indent = true
+payload = '''function Blind:stay_flipped(area, card, from_area)'''
+
 [[patches]]
 [patches.pattern]
 target = 'blind.lua'
@@ -128,8 +137,25 @@ match_indent = true
 payload = '''
 local obj = self.config.blind
 if obj.stay_flipped and type(obj.stay_flipped) == 'function' then
-    return obj:stay_flipped(area, card)
+    return obj:stay_flipped(area, card, from_area)
 end'''
+
+
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+pattern = "local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(self, card)"
+position = 'at'
+match_indent = true
+payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(self, card, area)'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = "local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(to, card)"
+position = 'at'
+match_indent = true
+payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(to, card, from)'''
 
 # Blind:drawn_to_hand()
 [[patches]]
@@ -170,6 +196,22 @@ local obj = self.config.blind
 if obj.modify_hand and type(obj.modify_hand) == 'function' then
     return obj:modify_hand(cards, poker_hands, text, mult, hand_chips)
 end'''
+
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+pattern = "function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips)"
+position = 'at'
+match_indent = true
+payload = '''function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips, scoring_hand)'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = "mult, hand_chips, modded = G.GAME.blind:modify_hand(G.play.cards, poker_hands, text, mult, hand_chips)"
+position = 'at'
+match_indent = true
+payload = '''mult, hand_chips, modded = G.GAME.blind:modify_hand(G.play.cards, poker_hands, text, mult, hand_chips, scoring_hand)'''
 
 # Blind:press_play()
 [[patches]]

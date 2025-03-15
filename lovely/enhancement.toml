@@ -160,7 +160,8 @@ if delay_sprites then
     })) 
 '''
 payload = '''
-if delay_sprites then 
+if delay_sprites == 'quantum' then
+elseif delay_sprites then 
     self.ability.delayed = true
     G.E_MANAGER:add_event(Event({
         func = function()
@@ -280,4 +281,13 @@ target = "card.lua"
 pattern = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then"
 position = "at"
 payload = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit and not self.ability.extra_enhancement then"
+match_indent = true
+
+# Reset extra_enhancements on set_ability
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:set_ability(center, initial, delay_sprites)"
+position = "after"
+payload = "self.extra_enhancements = nil"
 match_indent = true

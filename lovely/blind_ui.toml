@@ -141,6 +141,28 @@ position = 'at'
 payload = 'SMODS.juice_up_blind()'
 line_prepend = '$indent'
 
+[[patches]]
+[patches.regex]
+target = "functions/state_events.lua"
+pattern = '''hand_chips = mod_chips\(0\)(\n.*)*?\n[\t ]*(?<juice>SMODS.juice_up_blind\(\))'''
+position = 'at'
+root_capture = 'juice'
+payload = 'if SMODS.hand_debuff_source then SMODS.hand_debuff_source:juice_up(0.3,0) else SMODS.juice_up_blind() end'
+times = 1
+
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = 'G.GAME.blind.children.animatedSprite:juice_up(0.05, 0.02)'
+position = 'at'
+match_indent = true
+payload = '''if SMODS.hand_debuff_source then
+    SMODS.hand_debuff_source:juice_up(0.05, 0.1)
+else
+    G.GAME.blind.children.animatedSprite:juice_up(0.05, 0.02)
+end
+'''
+
 # remove statically added 1 from The Wheel's collection description
 [[patches]]
 [patches.regex]
