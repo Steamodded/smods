@@ -108,7 +108,7 @@ match_indent = true
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
-pattern = "self.bypass_lock = cardTable.bypass_lock"
+pattern = "self.ability = cardTable.ability"
 position = "after"
 payload = """
 self.unique_val = cardTable.unique_val or self.unique_val
@@ -117,7 +117,17 @@ if cardTable.unique_val__saved_ID and G.ID <= cardTable.unique_val__saved_ID the
 end
 
 self.ignore_base_shader = cardTable.ignore_base_shader or {}
-self.ignore_shadow = cardTable.ignore_shadow or {}"""
+self.ignore_shadow = cardTable.ignore_shadow or {}
+
+local meta_table = getmetatable(self.ability) or {}
+meta_table.__index = self.config.center.config
+setmetatable(self.ability, meta_table)
+if type(self.ability.extra) == "table" then
+    local meta_table2 = getmetatable(self.ability.extra) or {}
+    meta_table2.__index = self.config.center.config.extra
+    setmetatable(self.ability.extra, meta_table2)
+end
+"""
 match_indent = true
 
 ## Vars in card descriptions should use `card.ability` instead of `_c.config` where possible

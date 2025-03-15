@@ -12,6 +12,14 @@ target = "card.lua"
 pattern = "(?<indent>[\t ]*)if not G\\.OVERLAY_MENU then \n"
 position = 'before'
 payload = '''
+local meta_table = getmetatable(self.ability) or {}
+meta_table.__index = self.config.center.config
+setmetatable(self.ability, meta_table)
+if type(self.ability.extra) == "table" then
+    local meta_table2 = getmetatable(self.ability.extra) or {}
+    meta_table2.__index = self.config.center.config.extra
+    setmetatable(self.ability.extra, meta_table2)
+end
 local obj = self.config.center
 if obj.set_ability and type(obj.set_ability) == 'function' then
     obj:set_ability(self, initial, delay_sprites)
