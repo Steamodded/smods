@@ -317,8 +317,12 @@ function SMODS.create_card(t)
         t.area = G.consumeables
     end
     SMODS.bypass_create_card_edition = t.no_edition or t.edition
+    SMODS.bypass_create_card_discover = t.discover
+    SMODS.bypass_create_card_discovery_center = t.bypass_discovery_center
     local _card = create_card(t.set, t.area, t.legendary, t.rarity, t.skip_materialize, t.soulable, t.key, t.key_append)
     SMODS.bypass_create_card_edition = nil
+    SMODS.bypass_create_card_discover = nil
+    SMODS.bypass_create_card_discovery_center = nil
 
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?

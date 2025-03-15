@@ -285,6 +285,8 @@ function SMODS.find_card(key, count_debuffed) end
 ---@field soulable? boolean Card could be replace by a legendary version, if applicable. 
 ---@field key? string Created card is forced to have a center matching this key. 
 ---@field key_append? string Appends this string to seeds. 
+---@field discover? boolean Discovers the card when created.
+---@field bypass_discovery_center? boolean Creates the card's proper sprites and UI even if it hasn't been discovered.
 ---@field no_edition? boolean Ignore natural edition application. 
 ---@field edition? string Apply this edition. 
 ---@field enhancement? string Apply this enhancement. 

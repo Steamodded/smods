@@ -374,6 +374,33 @@ payload = '''
         end
     end'''
 
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = "{bypass_discovery_center = area==G.shop_jokers or area == G.pack_cards or area == G.shop_vouchers or (G.shop_demo and area==G.shop_demo) or area==G.jokers or area==G.consumeables,"
+match_indent = true
+position = 'at'
+payload = '''
+{bypass_discovery_center = SMODS.bypass_create_card_discovery_center or area==G.shop_jokers or area == G.pack_cards or area == G.shop_vouchers or (G.shop_demo and area==G.shop_demo) or area==G.jokers or area==G.consumeables,'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = "bypass_discovery_ui = area==G.shop_jokers or area == G.pack_cards or area==G.shop_vouchers or (G.shop_demo and area==G.shop_demo),"
+match_indent = true
+position = 'at'
+payload = '''
+bypass_discovery_ui = SMODS.bypass_create_card_discovery_center or area==G.shop_jokers or area == G.pack_cards or area==G.shop_vouchers or (G.shop_demo and area==G.shop_demo),'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = "discover = area==G.jokers or area==G.consumeables, "
+match_indent = true
+position = 'at'
+payload = '''
+discover = SMODS.bypass_create_card_discover or area==G.jokers or area==G.consumeables, '''
+
 # Card:add_to_deck()
 [[patches]]
 [patches.regex]
