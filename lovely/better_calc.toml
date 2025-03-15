@@ -1132,8 +1132,21 @@ pattern = '''
 position = 'at'
 match_indent = true
 payload = '''
-SMODS.calculate_context({reroll_shop = true})
+SMODS.calculate_context({reroll_shop = true, cost = reroll_cost})
 '''
+# reroll_cost for context
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if G.GAME.current_round.reroll_cost > 0 then 
+'''
+payload = '''
+local reroll_cost = G.GAME.current_round.reroll_cost
+'''
+
 
 
 # Fix purple seal calc
