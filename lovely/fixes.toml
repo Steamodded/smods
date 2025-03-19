@@ -636,3 +636,58 @@ payload = '''for k,v in pairs(other.edition or {}) do
         new_card.edition[k] = v
     end
 end'''
+
+# fix Smeared Joker compat issues with modded suits
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if next(find_joker('Smeared Joker')) and (self.base.suit == 'Hearts' or self.base.suit == 'Diamonds') == (suit == 'Hearts' or suit == 'Diamonds') then"
+position = "at"
+payload = "if next(find_joker('Smeared Joker')) and SMODS.smeared_check(self, suit) then"
+overwrite = true
+match_indent = true
+
+# fix Seeing Double compat issues with modded suits
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = """local suits = {
+    ['Hearts'] = 0,
+    ['Diamonds'] = 0,
+    ['Spades'] = 0,
+    ['Clubs'] = 0
+}
+for i = 1, #context.scoring_hand do
+    if not SMODS.has_any_suit(context.scoring_hand[i]) then
+        if context.scoring_hand[i]:is_suit('Hearts') then suits["Hearts"] = suits["Hearts"] + 1 end
+        if context.scoring_hand[i]:is_suit('Diamonds') then suits["Diamonds"] = suits["Diamonds"] + 1 end
+        if context.scoring_hand[i]:is_suit('Spades') then suits["Spades"] = suits["Spades"] + 1 end
+        if context.scoring_hand[i]:is_suit('Clubs') then suits["Clubs"] = suits["Clubs"] + 1 end
+    end
+end
+for i = 1, #context.scoring_hand do
+    if SMODS.has_any_suit(context.scoring_hand[i]) then
+        if context.scoring_hand[i]:is_suit('Clubs') and suits["Clubs"] == 0 then suits["Clubs"] = suits["Clubs"] + 1
+        elseif context.scoring_hand[i]:is_suit('Diamonds') and suits["Diamonds"] == 0  then suits["Diamonds"] = suits["Diamonds"] + 1
+        elseif context.scoring_hand[i]:is_suit('Spades') and suits["Spades"] == 0  then suits["Spades"] = suits["Spades"] + 1
+        elseif context.scoring_hand[i]:is_suit('Hearts') and suits["Hearts"] == 0  then suits["Hearts"] = suits["Hearts"] + 1 end
+    end
+end
+if (suits["Hearts"] > 0 or
+suits["Diamonds"] > 0 or
+suits["Spades"] > 0) and
+suits["Clubs"] > 0 then
+    return {
+        message = localize{type='variable',key='a_xmult',vars={self.ability.extra}},
+        Xmult_mod = self.ability.extra
+    }
+end"""
+position = "at"
+payload = """if SMODS.seeing_double_check(context.scoring_hand, 'Clubs') then
+    return {
+        message = localize{type='variable',key='a_xmult',vars={self.ability.extra}},
+        Xmult_mod = self.ability.extra
+    }
+end"""
+overwrite = true
+match_indent = true
