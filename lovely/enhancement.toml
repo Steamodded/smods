@@ -102,6 +102,21 @@ payload = """if not SMODS.has_no_suit(v) and not SMODS.has_no_rank(v) then
     valid_idol_cards[#valid_idol_cards+1] = v
 end"""
 
+# reset_ancient_card()
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = """local ancient_suits = {}
+    for k, v in ipairs({'Spades','Hearts','Clubs','Diamonds'}) do"""
+match_indent = true
+position = "at"
+payload = """local SUITS = {}
+    for i = #SMODS.Suit.obj_buffer, 1, -1 do
+        SUITS[#SUITS+1] = SMODS.Suit.obj_buffer[i]
+    end
+    local ancient_suits = {}
+    for k, v in ipairs(SUITS) do"""
+
 # reset_mail_rank()
 [[patches]]
 [patches.pattern]
