@@ -1893,7 +1893,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             ignore = false
         },
         next = {},
-        prev = {},
+        prev = nil,
         straight_edge = false,
         -- TODO we need a better system for what this is doing.
         -- We should allow setting a playing card's atlas and position to any values,
@@ -1924,6 +1924,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.id = self.max_id.value
             self.shorthand = self.shorthand or self.key
             self.sort_nominal = self.nominal + (self.face_nominal or 0)
+            self.prev = self.prev or {}
             if self:check_dependencies() and not self.obj_table[self.key] then
                 self.obj_table[self.key] = self
                 local j
@@ -1942,6 +1943,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 for _,v in ipairs(self.next) do
                     local other = self.obj_table[v]
                     if other then
+                        other.prev = other.prev or {}
                         table.insert(other.prev, self.key)
                     end
                 end

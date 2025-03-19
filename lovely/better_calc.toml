@@ -2,7 +2,6 @@
 version = "1.0.0"
 dump_lua = true
 priority = -10
-# temp solution, nothing matches if -10
 
 ## G.FUNCS.evaluate_play()
 # evaluate main scoring
@@ -34,8 +33,8 @@ position = 'at'
 match_indent = true
 payload = '''
 function eval_card(card, context)
-    if card.ability.set ~= 'Joker' and not card:can_calculate() then return {}, {} end
     context = context or {}
+    if card.ability.set ~= 'Joker' and not card:can_calculate(context.ignore_debuff) then return {}, {} end
     local ret = {}
 '''
 
@@ -271,9 +270,9 @@ if card.area and area_set[card.area] then
     local jokers, triggered = card:calculate_joker(context)
     if jokers == true then jokers = { remove = true } end
     if type(jokers) ~= 'table' then jokers = nil end
-    if (jokers and not jokers.no_retrigger) or triggered then
+    if jokers or triggered then
         ret.jokers = jokers
-        if not (context.retrigger_joker_check or context.retrigger_joker) then
+        if not (context.retrigger_joker_check or context.retrigger_joker) and not (jokers and jokers.no_retrigger) then
             local retriggers = SMODS.calculate_retriggers(card, context, ret)
             if next(retriggers) then
                 ret.retriggers = retriggers
@@ -398,8 +397,6 @@ payload = '''
             if eval.edition then effects[#effects+1] = eval end
 
             SMODS.trigger_effects(effects, _card)
-            local deck_effect = G.GAME.selected_back:trigger_effect({full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, other_joker = _card.ability.set == 'Joker' and _card or false, other_consumeable = _card.ability.set ~= 'Joker' and _card or false})
-            if deck_effect then SMODS.calculate_effect(deck_effect, G.deck.cards[1] or G.deck) end
         end end
 '''
 # Joker effects
@@ -492,6 +489,27 @@ for _, _area in ipairs(SMODS.get_card_areas('jokers')) do
                     table.insert(effects, rt_eval)
                     for _, v in ipairs(rt_post) do effects[#effects+1] = v end
                 end
+            end
+        end
+    end
+end
+for _, _area in ipairs(SMODS.get_card_areas('individual')) do
+    local other_key = 'other_unknown'
+    if _card.ability.set == 'Joker' then other_key = 'other_joker' end
+    if _card.ability.consumeable then other_key = 'other_consumeable' end
+    if _card.ability.set == 'Voucher' then other_key = 'other_voucher' end
+    -- TARGET: add context.other_something identifier to your cards
+    local _eval,post = SMODS.eval_individual(_area, {full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, [other_key] = _card, other_main = _card })
+    if next(_eval) then
+        _eval.individual.juice_card = _joker
+        table.insert(effects, _eval)
+        for _, v in ipairs(post) do effects[#effects+1] = v end
+        if _eval.retriggers then
+            for rt = 1, #_eval.retriggers do
+                local rt_eval, rt_post = SMODS.eval_individual(_area, {full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, [other_key] = _card, retrigger_joker = true})
+                table.insert(effects, {_eval.retriggers[rt]})
+                table.insert(effects, rt_eval)
+                for _, v in ipairs(rt_post) do effects[#effects+1] = v end
             end
         end
     end
@@ -1383,15 +1401,9 @@ for i=1, #G.play.cards do
     end
     local effects = {}
     SMODS.calculate_context({modify_scoring_hand = true, other_card =  G.play.cards[i], full_hand = G.play.cards, scoring_hand = scoring_hand}, effects)
-    SMODS.trigger_effects(effects, G.play.cards[i])
-    for _, eval in pairs(effects) do
-        if type(eval) == 'table' then
-            for key, eval2 in pairs(eval) do
-                if key == 'add_to_hand' or (type(eval2) == 'table' and eval2.add_to_hand) then splashed = true end
-                if key == 'remove_from_hand' or (type(eval2) == 'table' and eval2.remove_from_hand) then unsplashed = true end
-            end
-        end
-    end
+    local flags = SMODS.trigger_effects(effects, G.play.cards[i])
+    if flags.add_to_hand then splashed = true end
+	if flags.remove_from_hand then unsplashed = true end
     if splashed and not unsplashed then table.insert(final_scoring_hand, G.play.cards[i]) end
 end
 -- TARGET: adding to hand effects
@@ -1541,3 +1553,20 @@ G.E_MANAGER:add_event(Event({
 
 playing_card_joker_effects({card})
 '''
+
+## Remove unneeded area check
+# Card:calculate_joker
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = 'if context.cardarea == G.jokers then'
+payload = 'do'
+
+[[patches]]
+[patches.regex]
+target = 'game.lua'
+position = 'at'
+pattern = 'G.GAME.blind:get_loc_debuff_text()'
+payload = 'SMODS.debuff_text or G.GAME.blind:get_loc_debuff_text()'

@@ -166,6 +166,24 @@ if nc and area == G.pack_cards and not select_to then G.pack_cards:remove_card(c
 [[patches]]
 [patches.pattern]
 target = "functions/button_callbacks.lua"
+pattern = '''if prev_state == G.STATES.TAROT_PACK then inc_career_stat('c_tarot_reading_used', 1) end'''
+position = 'at'
+match_indent = true
+payload = '''if prev_state == G.STATES.SMODS_BOOSTER_OPENED and booster_obj.name:find('Arcana') then inc_career_stat('c_tarot_reading_used', 1) end'''
+
+# G.FUNC.use_card()
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = '''if prev_state == G.STATES.PLANET_PACK then inc_career_stat('c_planetarium_used', 1) end'''
+position = 'at'
+match_indent = true
+payload = '''if prev_state == G.STATES.SMODS_BOOSTER_OPENED and booster_obj.name:find('Celestial') then inc_career_stat('c_planetarium_used', 1) end'''
+
+# G.FUNC.use_card()
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
 pattern = "(G.STATE == G.STATES.BUFFOON_PACK and G.STATES.BUFFOON_PACK) or"
 position = "before"
 payload = "(G.STATE == G.STATES.SMODS_BOOSTER_OPENED and G.STATES.SMODS_BOOSTER_OPENED) or"

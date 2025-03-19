@@ -5,6 +5,7 @@ import threading
 import tkinter as tk
 from datetime import datetime
 from tkinter import filedialog
+import argparse
 
 log_levels = {
     "TRACE": 0,
@@ -14,6 +15,8 @@ log_levels = {
     "ERROR": 4,
     "FATAL": 5
 }
+
+SCALE = 1.0
 
 
 # might or might not be a copy paste from https://stackoverflow.com/a/16375233
@@ -208,7 +211,14 @@ class GlobalSearchFrame(tk.Frame):
         self.search_mode_var = tk.StringVar(value='normal')
         self.search_mode_var.trace("w", self.apply_search_mode)
         for mode, text in [('normal', 'normal'), ('match_case', 'match case'), ('regex', 'regex')]:
-            self.search_modes.append(tk.Radiobutton(self, text=text, variable=self.search_mode_var, value=mode))
+            self.search_modes.append(tk.Radiobutton(
+                self,
+                text=text,
+                variable=self.search_mode_var,
+                value=mode,
+                indicatoron=True if SCALE <= 1.0 else False,
+                padx=10*SCALE
+            ))
 
         self.create_widgets()
 
@@ -494,7 +504,9 @@ class SpecificSearchFrame(tk.Frame):
             variable=self.and_above_var,
             onvalue=True,
             offvalue=False,
-            command=lambda: self.console.set_filter(and_above=self.and_above_var.get())
+            indicatoron=True if SCALE <= 1.0 else False,
+            command=lambda: self.console.set_filter(
+                and_above=self.and_above_var.get())
         )
 
         self.clear_log_button: tk.Button | None = None
@@ -643,7 +655,33 @@ def listen_for_clients(console: Console):
         threading.Thread(target=client_handler, args=(client, console)).start()
 
 
+def fix_scaling(root, scale):
+    """Scale fonts on HiDPI displays."""
+    import tkinter.font
+    for name in tkinter.font.names(root):
+        font = tkinter.font.Font(root=root, name=name, exists=True)
+        size = int(font['size'])
+        if size < 0:
+            font['size'] = round(-scale*size)
+
+
+parser = argparse.ArgumentParser(
+    prog='Steamodded Debug Console')
+parser.add_argument('-s', '--scale', type=float,
+                    help="Scaling factor for the debug console.", default=None)
+
+
 if __name__ == "__main__":
+    args = parser.parse_args()
+    # set global scale for use by components above
+    if args.scale is not None:
+        SCALE = args.scale
+
     root = MainWindow()
+
+    # scale fonts after root initialized
+    if args.scale is not None:
+        fix_scaling(root, args.scale)
+
     threading.Thread(target=listen_for_clients, daemon=True, args=(root.get_console(),)).start()
     root.mainloop()
