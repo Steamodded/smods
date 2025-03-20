@@ -3282,8 +3282,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     SMODS.Keybind {
-        key_pressed = 'm',
-        held_keys = { "lctrl" },
+        key_pressed = 'f5',
+        held_keys = { "lalt" },
         event = 'pressed',
         action = function(self)
             SMODS.save_all_config()
