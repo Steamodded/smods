@@ -1817,18 +1817,18 @@ end
 
 function SMODS.blueprint_effect(blueprint_card, card, context)
     if card == blueprint_card then return end
-        context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
-        context.blueprint_card = context.blueprint_card or blueprint_card
-        if context.blueprint > #G.jokers.cards + 1 then return end
-        local other_joker_ret = card:calculate_joker(context)
-        context.blueprint = nil
-        local eff_card = context.blueprint_card or blueprint_card
-        context.blueprint_card = nil
-        if other_joker_ret then
-            other_joker_ret.card = blueprint_card
-            other_joker_ret.colour = G.C.BLUE
-            return other_joker_ret
-        end
+    context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
+    context.blueprint_card = context.blueprint_card or blueprint_card
+    if context.blueprint > #G.jokers.cards + 1 then return end
+    local other_joker_ret = card:calculate_joker(context)
+    context.blueprint = nil
+    local eff_card = context.blueprint_card or blueprint_card
+    context.blueprint_card = nil
+    if other_joker_ret then
+        other_joker_ret.card = blueprint_card
+        other_joker_ret.colour = G.C.BLUE
+        return other_joker_ret
+    end
 end
 
 function SMODS.get_card_areas(_type, _context)
