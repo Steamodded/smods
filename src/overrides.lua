@@ -836,40 +836,40 @@ function G.UIDEF.view_deck(unplayed_only)
 		if SUITS[suit_map[j]][1] then num_suits = num_suits + 1 end
 	end
 
-	local deck_start_index = (1 - 1) * 4 + 1
-	local deck_end_index = math.min(deck_start_index + 4 - 1, #suit_map)
 	for j = 1, #suit_map do
-		if SUITS[suit_map[j]][1] and (j >= deck_start_index and j <= deck_end_index) then
-			local view_deck = CardArea(
-				G.ROOM.T.x + 0.2 * G.ROOM.T.w / 2, G.ROOM.T.h,
-				6.5 * G.CARD_W,
-				(0.6) * G.CARD_H,
-				{
-					card_limit = #SUITS[suit_map[j]],
-					type = 'title',
-					view_deck = true,
-					highlight_limit = 0,
-					card_w = G
-						.CARD_W * 0.7,
-					draw_layers = { 'card' }
-				})
-			table.insert(deck_tables,
-				{n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
-					{n = G.UIT.O, config = {object = view_deck}}}}
-			)
-			for i = 1, #SUITS[suit_map[j]] do
-				if SUITS[suit_map[j]][i] then
-					local greyed, _scale = nil, 0.7
-					if unplayed_only and not ((SUITS[suit_map[j]][i].area and SUITS[suit_map[j]][i].area == G.deck) or SUITS[suit_map[j]][i].ability.wheel_flipped) then
-						greyed = true
-					end
-					local copy = copy_card(SUITS[suit_map[j]][i], nil, _scale)
-					copy.greyed = greyed
-					copy.T.x = view_deck.T.x + view_deck.T.w / 2
-					copy.T.y = view_deck.T.y
+		if (j >= 1 and j <= 4) or num_suits <= 4 then
+			if SUITS[suit_map[j]][1] then
+				local view_deck = CardArea(
+					G.ROOM.T.x + 0.2 * G.ROOM.T.w / 2, G.ROOM.T.h,
+					6.5 * G.CARD_W,
+					(0.6) * G.CARD_H,
+					{
+						card_limit = #SUITS[suit_map[j]],
+						type = 'title',
+						view_deck = true,
+						highlight_limit = 0,
+						card_w = G
+							.CARD_W * 0.7,
+						draw_layers = { 'card' }
+					})
+				table.insert(deck_tables,
+					{n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
+						{n = G.UIT.O, config = {object = view_deck}}}}
+				)
+				for i = 1, #SUITS[suit_map[j]] do
+					if SUITS[suit_map[j]][i] then
+						local greyed, _scale = nil, 0.7
+						if unplayed_only and not ((SUITS[suit_map[j]][i].area and SUITS[suit_map[j]][i].area == G.deck) or SUITS[suit_map[j]][i].ability.wheel_flipped) then
+							greyed = true
+						end
+						local copy = copy_card(SUITS[suit_map[j]][i], nil, _scale)
+						copy.greyed = greyed
+						copy.T.x = view_deck.T.x + view_deck.T.w / 2
+						copy.T.y = view_deck.T.y
 
-					copy:hard_set_T()
-					view_deck:emplace(copy)
+						copy:hard_set_T()
+						view_deck:emplace(copy)
+					end
 				end
 			end
 		end
