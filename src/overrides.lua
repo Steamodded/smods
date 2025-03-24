@@ -817,6 +817,9 @@ end
 
 function G.UIDEF.view_deck(unplayed_only)
 	local deck_tables = {}
+	remove_nils(G.playing_cards)
+	G.VIEWING_DECK = true
+	table.sort(G.playing_cards, function(a, b) return a:get_nominal('suit') > b:get_nominal('suit') end)
 	local SUITS = {}
 	local suit_map = {}
 	for i = #SMODS.Suit.obj_buffer, 1, -1 do
@@ -1750,7 +1753,7 @@ end
 -- OR another card's self.edition table
 -- immediate = boolean value
 -- silent = boolean value
-function Card:set_edition(edition, immediate, silent)
+function Card:set_edition(edition, immediate, silent, delay)
 	SMODS.enh_cache:write(self, nil)
 	-- Check to see if negative is being removed and reduce card_limit accordingly
 	if (self.added_to_deck or self.joker_added_to_deck_but_debuffed or (self.area == G.hand and not self.debuff)) and self.edition and self.edition.card_limit then
@@ -1854,7 +1857,7 @@ function Card:set_edition(edition, immediate, silent)
 							G.hand.config.real_card_limit = G.hand.config.real_card_limit + v
 						end
 						G.hand.config.card_limit = G.hand.config.card_limit + v
-						if not is_in_pack then
+						if not is_in_pack and G.GAME.blind.in_blind then
 							G.FUNCS.draw_from_deck_to_hand(v)
 						end
 						return true
@@ -1896,6 +1899,17 @@ function Card:set_edition(edition, immediate, silent)
 			delay = 0.1,
 			func = function()
 				G.CONTROLLER.locks.edition = false
+				return true
+			end
+		}))
+	end
+
+	if delay then
+		self.delay_edition = true
+		G.E_MANAGER:add_event(Event({
+			trigger = 'immediate',
+			func = function()
+				self.delay_edition = nil
 				return true
 			end
 		}))
