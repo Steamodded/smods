@@ -836,15 +836,22 @@ function G.UIDEF.view_deck(unplayed_only)
 		if SUITS[suit_map[j]][1] then num_suits = num_suits + 1 end
 	end
 
+	local visible_suit = {}
 	for j = 1, #suit_map do
+		if SUITS[suit_map[j]][1] then
+			table.insert(visible_suit, suit_map[j])
+		end
+	end
+
+	for j = 1, #visible_suit do
 		if (j >= 1 and j <= 4) or num_suits <= 4 then
-			if SUITS[suit_map[j]][1] then
+			if SUITS[visible_suit[j]][1] then
 				local view_deck = CardArea(
 					G.ROOM.T.x + 0.2 * G.ROOM.T.w / 2, G.ROOM.T.h,
 					6.5 * G.CARD_W,
 					(0.6) * G.CARD_H,
 					{
-						card_limit = #SUITS[suit_map[j]],
+						card_limit = #SUITS[visible_suit[j]],
 						type = 'title',
 						view_deck = true,
 						highlight_limit = 0,
@@ -856,13 +863,13 @@ function G.UIDEF.view_deck(unplayed_only)
 					{n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
 						{n = G.UIT.O, config = {object = view_deck}}}}
 				)
-				for i = 1, #SUITS[suit_map[j]] do
-					if SUITS[suit_map[j]][i] then
+				for i = 1, #SUITS[visible_suit[j]] do
+					if SUITS[visible_suit[j]][i] then
 						local greyed, _scale = nil, 0.7
-						if unplayed_only and not ((SUITS[suit_map[j]][i].area and SUITS[suit_map[j]][i].area == G.deck) or SUITS[suit_map[j]][i].ability.wheel_flipped) then
+						if unplayed_only and not ((SUITS[visible_suit[j]][i].area and SUITS[visible_suit[j]][i].area == G.deck) or SUITS[visible_suit[j]][i].ability.wheel_flipped) then
 							greyed = true
 						end
-						local copy = copy_card(SUITS[suit_map[j]][i], nil, _scale)
+						local copy = copy_card(SUITS[visible_suit[j]][i], nil, _scale)
 						copy.greyed = greyed
 						copy.T.x = view_deck.T.x + view_deck.T.w / 2
 						copy.T.y = view_deck.T.y
@@ -1148,16 +1155,23 @@ G.FUNCS.your_suits_page = function(args)
 		if SUITS[suit_map[j]][1] then num_suits = num_suits + 1 end
 	end
 
-	local deck_start_index = (args.cycle_config.current_option - 1) * 4 + 1
-	local deck_end_index = math.min(deck_start_index + 4 - 1, #suit_map)
+	local visible_suit = {}
 	for j = 1, #suit_map do
-		if SUITS[suit_map[j]][1] and (j >= deck_start_index and j <= deck_end_index) then
+		if SUITS[suit_map[j]][1] then
+			table.insert(visible_suit, suit_map[j])
+		end
+	end
+
+	local deck_start_index = (args.cycle_config.current_option - 1) * 4 + 1
+	local deck_end_index = math.min(deck_start_index + 4 - 1, #visible_suit)
+	for j = 1, #visible_suit do
+		if SUITS[visible_suit[j]][1] and (j >= deck_start_index and j <= deck_end_index) then
 			local view_deck = CardArea(
 				G.ROOM.T.x + 0.2 * G.ROOM.T.w / 2, G.ROOM.T.h,
 				6.5 * G.CARD_W,
 				(0.6) * G.CARD_H,
 				{
-					card_limit = #SUITS[suit_map[j]],
+					card_limit = #SUITS[visible_suit[j]],
 					type = 'title',
 					view_deck = true,
 					highlight_limit = 0,
@@ -1169,13 +1183,13 @@ G.FUNCS.your_suits_page = function(args)
 				{n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
 					{n = G.UIT.O, config = {object = view_deck}}}}
 			)
-			for i = 1, #SUITS[suit_map[j]] do
-				if SUITS[suit_map[j]][i] then
+			for i = 1, #SUITS[visible_suit[j]] do
+				if SUITS[visible_suit[j]][i] then
 					local greyed, _scale = nil, 0.7
-					if view_deck_unplayed_only and not ((SUITS[suit_map[j]][i].area and SUITS[suit_map[j]][i].area == G.deck) or SUITS[suit_map[j]][i].ability.wheel_flipped) then
+					if view_deck_unplayed_only and not ((SUITS[visible_suit[j]][i].area and SUITS[visible_suit[j]][i].area == G.deck) or SUITS[visible_suit[j]][i].ability.wheel_flipped) then
 						greyed = true
 					end
-					local copy = copy_card(SUITS[suit_map[j]][i], nil, _scale)
+					local copy = copy_card(SUITS[visible_suit[j]][i], nil, _scale)
 					copy.greyed = greyed
 					copy.T.x = view_deck.T.x + view_deck.T.w / 2
 					copy.T.y = view_deck.T.y
