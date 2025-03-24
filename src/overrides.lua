@@ -815,10 +815,12 @@ function tally_sprite(pos, value, tooltip, suit)
 	}}
 end
 
+local view_deck_unplayed_only = nil
 function G.UIDEF.view_deck(unplayed_only)
 	local deck_tables = {}
 	remove_nils(G.playing_cards)
 	G.VIEWING_DECK = true
+	view_deck_unplayed_only = unplayed_only
 	table.sort(G.playing_cards, function(a, b) return a:get_nominal('suit') > b:get_nominal('suit') end)
 	local SUITS = {}
 	local suit_map = {}
@@ -1098,11 +1100,11 @@ function G.UIDEF.view_deck(unplayed_only)
 					current_option = 1,
 					colour = G
 						.C.RED,
-					no_pips = true
+					no_pips = true,
 				})
 			}
 		},
-		{n = G.UIT.R, config = {align = "cm", minh = 0.8, padding = 0.05}, nodes = {
+		{n = G.UIT.R, config = {align = "cm", minh = 0.8, padding = 0}, nodes = {
 			modded and {n = G.UIT.R, config = {align = "cm"}, nodes = {
 				{n = G.UIT.C, config = {padding = 0.3, r = 0.1, colour = mix_colours(G.C.BLUE, G.C.WHITE, 0.7)}, nodes = {}},
 				{n = G.UIT.T, config = {text = ' ' .. localize('ph_deck_preview_effective'), colour = G.C.WHITE, scale = 0.3}},}}
@@ -1116,7 +1118,6 @@ function G.UIDEF.view_deck(unplayed_only)
 						colour = G.C.WHITE, scale = 0.3
 					}},}}
 			or nil,}}}}
-
 	local t = {n = G.UIT.ROOT, config = {align = "cm", minw = 3, padding = 0.1, r = 0.1, colour = G.C.CLEAR}, nodes = {
 		{n = G.UIT.O, config = {
 				id = 'suit_list',
@@ -1130,8 +1131,11 @@ end
 G.FUNCS.your_suits_page = function(args)
 	if not args or not args.cycle_config then return end
 	local deck_tables = {}
+	remove_nils(G.playing_cards)
+	G.VIEWING_DECK = true
+	table.sort(G.playing_cards, function(a, b) return a:get_nominal('suit') > b:get_nominal('suit') end)
 	local SUITS = {}
-	local suit_map = {}
+	local suit_map = {} 
 	for i = #SMODS.Suit.obj_buffer, 1, -1 do
 		SUITS[SMODS.Suit.obj_buffer[i]] = {}
 		suit_map[#suit_map + 1] = SMODS.Suit.obj_buffer[i]
@@ -1168,7 +1172,7 @@ G.FUNCS.your_suits_page = function(args)
 			for i = 1, #SUITS[suit_map[j]] do
 				if SUITS[suit_map[j]][i] then
 					local greyed, _scale = nil, 0.7
-					if unplayed_only and not ((SUITS[suit_map[j]][i].area and SUITS[suit_map[j]][i].area == G.deck) or SUITS[suit_map[j]][i].ability.wheel_flipped) then
+					if view_deck_unplayed_only and not ((SUITS[suit_map[j]][i].area and SUITS[suit_map[j]][i].area == G.deck) or SUITS[suit_map[j]][i].ability.wheel_flipped) then
 						greyed = true
 					end
 					local copy = copy_card(SUITS[suit_map[j]][i], nil, _scale)
@@ -1221,8 +1225,8 @@ G.FUNCS.your_suits_page = function(args)
 	local wheel_flipped = 0
 
 	for k, v in ipairs(G.playing_cards) do
-		if v.ability.name ~= 'Stone Card' and (not unplayed_only or ((v.area and v.area == G.deck) or v.ability.wheel_flipped)) then
-			if v.ability.wheel_flipped and not (v.area and v.area == G.deck) and unplayed_only then wheel_flipped = wheel_flipped + 1 end
+		if v.ability.name ~= 'Stone Card' and (not view_deck_unplayed_only or ((v.area and v.area == G.deck) or v.ability.wheel_flipped)) then
+			if v.ability.wheel_flipped and not (v.area and v.area == G.deck) and view_deck_unplayed_only then wheel_flipped = wheel_flipped + 1 end
 			--For the suits
 			if v.base.suit then suit_tallies[v.base.suit] = (suit_tallies[v.base.suit] or 0) + 1 end
 			for kk, vv in pairs(mod_suit_tallies) do
@@ -1408,7 +1412,7 @@ G.FUNCS.your_suits_page = function(args)
 					current_option = args.cycle_config.current_option,
 					colour = G
 						.C.RED,
-					no_pips = true
+					no_pips = true,
 				})
 			}
 		},
@@ -1426,6 +1430,7 @@ G.FUNCS.your_suits_page = function(args)
 						colour = G.C.WHITE, scale = 0.3
 					}},}}
 			or nil,}}}}
+
 	local suit_list = G.OVERLAY_MENU:get_UIE_by_ID('suit_list')
 	if suit_list then
 		if suit_list.config.object then
