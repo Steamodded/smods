@@ -156,7 +156,7 @@ function SMODS.calculate_repetitions(card, context, reps) end
 ---@param card Card|table
 ---@param context CalcContext|table
 ---@return table?
---- Calculates blueprint-like effects.
+--- Helper function to copy the ability of another joker. Useful for implementing Blueprint-like jokers.
 function SMODS.blueprint_effect(blueprint_card, card, context) end
 
 ---@param _type string
