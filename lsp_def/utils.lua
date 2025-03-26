@@ -152,12 +152,12 @@ function SMODS.calculate_retriggers(card, context, _ret) end
 ---@return table[] reps
 function SMODS.calculate_repetitions(card, context, reps) end
 
----@param blueprint_card Card|table
----@param card Card|table
+---@param copier Card|table
+---@param copied_card Card|table
 ---@param context CalcContext|table
 ---@return table?
 --- Helper function to copy the ability of another joker. Useful for implementing Blueprint-like jokers.
-function SMODS.blueprint_effect(blueprint_card, card, context) end
+function SMODS.blueprint_effect(copier, copied_card, context) end
 
 ---@param _type string
 ---@param _context string
