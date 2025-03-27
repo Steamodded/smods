@@ -866,6 +866,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         prefix_config = { key = false },
         inject = function(self)
             G.P_CENTER_POOLS[self.key] = G.P_CENTER_POOLS[self.key] or {}
+            if self.cards then
+                for key, _ in pairs(self.cards) do
+                    self:inject_card(G.P_CENTERS[key])
+                end
+            end
             local injected_rarities = {}
             if self.rarities then
                 self.rarity_pools = {}
