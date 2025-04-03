@@ -1278,26 +1278,31 @@ function Card:set_sprites(_center, _front)
 			elseif self.config.center.consumeable and self.config.center.demo then
 				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["Tarot"], G.c_locked.pos)
 			elseif not self.params.bypass_discovery_center and (_center.set == 'Edition' or _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' or _center.set == 'Booster') and not _center.discovered then
-				local atlas = G.ASSET_ATLAS[
-					(_center.undiscovered and
-						(_center.undiscovered[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
-						_center.undiscovered.atlas)
-					) or
-					(
-						SMODS.UndiscoveredSprites[_center.set] and
-						(SMODS.UndiscoveredSprites[_center.set][G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
-						SMODS.UndiscoveredSprites[_center.set].atlas)
-					) or
-					_center.set
-				] or G.ASSET_ATLAS["Joker"]
-				local pos = (_center.undiscovered and _center.undiscovered.pos) or
-					(SMODS.UndiscoveredSprites[_center.set] and SMODS.UndiscoveredSprites[_center.set].pos) or
-					G.j_undiscovered.pos
-				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
+				local atlas, pos, animated
+				if _center.undiscovered then
+					pos = _center.undiscovered.pos
+					animated = _center.undiscovered.animated
+					atlas = (animated and G.ANIMATION_ATLAS or G.ASSET_ATLAS)[_center.undiscovered[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.undiscovered.atlas]
+				elseif SMODS.UndiscoveredSprites[_center.set] then
+					pos = SMODS.UndiscoveredSprites[_center.set].pos
+					animated = SMODS.UndiscoveredSprites[_center.set].animated
+					atlas = (animated and G.ANIMATION_ATLAS or G.ASSET_ATLAS)[SMODS.UndiscoveredSprites[_center.set][G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or SMODS.UndiscoveredSprites[_center.set].atlas]
+				else
+					pos = G.j_undiscovered.pos
+					atlas = G.ASSET_ATLAS['Joker']
+				end
+				self.children.center = (animated and AnimatedSprite or Sprite)(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
 			elseif _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' then
-				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[_center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set], self.config.center.pos)
+				local pos = _center.pos
+				local animated = _center.animated
+				local atlas = (animated and G.ANIMATION_ATLAS or G.ASSET_ATLAS)[_center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set]
+
+				self.children.center = (animated and AnimatedSprite or Sprite)(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
 			else
-				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[_center.atlas or 'centers'], _center.pos)
+				local pos = _center.pos
+				local animated = _center.animated
+				local atlas = (animated and G.ANIMATION_ATLAS or G.ASSET_ATLAS)[_center.atlas or 'centers']
+				self.children.center = (animated and AnimatedSprite or Sprite)(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
 			end
 			self.children.center.states.hover = self.states.hover
 			self.children.center.states.click = self.states.click
@@ -1323,22 +1328,28 @@ function Card:set_sprites(_center, _front)
 
         if _center.soul_pos then
 			if self.children.floating_sprite then self.children.floating_sprite:remove() end
-            self.children.floating_sprite = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[_center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set], self.config.center.soul_pos)
+			local pos = _center.soul_pos
+			local animated = pos.atlas and pos.animated or _center.animated
+			local atlas = (animated and G.ANIMATION_ATLAS or G.ASSET_ATLAS)[pos.atlas or _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set]
+            self.children.floating_sprite = (animated and AnimatedSprite or Sprite)(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
             self.children.floating_sprite.role.draw_major = self
             self.children.floating_sprite.states.hover.can = false
             self.children.floating_sprite.states.click.can = false
         end
 
         if self.children.back then self.children.back:remove() end
-		self.children.back = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[(G.GAME.viewed_back or G.GAME.selected_back) and ((G.GAME.viewed_back or G.GAME.selected_back)[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or (G.GAME.viewed_back or G.GAME.selected_back).atlas) or 'centers'], self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos))
+		local pos = self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos)
+		local animated = (self.playing_card and G.GAME[self.back].effect.center or G.P_CENTERS['b_red']).animated
+		local atlas = (animated and G.ANIMATION_ATLAS or G.ASSET_ATLAS)[(G.GAME.viewed_back or G.GAME.selected_back) and ((G.GAME.viewed_back or G.GAME.selected_back)[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or (G.GAME.viewed_back or G.GAME.selected_back).atlas) or 'centers']
+		self.children.back = (animated and AnimatedSprite or Sprite)(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
 		self.children.back.states.hover = self.states.hover
 		self.children.back.states.click = self.states.click
 		self.children.back.states.drag = self.states.drag
 		self.children.back.states.collide.can = false
 		self.children.back:set_role({major = self, role_type = 'Glued', draw_major = self})
 		if _center.set_sprites and type(_center.set_sprites) == 'function' then
-            _center:set_sprites(self, _front)
-        end
+			_center:set_sprites(self, _front)
+		end
     end
 end
 
