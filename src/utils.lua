@@ -974,6 +974,10 @@ function SMODS.has_enhancement(card, key)
     return false
 end
 
+function SMODS.has_seal(card, key)
+    if card:get_seal(true) and card:get_seal(true) == key then return true end
+    return false
+
 function SMODS.shatters(card)
     local enhancements = SMODS.get_enhancements(card)
     for key, _ in pairs(enhancements) do
