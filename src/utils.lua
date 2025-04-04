@@ -344,9 +344,11 @@ function SMODS.find_card(key, count_debuffed)
     local results = {}
     if not G.jokers or not G.jokers.cards then return {} end
     for _, area in ipairs(SMODS.get_card_areas('jokers')) do
-        for _, v in pairs(area.cards) do
-            if v and type(v) == 'table' and v.config.center.key == key and (count_debuffed or not v.debuff) then
-                table.insert(results, v)
+        if area.cards then
+            for _, v in pairs(area.cards) do
+                if v and type(v) == 'table' and v.config.center.key == key and (count_debuffed or not v.debuff) then
+                    table.insert(results, v)
+                end
             end
         end
     end
