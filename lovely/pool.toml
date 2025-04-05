@@ -142,7 +142,7 @@ end
 [[patches]]
 [patches.pattern]
 target = "card.lua"
-pattern = "local old_center = self.config.center"
+pattern = "self.config.center = center"
 position = 'after'
 payload = '''
 if old_center and not next(SMODS.find_card(old_center.key, true)) then
