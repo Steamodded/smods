@@ -323,5 +323,5 @@ match_indent = true
 target = 'card.lua'
 pattern = 'if not initial then G.GAME.blind:debuff_card(self) end'
 position = 'at'
-payload = 'if not initial and delay_sprites ~= "quantum" then G.GAME.blind:debuff_card(self) end'
+payload = 'if not initial and delay_sprites ~= "quantum" and G.GAME.blind then G.GAME.blind:debuff_card(self) end'
 match_indent = true
