@@ -694,3 +694,13 @@ payload = """if SMODS.seeing_double_check(context.scoring_hand, 'Clubs') then
 end"""
 overwrite = true
 match_indent = true
+
+# Card:get_end_of_round_effect
+# prevents Blue Seal crash from a hand with no matching planet card (spawns random planet card)
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = """local card = create_card(card_type,G.consumeables, nil, nil, nil, nil, _planet, 'blusl')"""
+position = 'before'
+payload = """if _planet == 0 then _planet = nil end"""
+match_indent = true
