@@ -1915,3 +1915,55 @@ function G.UIDEF.run_setup_option(_type)
     end
     return ret
 end
+
+--Progress bar
+function G.FUNCS.progress_bar(e)
+    local c = e.children[1]
+    local rt = c.config.ref_table
+    c.T.w = (rt.ref_table[rt.ref_value] - rt.min)/(rt.max - rt.min)*rt.w
+    c.config.w = c.T.w
+    if rt.callback then G.FUNCS[rt.callback](rt) end 
+end
+
+function create_progress_bar(args)
+    args = args or {}
+    args.colour = args.colour or G.C.RED
+    args.bg_colour = args.bg_colour or G.C.BLACK
+    args.w = args.w or 1
+    args.h = args.h or 0.5
+    args.label_scale = args.label_scale or 0.5
+    args.label_padding = args.label_padding or 0.1
+    args.label_minh = args.label_minh or 1
+    args.label_minw = args.label_minw or 1
+    args.min = args.min or 0
+    args.max = args.max or 1
+    args.tooltip = args.tooltip or nil
+
+    args.detailed_tooltip = args.detailed_tooltip or nil
+    if not args.detailed_tooltip and args.detailed_tooltip_k then
+        args.detailed_tooltip = {key = args.detailed_tooltip_k, set = args.detailed_tooltip_s or nil}
+    end
+
+    local startval = args.w * (args.ref_table[args.ref_value] - args.min)/(args.max - args.min)
+  
+    local t = 
+    {n=G.UIT.C, config={align = "cm", minw = args.w, min_h = args.h, padding = 0.1, r = 0.1, colour = G.C.CLEAR, focus_args = {type = 'slider'}}, nodes={
+        {n=G.UIT.C, config={align = "cl", detailed_tooltip = args.detailed_tooltip, tooltip = args.tooltip, minw = args.w, r = 0.1,min_h = args.h, colour = args.bg_colour,emboss = 0.05,func = 'progress_bar', refresh_movement = true}, nodes={
+          {n=G.UIT.B, config={w=startval,h=args.h, r = 0.1, colour = args.colour, ref_table = args, refresh_movement = true}},
+        }},
+    }}
+
+    if args.label then 
+        t = 
+        {n=G.UIT.R, config={align = "cm", minh = args.label_minh, minw = args.label_minw, padding = args.label_padding * args.label_scale, colour = G.C.CLEAR}, nodes={
+            {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
+              {n=G.UIT.T, config={text = args.label, scale = args.label_scale, colour = G.C.UI.TEXT_LIGHT}}
+            }},
+            {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
+              t
+            }}
+        }}
+    end
+
+    return t
+end
