@@ -1643,7 +1643,7 @@ function get_joker_win_sticker(_center, index)
 		local applied = {}
 		local _count = 0
 		local _stake = nil
-		for k, v in pairs(joker_usage.wins_by_key) do
+		for k, v in pairs(joker_usage.wins_by_key or {}) do
 			SMODS.build_stake_chain(G.P_STAKES[k], applied)
 		end
 		for i, v in ipairs(G.P_CENTER_POOLS.Stake) do
