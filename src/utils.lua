@@ -2194,3 +2194,22 @@ function SMODS.seeing_double_check(hand, suit)
     end
     if saw_double(suit_tally, suit) then return true else return false end
 end
+
+-- Hand Limit API
+function SMODS.change_play_limit(mod)
+    G.GAME.starting_params.play_limit = G.GAME.starting_params.play_limit + mod
+    if G.GAME.starting_params.play_limit < 1 then
+        sendErrorMessage('Play limit cannot be less than 1', 'HandLimitAPI')
+        G.GAME.starting_params.play_limit = 1
+    end
+    G.hand.config.highlighted_limit = math.max(G.GAME.starting_params.discard_limit, G.GAME.starting_params.play_limit, 5)
+end
+
+function SMODS.change_discard_limit(mod)
+    G.GAME.starting_params.discard_limit = G.GAME.starting_params.discard_limit + mod
+    if G.GAME.starting_params.discard_limit < 0 then
+        sendErrorMessage('Discard limit cannot be less than 0', 'HandLimitAPI')
+        G.GAME.starting_params.discard_limit = 0
+    end
+    G.hand.config.highlighted_limit = math.max(G.GAME.starting_params.discard_limit, G.GAME.starting_params.play_limit, 5)
+end
