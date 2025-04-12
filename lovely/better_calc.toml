@@ -1417,7 +1417,7 @@ for i=1, #G.play.cards do
         end
     end
     local effects = {}
-    SMODS.calculate_context({modify_scoring_hand = true, other_card =  G.play.cards[i], full_hand = G.play.cards, scoring_hand = scoring_hand}, effects)
+    SMODS.calculate_context({modify_scoring_hand = true, other_card =  G.play.cards[i], full_hand = G.play.cards, scoring_hand = scoring_hand, in_scoring = true}, effects)
     local flags = SMODS.trigger_effects(effects, G.play.cards[i])
     if flags.add_to_hand then splashed = true end
 	if flags.remove_from_hand then unsplashed = true end
