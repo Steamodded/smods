@@ -15,6 +15,7 @@ consumable_slots = 2,
 payload = '''
 play_limit = 5,
 discard_limit = 5,
+no_limit = '',
 '''
 
 
@@ -28,7 +29,7 @@ pattern = '''
 if #G.hand.highlighted <= 0 or G.GAME.blind.block_play or #G.hand.highlighted > 5 then 
 '''
 payload = '''
-if #G.hand.highlighted <= 0 or G.GAME.blind.block_play or #G.hand.highlighted > G.GAME.starting_params.play_limit then 
+if #G.hand.highlighted <= 0 or G.GAME.blind.block_play or #G.hand.highlighted > math.max(G.GAME.starting_params.play_limit, 1) then 
 '''
 
 # Change discard limit
@@ -57,8 +58,7 @@ pattern = '''
 '''
 payload = '''
 {n=G.UIT.R, config={align = "bcm", padding = 0}, nodes = {
-    {n=G.UIT.T, config={text = localize('b_limit'), scale = text_scale * 0.65, colour = G.C.UI.TEXT_LIGHT}},
-    {n=G.UIT.T, config={ref_table = G.GAME.starting_params, ref_value = 'play_limit', scale = text_scale * 0.65, colour = G.C.UI.TEXT_LIGHT}}
+    {n=G.UIT.T, config={ref_table = SMODS.hand_limit_strings, ref_value = 'play', scale = text_scale * 0.65, colour = G.C.UI.TEXT_LIGHT}}
 }},
 '''
 # Add discard limit indicator to UI
@@ -76,7 +76,6 @@ payload = '''
     {n=G.UIT.T, config={text = localize('b_discard'), scale = text_scale, colour = G.C.UI.TEXT_LIGHT, focus_args = {button = 'y', orientation = 'bm'}, func = 'set_button_pip'}}
 }},
 {n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
-    {n=G.UIT.T, config={text = localize('b_limit'), scale = text_scale * 0.65, colour = G.C.UI.TEXT_LIGHT}},
-    {n=G.UIT.T, config={ref_table = G.GAME.starting_params, ref_value = 'discard_limit', scale = text_scale * 0.65, colour = G.C.UI.TEXT_LIGHT}}
+    {n=G.UIT.T, config={ref_table = SMODS.hand_limit_strings, ref_value = 'discard', scale = text_scale * 0.65, colour = G.C.UI.TEXT_LIGHT}}
 }},
 '''

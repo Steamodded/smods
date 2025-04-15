@@ -2196,12 +2196,14 @@ function SMODS.seeing_double_check(hand, suit)
 end
 
 -- Hand Limit API
+SMODS.hand_limit_strings = {play = '', discard = ''}
 function SMODS.change_play_limit(mod)
     G.GAME.starting_params.play_limit = G.GAME.starting_params.play_limit + mod
     if G.GAME.starting_params.play_limit < 1 then
         sendErrorMessage('Play limit is less than 1', 'HandLimitAPI')
     end
     G.hand.config.highlighted_limit = math.max(G.GAME.starting_params.discard_limit, G.GAME.starting_params.play_limit, 5)
+    SMODS.hand_limit_strings.play = G.GAME.starting_params.play_limit ~= 5 and localize('b_limit') .. math.max(1, G.GAME.starting_params.play_limit) or ''
 end
 
 function SMODS.change_discard_limit(mod)
@@ -2210,4 +2212,5 @@ function SMODS.change_discard_limit(mod)
         sendErrorMessage('Discard limit is less than 0', 'HandLimitAPI')
     end
     G.hand.config.highlighted_limit = math.max(G.GAME.starting_params.discard_limit, G.GAME.starting_params.play_limit, 5)
+    SMODS.hand_limit_strings.discard = G.GAME.starting_params.discard_limit ~= 5 and localize('b_limit') .. math.max(0, G.GAME.starting_params.discard_limit) or ''
 end
