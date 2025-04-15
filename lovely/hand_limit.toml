@@ -41,7 +41,7 @@ pattern = '''
 if G.GAME.current_round.discards_left <= 0 or #G.hand.highlighted <= 0 then 
 '''
 payload = '''
-if G.GAME.current_round.discards_left <= 0 or #G.hand.highlighted <= 0 or #G.hand.highlighted > G.GAME.starting_params.discard_limit then 
+if G.GAME.current_round.discards_left <= 0 or #G.hand.highlighted <= 0 or #G.hand.highlighted > math.max(G.GAME.starting_params.discard_limit, 0) then 
 '''
 
 # Add play limit indicator to UI

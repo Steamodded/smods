@@ -2199,8 +2199,7 @@ end
 function SMODS.change_play_limit(mod)
     G.GAME.starting_params.play_limit = G.GAME.starting_params.play_limit + mod
     if G.GAME.starting_params.play_limit < 1 then
-        sendErrorMessage('Play limit cannot be less than 1', 'HandLimitAPI')
-        G.GAME.starting_params.play_limit = 1
+        sendErrorMessage('Play limit is less than 1', 'HandLimitAPI')
     end
     G.hand.config.highlighted_limit = math.max(G.GAME.starting_params.discard_limit, G.GAME.starting_params.play_limit, 5)
 end
@@ -2208,8 +2207,7 @@ end
 function SMODS.change_discard_limit(mod)
     G.GAME.starting_params.discard_limit = G.GAME.starting_params.discard_limit + mod
     if G.GAME.starting_params.discard_limit < 0 then
-        sendErrorMessage('Discard limit cannot be less than 0', 'HandLimitAPI')
-        G.GAME.starting_params.discard_limit = 0
+        sendErrorMessage('Discard limit is less than 0', 'HandLimitAPI')
     end
     G.hand.config.highlighted_limit = math.max(G.GAME.starting_params.discard_limit, G.GAME.starting_params.play_limit, 5)
 end
