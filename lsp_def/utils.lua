@@ -454,6 +454,14 @@ function SMODS.change_booster_limit(mod) end
 --- Modifies the current amount of free shop rerolls by `mod`. 
 function SMODS.change_free_rerolls(mod) end
 
+---@param mod number
+--- Modifies the amount of cards you are allowed to play by `mod`. 
+function SMODS.change_play_limit(mod) end
+
+---@param mod number
+--- Modifies the amount of cards you are allowed to discard by `mod`. 
+function SMODS.change_discard_limit(mod) end
+
 ---@param message string
 ---@param logger? string
 --- Prints to the console at "DEBUG" level
