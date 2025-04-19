@@ -182,6 +182,30 @@ position = "after"
 payload = "joker_added_to_deck_but_debuffed = self.joker_added_to_deck_but_debuffed,"
 match_indent = true
 
+## Buying card_limit cards fix
+# G.FUNCS.check_for_buy_space
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "    not (card.ability.consumeable and #G.consumeables.cards < G.consumeables.config.card_limit + ((card.edition and card.edition.negative) and 1 or 0)) then"
+position = "at"
+match_indent = true
+payload = '''
+    not (card.ability.consumeable and #G.consumeables.cards < G.consumeables.config.card_limit + (card.edition and card.edition.card_limit or 0)) then
+'''
+times = 1
+
+# G.FUNCS.check_for_buy_space
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "not (card.ability.set == 'Joker' and #G.jokers.cards < G.jokers.config.card_limit + ((card.edition and card.edition.negative) and 1 or 0)) and"
+position = "at"
+match_indent = true
+payload = '''
+    not (card.ability.set == 'Joker' and #G.jokers.cards < G.jokers.config.card_limit + (card.edition and card.edition.card_limit or 0)) and
+'''
+times = 1
 
 ## Negative playing card logic
 # CardArea:emplace()

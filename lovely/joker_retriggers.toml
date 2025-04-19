@@ -81,11 +81,11 @@ if self.ability.name == 'Flash Card' and not context.blueprint then return nil, 
 [[patches]]
 [patches.regex]
 target = "card.lua"
-pattern = '''[ \t]*card_eval_status_text\(context\.blueprint_card or self, 'extra', nil, nil, nil, \{message = localize\('k_duplicated_ex'\)\}\)
+pattern = '''[ \t]*card_eval_status_text\(context[._]blueprint_card or self, 'extra', nil, nil, nil, \{message = localize\('k_duplicated_ex'\)\}\)
 (?<indent>[ \t]*)end'''
 position = "at"
 line_prepend = '$indent'
-payload = '''    card_eval_status_text(context.blueprint_card or self, 'extra', nil, nil, nil, {message = localize('k_duplicated_ex')})
+payload = '''    card_eval_status_text(context_blueprint_card or self, 'extra', nil, nil, nil, {message = localize('k_duplicated_ex')})
     return nil, true
 end'''
 

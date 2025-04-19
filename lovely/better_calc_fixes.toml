@@ -1,0 +1,31 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+## Delayed references to context.blueprint_card should be saved in a variable
+## because context is modified in better calc
+## (this patch just changes all references)
+# Card:calculate_joker(context)
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+position = 'after'
+pattern = '''function Card:calculate_joker(context)
+    if self.debuff then return nil end
+'''
+payload = '    local context_blueprint_card = context.blueprint_card'
+match_indent = true
+[[patches]]
+[patches.regex]
+target = 'card.lua'
+position = 'at'
+pattern = 'card_eval_status_text\(context\.blueprint_card or self'
+payload = 'card_eval_status_text(context_blueprint_card or self'
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+position = 'at'
+pattern = 'if context.blueprint_card then context.blueprint_card:juice_up() else self:juice_up() end'
+payload = 'if context_blueprint_card then context_blueprint_card:juice_up() else self:juice_up() end'
+match_indent = true

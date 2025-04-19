@@ -1177,9 +1177,24 @@ if context.discard and context.other_card == self then
 [patches.pattern]
 target = 'card.lua'
 match_indent = true
-position = 'before'
-pattern = 'context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1'
-payload = 'local context = SMODS.shallow_copy(context)'
+position = 'at'
+pattern = '''context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
+context.blueprint_card = context.blueprint_card or self
+if context.blueprint > #G.jokers.cards + 1 then return end'''
+payload = '''if (context.blueprint or 0) > #G.jokers.cards then return end
+context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
+local old_context_blueprint_card = context.blueprint_card
+context.blueprint_card = context.blueprint_card or self
+local eff_card = context.blueprint_card'''
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''local other_joker_ret = other_joker:calculate_joker(context)'''
+payload = '''context.blueprint = (context.blueprint and (context.blueprint - 1)) or nil
+context.blueprint_card = old_context_blueprint_card'''
 
 [[patches]]
 [patches.pattern]
@@ -1195,7 +1210,7 @@ target = 'card.lua'
 match_indent = true
 position = 'at'
 pattern = 'other_joker_ret.card = context.blueprint_card or self'
-payload = '''other_joker_ret.card = eff_card'''
+payload = '''other_joker_ret.message_card = eff_card'''
 
 # Auto deal with negative chips card_eval_status_text()
 [[patches]]
