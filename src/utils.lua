@@ -67,7 +67,7 @@ function inspectFunction(func)
 end
 
 function SMODS._save_d_u(o)
-    assert(not o._discovered_unlocked_overwritten)
+    assert(not o._discovered_unlocked_overwritten, ("Internal error: discovery/unlocked of object \"%s\" should not be overwritten at this stage."):format(o.key))
     o._d, o._u = o.discovered, o.unlocked
     o._saved_d_u = true
 end
@@ -442,7 +442,7 @@ function SMODS.create_mod_badges(obj, badges)
         badges.mod_set[obj.mod.id] = true
         if obj.dependencies then
             for _, v in ipairs(obj.dependencies) do
-                local m = assert(SMODS.find_mod(v)[1])
+                local m = assert(SMODS.find_mod(v)[1], ("Assertion failed: Could not find mod \"%s\"."):format(v))
                 if not badges.mod_set[m.id] then
                     table.insert(mods, m)
                     badges.mod_set[m.id] = true
@@ -654,7 +654,7 @@ function SMODS.merge_lists(...)
     local ret = {}
     local seen = {}
     for _, li in ipairs(t) do
-        assert(type(li) == 'table')
+        assert(type(li) == 'table', ("Assertion failed: \"%s\" is not a table."):format(tostring(li)))
         for _, v in ipairs(li) do
             if not seen[v] then
                 ret[#ret+1] = v
@@ -700,10 +700,10 @@ function SMODS.poll_seal(args)
         if v ~= "UNAVAILABLE" then
             local seal_option = {}
             if type(v) == 'string' then
-                assert(G.P_SEALS[v])
+                assert(G.P_SEALS[v], ("Assertion failed: Could not find seal \"%s\"."):format(v))
                 seal_option = { key = v, weight = G.P_SEALS[v].weight or 5 } -- default weight set to 5 to replicate base game weighting
             elseif type(v) == 'table' then
-                assert(G.P_SEALS[v.key])
+                assert(G.P_SEALS[v.key], ("Assertion failed: Could not find seal \"%s\"."):format(v.key))
                 seal_option = { key = v.key, weight = v.weight }
             end
             if seal_option.weight > 0 then
@@ -849,10 +849,10 @@ function SMODS.poll_enhancement(args)
         if v ~= "UNAVAILABLE" then
             local enhance_option = {}
             if type(v) == 'string' then
-                assert(G.P_CENTERS[v])
+                assert(G.P_CENTERS[v], ("Assertion failed: Could not find enhancement \"%s\"."):format(v))
                 enhance_option = { key = v, weight = G.P_CENTERS[v].weight or 5 } -- default weight set to 5 to replicate base game weighting
             elseif type(v) == 'table' then
-                assert(G.P_CENTERS[v.key])
+                assert(G.P_CENTERS[v.key], ("Assertion failed: Could not find enhancement \"%s\"."):format(v.key))
                 enhance_option = { key = v.key, weight = v.weight }
             end
             if enhance_option.weight > 0 then
@@ -2085,7 +2085,7 @@ function SMODS.get_next_vouchers(vouchers)
 end
 
 function SMODS.add_voucher_to_shop(key)
-    if key then assert(G.P_CENTERS[key], "Invalid voucher key: "..key) else
+    if key then assert(G.P_CENTERS[key], "Assertion failed: Invalid voucher key: "..key) else
         key = get_next_voucher_key()
         G.GAME.current_round.voucher.spawn[key] = true
         G.GAME.current_round.voucher[#G.GAME.current_round.voucher + 1] = key
@@ -2110,7 +2110,7 @@ function SMODS.change_voucher_limit(mod)
 end
 
 function SMODS.add_booster_to_shop(key)
-    if key then assert(G.P_CENTERS[key], "Invalid booster key: "..key) else key = get_pack('shop_pack').key end
+    if key then assert(G.P_CENTERS[key], "Assertion failed: Invalid booster key: "..key) else key = get_pack('shop_pack').key end
     local card = Card(G.shop_booster.T.x + G.shop_booster.T.w/2,
     G.shop_booster.T.y, G.CARD_W*1.27, G.CARD_H*1.27, G.P_CARDS.empty, G.P_CENTERS[key], {bypass_discovery_center = true, bypass_discovery_ui = true})
     create_shop_card_ui(card, 'Booster', G.shop_booster)

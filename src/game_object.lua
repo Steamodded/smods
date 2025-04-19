@@ -21,12 +21,12 @@ function loadAPIs()
 
     function SMODS.GameObject:__call(o)
         o = o or {}
-        assert(o.mod == nil)
+        assert(o.mod == nil, "Assertion failed: Created object should not have \"mod\" field defined.")
         o.mod = SMODS.current_mod
         o.original_mod = o.mod
         setmetatable(o, self)
         for _, v in ipairs(o.required_params or {}) do
-            assert(not (o[v] == nil), ('Missing required parameter for %s declaration: %s'):format(o.set, v))
+            assert(not (o[v] == nil), ('Assertioned failed: Missing required parameter for %s declaration: %s'):format(o.set, v))
         end
         if o:check_duplicate_register() then return end
         -- also updates o.prefix_config
@@ -172,7 +172,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             o.atlas = o.atlas or o.set
 
             if o._discovered_unlocked_overwritten then
-                assert(o._saved_d_u)
+                assert(o._saved_d_u, ("Internal error: original discovery/unlocked state for object \"%s\" should have been saved at this point."):format(o.key or "UNKNOWN"))
                 o.discovered, o.unlocked = o._d, o._u
                 o._discovered_unlocked_overwritten = false
             else
@@ -425,7 +425,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 self.replace_sounds[replace] = { key = self.key, times = times, args = args }
             end
             -- TODO detect music state based on if select_music_track exists
-            assert(not self.select_music_track or self.key:find('music'))
+            assert(not self.select_music_track or self.key:find('music'), ("Assertion failed: object \"%s\" has a defined \"select_music_track\" but is not a music track."):format(self.key))
             SMODS.Sound.super.register(self)
         end,
         inject = function(self)
@@ -2365,7 +2365,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     self.hc_atlas = self.hc_atlas or self.lc_atlas
                     local valid_pos_styles = { ranks = true, collab = true, suit = true, deck = true}
                     assert(valid_pos_styles[self.pos_style],
-                        ('%s is not a valid pos_style on DeckSkin %s. Supported pos_style values are \'ranks\', \'collab\', \'suit\' and \'deck\'')
+                        ('Assertion failed: %s is not a valid pos_style on DeckSkin %s. Supported pos_style values are \'ranks\', \'collab\', \'suit\' and \'deck\'')
                         :format(self.pos_style, self.key), self.set)
                 end
 
@@ -2943,7 +2943,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         -- Future work: use ranks() and suits() for better control
         register = function(self)
             self.config = self.config or {}
-            assert(not (self.no_suit and self.any_suit))
+            assert(not (self.no_suit and self.any_suit), "Assertion failed: Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Enhancement object.")
             if self.no_rank then self.overrides_base_rank = true end
             SMODS.Enhancement.super.register(self)
         end,

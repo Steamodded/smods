@@ -73,10 +73,10 @@ end
 local methods = {GET=true, HEAD=true, POST=true, PUT=true, DELETE=true, PATCH=true}
 
 local function checkAndHandleInput(url, options, skipUserAgent)
-	assert(type(url) == "string", "url must be a string")
+	assert(type(url) == "string", "Assertion failed: \"url\" must be a string")
 	options = options or {}
-	assert(type(options) == "table", "options must be a table")
-	assert(type(options.headers or {}) == "table", "options.headers must be a table")
+	assert(type(options) == "table", "Assertion failed: \"options\" must be a table")
+	assert(type(options.headers or {}) == "table", "Assertion failed: \"options.headers\" must be a table")
 	local contentTypeHeader = false
 	if not skipUserAgent then
 		local headers = {}
@@ -96,10 +96,10 @@ local function checkAndHandleInput(url, options, skipUserAgent)
 		options.headers = headers
 	end
 	if options.method then
-		assert(type(options.method) == "string", "options.method must be a string")
-		assert(methods[options.method], "options.method must be one of \"GET\", \"HEAD\", \"POST\", \"PUT\", \"DELETE\", or \"PATCH\"")
+		assert(type(options.method) == "string", "Assertion failed: \"options.method\" must be a string")
+		assert(methods[options.method], "Assertion failed: \"options.method\" must be one of \"GET\", \"HEAD\", \"POST\", \"PUT\", \"DELETE\", or \"PATCH\"")
 	end
-	assert(type(options.data or "") == "string", "options.data must be a string")
+	assert(type(options.data or "") == "string", "Assertion failed: \"options.data\" must be a string")
 	if options.data == "" then options.data = nil end
 	return options
 end
@@ -221,13 +221,13 @@ if not isThread then -- In main thread
 				break
 			end
 			local t = threads[msg.id]
-			assert(t, "Non-existant thread id (" .. tostring(msg.id) .. ")")
+			assert(t, "Assertion failed: Non-existant thread id (" .. tostring(msg.id) .. ")")
 			local msgType = msg.type
-			assert(type(msgType) == "string", "Thread message type is not a string")
+			assert(type(msgType) == "string", "Assertion failed: Thread message type is not a string")
 			if msgType == "log" then
-				assert(type(msg.msg) == "string", "Logging msg not a string")
-				assert(type(msg.level) == "string", "logging level not a string")
-				assert(type(msg.logger) == "string", "Logging logger not a string")
+				assert(type(msg.msg) == "string", "Assertion failed: Logging msg not a string")
+				assert(type(msg.level) == "string", "Assertion failed: Logging level not a string")
+				assert(type(msg.logger) == "string", "Assertion failed: Logging logger not a string")
 				sendMessageToConsole(msg.level, msg.logger .. "(" .. tostring(msg.id) .. ")", msg.msg)
 			elseif msgType == "cb" then -- NOTE: cb removes the thread so it must be the last message
 				t.cb(msg.code, msg.body, msg.headers)
@@ -265,7 +265,7 @@ if not isThread then -- In main thread
 			cb = options
 			options = nil
 		end
-		assert(type(cb) == "function", "Callback is not a function")
+		assert(type(cb) == "function", "Assertion failed: Callback is not a function")
 		checkAndHandleInput(url, options, true) -- That way we aren't erroring in the thread as much
 		local thread = love.thread.newThread(getContent())
 		local tID = tostring(id)

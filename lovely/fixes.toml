@@ -170,7 +170,7 @@ if self.added_to_deck and old_center and not self.debuff then
     self.added_to_deck = true
 end
 if type(center) == 'string' then
-    assert(G.P_CENTERS[center])
+    assert(G.P_CENTERS[center], ("Assertion failed: Could not find center \"%s\""):format(center))
     center = G.P_CENTERS[center]
 end
 self.config.center = center

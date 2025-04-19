@@ -1417,7 +1417,7 @@ function Card:set_edition(edition, immediate, silent, delay)
 
 	local edition_type = nil
 	if type(edition) == 'string' then
-		assert(string.sub(edition, 1, 2) == 'e_')
+		assert(string.sub(edition, 1, 2) == 'e_', ("Assertion failed: Edition \"%s\" is missing \"e_\" prefix."):format(edition))
 		edition_type = string.sub(edition, 3)
 	elseif type(edition) == 'table' then
 		if edition.type then
@@ -1425,7 +1425,7 @@ function Card:set_edition(edition, immediate, silent, delay)
 		else
 			for k, v in pairs(edition) do
 				if v then
-					assert(not edition_type)
+					assert(not edition_type, "Assertion failed: Tried to apply more than one edition.")
 					edition_type = k
 				end
 			end
@@ -1583,10 +1583,10 @@ function poll_edition(_key, _mod, _no_neg, _guaranteed, _options)
 	for _, v in ipairs(_options) do
 		local edition_option = {}
 		if type(v) == 'string' then
-			assert(string.sub(v, 1, 2) == 'e_')
+			assert(string.sub(v, 1, 2) == 'e_', ("Assertion failed: Edition \"%s\" is missing \"e_\" prefix."):format(v))
 			edition_option = { name = v, weight = G.P_CENTERS[v].weight }
 		elseif type(v) == 'table' then
-			assert(string.sub(v.name, 1, 2) == 'e_')
+			assert(string.sub(v.name, 1, 2) == 'e_', ("Assertion failed: Edition \"%s\" is missing \"e_\" prefix."):format(v.name))
 			edition_option = { name = v.name, weight = v.weight }
 		end
 		table.insert(available_editions, edition_option)

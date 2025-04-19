@@ -166,7 +166,7 @@ function create_UIBox_mods(args)
             v.chosen = (SMODS.LAST_SELECTED_MOD_TAB == id) or false
             v.label = v.label or ''
             local def = v.tab_definition_function
-            assert(def, ('Custom defined mod tab with label "%s" from mod with id %s is missing definition function'):format(v.label, mod.id))
+            assert(def, ('Assertion failed: Custom defined mod tab with label "%s" from mod with id %s is missing definition function'):format(v.label, mod.id))
             v.tab_definition_function = function(...)
                 SMODS.LAST_SELECTED_MOD_TAB = id
                 return def(...)
