@@ -1148,13 +1148,26 @@ G.FUNCS.update_collab_cards = function(key, suit, silent)
             local card_code = suit_data.card_key .. '_' .. rank.card_key
             cards_order[#cards_order+1] = card_code
             local card = Card(G.cdds_cards.T.x+G.cdds_cards.T.w/2, G.cdds_cards.T.y+G.cdds_cards.T.h/2, G.CARD_W*1.2, G.CARD_H*1.2, G.P_CARDS[card_code], G.P_CENTERS.c_base)
-            -- Instead of no ui it would be nice to pass info queue to this so that artist credits can be done?
+
             card.no_ui = true
 
             G.cdds_cards:emplace(card)
         end
     end
     G.cdds_cards.config.card_limit = bufferCardLimitForSmallDS(cards, 2.5)
+
+    for i, _card in ipairs(G.cdds_cards.cards) do
+        if deckskin.generate_ds_card_ui and type(deckskin.generate_ds_card_ui) == 'function' and deckskin.has_ds_card_ui and type(deckskin.has_ds_card_ui) == 'function' then
+            _card.no_ui = not deckskin.has_ds_card_ui(_card, deckskin, palette)
+            if not _card.no_ui then
+                _card.generate_ds_card_ui = deckskin.generate_ds_card_ui
+                _card.deckskin = deckskin
+                _card.palette = palette
+            end
+        else
+            _card.no_ui = true
+        end
+    end
 end
 
 G.FUNCS.update_suit_colours = function(suit, skin, palette_num)

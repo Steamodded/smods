@@ -2450,6 +2450,37 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     }
 
+    -- weird hook to artificially initialize G.collab_credits early
+    local ps_ref = Game.prep_stage
+    function Game:prep_stage(new_stage, new_state, new_game_obj)
+        ps_ref(self, new_stage, new_state, new_game_obj)
+        if not G.collab_credits then
+            local visited = {}
+            local function recursive_search(t)
+                if visited[t] then return false end
+                visited[t] = true
+                if type(t) == "table" and t.label == "Collabs" and type(t.tab_definition_function) == "function" then
+                    t.tab_definition_function()
+                    return true
+                end
+                for _, v in ipairs(t) do
+                    if type(v) == "table" and recursive_search(v) then
+                        return true
+                    end
+                end
+                for k, v in pairs(t) do
+                    if type(v) == "table" and recursive_search(v) then
+                        return true
+                    end
+                end
+                return false
+            end
+            G.FUNCS.show_credits()
+            local result = recursive_search(G.OVERLAY_MENU)
+            G.FUNCS:exit_overlay_menu()
+        end
+    end
+
     for suitName, options in pairs(G.COLLABS.options) do
         SMODS.DeckSkin{
             key = options[1]..'_'..suitName,
@@ -2493,6 +2524,21 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                         hc_default = true,
                     },
                 },
+                generate_ds_card_ui = function(card, deckskin, palette, desc_nodes, specific_vars)
+                    for k, v in pairs(G.collab_credits) do
+                        if v.artist and deckskin.key == v.art then
+                            localize{type = 'other', key = 'artist', nodes = desc_nodes, vars = {}}
+                            localize{type = 'other', key = 'artist_credit', nodes = desc_nodes, vars = { v.artist }}
+                        end
+                    end
+                end,
+                has_ds_card_ui = function(card, deckskin, palette)
+                    for k, v in pairs(G.collab_credits) do
+                        if v.artist and deckskin.key == v.art then
+                            return true
+                        end
+                    end
+                end
             }
         end
     end
