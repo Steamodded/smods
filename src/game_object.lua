@@ -3037,6 +3037,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
         end,
     })
+    SMODS.Enhancement:take_ownership('lucky', {
+        loc_vars = function (self, info_queue, card)
+            local cfg = (card and card.ability) or self.config
+            local numerator_mult, denominator_mult = SMODS.get_probability_vars(card, 1, 5)
+            local numerator_dollars, denominator_dollars = SMODS.get_probability_vars(card, 1, 15)
+            return {vars = {numerator_mult, cfg.mult, denominator_mult, cfg.p_dollars, denominator_dollars, numerator_dollars}}
+        end,
+    })
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Shader
