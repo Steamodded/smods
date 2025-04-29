@@ -2281,7 +2281,7 @@ function SMODS.get_multi_boxes(multi_box)
 end
 
 function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
-    return base_numerator * G.GAME.probabilities.normal, base_denominator
+    return base_numerator * (G.GAME and G.GAME.probabilities.normal or 1), base_denominator
 end
 
 function SMODS.get_probability_vars_table(trigger_obj, base_numerator, base_denominator)
