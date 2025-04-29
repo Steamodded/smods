@@ -2280,11 +2280,12 @@ function SMODS.get_multi_boxes(multi_box)
     return multi_boxes
 end
 
-function SMODS.get_probability_vars(card, base_numerator, base_denominator)
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
     return base_numerator * G.GAME.probabilities.normal, base_denominator
 end
 
-function SMODS.pseudorandom_probability(card, seed, base_numerator, base_denominator)
-    local numerator, denominator = SMODS.get_probability_vars(card, base_numerator, base_denominator)
+function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator)
+    print("TODO: REMOVE THIS!")
+    local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
     return pseudorandom(seed) < numerator / denominator
 end

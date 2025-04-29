@@ -511,7 +511,7 @@ function SMODS.signed_dollars(val) end
 --- Returns result of multiplying `base` and `perma + 1`. 
 function SMODS.multiplicative_stacking(base, perma) end
 
----@param card table|nil
+---@param trigger_obj table|nil
 ---@param base_numerator number
 ---@param base_denominator number
 ---@return number numerator
@@ -519,10 +519,10 @@ function SMODS.multiplicative_stacking(base, perma) end
 --- Returns a *`numerator` in `denominator`* listed probability opportunely modified by in-game effects
 --- starting from a *`base_numerator` in `base_denominator`* probability. 
 --- 
---- Can be hooked for more complex probability behaviour. `card` is optionally the object that queues the probability.
-function SMODS.get_probability_vars(card, base_numerator, base_denominator) end
+--- Can be hooked for more complex probability behaviour. `trigger_obj` is optionally the object that queues the probability.
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator) end
 
----@param card table|nil
+---@param trigger_obj table|nil
 ---@param seed string|number
 ---@param base_numerator number
 ---@param base_denominator number
@@ -530,5 +530,5 @@ function SMODS.get_probability_vars(card, base_numerator, base_denominator) end
 --- Sets the seed to `seed` and runs a *`base_numerator` in `base_denominator`* listed probability check. 
 --- Returns `true` if the probability succeeds. You do not need to multiply `base_numerator` by `G.GAME.probabilities.normal`. 
 --- 
---- Can be hooked to run code when a listed probability succeeds and/or fails. `card` is optionally the object that queues the probability.
-function SMODS.pseudorandom_probability(card, seed, base_numerator, base_denominator) end
+--- Can be hooked to run code when a listed probability succeeds and/or fails. `trigger_obj` is optionally the object that queues the probability.
+function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator) end
