@@ -2289,5 +2289,5 @@ function SMODS.probability_calculate(seed, ratio, card)
 end
 
 function SMODS.get_probability_vars(numerator, denominator, card)
-    return {numerator * G.GAME.probabilities.normal, denominator}
+    return numerator * G.GAME.probabilities.normal, denominator
 end
