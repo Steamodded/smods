@@ -2290,7 +2290,6 @@ function SMODS.get_probability_vars_table(trigger_obj, base_numerator, base_deno
 end
 
 function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator)
-    print("TODO: REMOVE THIS!")
     local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
     return pseudorandom(seed) < numerator / denominator
 end

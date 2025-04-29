@@ -1645,6 +1645,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     })
     SMODS.Blind:take_ownership('wheel', {
+        -- TODO: Have to add a new loc var
         loc_vars = function(self)
             return { vars = { G.GAME.probabilities.normal } }
         end,
@@ -3031,7 +3032,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.Enhancement:take_ownership('glass', {
         calculate = function(self, card, context)
-            if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and pseudorandom('glass') < G.GAME.probabilities.normal/card.ability.extra then
+            if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and SMODS.pseudorandom_probability(card, 'glass', 1, card.ability.extra) then
                 return { remove = true }
             end
         end,
