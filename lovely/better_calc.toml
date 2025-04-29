@@ -438,7 +438,7 @@ if next(joker_eval) then
     if joker_eval.retriggers then
         for rt = 1, #joker_eval.retriggers do
             local rt_eval, rt_post = eval_card(_card, {cardarea = G.jokers, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, joker_main = true, retrigger_joker = true})
-            table.insert(effects, {joker_eval.retriggers[rt]})
+            table.insert(effects, {retriggers = joker_eval.retriggers[rt]})
             table.insert(effects, rt_eval)
             for _, v in ipairs(rt_post) do effects[#effects+1] = v end
         end
@@ -482,7 +482,7 @@ for _, _area in ipairs(SMODS.get_card_areas('jokers')) do
             if joker_eval.retriggers then
                 for rt = 1, #joker_eval.retriggers do
                     local rt_eval, rt_post = eval_card(_joker, {full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, [other_key] = _card, retrigger_joker = true})
-                    table.insert(effects, {joker_eval.retriggers[rt]})
+                    table.insert(effects, {retriggers = joker_eval.retriggers[rt]})
                     table.insert(effects, rt_eval)
                     for _, v in ipairs(rt_post) do effects[#effects+1] = v end
                 end
