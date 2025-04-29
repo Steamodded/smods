@@ -2280,14 +2280,11 @@ function SMODS.get_multi_boxes(multi_box)
     return multi_boxes
 end
 
-function SMODS.get_probability_ratio(base_ratio, card)
-    return base_ratio * G.GAME.probabilities.normal
-end
-
-function SMODS.probability_calculate(seed, ratio, card)
-    return pseudorandom(seed) < SMODS.get_probability_ratio(ratio, card)
-end
-
 function SMODS.get_probability_vars(numerator, denominator, card)
     return numerator * G.GAME.probabilities.normal, denominator
+end
+
+function SMODS.pseudorandom_probability(seed, base_numerator, base_denominator, card)
+    local numerator, denominator = SMODS.get_probability_vars(base_numerator, base_denominator, card)
+    return pseudorandom(seed) < numerator / denominator
 end
