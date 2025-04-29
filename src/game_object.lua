@@ -1647,16 +1647,19 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.Blind:take_ownership('wheel', {
         -- TODO: Have to add a new loc var
         loc_vars = function(self)
-            return { vars = { G.GAME.probabilities.normal } }
+            local numerator, denominator = SMODS.get_probability_vars(self, 1, 7)
+            return { vars = { numerator, denominator } }
         end,
         collection_loc_vars = function(self)
-            return { vars = { '1' }}
+            return { vars = { '1', '7' }}
         end,
         process_loc_text = function(self)
             local text = G.localization.descriptions.Blind[self.key].text[1]
             if string.sub(text, 1, 3) ~= '#1#' then
                 G.localization.descriptions.Blind[self.key].text[1] = "#1#"..text
             end
+            -- Is this too much hacky?
+            G.localization.descriptions.Blind[self.key].text[1] = string.gsub(G.localization.descriptions.Blind[self.key].text[1], "7", "#2#")
             SMODS.Blind.process_loc_text(self)
         end,
         get_loc_debuff_text = function() return G.GAME.blind.loc_debuff_text end,
