@@ -2285,6 +2285,6 @@ function SMODS.get_probability_vars(card, base_numerator, base_denominator)
 end
 
 function SMODS.pseudorandom_probability(card, seed, base_numerator, base_denominator)
-    local numerator, denominator = SMODS.get_probability_vars(base_numerator, base_denominator, card)
+    local numerator, denominator = SMODS.get_probability_vars(card, base_numerator, base_denominator)
     return pseudorandom(seed) < numerator / denominator
 end
