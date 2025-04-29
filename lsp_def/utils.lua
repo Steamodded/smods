@@ -523,6 +523,14 @@ function SMODS.multiplicative_stacking(base, perma) end
 function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator) end
 
 ---@param trigger_obj table|nil
+---@param base_numerator number
+---@param base_denominator number
+---@return [number, number]
+--- Has the same functionality of `SMODS.get_probability_vars`, but returns a table in the form `{[1] = numerator, [2] = denominator}`. 
+--- This function calls `SMODS.get_probability_vars()`, hook that instead. 
+function SMODS.get_probability_vars_table(trigger_obj, base_numerator, base_denominator) end
+
+---@param trigger_obj table|nil
 ---@param seed string|number
 ---@param base_numerator number
 ---@param base_denominator number

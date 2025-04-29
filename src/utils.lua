@@ -2284,6 +2284,11 @@ function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominato
     return base_numerator * G.GAME.probabilities.normal, base_denominator
 end
 
+function SMODS.get_probability_vars_table(trigger_obj, base_numerator, base_denominator)
+    local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
+    return {numerator, denominator}
+end
+
 function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator)
     print("TODO: REMOVE THIS!")
     local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
