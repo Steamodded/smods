@@ -2526,7 +2526,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 },
                 generate_ds_card_ui = function(card, deckskin, palette, info_queue, desc_nodes, specific_vars, full_UI_table)
                     for k, v in pairs(G.collab_credits) do
-                        if v.artist and deckskin.key == v.art then
+                        if v.artist and deckskin.key == v.art and (card.base.value == "Jack" or card.base.value == "Queen" or card.base.value == "King") then
                             localize{type = 'other', key = 'artist', nodes = desc_nodes, vars = {}}
                             localize{type = 'other', key = 'artist_credit', nodes = desc_nodes, vars = { v.artist }}
                         end
@@ -2534,7 +2534,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 end,
                 has_ds_card_ui = function(card, deckskin, palette)
                     for k, v in pairs(G.collab_credits) do
-                        if v.artist and deckskin.key == v.art then
+                        if v.artist and deckskin.key == v.art and (card.base.value == "Jack" or card.base.value == "Queen" or card.base.value == "King") then
                             return true
                         end
                     end
