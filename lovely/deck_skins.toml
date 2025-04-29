@@ -229,7 +229,7 @@ end
 position = "at"
 payload = '''
 if card.area == G.cdds_cards and card.generate_ds_card_ui and type(card.generate_ds_card_ui) == 'function' and card.deckskin and card.palette then
-    card.generate_ds_card_ui(card, card.deckskin, card.palette, desc_nodes, specific_vars)
+    card.generate_ds_card_ui(card, card.deckskin, card.palette, info_queue, desc_nodes, specific_vars, full_UI_table)
 else
     if specific_vars.nominal_chips then
         localize{type = 'other', key = 'card_chips', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
