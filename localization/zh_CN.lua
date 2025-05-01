@@ -220,8 +220,8 @@ return {
             b_deckskins_def = '默认配色',
         },
         v_dictionary = {
-            c_types = '#1# 类型',
-            cashout_hidden = '…以及#1#个更多',
+            c_types = '共有#1#种',
+            cashout_hidden = '……还有#1#',
             a_xchips = "X#1# 筹码",
             a_xchips_minus = "-X#1# 筹码",
             smods_version_mismatch = {
