@@ -495,16 +495,18 @@ function sendMessageToConsole(level, logger, message) end
 
 ---@param val number
 ---@return string
---- Returns a signed `val`. 
+--- Returns a signed `val` by
+--- prefixing with "+" if positive
 function SMODS.signed(val) end
 
 ---@param val number
 ---@return string
---- Returns a signed `val` with "$". 
+--- Returns string representing "$"`val`.
+--- If `val` is negative, correctly adds "-" before "$".
 function SMODS.signed_dollars(val) end
 
 ---@param base number
 ---@param perma number
----@return number|0 # Returns 0 
---- Returns result of multiplying `base` and `perma`. 
+---@return number
+--- Returns result of multiplying `base` and `perma + 1`. 
 function SMODS.multiplicative_stacking(base, perma) end

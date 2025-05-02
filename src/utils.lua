@@ -1464,7 +1464,7 @@ SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
         end
         effect.message = effect.message or (not effect.remove_default_message and localize('k_again_ex'))
         for h=1, effect.repetitions do
-            table.insert(ret, _type == "joker_retrigger" and effect or { key = effect})
+            table.insert(ret, _type == "joker_retrigger" and effect or { retriggers = effect})
         end
         eval = eval.extra
     until not eval
@@ -1611,7 +1611,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                             rt_eval.jokers.juice_card = rt_eval.jokers.juice_card or rt_eval.jokers.card or _card
                             rt_eval.jokers.message_card = rt_eval.jokers.message_card or context.other_card
                         end
-                        table.insert(effects, {key = eval.retriggers[rt]})
+                        table.insert(effects, {retriggers = eval.retriggers[rt]})
                         table.insert(effects, rt_eval)
                         for _,v in ipairs(rt_post) do effects[#effects+1] = v end
                     end
@@ -1677,7 +1677,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 for rt = 1, #effects[1].retriggers do
                     context.retrigger_joker = effects[1].retriggers[rt].retrigger_card
                     local rt_eval, rt_post = SMODS.eval_individual(area, context)
-                    table.insert(effects, {effects[1].retriggers[rt]})
+                    table.insert(effects, {retriggers = effects[1].retriggers[rt]})
                     table.insert(effects, rt_eval)
                     for _,v in ipairs(rt_post) do effects[#effects+1] = v end
                 end

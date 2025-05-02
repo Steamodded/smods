@@ -123,7 +123,7 @@ match_indent = true
 target = "functions/misc_functions.lua"
 pattern = 'function get_blind_amount(ante)'
 position = "after"
-payload = '''if G.GAME.modifiers.scaling and G.GAME.modifiers.scaling > 3 then return SMODS.get_blind_amount(ante) end'''
+payload = '''if G.GAME.modifiers.scaling and (G.GAME.modifiers.scaling ~= 1 and G.GAME.modifiers.scaling ~= 2 and G.GAME.modifiers.scaling ~= 3) then return SMODS.get_blind_amount(ante) end'''
 match_indent = true
 
 # set_joker_usage
