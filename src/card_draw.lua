@@ -414,7 +414,7 @@ SMODS.DrawStep {
             local sticker_offset = self.sticker_offset or {}
             G.shared_stickers[self.sticker]:draw_shader('dissolve', nil, nil, true, self.children.center, nil, self.sticker_rotation, sticker_offset.x, sticker_offset.y)
             local stake = G.P_STAKES['stake_'..string.lower(self.sticker)] or {}
-            if stake.shiny then G.shared_stickers[self.sticker]:draw_shader('voucher', nil, self.ARGS.send_to_shader, true, self.children.center) end
+            if stake.shiny then G.shared_stickers[self.sticker]:draw_shader('voucher', nil, self.ARGS.send_to_shader, true, self.children.center, nil, self.sticker_rotation, sticker_offset.x, sticker_offset.y) end
         end
     end,
     conditions = { vortex = false, facing = 'back' },

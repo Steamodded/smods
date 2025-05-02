@@ -138,6 +138,14 @@ function SMODS.calculate_individual_effect(effect, scored_card, key, amount, fro
 --- Handles calculating effects on provided `scored_card`. 
 function SMODS.calculate_effect(effect, scored_card, from_edition, pre_jokers) end
 
+---@param effect_table table
+---@param key string
+---@param card Card|table
+---@param ret table
+--- Internal helper for SMODS.calculate_effect.
+--- Calculate one key of an effect table returned from eval_card.
+function SMODS.calculate_effect_table_key(effect_table, key, card, ret) end
+
 ---@param effects table
 ---@param card Card|table
 --- Used to calculate a table of effects generated in evaluate_play
@@ -495,16 +503,18 @@ function sendMessageToConsole(level, logger, message) end
 
 ---@param val number
 ---@return string
---- Returns a signed `val`. 
+--- Returns a signed `val` by
+--- prefixing with "+" if positive
 function SMODS.signed(val) end
 
 ---@param val number
 ---@return string
---- Returns a signed `val` with "$". 
+--- Returns string representing "$"`val`.
+--- If `val` is negative, correctly adds "-" before "$".
 function SMODS.signed_dollars(val) end
 
 ---@param base number
 ---@param perma number
----@return number|0 # Returns 0 
---- Returns result of multiplying `base` and `perma`. 
+---@return number
+--- Returns result of multiplying `base` and `perma + 1`. 
 function SMODS.multiplicative_stacking(base, perma) end

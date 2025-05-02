@@ -165,12 +165,13 @@ position = 'at'
 match_indent = true
 payload = '''
 if delay_sprites == 'quantum' then self.from_quantum = true end
+local was_added_to_deck = false
 if self.added_to_deck and old_center and not self.debuff then
     self:remove_from_deck()
-    self.added_to_deck = true
+    was_added_to_deck = true
 end
 if type(center) == 'string' then
-    assert(G.P_CENTERS[center])
+    assert(G.P_CENTERS[center], ("Could not find center \"%s\""):format(center))
     center = G.P_CENTERS[center]
 end
 self.config.center = center
@@ -183,8 +184,7 @@ pattern = "if G.consumeables and self.area == G.consumeables then"
 position = 'before'
 match_indent = true
 payload = '''
-if self.added_to_deck and old_center and not self.debuff then
-    self.added_to_deck = false
+if was_added_to_deck and not self.debuff then
     self:add_to_deck()
 end
 self.from_quantum = nil'''

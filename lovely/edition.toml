@@ -300,6 +300,6 @@ pattern = '''(?<indent>[\t ]*)(?<edi>local edition = poll_edition\('edi'\.\.\(ke
 position = 'at'
 line_prepend = '$indent'
 payload = '''
-if not SMODS.bypass_create_card_edition then
+if not SMODS.bypass_create_card_edition and not card.edition then
     $edi
 end'''

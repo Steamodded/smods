@@ -224,7 +224,7 @@ match_indent = true
 # Prevent blue seal effect on extra enhancements at end of round
 [[patches]]
 [patches.pattern]
-target = "card"
+target = "card.lua"
 pattern = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then"
 position = "before"
 payload = '''

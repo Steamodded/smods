@@ -90,40 +90,6 @@ payload = '''
 match_indent = true
 
 [[patches]]
-[patches.regex]
-target = 'functions/UI_definitions.lua'
-position = 'before'
-line_prepend = '$indent'
-pattern = '''
-(?<indent>[\t ]*)return \{n=G\.UIT\.ROOT, config = \{align = 'cm', colour = G\.C\.CLEAR\}, nodes=\{
-[\t ]*\{n=G\.UIT\.C,'''
-payload = '''
-local cols
-if #info_boxes <= 3 then
-    cols = 1
-elseif #info_boxes <= 10 then
-    cols = 2
-elseif #info_boxes <= 24 then
-    cols = 3
-else
-    cols = 4
-end
-local nodes_per_col = math.ceil(#info_boxes/cols)
-local info_cols = {}
-for i = 0, cols-1 do
-    local col = {}
-    for j = 1, nodes_per_col do
-        local info_box = info_boxes[i*nodes_per_col+j]
-        if info_box then
-            table.insert(col, info_box)
-        else break end
-    end
-    table.insert(info_cols, {n=G.UIT.C, config = {align="cm"}, nodes = col})
-end
-info_boxes = {{n=G.UIT.R, config = {align="cm", padding = 0.05, card_pos = card.T.x }, nodes = info_cols}}
-'''
-
-[[patches]]
 [patches.pattern]
 target = 'functions/button_callbacks.lua'
 match_indent = true

@@ -145,7 +145,7 @@ target = "card.lua"
 pattern = "self.config.center = center"
 position = 'after'
 payload = '''
-if old_center and not next(SMODS.find_card(old_center.key, true)) then
+if not G.OVERLAY_MENU and old_center and not next(SMODS.find_card(old_center.key, true)) then
     G.GAME.used_jokers[old_center.key] = nil
 end'''
 match_indent = true

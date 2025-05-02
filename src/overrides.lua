@@ -829,7 +829,7 @@ function G.UIDEF.view_deck(unplayed_only)
 		suit_map[#suit_map + 1] = SMODS.Suit.obj_buffer[i]
 	end
 	for k, v in ipairs(G.playing_cards) do
-		if v.base.suit and not SMODS.has_no_suit(v) then table.insert(SUITS[v.base.suit], v) end
+		if v.base.suit then table.insert(SUITS[v.base.suit], v) end
 	end
 	local num_suits = 0
 	for j = 1, #suit_map do
@@ -1417,7 +1417,7 @@ function Card:set_edition(edition, immediate, silent, delay)
 
 	local edition_type = nil
 	if type(edition) == 'string' then
-		assert(string.sub(edition, 1, 2) == 'e_')
+		assert(string.sub(edition, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(edition))
 		edition_type = string.sub(edition, 3)
 	elseif type(edition) == 'table' then
 		if edition.type then
@@ -1425,7 +1425,7 @@ function Card:set_edition(edition, immediate, silent, delay)
 		else
 			for k, v in pairs(edition) do
 				if v then
-					assert(not edition_type)
+					assert(not edition_type, "Tried to apply more than one edition.")
 					edition_type = k
 				end
 			end
@@ -1583,10 +1583,10 @@ function poll_edition(_key, _mod, _no_neg, _guaranteed, _options)
 	for _, v in ipairs(_options) do
 		local edition_option = {}
 		if type(v) == 'string' then
-			assert(string.sub(v, 1, 2) == 'e_')
+			assert(string.sub(v, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(v))
 			edition_option = { name = v, weight = G.P_CENTERS[v].weight }
 		elseif type(v) == 'table' then
-			assert(string.sub(v.name, 1, 2) == 'e_')
+			assert(string.sub(v.name, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(v.name))
 			edition_option = { name = v.name, weight = v.weight }
 		end
 		table.insert(available_editions, edition_option)
@@ -1646,7 +1646,7 @@ function get_joker_win_sticker(_center, index)
 		local applied = {}
 		local _count = 0
 		local _stake = nil
-		for k, v in pairs(joker_usage.wins_by_key) do
+		for k, v in pairs(joker_usage.wins_by_key or {}) do
 			SMODS.build_stake_chain(G.P_STAKES[k], applied)
 		end
 		for i, v in ipairs(G.P_CENTER_POOLS.Stake) do
@@ -1804,14 +1804,7 @@ function Card:get_chip_bonus()
         return gcb(self)
     end
     if self.debuff then return 0 end
-    return self.ability.bonus + (self.ability.perma_bonus or 0)
-end
-
--- prevent quantum enhacements from applying seal effects
-local ccs = Card.calculate_seal
-function Card:calculate_seal(context)
-	if self.ability.extra_enhancement then return end
-	return ccs(self, context)
+    return self.ability.bonus
 end
 --#endregion
 

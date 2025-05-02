@@ -621,7 +621,7 @@ function SMODS.injectItems()
         G.P_SEALS,
     } do
         for k, v in pairs(t) do
-            assert(v._discovered_unlocked_overwritten)
+            assert(v._discovered_unlocked_overwritten, ("Internal: discovery/unlocked of object \"%s\" failed to override."):format(v and v.key or "UNKNOWN"))
         end
     end
 end

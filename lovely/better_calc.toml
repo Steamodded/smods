@@ -106,16 +106,6 @@ if context.cardarea == G.play and context.main_scoring then
     end
 
     -- TARGET: main scoring on played cards
-
-    local jokers = card:calculate_joker(context)
-    if jokers then
-        ret.jokers = jokers
-    end
-
-    local edition = card:calculate_edition(context)
-    if edition then
-        ret.edition = edition
-    end
 end
 if context.end_of_round and context.cardarea == G.hand and context.playing_card_end_of_round then
     local end_of_round = card:get_end_of_round_effect(context)
@@ -137,6 +127,11 @@ if context.cardarea == G.hand then
     local h_x_mult = card:get_chip_h_x_mult()
     if h_x_mult > 0 then
         ret.x_mult = h_x_mult
+    end
+
+    local jokers = card:calculate_joker(context)
+    if jokers then 
+        ret.jokers = jokers
     end
 '''
 match_indent = true
@@ -185,6 +180,7 @@ if card.ability.set == 'Enhanced' then
         ret.enhancement = enhancement
     end
 end
+if context.extra_enhancement then return ret end
 if card.edition then
     local edition = card:calculate_edition(context)
     if edition then
@@ -219,6 +215,7 @@ if card.ability.set == 'Enhanced' then
         ret.enhancement = enhancement
     end
 end
+if context.extra_enhancement then return ret end
 if card.edition then
     local edition = card:calculate_edition(context)
     if edition then
@@ -441,7 +438,7 @@ if next(joker_eval) then
     if joker_eval.retriggers then
         for rt = 1, #joker_eval.retriggers do
             local rt_eval, rt_post = eval_card(_card, {cardarea = G.jokers, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, joker_main = true, retrigger_joker = true})
-            table.insert(effects, {joker_eval.retriggers[rt]})
+            table.insert(effects, {retriggers = joker_eval.retriggers[rt]})
             table.insert(effects, rt_eval)
             for _, v in ipairs(rt_post) do effects[#effects+1] = v end
         end
@@ -485,7 +482,7 @@ for _, _area in ipairs(SMODS.get_card_areas('jokers')) do
             if joker_eval.retriggers then
                 for rt = 1, #joker_eval.retriggers do
                     local rt_eval, rt_post = eval_card(_joker, {full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, [other_key] = _card, retrigger_joker = true})
-                    table.insert(effects, {joker_eval.retriggers[rt]})
+                    table.insert(effects, {retriggers = joker_eval.retriggers[rt]})
                     table.insert(effects, rt_eval)
                     for _, v in ipairs(rt_post) do effects[#effects+1] = v end
                 end
@@ -1193,7 +1190,7 @@ target = 'card.lua'
 match_indent = true
 position = 'after'
 pattern = '''local other_joker_ret = other_joker:calculate_joker(context)'''
-payload = '''context.blueprint = (context.blueprint and (context.blueprint - 1)) or nil
+payload = '''context.blueprint = nil
 context.blueprint_card = old_context_blueprint_card'''
 
 [[patches]]
@@ -1210,7 +1207,7 @@ target = 'card.lua'
 match_indent = true
 position = 'at'
 pattern = 'other_joker_ret.card = context.blueprint_card or self'
-payload = '''other_joker_ret.message_card = eff_card'''
+payload = '''other_joker_ret.card = eff_card'''
 
 # Auto deal with negative chips card_eval_status_text()
 [[patches]]
