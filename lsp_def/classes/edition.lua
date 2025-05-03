@@ -9,7 +9,7 @@
 ---@field weight? number The weight of the Edition. 
 ---@field extra_cost? number Extra cost applied to cards in the shop with this Edition. 
 ---@field apply_to_float? boolean Sets if the shader is drawn on floating sprites. 
----@field badge_colour? table HEX color of the Edition's badge
+---@field badge_colour? Color HEX color of the Edition's badge
 ---@field sound? table|{sound: string, per?: number, vol?: number} Used to set a custom sound when the Edition is applied. 
 ---@field disable_shadow? boolean Sets if the shadow is drawn under the card with this Edition. 
 ---@field disable_base_shader? boolean Sets if the default shader for the card is disabled. 
@@ -47,14 +47,6 @@ SMODS.Edition = setmetatable({}, {
 ---@return table?
 --- Calculates Editions on cards. 
 function Card:calculate_edition(context) end
-
----@param self Card|table
----@param edition string|{[string]: true}? Both `string` values are the key of the edition to apply. 
----@param immediate? boolean
----@param silent? boolean 
----@param delay? boolean
---- Sets the card's edition. 
-function Card:set_edition(edition, immediate, silent, delay) end
 
 ---@param _key string Used as the seed
 ---@param _mod? number Scales the chance of landing on an Edition. 

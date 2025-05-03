@@ -8,7 +8,7 @@
 ---@field order? number Position of the sticker in collections menu. 
 ---@field rate? number Change of this sticker applying onto an eligible card. 
 ---@field hide_badge? boolean Sets if the sticker badge shows up on the card. 
----@field badge_colour? table HEX color the sticker badge uses. 
+---@field badge_colour? Color HEX color the sticker badge uses. 
 ---@field default_compat? boolean Default compatibility with cards. 
 ---@field compat_exceptions? string[] Array of keys to centers that are exceptions to `default_compat`. 
 ---@field sets? string[] Array of keys to pools that this sticker is allowed to be applied on. 

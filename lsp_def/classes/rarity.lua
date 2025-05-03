@@ -5,7 +5,7 @@
 ---@field loc_txt? table|{name: string} Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field pools? table Table with a list of ObjectTypes keys this rarity should be added to.
----@field badge_colour? table HEX color the rarity badge uses. 
+---@field badge_colour? Color HEX color the rarity badge uses. 
 ---@field default_weight? number Default weight of the rarity. When referenced in ObjectTypes with just the key, this value is used as the default. 
 ---@field __call? fun(self: SMODS.Rarity|table, o: SMODS.Rarity|table): nil|table|SMODS.Rarity
 ---@field extend? fun(self: SMODS.Rarity|table, o: SMODS.Rarity|table): table Primary method of creating a class. 

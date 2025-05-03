@@ -4,8 +4,8 @@
 ---@field obj_table? table<string, SMODS.ConsumableType|table> Table of objects registered to this class. 
 ---@field loc_txt? table|{name: string, collection: string, undiscovered: table|{name: string, text: string[]} } Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.ObjectType|table Parent class. 
----@field primary_colour? table HEX color used as the primary color. Set as `G.C.SET[self.key]`. 
----@field secondary_colour? table HEX color used as the seconary color. Set as `G.C.SECONDARY_COLOUR[self.key]`. 
+---@field primary_colour? Color HEX color used as the primary color. Set as `G.C.SET[self.key]`. 
+---@field secondary_colour? Color HEX color used as the seconary color. Set as `G.C.SECONDARY_COLOUR[self.key]`. 
 ---@field collection_rows? number[] Array of numbers indicating how many rows and how many cards per row this ConsumableType's collection has. 
 ---@field shop_rate? nil|number Defining this value allows cards part of this ConsumableType to appear in the shop. Defined as `G.GAME[key:lower()..'_rate']`.  
 ---@field ctype_buffer? string[] Array of keys to all objects registered to the ConsumableType class. 
