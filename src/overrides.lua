@@ -195,7 +195,13 @@ function create_UIBox_your_collection_blinds(exit)
 	end
 
 	local extras = nil
-	local t = create_UIBox_generic_options({
+    local t = create_UIBox_generic_options({
+		colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).colour) or nil,
+        bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour) or nil,
+        back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).back_colour) or nil,
 		back_func = G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or exit or 'your_collection',
 		contents = {
 			{
@@ -263,7 +269,7 @@ function create_UIBox_your_collection_blinds(exit)
 								opt_callback = 'your_collection_blinds_page',
 								focus_args = {snap_to = true, nav = 'wide'},
 								current_option = page,
-								colour = G.C.RED,
+								colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED,
 								no_pips = true
 							})
 						},
@@ -446,7 +452,13 @@ function create_UIBox_your_collection_tags_content(page)
 	for i = 1, math.ceil(#tag_tab/(rows*cols)) do
 		table.insert(page_options, localize('k_page')..' '..tostring(i)..'/'..tostring(math.ceil(#tag_tab/(rows*cols))))
 	end
-	local t = create_UIBox_generic_options({
+    local t = create_UIBox_generic_options({
+		colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).colour) or nil,
+        bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour) or nil,
+        back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).back_colour) or nil,
 		back_func = G.ACTIVE_MOD_UI and "openModUI_" .. G.ACTIVE_MOD_UI.id or 'your_collection',
 		contents = {
 			{
@@ -473,7 +485,7 @@ function create_UIBox_your_collection_tags_content(page)
 						opt_callback = 'your_collection_tags_page',
 						focus_args = { snap_to = true, nav = 'wide' },
 						current_option = page,
-						colour = G.C.RED,
+						colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED,
 						no_pips = true
 					})
 				}
