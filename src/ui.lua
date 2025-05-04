@@ -176,6 +176,9 @@ function create_UIBox_mods(args)
     end
 
     return (create_UIBox_generic_options({
+        colour = (mod.ui_config or {}).colour,
+        bg_colour = (mod.ui_config or {}).bg_colour,
+        back_colour = (mod.ui_config or {}).back_colour,
         back_func = "mods_button",
         contents = {
             {
@@ -187,7 +190,7 @@ function create_UIBox_mods(args)
                 nodes = {
                     create_tabs({
                         snap_to_nav = true,
-                        colour = G.C.BOOSTER,
+                        colour = (mod.ui_config or {}).tab_colour or G.C.BOOSTER,
                         tabs = mod_tabs
                     })
                 }
@@ -1785,7 +1788,11 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
 
     G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
     
-    local t =  create_UIBox_generic_options({ back_func = (args and args.back_func) or G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', snap_back = args.snap_back, infotip = args.infotip, contents = {
+    local t = create_UIBox_generic_options({
+        colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or (G.ACTIVE_MOD_UI.ui_config or {}).colour or nil,
+        bg_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour or nil,
+        back_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or (G.ACTIVE_MOD_UI.ui_config or {}).back_colour or nil,
+        back_func = (args and args.back_func) or G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', snap_back = args.snap_back, infotip = args.infotip, contents = {
           {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables}, 
           (not args.hide_single_page or cards_per_page < #pool) and {n=G.UIT.R, config={align = "cm"}, nodes={
             create_option_cycle({options = options, w = 4.5, cycle_shoulders = true, opt_callback = 'SMODS_card_collection_page', current_option = 1, colour = G.C.RED, no_pips = true, focus_args = {snap_to = true, nav = 'wide'}})
