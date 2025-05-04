@@ -25,6 +25,7 @@
 ---@field take_ownership? fun(self: SMODS.Challenge|table, key: string, obj: SMODS.Challenge|table, silent?: boolean): nil|table|SMODS.Challenge Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.Challenge|table, key: string): SMODS.Challenge|table? Returns an object if one matches the `key`. 
 ---@field unlocked? fun(self: SMODS.Challenge|table): boolean
+---@field button_colour? table HEX color of the button on the challenge list
 ---@overload fun(self: SMODS.Challenge): SMODS.Challenge
 SMODS.Challenge = setmetatable({}, {
     __call = function(self)
