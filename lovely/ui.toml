@@ -215,3 +215,25 @@ match_indent = true
 position = 'at'
 pattern = 'colour = loc_colour(part.control.C or nil),'
 payload = 'colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil),' 
+
+
+# Makes negative chips work
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = '''if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand.chips) == 'number' and G.GAME.current_round.current_hand.chips or 1)))) end'''
+position = "at"
+overwrite = true
+match_indent = true
+payload = '''if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand.chips) == 'number' and math.abs(G.GAME.current_round.current_hand.chips) or 1)))) end'''
+
+
+# Makes negative mult work
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = '''if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand.mult) == 'number' and G.GAME.current_round.current_hand.mult or 1)))) end'''
+position = "at"
+overwrite = true
+match_indent = true
+payload = '''if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand.mult) == 'number' and math.abs(G.GAME.current_round.current_hand.mult) or 1)))) end'''

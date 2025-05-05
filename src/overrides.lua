@@ -1927,3 +1927,13 @@ function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips, scoring_h
 	local flags = SMODS.calculate_context({ modify_hand = true, poker_hands = poker_hands, scoring_name = text, scoring_hand = scoring_hand, full_hand = cards })
 	return _G.mult, _G.hand_chips, modded or flags.calculated
 end
+
+
+-- hook to fix scaling for negative numbers
+local scale_number_ref = scale_number
+scale_number = function(number, scale, max, e_switch_point)
+  if(number < 0) then
+    number = math.abs(number) * 10
+  end
+  return scale_number_ref(number, scale, max, e_switch_point)
+end
