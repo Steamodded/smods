@@ -741,7 +741,8 @@ function G.UIDEF.deck_preview(args)
 						G.ASSET_ATLAS[SMODS.Suits[v][G.SETTINGS.colour_palettes[v] == 'hc' and "hc_ui_atlas" or G.SETTINGS.colour_palettes[v] == 'lc' and "lc_ui_atlas"]] or
 						G.ASSET_ATLAS[("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[v].ui_pos)
 			else
-				t_s = Sprite(0, 0, 0.3, 0.3, G.ASSET_ATLAS[("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[v].ui_pos)
+				local atlas = G.SETTINGS.colour_palettes[v] == "hc" and SMODS.Suits[v].hc_ui_atlas or SMODS.Suits[v].lc_ui_atlas
+				t_s = Sprite(0, 0, 0.3, 0.3, G.ASSET_ATLAS[atlas and atlas or ("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[v].ui_pos)
 			end
 
 			t_s.states.drag.can = false
