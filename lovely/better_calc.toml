@@ -1000,7 +1000,6 @@ end
 '''
 payload = '''
 local flags = SMODS.calculate_context({hand_space = hand_space})
-print(flags)
 hand_space = math.min(#G.deck.cards, flags.hand_space or hand_space)
 '''
 
