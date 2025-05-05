@@ -130,7 +130,7 @@ if context.cardarea == G.hand then
     end
 
     local jokers = card:calculate_joker(context)
-    if jokers then 
+    if jokers then
         ret.jokers = jokers
     end
 '''
@@ -984,6 +984,26 @@ G.E_MANAGER:add_event(Event({
 }))
 '''
 
+# context.hand_space
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if G.GAME.blind.name == 'The Serpent' and
+    not G.GAME.blind.disabled and
+    (G.GAME.current_round.hands_played > 0 or
+    G.GAME.current_round.discards_used > 0) then
+        hand_space = math.min(#G.deck.cards, 3)
+end
+'''
+payload = '''
+local flags = SMODS.calculate_context({hand_space = hand_space})
+print(flags)
+hand_space = flags.hand_space or hand_space
+'''
+
 # Used to identify first hand of round
 # new_round
 [[patches]]
@@ -1150,12 +1170,11 @@ target = 'functions/button_callbacks.lua'
 match_indent = true
 position = 'before'
 pattern = '''
-if G.GAME.current_round.reroll_cost > 0 then 
+if G.GAME.current_round.reroll_cost > 0 then
 '''
 payload = '''
 local reroll_cost = G.GAME.current_round.reroll_cost
 '''
-
 
 
 # Fix purple seal calc
