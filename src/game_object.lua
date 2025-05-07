@@ -2580,7 +2580,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
     SMODS.PokerHandPart {
         key = '_straight',
-        func = function(hand) return get_straight(hand, next(SMODS.find_card('j_four_fingers')) and 4 or 5, not not next(SMODS.find_card('j_shortcut'))) end
+        func = function(hand) return get_straight(hand, SMODS.four_fingers(), SMODS.shortcut(), SMODS.wrap_around_straight()) end
     }
     SMODS.PokerHandPart {
         key = '_flush',

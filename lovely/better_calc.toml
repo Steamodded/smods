@@ -1278,6 +1278,9 @@ payload = '''
 sound = extra.sound or sound
 percent = extra.pitch or percent
 volume = extra.volume or volume
+trigger = extra.trigger or 'before'
+blocking = extra.blocking or nil
+blockable = extra.blockable or nil
 '''
 
 # Voucher cardarea

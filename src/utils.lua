@@ -2294,3 +2294,21 @@ function SMODS.get_multi_boxes(multi_box)
     end
     return multi_boxes
 end
+
+function SMODS.four_fingers()
+    if next(SMODS.find_card('j_four_fingers')) then
+        return 4
+    end
+    return 5
+end
+
+function SMODS.shortcut()
+    if next(SMODS.find_card('j_shortcut')) then
+        return true
+    end
+    return false
+end
+
+function SMODS.wrap_around_straight()
+    return false
+end
