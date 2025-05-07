@@ -84,17 +84,22 @@ if obj.update and type(obj.update) == 'function' then
 end'''
 
 # Card:get_p_dollars()
+# Also, Gold Seal respects quantum enhancements
+# Patch is here to avoid conflict
 [[patches]]
 [patches.regex]
 target = "card.lua"
-pattern = '''(?<indent>[\t ]*)if (?<cond>self\.seal == 'Gold' then\n)'''
+pattern = '''(?<indent>[\t ]*)if self\.seal == 'Gold' then'''
 position = 'at'
 line_prepend = '$indent'
 payload = '''
 local obj = G.P_SEALS[self.seal] or {}
 if obj.get_p_dollars and type(obj.get_p_dollars) == 'function' then
     ret = ret + obj:get_p_dollars(self)
-elseif $cond'''
+elseif self.seal == 'Gold' and not self.ability.extra_enhancement then'''
+# note for later: the Card:get_xxx functions sometimes take context and sometimes don't,
+# which is annoying for enhancements
+# this should probably be changed to be consistent in better calc
 
 # generate_card_ui()
 [[patches]]
