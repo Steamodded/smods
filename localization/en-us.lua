@@ -136,6 +136,17 @@ return {
                     "{C:money}#1#{} if held at end of round",
                 },
             },
+            artist = {
+                text = {
+                    "{C:inactive}Artist",
+                },
+            },
+            artist_credit = {
+                name = "Artist",
+                text = {
+                    "{E:1}#1#{}"
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {
