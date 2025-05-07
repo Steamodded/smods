@@ -158,6 +158,15 @@ pattern = "if not v.omit then"
 payload = "if not v.omit and not v.no_collection then"
 
 [[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "if v.set == 'Joker' then"
+position = "at"
+payload = "if v.set == 'Joker' and not v.omit then "
+match_indent = true
+times = 1
+
+[[patches]]
 [patches.regex]
 target = 'functions/misc_functions.lua'
 line_prepend = '$indent'
@@ -214,4 +223,22 @@ target = 'functions/misc_functions.lua'
 match_indent = true
 position = 'at'
 pattern = 'colour = loc_colour(part.control.C or nil),'
-payload = 'colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil),' 
+payload = 'colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil),'
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+G.E_MANAGER:add_event(Event({ --Add bonus chips from this card
+                    trigger = 'before',
+                    delay = delay,
+'''
+position = "at"
+payload = '''
+G.E_MANAGER:add_event(Event({ --Add bonus chips from this card
+                    trigger = trigger,
+                    delay = delay,
+                    blocking = blocking,
+                    blockable = blockable,
+'''
+match_indent = true
