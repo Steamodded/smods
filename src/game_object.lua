@@ -1818,7 +1818,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                             ranks = {'Ace', 'King', 'Queen', 'Jack', '10', '9', '8', '7', '6', '5', '4', '3', '2'},
                             display_ranks = {'King', 'Queen', 'Jack'},
                             atlas = self.hc_atlas,
-                            pos_style = 'deck'
+                            pos_style = 'deck',
+			    hc_default = true
                         } or nil,
                     }
                 }
