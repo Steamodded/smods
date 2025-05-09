@@ -2303,3 +2303,17 @@ function SMODS.get_multi_boxes(multi_box)
     end
     return multi_boxes
 end
+
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
+    return base_numerator * (G.GAME and G.GAME.probabilities.normal or 1), base_denominator
+end
+
+function SMODS.get_probability_vars_table(trigger_obj, base_numerator, base_denominator)
+    local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
+    return {numerator, denominator}
+end
+
+function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator)
+    local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
+    return pseudorandom(seed) < numerator / denominator
+end

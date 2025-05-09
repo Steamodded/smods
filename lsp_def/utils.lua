@@ -530,3 +530,33 @@ function SMODS.signed_dollars(val) end
 --- Returns result of multiplying `base` and `perma + 1`.
 --- Reproduces weird vanilla behavior of using 0 for no/negative x_mult.
 function SMODS.multiplicative_stacking(base, perma) end
+
+---@param trigger_obj table|nil
+---@param base_numerator number
+---@param base_denominator number
+---@return number numerator
+---@return number denominator
+--- Returns a *`numerator` in `denominator`* listed probability opportunely modified by in-game effects
+--- starting from a *`base_numerator` in `base_denominator`* probability. 
+--- 
+--- Can be hooked for more complex probability behaviour. `trigger_obj` is optionally the object that queues the probability.
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator) end
+
+---@param trigger_obj table|nil
+---@param base_numerator number
+---@param base_denominator number
+---@return [number, number]
+--- Has the same functionality of `SMODS.get_probability_vars`, but returns a table in the form `{[1] = numerator, [2] = denominator}`. 
+--- This function calls `SMODS.get_probability_vars()`, hook that instead. 
+function SMODS.get_probability_vars_table(trigger_obj, base_numerator, base_denominator) end
+
+---@param trigger_obj table|nil
+---@param seed string|number
+---@param base_numerator number
+---@param base_denominator number
+---@return boolean
+--- Sets the seed to `seed` and runs a *`base_numerator` in `base_denominator`* listed probability check. 
+--- Returns `true` if the probability succeeds. You do not need to multiply `base_numerator` by `G.GAME.probabilities.normal`. 
+--- 
+--- Can be hooked to run code when a listed probability succeeds and/or fails. `trigger_obj` is optionally the object that queues the probability.
+function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator) end
