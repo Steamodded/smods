@@ -69,6 +69,7 @@
 ---@field to_area? CardArea|table CardArea the card is being drawn to. 
 ---@field from_area? CardArea|table CardArea the card is being drawn from. 
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand. 
+---@field hand_space? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
 
 --- Util Functions
 
