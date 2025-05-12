@@ -274,6 +274,51 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.Font
+    -------------------------------------------------------------------------------------------------
+    
+    SMODS.Fonts = {}
+    SMODS.Font = SMODS.GameObject:extend {
+        obj_table = SMODS.Fonts,
+        set = 'Fonts',
+        obj_buffer = {},
+        disable_mipmap = false,
+        required_params = {
+            'key',
+            'path',
+            'render_scale',
+            'TEXT_HEIGHT_SCALE',
+            'TEXT_OFFSET',
+            'FONTSCALE',
+            'squish',
+            'DESCSCALE',
+        },
+        register = function(self)
+            if self.registered then
+                sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
+                return
+            end
+            self.name = self.key
+            SMODS.Font.super.register(self)
+        end,
+        inject = function(self)
+            local file_path = self.path
+            if file_path == 'DEFAULT' then return end
+
+            self.full_path = (self.mod and self.mod.path or SMODS.path) ..
+                'assets/fonts/' .. file_path
+            local file_data = assert(NFS.newFileData(self.full_path),
+                ('Failed to collect file data for Font %s'):format(self.key))
+            local rs = (self.render_scale or 1) * G.TILESIZE
+            self.FONT = assert(love.graphics.newFont(file_data, rs),
+                ('Failed to initialize font data for Font %s'):format(self.key))
+            
+        end,
+        process_loc_text = function() end,
+    }
+
+
+    -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Language
     -------------------------------------------------------------------------------------------------
 
@@ -294,7 +339,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 local data = assert(NFS.newFileData(self.mod.path .. 'assets/fonts/' .. self.font.file), ('Failed to collect file data for font of language %s'):format(self.key))
                 self.font.FONT = love.graphics.newFont(data, self.font.render_scale)
             elseif type(self.font) ~= 'table' then
-                self.font = G.FONTS[type(self.font) == 'number' and self.font or 1] or G.FONTS[1]
+                self.font = SMODS.Fonts[self.font] or G.FONTS[type(self.font) == 'number' and self.font or 1] or G.FONTS[1]
             end
             G.LANGUAGES[self.key] = self
             if self.key == (G.SETTINGS.real_language or G.SETTINGS.language) then G.LANG = self end

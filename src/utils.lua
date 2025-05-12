@@ -2272,6 +2272,7 @@ function SMODS.localize_box(lines, args)
                 pop_in = _pop_in,
                 bump = _bump,
                 spacing = _spacing,
+                font = SMODS.Fonts[part.control.f] and SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
                 scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale})
             }}
         elseif part.control.X or part.control.B then
@@ -2279,6 +2280,7 @@ function SMODS.localize_box(lines, args)
                 {n=G.UIT.T, config={
                 text = assembled_string,
                 colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil),
+                font = SMODS.Fonts[part.control.f] and SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
                 scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale}},
             }}
         else
@@ -2287,6 +2289,7 @@ function SMODS.localize_box(lines, args)
             text = assembled_string,
             shadow = args.shadow,
             colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or not part.control.C and args.text_colour or loc_colour(part.control.C or nil, args.default_col),
+            font = SMODS.Fonts[part.control.f] and SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
             scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale},}
         end
     end
