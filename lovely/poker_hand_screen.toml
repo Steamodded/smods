@@ -1,0 +1,18 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Add enhancements to poker hand screen
+# create_UIBox_hand_tip
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''local card = Card(0,0, 0.5*G.CARD_W, 0.5*G.CARD_H, G.P_CARDS[v[1]], G.P_CENTERS.c_base)'''
+position = "at"
+payload = '''
+local card = Card(0,0, 0.5*G.CARD_W, 0.5*G.CARD_H, G.P_CARDS[v[1]], G.P_CENTERS[v.enhancement or 'c_base'])
+if v.edition then card:set_edition(v.edition, true, true) end
+if v.seal then card:set_seal(v.seal, true, true) end
+'''
+match_indent = true

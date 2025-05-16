@@ -13,18 +13,21 @@ pattern = '''
 for _, lines in ipairs(args.type == 'unlocks' and loc_target.unlock_parsed or args.type == 'name' and loc_target.name_parsed or (args.type == 'text' or args.type == 'tutorial' or args.type == 'quips') and loc_target or loc_target.text_parsed) do
 '''
 payload = '''
+args.AUT = args.AUT or {}
+args.AUT.box_colours = {}
 if (args.type == 'descriptions' or args.type == 'other') and type(loc_target.text) == 'table' and type(loc_target.text[1]) == 'table' then
-    args.AUT = args.AUT or {}
     args.AUT.multi_box = {}
     for i, box in ipairs(loc_target.text_parsed) do
-        for _, line in ipairs(box) do
+        for j, line in ipairs(box) do
             local final_line = SMODS.localize_box(line, args)
-            if i == 1 then
+            if i == 1 or next(args.AUT.info) then
                 args.nodes[#args.nodes+1] = final_line -- Sends main box to AUT.main
-            else 
+                if not next(args.AUT.info) then args.nodes.main_box_flag = true end
+            elseif not next(args.AUT.info) then 
                 args.AUT.multi_box[i-1] = args.AUT.multi_box[i-1] or {}
                 args.AUT.multi_box[i-1][#args.AUT.multi_box[i-1]+1] = final_line
             end
+            if not next(args.AUT.info) then args.AUT.box_colours[i] = args.vars.box_colours and args.vars.box_colours[i] or G.C.UI.BACKGROUND_WHITE end
         end
     end
     return
@@ -65,9 +68,11 @@ pattern = '''
 if AUT.info then
 '''
 payload = '''
+AUT.main.background_colour = AUT.main.background_colour or AUT.box_colours and AUT.box_colours[1] or nil
 local multi_boxes = {}
 if AUT.multi_box then
     for i, box in ipairs(AUT.multi_box) do
+        box.background_colour = box.background_colour or AUT.box_colours and AUT.box_colours[i+1] or nil
         multi_boxes[#multi_boxes+1] = desc_from_rows(box)
     end
 end
@@ -127,9 +132,27 @@ pattern = '''
 '''
 payload = '''
 if multi_boxes[1] then
-    for i=#multi_boxes, 1, -1 do
-        table.insert(ret_val.nodes[1].nodes[1].nodes[1].nodes, 3, multi_boxes[i])
+    for i=1, #ret_val.nodes[1].nodes[1].nodes[1].nodes do -- find the main box
+        if ret_val.nodes[1].nodes[1].nodes[1].nodes[i] and ret_val.nodes[1].nodes[1].nodes[1].nodes[i].config and ret_val.nodes[1].nodes[1].nodes[1].nodes[i].config.main_box_flag then
+            for j=#multi_boxes, 1, -1 do -- add the extra boxes
+                table.insert(ret_val.nodes[1].nodes[1].nodes[1].nodes, i+1, multi_boxes[j])
+            end
+            break
+        end
     end
+    
 end
+
 return ret_val
 '''
+
+# Add main_box_flag to the main box
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+return {n=G.UIT.R, config={align = "cm", colour = empty and G.C.CLEAR or G.C.UI.BACKGROUND_WHITE, r = 0.1, padding = 0.04, minw = 2, minh = 0.8, emboss = not empty and 0.05 or nil, filler = true}, nodes={'''
+payload = '''
+return {n=G.UIT.R, config={align = "cm", colour = empty and G.C.CLEAR or G.C.UI.BACKGROUND_WHITE, r = 0.1, padding = 0.04, minw = 2, minh = 0.8, emboss = not empty and 0.05 or nil, filler = true, main_box_flag = desc_nodes.main_box_flag and true or nil}, nodes={'''

@@ -15,7 +15,7 @@
 ---@field prefix_config? boolean|table Controls how prefixes are applied. By default, class_prefix and mod_prefix are applied to all registered objects. 
 ---@field required_params? string[] Array of parameters required for objects created by this class. 
 ---@field set? string Important for objects wanting to follow vanilla logic that depends on `set`. For classes, this is used for logging purposes. 
----@field no_collection? boolean Sets whether the object shows up in collections.
+---@field no_collection? boolean Sets whether the object is allowed to show up in collections.
 ---@field config? table Cards/Objects representing your center will copy default values from `config` into it's `ability` table. Custom values can be stored within `extra`. 
 ---@field __call? fun(self: SMODS.GameObject|table, o: SMODS.GameObject|table): nil|table|SMODS.GameObject
 ---@field extend? fun(self: SMODS.GameObject|table, o: SMODS.GameObject|table): table Primary method of creating a class. 
@@ -40,14 +40,14 @@ SMODS.GameObject = setmetatable({
 })
 
 ---@param obj SMODS.GameObject|table
----@param prefix boolean|string?
----@param condition boolean?
----@param key string?
+---@param prefix? boolean|string
+---@param condition? boolean
+---@param key? string
 --- Modifies the object's key. 
 function SMODS.modify_key(obj, prefix, condition, key) end
 
 ---@param cls SMODS.GameObject|table The class of this object
 ---@param obj SMODS.GameObject|table The object
----@param from_take_ownership true?
+---@param from_take_ownership? boolean
 --- Adds prefixes into the object. 
 function SMODS.add_prefixes(cls, obj, from_take_ownership) end
