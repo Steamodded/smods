@@ -1832,6 +1832,27 @@ G.FUNCS.change_collab = function(args)
 	G:save_settings()
 end
 
+G.FUNCS.refresh_contrast_mode = function ()
+	for i, suit in ipairs(SMODS.Suit:obj_list(true)) do
+		if G.COLLABS.options[suit.key] then
+			local skin = G.SETTINGS.CUSTOM_DECK.Collabs[suit.key]
+			for k, v in pairs(G.COLLABS.colour_palettes[skin]) do
+				if v == (G.SETTINGS.colourblind_option and "hc" or "lc") then
+					G.SETTINGS.colour_palettes[suit.key] = G.COLLABS.colour_palettes[skin][k]
+					break
+				end
+			end
+			G.FUNCS.update_suit_colours(suit.key,  skin)
+			for k, v in pairs(G.I.CARD) do
+				if v.config and v.config.card and v.children.front and v.ability.effect ~= 'Stone Card' then
+					v:set_sprites(nil, v.config.card)
+				end
+			end
+		end
+	end
+	G:save_settings()
+end
+
 G.FUNCS.change_colour_palette = function(args)
 	G.SETTINGS.colour_palettes[args.cycle_config.curr_suit] = G.COLLABS.colour_palettes[args.cycle_config.curr_skin][args.to_key]
 	G.FUNCS.update_suit_colours(args.cycle_config.curr_suit, args.cycle_config.curr_skin)
