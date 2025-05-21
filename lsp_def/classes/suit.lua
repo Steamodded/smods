@@ -12,8 +12,8 @@
 ---@field hc_atlas? string Atlas used for high-contrast cards. 
 ---@field lc_ui_atlas? string Atlas used for low-contrast mini suit symbol in deck view. 
 ---@field hc_ui_atlas? string Atlas used for high-contrast mini suit symbol in deck view. 
----@field lc_colour? table HEX color of the suit text for low-contrast. 
----@field hc_colour? table HEX color of the suit text for high-contrast. 
+---@field lc_colour? Color HEX color of the suit text for low-contrast. 
+---@field hc_colour? Color HEX color of the suit text for high-contrast. 
 ---@field __call? fun(self: SMODS.Suit|table, o: SMODS.Suit|table): nil|table|SMODS.Suit
 ---@field extend? fun(self: SMODS.Suit|table, o: SMODS.Suit|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Suit|table): boolean? Ensures objects already registered will not register. 
