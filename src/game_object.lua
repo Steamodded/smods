@@ -3038,6 +3038,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.Enhancement:take_ownership('glass', {
         calculate = function(self, card, context)
             if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and pseudorandom('glass') < G.GAME.probabilities.normal/card.ability.extra then
+                card.glass_trigger = true
                 return { remove = true }
             end
         end,
