@@ -1020,26 +1020,24 @@ function G.UIDEF.view_deck(unplayed_only)
 	local n_nodes = {}
 	local visible_suits = {}
 	local temp_list = {}
-	while i <= #suit_map do
+	while i <= math.min(4, #visible_suit) do
 		while #n_nodes < suits_per_row and i <= #suit_map do
-			if not hidden_suits[suit_map[i]] then
+			if not hidden_suits[visible_suit[i]] then
 				table.insert(n_nodes, tally_sprite(
-					SMODS.Suits[suit_map[i]].ui_pos,
+					SMODS.Suits[visible_suit[i]].ui_pos,
 					{
-						{ string = '' .. suit_tallies[suit_map[i]], colour = flip_col },
-						{ string = '' .. mod_suit_tallies[suit_map[i]], colour = G.C.BLUE }
+						{ string = '' .. suit_tallies[visible_suit[i]], colour = flip_col },
+						{ string = '' .. mod_suit_tallies[visible_suit[i]], colour = G.C.BLUE }
 					},
-					{ localize(suit_map[i], 'suits_plural') },
-					suit_map[i]
+					{ localize(visible_suit[i], 'suits_plural') },
+					visible_suit[i]
 				))
 				table.insert(visible_suits, i)
 			end
 			i = i + 1
 		end
 		if #n_nodes > 0 then
-			for i = 1, #n_nodes do
-				table.insert(temp_list, n_nodes[i])
-			end
+			table.insert(temp_list, n_nodes)
 			n_nodes = {}
 		end
 	end
@@ -1047,71 +1045,57 @@ function G.UIDEF.view_deck(unplayed_only)
 	local index = 0
 	local second_temp_list = {}
 	for _, v in ipairs(temp_list) do
-		local start_index = (1 - 1) * 4 + 1
-		local end_index = math.min(start_index + 4 - 1, #temp_list)
-    
-		local t_list = {}
-		for i = start_index, end_index do
-			table.insert(t_list, temp_list[i])
-		end
-
-		second_temp_list = {}
-		for i = 1, #t_list do
-			table.insert(second_temp_list, t_list[i])
-		end
-	end
-
-	if #second_temp_list > 0 then
-		local n = {n = G.UIT.R, config = {align = "cm", minh = 0.05, padding = 0.1}, nodes = second_temp_list}
+		local n = {n = G.UIT.R, config = {align = "cm", minh = 0.05, padding = 0.05}, nodes = v}
 		table.insert(tally_ui, n)
-		second_temp_list = {}
 	end
 
 	local suit_options = {}
-	for i = 1, math.ceil(#visible_suits / 4) do
+	for i = 1, math.ceil(#visible_suit / 4) do
 		table.insert(suit_options,
-			localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_suits / 4)))
+			localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_suit / 4)))
 	end
 
 	local object = {n = G.UIT.ROOT, config = {align = "cm", colour = G.C.CLEAR}, nodes = {
 		{n = G.UIT.R, config = {align = "cm", padding = 0.05}, nodes = {}},
 		{n = G.UIT.R, config = {align = "cm"}, nodes = {
 			{n = G.UIT.C, config = {align = "cm", minw = 1.5, minh = 2, r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes = {
-				{n = G.UIT.C, config = {align = "cm", padding = 0.1}, nodes = {
+				{n = G.UIT.C, config = {align = "tm", padding = 0.1}, nodes = {
 					{n = G.UIT.R, config = {align = "cm", r = 0.1, colour = G.C.L_BLACK, emboss = 0.05, padding = 0.15}, nodes = {
 						{n = G.UIT.R, config = {align = "cm"}, nodes = {
 							{n = G.UIT.O, config = {
 									object = DynaText({ string = G.GAME.selected_back.loc_name, colours = {G.C.WHITE}, bump = true, rotate = true, shadow = true, scale = 0.6 - string.len(G.GAME.selected_back.loc_name) * 0.01 })
-								}},}},
+								}},
+						}},
 						{n = G.UIT.R, config = {align = "cm", r = 0.1, padding = 0.1, minw = 2.5, minh = 1.3, colour = G.C.WHITE, emboss = 0.05}, nodes = {
 							{n = G.UIT.O, config = {
 									object = UIBox {
 										definition = G.GAME.selected_back:generate_UI(nil, 0.7, 0.5, G.GAME.challenge), config = {offset = { x = 0, y = 0 } }
 									}
-								}}}}}},
-					{n = G.UIT.R, config = {align = "cm", r = 0.1, outline_colour = G.C.L_BLACK, line_emboss = 0.05, outline = 1.5}, nodes =
-						tally_ui}}},
+								}}
+						}}
+					}},
+					{n = G.UIT.R, config = {align = "cm", r = 0.1, outline_colour = G.C.L_BLACK, line_emboss = 0.05, outline = 1.5}, nodes = tally_ui}
+				}},
 				{n = G.UIT.C, config = {align = "cm"}, nodes = rank_cols},
-				{n = G.UIT.B, config = {w = 0.1, h = 0.1}},}},
+				{n = G.UIT.B, config = {w = 0.1, h = 0.1}},
+			}},
 			{n = G.UIT.B, config = {w = 0.2, h = 0.1}},
-			{n = G.UIT.C, config = {align = "cm", padding = 0.1, r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes =
-				deck_tables}}},
-		{n = G.UIT.R, config = {align = "cm", padding = 0 }, nodes = {
-				create_option_cycle({
-					options = suit_options,
-					w = 4.5,
-					cycle_shoulders = true,
-					opt_callback =
-					'your_suits_page',
-					focus_args = { snap_to = true, nav = 'wide' },
-					current_option = 1,
-					colour = G
-						.C.RED,
-					no_pips = true,
-				})
-			}
-		},
-		{n = G.UIT.R, config = {align = "cm", minh = 0.8, padding = 0}, nodes = {
+			{n = G.UIT.C, config = {align = "cm", padding = 0.1, r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes = deck_tables}
+		}},
+		#visible_suit > 4 and {n = G.UIT.R, config = {align = "cm", padding = 0 }, nodes = {
+			create_option_cycle({
+				options = suit_options,
+				w = 4.5,
+				cycle_shoulders = true,
+				opt_callback =
+				'your_suits_page',
+				focus_args = { snap_to = true, nav = 'wide' },
+				current_option = 1,
+				colour = G.C.RED,
+				no_pips = true,
+			})
+		}} or nil,
+		{n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
 			modded and {n = G.UIT.R, config = {align = "cm"}, nodes = {
 				{n = G.UIT.C, config = {padding = 0.3, r = 0.1, colour = mix_colours(G.C.BLUE, G.C.WHITE, 0.7)}, nodes = {}},
 				{n = G.UIT.T, config = {text = ' ' .. localize('ph_deck_preview_effective'), colour = G.C.WHITE, scale = 0.3}},}}
@@ -1328,10 +1312,10 @@ G.FUNCS.your_suits_page = function(args)
 			hidden_suits[suit] = true
 		end
 	end
-	local i = 1
+	local i = deck_start_index
 	local num_suits_shown = 0
-	for i = 1, #suit_map do
-		if not hidden_suits[suit_map[i]] then
+	for i = 1, #visible_suit do
+		if not hidden_suits[visible_suit[i]] then
 			num_suits_shown = num_suits_shown+1
 		end
 	end
@@ -1339,26 +1323,24 @@ G.FUNCS.your_suits_page = function(args)
 	local n_nodes = {}
 	local visible_suits = {}
 	local temp_list = {}
-	while i <= #suit_map do
-		while #n_nodes < suits_per_row and i <= #suit_map do
-			if not hidden_suits[suit_map[i]] then
+	while i <= deck_end_index do
+		while #n_nodes < suits_per_row and i <= #visible_suit do
+			if not hidden_suits[visible_suit[i]] then
 				table.insert(n_nodes, tally_sprite(
-					SMODS.Suits[suit_map[i]].ui_pos,
+					SMODS.Suits[visible_suit[i]].ui_pos,
 					{
-						{ string = '' .. suit_tallies[suit_map[i]], colour = flip_col },
-						{ string = '' .. mod_suit_tallies[suit_map[i]], colour = G.C.BLUE }
+						{ string = '' .. suit_tallies[visible_suit[i]], colour = flip_col },
+						{ string = '' .. mod_suit_tallies[visible_suit[i]], colour = G.C.BLUE }
 					},
-					{ localize(suit_map[i], 'suits_plural') },
-					suit_map[i]
+					{ localize(visible_suit[i], 'suits_plural') },
+					visible_suit[i]
 				))
 				table.insert(visible_suits, i)
 			end
 			i = i + 1
 		end
 		if #n_nodes > 0 then
-			for i = 1, #n_nodes do
-				table.insert(temp_list, n_nodes[i])
-			end
+			table.insert(temp_list, n_nodes)
 			n_nodes = {}
 		end
 	end
@@ -1366,37 +1348,21 @@ G.FUNCS.your_suits_page = function(args)
 	local index = 0
 	local second_temp_list = {}
 	for _, v in ipairs(temp_list) do
-		local start_index = (args.cycle_config.current_option - 1) * 4 + 1
-		local end_index = math.min(start_index + 4 - 1, #temp_list)
-    
-		local t_list = {}
-		for i = start_index, end_index do
-			table.insert(t_list, temp_list[i])
-		end
-
-		second_temp_list = {}
-		for i = 1, #t_list do
-			table.insert(second_temp_list, t_list[i])
-		end
-	end
-
-	if #second_temp_list > 0 then
-		local n = {n = G.UIT.R, config = {align = "cm", minh = 0.05, padding = 0.1}, nodes = second_temp_list}
+		local n = {n = G.UIT.R, config = {align = "cm", minh = 0.05, padding = 0.05}, nodes = v}
 		table.insert(tally_ui, n)
-		second_temp_list = {}
 	end
 
 	local suit_options = {}
-	for i = 1, math.ceil(#visible_suits / 4) do
+	for i = 1, math.ceil(#visible_suit / 4) do
 		table.insert(suit_options,
-			localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_suits / 4)))
+			localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_suit / 4)))
 	end
 
 	local object = {n = G.UIT.ROOT, config = {align = "cm", colour = G.C.CLEAR}, nodes = {
 		{n = G.UIT.R, config = {align = "cm", padding = 0.05}, nodes = {}},
 		{n = G.UIT.R, config = {align = "cm"}, nodes = {
 			{n = G.UIT.C, config = {align = "cm", minw = 1.5, minh = 2, r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes = {
-				{n = G.UIT.C, config = {align = "cm", padding = 0.1}, nodes = {
+				{n = G.UIT.C, config = {align = "tm", padding = 0.1}, nodes = {
 					{n = G.UIT.R, config = {align = "cm", r = 0.1, colour = G.C.L_BLACK, emboss = 0.05, padding = 0.15}, nodes = {
 						{n = G.UIT.R, config = {align = "cm"}, nodes = {
 							{n = G.UIT.O, config = {
@@ -1424,13 +1390,12 @@ G.FUNCS.your_suits_page = function(args)
 					'your_suits_page',
 					focus_args = { snap_to = true, nav = 'wide' },
 					current_option = args.cycle_config.current_option,
-					colour = G
-						.C.RED,
+					colour = G.C.RED,
 					no_pips = true,
 				})
 			}
 		},
-		{n = G.UIT.R, config = {align = "cm", minh = 0.8, padding = 0.05}, nodes = {
+		{n = G.UIT.R, config = {align = "cm", padding = 0.05}, nodes = {
 			modded and {n = G.UIT.R, config = {align = "cm"}, nodes = {
 				{n = G.UIT.C, config = {padding = 0.3, r = 0.1, colour = mix_colours(G.C.BLUE, G.C.WHITE, 0.7)}, nodes = {}},
 				{n = G.UIT.T, config = {text = ' ' .. localize('ph_deck_preview_effective'), colour = G.C.WHITE, scale = 0.3}},}}
