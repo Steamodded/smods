@@ -24,10 +24,3 @@ SMODS.Joker = setmetatable({}, {
         return self
     end
 })
-
----@param self Card|table
----@param context CalcContext|table
----@return table? effect
----@return boolean? # Return `true` if the Joker was calculated but no effect was provided. 
---- Calculates Jokers. 
-function Card:calculate_joker(context) end

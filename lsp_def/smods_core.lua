@@ -18,8 +18,8 @@ SMODS.path = ""
 ---@field display_name? string Display name of the mod. 
 ---@field description? string Mod description. 
 ---@field priority? number Loaded mods are sorted via priority. 
----@field badge_colour? table HEX color of the mod badge. 
----@field badge_text_colour? table HEX color of the text inside the mod badge. 
+---@field badge_colour? Color HEX color of the mod badge. 
+---@field badge_text_colour? Color HEX color of the text inside the mod badge. 
 ---@field prefix? string Unique string. All objects created by this mod have this string appended to their key. 
 ---@field version? string Mod version. 
 ---@field dump_loc? true Dumps G.localization table into this mod's directory. 
