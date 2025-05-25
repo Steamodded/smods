@@ -7,6 +7,9 @@ priority = -5
 [[patches]]
 [patches.pattern]
 target = "card.lua"
+# TODO instead of times=1 to patch first instance,
+# make this a regex with lookahead for function Card:remove_from_deck
+# so we don't get warnings
 pattern = '''*then G.E_MANAGER:add_event(Event({ func = function() G.GAME.blind:set_blind(nil, true, nil); return true end })) end'''
 position = "after"
 match_indent = true

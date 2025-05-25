@@ -49,7 +49,7 @@ SMODS.Edition = setmetatable({}, {
 function Card:calculate_edition(context) end
 
 ---@param self Card|table
----@param edition string|{[string]: true}? Both `string` values are the key of the edition to apply. 
+---@param edition? string|{[string]: true} Both `string` values are the key of the edition to apply. 
 ---@param immediate? boolean
 ---@param silent? boolean 
 ---@param delay? boolean

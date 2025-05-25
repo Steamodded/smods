@@ -233,7 +233,7 @@ end'''
 line_prepend = '$indent'
 
 # Add support for saving consumables
-# comment
+# G.UIDEF.use_and_sell_buttons()
 [[patches]]
 [patches.pattern]
 target = 'functions/UI_definitions.lua'
@@ -255,7 +255,7 @@ if card.ability.consumeable and card.area == G.pack_cards and booster_obj and bo
 end
 '''
 
-# comment
+# G.FUNCS.use_card()
 [[patches]]
 [patches.pattern]
 target = 'functions/button_callbacks.lua'
@@ -279,7 +279,7 @@ if select_to then
 elseif card.ability.consumeable then
       if nc then
 '''
-# comment
+# G.FUNCS.end_consumeable()
 [[patches]]
 [patches.pattern]
 target = 'functions/button_callbacks.lua'
@@ -299,7 +299,7 @@ G.E_MANAGER:add_event(Event({trigger = 'after',delay = 0.2*delayfac,
 payload = '''
 booster_obj = nil
 '''
-# comment
+# G.FUNCS.skip_booster()
 [[patches]]
 [patches.pattern]
 target = 'functions/button_callbacks.lua'

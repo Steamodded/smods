@@ -193,6 +193,16 @@ perma_h_dollars = self.ability and self.ability.perma_h_dollars or 0,
 match_indent = true
 overwrite = false
 
+# Card:get_chip_bonus
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''function Card:get_chip_bonus(*'''
+position = "after"
+match_indent = true
+payload = '''
+    if self.ability.extra_enhancement then return self.ability.bonus end'''
+
 # Card:get_chip_mult
 [[patches]]
 [patches.pattern]
@@ -209,7 +219,7 @@ else
 end'''
 position = "at"
 match_indent = true
-payload = '''local ret = self.ability.perma_mult or 0
+payload = '''local ret = (not self.ability.extra_enhancement and self.ability.perma_mult) or 0
 if self.ability.effect == "Lucky Card" then
     if pseudorandom('lucky_mult') < G.GAME.probabilities.normal/5 then
         self.lucky_trigger = true
@@ -229,7 +239,7 @@ pattern = '''if self.ability.x_mult <= 1 then return 0 end
 return self.ability.x_mult'''
 position = "at"
 match_indent = true
-payload = '''local ret = SMODS.multiplicative_stacking(self.ability.x_mult or 1, self.ability.perma_x_mult or 0)
+payload = '''local ret = SMODS.multiplicative_stacking(self.ability.x_mult or 1, (not self.ability.extra_enhancement and self.ability.perma_x_mult) or 0)
 -- TARGET: get_chip_x_mult
 return ret
 '''
@@ -241,7 +251,7 @@ target = "card.lua"
 pattern = 'return self.ability.h_mult'
 position = "at"
 match_indent = true
-payload = '''local ret = (self.ability.h_mult or 0) + (self.ability.perma_h_mult or 0)
+payload = '''local ret = (self.ability.h_mult or 0) + ((not self.ability.extra_enhancement and self.ability.perma_h_mult) or 0)
 -- TARGET: get_chip_h_mult
 return ret
 '''
@@ -253,7 +263,7 @@ target = "card.lua"
 pattern = 'return self.ability.h_x_mult'
 position = "at"
 match_indent = true
-payload = '''local ret = SMODS.multiplicative_stacking(self.ability.h_x_mult or 1, self.ability.perma_h_x_mult or 0)
+payload = '''local ret = SMODS.multiplicative_stacking(self.ability.h_x_mult or 1, (not self.ability.extra_enhancement and self.ability.perma_h_x_mult) or 0)
 -- TARGET: get_chip_h_x_mult
 return ret
 '''
@@ -271,28 +281,28 @@ match_indent = true
 payload = '''
 function Card:get_chip_x_bonus()
     if self.debuff then return 0 end
-    local ret = SMODS.multiplicative_stacking(self.ability.x_chips or 1, self.ability.perma_x_chips or 0)
+    local ret = SMODS.multiplicative_stacking(self.ability.x_chips or 1, (not self.ability.extra_enhancement and self.ability.perma_x_chips) or 0)
     -- TARGET: get_chip_x_bonus
     return ret
 end
 
 function Card:get_chip_h_bonus()
     if self.debuff then return 0 end
-    local ret = (self.ability.h_chips or 0) + (self.ability.perma_h_chips or 0)
+    local ret = (self.ability.h_chips or 0) + ((not self.ability.extra_enhancement and self.ability.perma_h_chips) or 0)
     -- TARGET: get_chip_h_bonus
     return ret
 end
 
 function Card:get_chip_h_x_bonus()
     if self.debuff then return 0 end
-    local ret = SMODS.multiplicative_stacking(self.ability.h_x_chips or 1, self.ability.perma_h_x_chips or 0)
+    local ret = SMODS.multiplicative_stacking(self.ability.h_x_chips or 1, (not self.ability.extra_enhancement and self.ability.perma_h_x_chips) or 0)
     -- TARGET: get_chip_h_x_bonus
     return ret
 end
 
 function Card:get_h_dollars()
     if self.debuff then return 0 end
-    local ret = (self.ability.h_dollars or 0) + (self.ability.perma_h_dollars or 0)
+    local ret = (self.ability.h_dollars or 0) + ((not self.ability.extra_enhancement and self.ability.perma_h_dollars) or 0)
     -- TARGET: get_h_dollars
     return ret
 end
@@ -310,7 +320,7 @@ match_indent = true
 payload = '''elseif self.ability.p_dollars < 0 then
     ret = ret + self.ability.p_dollars
 end
-ret = ret + (self.ability.perma_p_dollars) or 0
+ret = ret + ((not self.ability.extra_enhancement and self.ability.perma_p_dollars) or 0)
 -- TARGET: get_p_dollars
 if ret ~= 0 then
     G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + ret'''

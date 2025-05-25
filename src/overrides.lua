@@ -741,7 +741,8 @@ function G.UIDEF.deck_preview(args)
 						G.ASSET_ATLAS[SMODS.Suits[v][G.SETTINGS.colour_palettes[v] == 'hc' and "hc_ui_atlas" or G.SETTINGS.colour_palettes[v] == 'lc' and "lc_ui_atlas"]] or
 						G.ASSET_ATLAS[("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[v].ui_pos)
 			else
-				t_s = Sprite(0, 0, 0.3, 0.3, G.ASSET_ATLAS[("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[v].ui_pos)
+				local atlas = G.SETTINGS.colour_palettes[v] == "hc" and SMODS.Suits[v].hc_ui_atlas or SMODS.Suits[v].lc_ui_atlas
+				t_s = Sprite(0, 0, 0.3, 0.3, G.ASSET_ATLAS[atlas and atlas or ("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[v].ui_pos)
 			end
 
 			t_s.states.drag.can = false
@@ -1467,33 +1468,37 @@ function Card:set_edition(edition, immediate, silent, delay)
 		self.ignore_shadow[self.edition.key] = true
 	end
 
-	local on_edition_applied = p_edition.on_apply
-	if type(on_edition_applied) == "function" then
-		on_edition_applied(self)
-	end
-
 	for k, v in pairs(p_edition.config) do
 		if type(v) == 'table' then
 			self.edition[k] = copy_table(v)
 		else
 			self.edition[k] = v
 		end
-		if k == 'card_limit' and (self.added_to_deck or self.joker_added_to_deck_but_debuffed or (self.area == G.hand and not self.debuff)) and G.jokers and G.consumeables then
+	end
+
+	local on_edition_applied = p_edition.on_apply
+	if type(on_edition_applied) == "function" then
+		on_edition_applied(self)
+	end
+
+
+	if self.edition.card_limit then
+		if (self.added_to_deck or self.joker_added_to_deck_but_debuffed or (self.area == G.hand and not self.debuff)) and G.jokers and G.consumeables then
 			if self.ability.consumeable then
-				G.consumeables.config.card_limit = G.consumeables.config.card_limit + v
+				G.consumeables.config.card_limit = G.consumeables.config.card_limit + self.edition.card_limit
 			elseif self.ability.set == 'Joker' then
-				G.jokers.config.card_limit = G.jokers.config.card_limit + v
+				G.jokers.config.card_limit = G.jokers.config.card_limit + self.edition.card_limit
 			elseif self.area == G.hand then
 				local is_in_pack = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or (G.STATE == G.STATES.SMODS_BOOSTER_OPENED and SMODS.OPENED_BOOSTER.config.center.draw_hand))
 				G.E_MANAGER:add_event(Event({
 					trigger = 'immediate',
 					func = function()
 						if G.hand.config.real_card_limit then
-							G.hand.config.real_card_limit = G.hand.config.real_card_limit + v
+							G.hand.config.real_card_limit = G.hand.config.real_card_limit + self.edition.card_limit
 						end
-						G.hand.config.card_limit = G.hand.config.card_limit + v
+						G.hand.config.card_limit = G.hand.config.card_limit + self.edition.card_limit
 						if not is_in_pack and G.GAME.blind.in_blind then
-							G.FUNCS.draw_from_deck_to_hand(v)
+							G.FUNCS.draw_from_deck_to_hand(self.edition.card_limit)
 						end
 						return true
 					end
@@ -1795,18 +1800,6 @@ function get_pack(_key, _type)
     end
    if not center then center = G.P_CENTERS['p_buffoon_normal_1'] end  return center
 end
-
---#region quantum enhancements API
--- prevent base chips from applying with extra enhancements
-local gcb = Card.get_chip_bonus
-function Card:get_chip_bonus()
-    if not self.ability.extra_enhancement then
-        return gcb(self)
-    end
-    if self.debuff then return 0 end
-    return self.ability.bonus
-end
---#endregion
 
 function playing_card_joker_effects(cards)
 	SMODS.calculate_context({playing_card_added = true, cards = cards})
