@@ -69,6 +69,8 @@
 ---@field to_area? CardArea|table CardArea the card is being drawn to. 
 ---@field from_area? CardArea|table CardArea the card is being drawn from. 
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand. 
+---@field drawing_cards? true `true` when cards are being drawn
+---@field amount? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
 
 --- Util Functions
 
@@ -96,10 +98,18 @@ function SMODS.get_optional_features() end
 
 ---@param context CalcContext|table 
 ---@param return_table? table 
----@return table
+---@return table? # Will use `return_table` over returning if provided.
 --- Used to calculate contexts across `G.jokers`, `scoring_hand` (if present), `G.play` and `G.GAME.selected_back`.
 --- Hook this function to add different areas to MOST calculations
 function SMODS.calculate_context(context, return_table) end
+
+---@param _type string Type of CardAreas to check
+---@param context CalcContext
+---@param return_table? table
+---@param args? table
+---@return table
+--- Calculates effects on cards across multiple cardareas based on provided `_type`.
+function SMODS.calculate_card_areas(_type, context, return_table, args) end
 
 ---@param card Card|table
 ---@param context CalcContext|table
@@ -176,6 +186,11 @@ function SMODS.blueprint_effect(copier, copied_card, context) end
 --- Holds the currently displayed hand type,
 --- if it hasn't had mult/chips added
 SMODS.displayed_hand = nil
+
+---@type boolean?
+--- Internal global variable for smart_level_up_hand
+--- True if scoring is ongoing (chips/mult/etc. are being displayed on the left)
+SMODS.displaying_scoring = nil
 
 ---@param card? Card
 ---@param hand string
@@ -383,7 +398,7 @@ function serialize(t, indent) end
 ---@param s string
 ---@return string
 --- Serializes provided string. 
-function serialize_strings(s) end
+function serialize_string(s) end
 
 ---@param t table
 ---@return table
@@ -432,7 +447,8 @@ function SMODS.find_mod(id) end
 ---@param val any
 ---@param mode? ("index"|"i")|("value"|"v") Sets if the value is compared with the indexes or values of the table. 
 ---@param immediate? boolean
----Seatch for val anywhere deep in tbl. Return a table of finds, or the first found if args.immediate is provided.
+---@return table
+--- Searches for `val` anywhere deep in `tbl`. Return a table of finds, or the first found if args.immediate is provided.
 function SMODS.deepfind(tbl, val, mode, immediate) end
 
 --- Enables debugging Joker calculations. 
@@ -451,7 +467,7 @@ function SMODS.size_of_pool(pool) end
 
 ---@param vouchers {[number]: table, spawn: table<string, true>}?
 ---@return {[number]: table, spawn: table<string, true>} vouchers
---- Returns next vouchers to spawn. 
+--- Returns the next vouchers to spawn. 
 function SMODS.get_next_vouchers(vouchers) end
 
 ---@param key string
@@ -475,6 +491,14 @@ function SMODS.change_booster_limit(mod) end
 ---@param mod number
 --- Modifies the current amount of free shop rerolls by `mod`. 
 function SMODS.change_free_rerolls(mod) end
+
+---@param mod number
+--- Modifies the amount of cards you are allowed to play by `mod`. 
+function SMODS.change_play_limit(mod) end
+
+---@param mod number
+--- Modifies the amount of cards you are allowed to discard by `mod`. 
+function SMODS.change_discard_limit(mod) end
 
 ---@param message string
 ---@param logger? string
@@ -525,3 +549,33 @@ function SMODS.signed_dollars(val) end
 --- Returns result of multiplying `base` and `perma + 1`.
 --- Reproduces weird vanilla behavior of using 0 for no/negative x_mult.
 function SMODS.multiplicative_stacking(base, perma) end
+
+---@param card Card
+---@param suit string
+---@return boolean
+--- Checks if the suit can be smeared (e.x. Smeared Joker).
+function SMODS.smeared_check(card, suit) end
+
+---@param hand Card[]
+---@param suit string
+---@return boolean
+--- Checks if the provided `hand` meets the conditions to trigger Seeing Double.
+function SMODS.seeing_double_check(hand, suit) end
+
+---@param lines table
+---@param args table
+--- Handles localization description boxes.
+function SMODS.localize_box(lines, args) end
+
+---@param multi_box table
+---@return table multi_boxes
+--- Returns all description boxes within `multi_box`.
+function SMODS.get_multi_boxes(multi_box) end
+
+---@param cards Card|Card[]
+--- Destroys the cards passed to the function, handling calculation events that need to happen
+function SMODS.destroy_cards(cards) end
+---@param hand_space number
+--- Used to draw cards to hand outside of the normal card draw
+--- Allows context.drawing_cards to function
+function SMODS.draw_cards(hand_space) end

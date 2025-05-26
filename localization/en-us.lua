@@ -229,6 +229,7 @@ return {
             b_deckskins_lc = 'Low Contrast Colors',
             b_deckskins_hc = 'High Contrast Colors',
             b_deckskins_def = 'Default Colors',
+            b_limit = 'Limit: '
 		},
 		v_dictionary = {
 			c_types = '#1# Types',

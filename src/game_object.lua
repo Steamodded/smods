@@ -274,6 +274,50 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.Font
+    -------------------------------------------------------------------------------------------------
+    
+    SMODS.Fonts = {}
+    SMODS.Font = SMODS.GameObject:extend {
+        obj_table = SMODS.Fonts,
+        set = 'Fonts',
+        obj_buffer = {},
+        disable_mipmap = false,
+        required_params = {
+            'key',
+            'path',
+        },
+        render_scale = 200,
+        TEXT_HEIGHT_SCALE = 0.83,
+        TEXT_OFFSET = {x = 0, y = 0},
+        FONTSCALE = 0.1,
+        squish = 1,
+        DESCSCALE = 1,
+        register = function(self)
+            if self.registered then
+                sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
+                return
+            end
+            self.name = self.key
+            SMODS.Font.super.register(self)
+        end,
+        inject = function(self)
+            local file_path = self.path
+            if file_path == 'DEFAULT' then return end
+
+            self.full_path = (self.mod and self.mod.path or SMODS.path) ..
+                'assets/fonts/' .. file_path
+            local file_data = assert(NFS.newFileData(self.full_path),
+                ('Failed to collect file data for Font %s'):format(self.key))
+            self.FONT = assert(love.graphics.newFont(file_data, self.render_scale or G.TILESIZE),
+                ('Failed to initialize font data for Font %s'):format(self.key))
+            
+        end,
+        process_loc_text = function() end,
+    }
+
+
+    -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Language
     -------------------------------------------------------------------------------------------------
 
@@ -294,7 +338,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 local data = assert(NFS.newFileData(self.mod.path .. 'assets/fonts/' .. self.font.file), ('Failed to collect file data for font of language %s'):format(self.key))
                 self.font.FONT = love.graphics.newFont(data, self.font.render_scale)
             elseif type(self.font) ~= 'table' then
-                self.font = G.FONTS[type(self.font) == 'number' and self.font or 1] or G.FONTS[1]
+                self.font = SMODS.Fonts[self.font] or G.FONTS[type(self.font) == 'number' and self.font or 1] or G.FONTS[1]
             end
             G.LANGUAGES[self.key] = self
             if self.key == (G.SETTINGS.real_language or G.SETTINGS.language) then G.LANG = self end
@@ -882,6 +926,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
             for _, v in pairs(SMODS.Rarities) do
                 if v.pools and v.pools[self.key] and not injected_rarities[v.key] then SMODS.inject_rarity(self, v) end
+            end
+            if self.cards then
+                for k, v in pairs(G.P_CENTERS) do
+                    if self.cards[k] then self:inject_card(v) end
+                end
             end
         end,
         inject_card = function(self, center)
@@ -1818,7 +1867,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                             ranks = {'Ace', 'King', 'Queen', 'Jack', '10', '9', '8', '7', '6', '5', '4', '3', '2'},
                             display_ranks = {'King', 'Queen', 'Jack'},
                             atlas = self.hc_atlas,
-                            pos_style = 'deck'
+                            pos_style = 'deck',
+                            hc_default = true
                         } or nil,
                     }
                 }
@@ -3078,6 +3128,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.Enhancement:take_ownership('glass', {
         calculate = function(self, card, context)
             if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and pseudorandom('glass') < G.GAME.probabilities.normal/card.ability.extra then
+                card.glass_trigger = true
                 return { remove = true }
             end
         end,

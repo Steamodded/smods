@@ -16,6 +16,10 @@ Click [here](https://github.com/Steamopollys/Steamodded/wiki).
 - Put the mod into that directory. (The mod can be a single file if there is only one file provided, or it can be a whole folder.)
 - Launch the game and enjoy!
 
+## Creating a Mod
+
+Useful resources for creating your first mod can be found [here](https://github.com/Steamodded/smods/wiki/Your-First-Mod).
+
 ## Features
 
 Documentation for this project is currently incomplete. A collection of documentation pages and guides that are currently available can be found [here](https://github.com/Steamopollys/Steamodded/wiki).

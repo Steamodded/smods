@@ -704,3 +704,48 @@ pattern = """local card = create_card(card_type,G.consumeables, nil, nil, nil, n
 position = 'before'
 payload = """if _planet == 0 then _planet = nil end"""
 match_indent = true
+
+## Fix remove_from_deck being called and unlocking stuff when exiting a run and
+## clearing screen
+# Game:delete_run()
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = 'function Game:delete_run()'
+position = 'after'
+payload = '    G.in_delete_run = true'
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = 'G.STATE = -1'
+position = 'after'
+payload = 'G.in_delete_run = false'
+match_indent = true
+# Card:remove()
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'if self.area then self.area:remove_card(self) end'
+position = 'after'
+payload = 'if G.in_delete_run then goto skip_game_actions_during_remove end'
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'if G.playing_cards then'
+position = 'before'
+payload = '::skip_game_actions_during_remove::'
+match_indent = true
+# CardArea:remove_card()
+[[patches]]
+[patches.pattern]
+target = "cardarea.lua"
+pattern = '''
+self:set_ranks()
+if self == G.deck then check_for_unlock({type = 'modify_deck', deck = self}) end'''
+position = 'at'
+payload = '''
+self:set_ranks()
+if not G.in_delete_run and self == G.deck then check_for_unlock({type = 'modify_deck', deck = self}) end'''
+match_indent = true

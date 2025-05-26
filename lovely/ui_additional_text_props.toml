@@ -1,0 +1,80 @@
+[manifest]
+version = "1.2"
+dump_lua = true
+priority = -10
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """spacing = math.max(0, 0.32*(17 - #assembled_string)),"""
+position = "after"
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """spacing = _spacing,"""
+position = "after"
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """text = assembled_string,"""
+position = "after"
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
+match_indent = true
+
+# descsacle
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+local desc_scale = G.LANG.font.DESCSCALE
+'''
+payload = '''
+local desc_scale = (SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)] or G.LANG.font).DESCSCALE
+'''
+
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """loc_target = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key]"""
+position = "at"
+payload = """
+loc_target = loc_target or {}
+if pcall(function() loc_target.name_parsed = {loc_parse_string(G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name)} end) then
+else loc_target.name_parsed = {} end"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """if ret_string then return ret_string end"""
+position = "before"
+payload = """if ret_string and type(ret_string) == 'string' then ret_string = string.gsub(ret_string, "{.-}", "") end"""
+match_indent = true
+
+# Replace all instances of the language font
+[[patches]]
+[patches.regex]
+target = "engine/ui.lua"
+pattern = '''
+self.config.lang.font'''
+position = "at"
+payload = '''(self.config.font or self.config.lang.font)'''
+line_prepend = "$indent"
+
+[[patches]]
+[patches.regex]
+target = "engine/ui.lua"
+pattern = '''
+node.config.lang.font'''
+position = "at"
+payload = '''(node.config.font or node.config.lang.font)'''
+line_prepend = "$indent"
