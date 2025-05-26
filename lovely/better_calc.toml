@@ -999,8 +999,8 @@ if G.GAME.blind.name == 'The Serpent' and
 end
 '''
 payload = '''
-local flags = SMODS.calculate_context({hand_space = hand_space})
-hand_space = math.min(#G.deck.cards, flags.hand_space or hand_space)
+local flags = SMODS.calculate_context({drawing_cards = true, amount = hand_space})
+hand_space = math.min(#G.deck.cards, flags.cards_to_draw or hand_space)
 '''
 
 # Used to identify first hand of round

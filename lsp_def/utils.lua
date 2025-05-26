@@ -69,7 +69,8 @@
 ---@field to_area? CardArea|table CardArea the card is being drawn to. 
 ---@field from_area? CardArea|table CardArea the card is being drawn from. 
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand. 
----@field hand_space? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
+---@field drawing_cards? true `true` when cards are being drawn
+---@field amount? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
 
 --- Util Functions
 
@@ -520,3 +521,8 @@ function SMODS.signed_dollars(val) end
 --- Returns result of multiplying `base` and `perma + 1`.
 --- Reproduces weird vanilla behavior of using 0 for no/negative x_mult.
 function SMODS.multiplicative_stacking(base, perma) end
+
+---@param hand_space number
+--- Used to draw cards to hand outside of the normal card draw
+--- Allows context.drawing_cards to function
+function SMODS.draw_cards(hand_space) end
