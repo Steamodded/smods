@@ -36,14 +36,14 @@ target = "functions/UI_definitions.lua"
 pattern = '''local t = create_UIBox_generic_options({ back_func = 'your_collection', contents = {'''
 position = "at"
 payload = '''local t = create_UIBox_generic_options({ 
-colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
-    (G.ACTIVE_MOD_UI.ui_config or {}).colour,
-bg_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
-    (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour,
-back_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
-    (G.ACTIVE_MOD_UI.ui_config or {}).back_colour,
-outline_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
-    (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour,
+colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).colour),
+bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour),
+back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).back_colour),
+outline_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
 back_func = G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', contents = {'''
 match_indent = true
 
