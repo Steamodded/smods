@@ -2419,6 +2419,13 @@ function SMODS.draw_cards(hand_space)
     }))
 end
 
+function SMODS.showman()
+    if next(SMODS.find_card('j_ring_master')) then
+        return true
+    end
+    return false
+end
+
 function SMODS.four_fingers()
     if next(SMODS.find_card('j_four_fingers')) then
         return 4

@@ -122,7 +122,7 @@ target = 'functions/common_events.lua'
 pattern = 'elseif not (G.GAME.used_jokers[v.key] and not next(find_joker("Showman"))) and'
 match_indent = true
 position = 'at'
-payload = '''elseif not (G.GAME.used_jokers[v.key] and not pool_opts.allow_duplicates and not next(find_joker("Showman"))) and'''
+payload = '''elseif not (G.GAME.used_jokers[v.key] and not pool_opts.allow_duplicates and not SMODS.showman()) and'''
 
 [[patches]]
 [patches.pattern]
