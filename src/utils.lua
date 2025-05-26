@@ -225,6 +225,7 @@ function SMODS.handle_loc_file(path, mod_id)
 end
 
 function SMODS.insert_pool(pool, center, replace)
+    assert(pool, ("Attempted to insert object \"%s\" into an empty pool."):format(center.key or "UNKNOWN"))
     if replace == nil then replace = center.taken_ownership end
     if replace then
         for k, v in ipairs(pool) do
@@ -242,6 +243,7 @@ function SMODS.insert_pool(pool, center, replace)
 end
 
 function SMODS.remove_pool(pool, key)
+    assert(pool, ("Attempted to remove object \"%s\" from an empty pool."):format(key or "UNKNOWN"))
     local j
     for i, v in ipairs(pool) do
         if v.key == key then j = i end
@@ -428,7 +430,7 @@ function SMODS.restart_game()
     if love.system.getOS() ~= 'OS X' then
         love.thread.newThread("os.execute(...)\n"):start('"' .. arg[-2] .. '" ' .. table.concat(arg, " "))
     else
-        os.execute('sh "/Users/$USER/Library/Application Support/Steam/steamapps/common/Balatro/run_lovely.sh" &')
+        os.execute('sh "/Users/$USER/Library/Application Support/Steam/steamapps/common/Balatro/run_lovely_macos.sh" &')
     end
 
     love.event.quit()
@@ -916,8 +918,8 @@ function Card:calculate_sticker(context, key)
     end
 end
 
-function Card:can_calculate(ignore_debuff)
-    local is_available = (not self.debuff or ignore_debuff) and not self.getting_sliced
+function Card:can_calculate(ignore_debuff, ignore_sliced)
+    local is_available = (not self.debuff or ignore_debuff) and (not self.getting_sliced or ignore_sliced)
     -- TARGET : Add extra conditions here
     return is_available
 end
@@ -1171,10 +1173,23 @@ G.FUNCS.update_suit_colours = function(suit, skin, palette_num)
 end
 
 SMODS.smart_level_up_hand = function(card, hand, instant, amount)
-    local old_text = copy_table(G.GAME.current_round.current_hand)
-    update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'),chips = G.GAME.hands[hand].chips, mult = G.GAME.hands[hand].mult, level=G.GAME.hands[hand].level})
+    -- Cases:
+    -- Level ups in context.before on the played hand
+    --     -> direct level_up_hand(), keep displaying
+    -- Level ups in context.before on another hand AND any level up during scoring
+    --     -> restore the current chips/mult
+    -- Level ups outside anything -> always update to empty chips/mult
+    local vals_after_level
+    if SMODS.displaying_scoring and not (SMODS.displayed_hand == hand) then
+        vals_after_level = copy_table(G.GAME.current_round.current_hand)
+    end
+    if not (instant or SMODS.displayed_hand == hand) then
+        update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'),chips = G.GAME.hands[hand].chips, mult = G.GAME.hands[hand].mult, level=G.GAME.hands[hand].level})
+    end
     level_up_hand(card, hand, instant, type(amount) == 'number' and amount or 1)
-    update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, {mult = old_text.mult, chips = old_text.chips, handname = old_text.handname, level = old_text.handname ~= "" and G.GAME.hands[G.GAME.last_hand_played].level or ''})
+    if not (instant or SMODS.displayed_hand == hand) then
+        update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, vals_after_level or {mult = 0, chips = 0, handname = '', level = ''})
+    end
 end
 
 -- This function handles the calculation of each effect returned to evaluate play.
@@ -1850,7 +1865,7 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
         local destroyed = nil
         --un-highlight all cards
         local in_scoring = scoring_hand and SMODS.in_scoring(card, context.scoring_hand)
-        if scoring_hand and in_scoring then 
+        if scoring_hand and in_scoring and not card.destroyed then 
             -- Use index of card in scoring hand to determine pitch
             local m = 1
             for j, _card in pairs(scoring_hand) do
@@ -1876,10 +1891,11 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
         -- TARGET: card destroyed
 
         if destroyed then
+            card.getting_sliced = true
             if SMODS.shatters(card) then
                 card.shattered = true
             else
-                card.destroyed = flags.remove
+                card.destroyed = true
             end
             cards_destroyed[#cards_destroyed+1] = card
         end
@@ -2142,7 +2158,7 @@ end
 
 function SMODS.change_voucher_limit(mod)
     G.GAME.modifiers.extra_vouchers = (G.GAME.modifiers.extra_vouchers or 0) + mod
-    if mod > 0 and (G.STATE == G.STATES.SHOP or G.TAROT_INTERRUPT == G.STATES.SHOP) then
+    if mod > 0 and G.shop then
         for i=1, mod do
             SMODS.add_voucher_to_shop()
         end
@@ -2162,7 +2178,7 @@ end
 
 function SMODS.change_booster_limit(mod)
     G.GAME.modifiers.extra_boosters = (G.GAME.modifiers.extra_boosters or 0) + mod
-    if mod > 0 and (G.STATE == G.STATES.SHOP or G.TAROT_INTERRUPT == G.STATES.SHOP) then
+    if mod > 0 and G.shop then
         for i = 1, mod do
             SMODS.add_booster_to_shop()
         end
@@ -2238,7 +2254,7 @@ function SMODS.seeing_double_check(hand, suit)
     if saw_double(suit_tally, suit) then return true else return false end
 end
 
-function SMODS.localize_box(lines, args)   
+function SMODS.localize_box(lines, args)
     local final_line = {}
     for _, part in ipairs(lines) do
         local assembled_string = ''
@@ -2294,6 +2310,63 @@ function SMODS.get_multi_boxes(multi_box)
         end
     end
     return multi_boxes
+end
+
+function SMODS.destroy_cards(cards)
+    if not cards[1] then
+        cards = {cards}
+    end
+    local glass_shattered = {}
+    local playing_cards = {}
+    for _, card in ipairs(cards) do
+        card.getting_sliced = true
+        if SMODS.shatters(card) then
+            card.shattered = true
+            glass_shattered[#glass_shattered+1] = card
+        else
+            card.destroyed = true
+        end
+        if card.base.name then
+            playing_cards[#playing_cards+1] = card
+        end
+    end
+    
+    check_for_unlock{type = 'shatter', shattered = glass_shattered}
+    
+    if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
+
+    for i=1, #cards do
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                if cards[i].shattered then
+                    cards[i]:shatter()
+                else
+                    cards[i]:start_dissolve()
+                end
+                return true
+            end
+        }))
+    end
+end
+
+-- Hand Limit API
+SMODS.hand_limit_strings = {play = '', discard = ''}
+function SMODS.change_play_limit(mod)
+    G.GAME.starting_params.play_limit = G.GAME.starting_params.play_limit + mod
+    if G.GAME.starting_params.play_limit < 1 then
+        sendErrorMessage('Play limit is less than 1', 'HandLimitAPI')
+    end
+    G.hand.config.highlighted_limit = math.max(G.GAME.starting_params.discard_limit, G.GAME.starting_params.play_limit, 5)
+    SMODS.hand_limit_strings.play = G.GAME.starting_params.play_limit ~= 5 and localize('b_limit') .. math.max(1, G.GAME.starting_params.play_limit) or ''
+end
+
+function SMODS.change_discard_limit(mod)
+    G.GAME.starting_params.discard_limit = G.GAME.starting_params.discard_limit + mod
+    if G.GAME.starting_params.discard_limit < 0 then
+        sendErrorMessage('Discard limit is less than 0', 'HandLimitAPI')
+    end
+    G.hand.config.highlighted_limit = math.max(G.GAME.starting_params.discard_limit, G.GAME.starting_params.play_limit, 5)
+    SMODS.hand_limit_strings.discard = G.GAME.starting_params.discard_limit ~= 5 and localize('b_limit') .. math.max(0, G.GAME.starting_params.discard_limit) or ''
 end
 
 function SMODS.draw_cards(hand_space)

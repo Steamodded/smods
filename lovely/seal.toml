@@ -111,7 +111,14 @@ position = 'before'
 payload = '''
 local seal = G.P_SEALS[v] or G.P_SEALS[SMODS.Seal.badge_to_key[v] or '']
 if seal then
-	info_queue[#info_queue+1] = seal
+    local t = {key = v, set = 'Other', config = {}}
+    info_queue[#info_queue + 1] = t
+    if seal.loc_vars and type(seal.loc_vars) == 'function' then
+        local res = seal:loc_vars(info_queue, card) or {}
+        t.vars = res.vars
+        t.key = res.key or t.key
+        t.set = res.set or t.set
+    end
 else'''
 [[patches]]
 [patches.pattern]

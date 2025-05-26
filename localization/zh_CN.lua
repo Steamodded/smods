@@ -48,11 +48,11 @@ return {
                     '({C:attention}#1#{})'
                 }
             },
-            load_failure_m = { -- To be translated
+            load_failure_m = {
                 text = {
-                    '{C:attention}Main File Not Found!{}',
-                    'This mod\'s main file',
-                    'could not be found.',
+                    '{C:attention}主文件未找到！{}',
+                    '此模组的主文件',
+                    '有所缺失。',
                     '({C:attention}#1#{})'
                 }
             },
@@ -61,7 +61,81 @@ return {
                     '该模组',
                     '已被{C:attention}禁用{}！'
                 }
-            }
+            },
+
+
+
+            -- card perma bonuses
+            card_extra_chips={
+                text={
+                    "{C:chips}#1#{}额外筹码",
+                },
+            },
+            card_x_chips = {
+                text = {
+                    "{X:chips,C:white}X#1#{}筹码"
+                }
+            },
+            card_extra_x_chips = {
+                text = {
+                    "{X:chips,C:white}X#1#{}额外筹码"
+                }
+            },
+            card_extra_mult = {
+                text = {
+                    "{C:mult}#1#{}额外倍率"
+                }
+            },
+            card_x_mult = {
+                text = {
+                    "{X:mult,C:white}X#1#{}倍率"
+                }
+            },
+            card_extra_x_mult = {
+                text = {
+                    "{X:mult,C:white}X#1#{}额外倍率"
+                }
+            },
+            card_extra_p_dollars = {
+                text = {
+                    "打出并计分时获得{C:money}$#1#{}",
+                }
+            },
+            card_extra_h_chips = {
+                text = {
+                    "留在手牌中时获得{C:chips}#1#{}筹码",
+                }
+            },
+            card_h_x_chips = {
+                text = {
+                    "留在手牌中时获得{X:chips,C:white}X#1#{}筹码",
+                }
+            },
+            card_extra_h_x_chips = {
+                text = {
+                    "留在手牌中时获得{X:chips,C:white}X#1#{}额外筹码",
+                }
+            },
+            card_extra_h_mult = {
+                text = {
+                    "留在手牌中时获得{C:mult}#1#{}额外倍率",
+                }
+            },
+            card_h_x_mult = {
+                text = {
+                    "留在手牌中时获得{X:mult,C:white}X#1#{}倍率",
+                }
+            },
+            card_extra_h_x_mult = {
+                text = {
+                    "留在手牌中时获得{X:mult,C:white}X#1#{}额外倍率",
+                }
+            },
+            card_extra_h_dollars = {
+                text = {
+                    "回合结束时还在手牌中则获得{C:money}#1#{}",
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {
@@ -70,14 +144,37 @@ return {
                     "手牌上限{C:dark_edition}+#1#"
                 },
             },
-        }
+        },
+        Enhanced = {
+            m_gold={
+                name="黄金牌",
+                text={
+                    "如果这张卡牌",
+                    "在回合结束时还在手牌中",
+                    "你获得{C:money}$#1#{}",
+                },
+            },
+            m_stone={
+                name="石头牌",
+                text={
+                    "{C:chips}#1#{}筹码",
+                    "无点数无花色",
+                },
+            },
+            m_mult={
+                name="倍率牌",
+                text={
+                    "{C:mult}#1#{}倍率",
+                },
+            },
+        },
     },
     misc = {
         achievement_names = {
             hidden_achievement = "???",
         },
         achievement_descriptions = {
-            hidden_achievement = "未发现",
+            hidden_achievement = "继续游玩以解锁！",
         },
         dictionary = {
             b_mods = '模组',
@@ -100,18 +197,41 @@ return {
             b_unknown = '未知',
             b_lovely_mod = '(依赖Lovely加载器的补丁模组)',
             b_by = ' 作者：',
+            b_priority = '优先级：',
             b_config = "配置",
-            b_additions = '新增项目',
+            b_additions = '新增内容',
             b_stickers = '贴纸',
             b_achievements = "成就",
             b_applies_stakes_1 = '',
             b_applies_stakes_2 = '的限制也都起效',
             b_graphics_mipmap_level = "多级渐远纹理层级",
+            b_browse = '浏览',
+            b_search_prompt = '搜索模组',
+            b_search_button = '搜索',
+            b_seeded_unlocks = '种子解锁',
+            b_seeded_unlocks_info = '在种子模式下启用解锁和发现',
+            ml_achievement_settings = {
+                '禁用',
+                '启用',
+                '绕过限制'
+            },
+            b_deckskins_lc = '低对比度配色',
+            b_deckskins_hc = '高对比度配色',
+            b_deckskins_def = '默认配色',
         },
         v_dictionary = {
             c_types = '共有#1#种',
             cashout_hidden = '……还有#1#',
+            a_xchips = "X#1# 筹码",
+            a_xchips_minus = "-X#1# 筹码",
+            smods_version_mismatch = {
+                "自本局游戏开始以来，",
+                "您的Steamodded版本已更改！",
+                "继续游戏可能导致",
+                "意外行为或游戏崩溃。",
+                "开始版本：#1#",
+                "当前版本：#2#",
+            },
         },
     },
-
 }
