@@ -22,6 +22,7 @@ if (args.type == 'descriptions' or args.type == 'other') and type(loc_target.tex
             local final_line = SMODS.localize_box(line, args)
             if i == 1 or next(args.AUT.info) then
                 args.nodes[#args.nodes+1] = final_line -- Sends main box to AUT.main
+                if not next(args.AUT.info) then args.nodes.main_box_flag = true end
             elseif not next(args.AUT.info) then 
                 args.AUT.multi_box[i-1] = args.AUT.multi_box[i-1] or {}
                 args.AUT.multi_box[i-1][#args.AUT.multi_box[i-1]+1] = final_line
@@ -131,9 +132,27 @@ pattern = '''
 '''
 payload = '''
 if multi_boxes[1] then
-    for i=#multi_boxes, 1, -1 do
-        table.insert(ret_val.nodes[1].nodes[1].nodes[1].nodes, 3, multi_boxes[i])
+    for i=1, #ret_val.nodes[1].nodes[1].nodes[1].nodes do -- find the main box
+        if ret_val.nodes[1].nodes[1].nodes[1].nodes[i] and ret_val.nodes[1].nodes[1].nodes[1].nodes[i].config and ret_val.nodes[1].nodes[1].nodes[1].nodes[i].config.main_box_flag then
+            for j=#multi_boxes, 1, -1 do -- add the extra boxes
+                table.insert(ret_val.nodes[1].nodes[1].nodes[1].nodes, i+1, multi_boxes[j])
+            end
+            break
+        end
     end
+    
 end
+
 return ret_val
 '''
+
+# Add main_box_flag to the main box
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+return {n=G.UIT.R, config={align = "cm", colour = empty and G.C.CLEAR or G.C.UI.BACKGROUND_WHITE, r = 0.1, padding = 0.04, minw = 2, minh = 0.8, emboss = not empty and 0.05 or nil, filler = true}, nodes={'''
+payload = '''
+return {n=G.UIT.R, config={align = "cm", colour = empty and G.C.CLEAR or G.C.UI.BACKGROUND_WHITE, r = 0.1, padding = 0.04, minw = 2, minh = 0.8, emboss = not empty and 0.05 or nil, filler = true, main_box_flag = desc_nodes.main_box_flag and true or nil}, nodes={'''
