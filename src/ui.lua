@@ -179,6 +179,7 @@ function create_UIBox_mods(args)
         colour = (mod.ui_config or {}).colour,
         bg_colour = (mod.ui_config or {}).bg_colour,
         back_colour = (mod.ui_config or {}).back_colour,
+        outline_colour = (mod.ui_config or {}).outline_colour,
         back_func = "mods_button",
         contents = {
             {
@@ -231,7 +232,9 @@ function buildModDescTab(mod)
                     r = 0.1,
                     emboss = 0.1,
                     outline = 1,
-                    padding = 0.07
+                    padding = 0.07,
+                    outline_colour = (mod.ui_config or {}).author_outline_colour,
+                    colour = (mod.ui_config or {}).author_bg_colour,
                 },
                 nodes = {
                     {
@@ -484,12 +487,14 @@ function create_UIBox_Other_GameObjects()
         }}
     
         return create_UIBox_generic_options({
-            colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
-            (G.ACTIVE_MOD_UI.ui_config or {}).colour) or nil,
-            bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
-                (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour) or nil,
-            back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
-                (G.ACTIVE_MOD_UI.ui_config or {}).back_colour) or nil,
+            colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).colour,
+            bg_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
+                (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour,
+            back_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
+                (G.ACTIVE_MOD_UI.ui_config or {}).back_colour,
+            outline_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+                (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour,
             back_func = G.ACTIVE_MOD_UI and "openModUI_" .. G.ACTIVE_MOD_UI.id or 'your_collection', contents = { t } }
         )
     else
@@ -506,12 +511,14 @@ end
 
 function create_UIBox_your_collection_consumables()
     local t = create_UIBox_generic_options({
-        colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
-            (G.ACTIVE_MOD_UI.ui_config or {}).colour) or nil,
-        bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
-            (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour) or nil,
-        back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
-            (G.ACTIVE_MOD_UI.ui_config or {}).back_colour) or nil,
+        colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).colour,
+        bg_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour,
+        back_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).back_colour,
+        outline_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+                (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour,
         back_func = G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', contents = {
         { n = G.UIT.C, config = { align = 'cm', minw = 11.5, minh = 6 }, nodes = {
             { n = G.UIT.O, config = { id = 'consumable_collection', object = Moveable() },}
@@ -1804,9 +1811,11 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
     G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
     
     local t = create_UIBox_generic_options({
-        colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or (G.ACTIVE_MOD_UI.ui_config or {}).colour) or nil,
-        bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour) or nil,
-        back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or (G.ACTIVE_MOD_UI.ui_config or {}).back_colour) or nil,
+        colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or (G.ACTIVE_MOD_UI.ui_config or {}).colour,
+        bg_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour,
+        back_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or (G.ACTIVE_MOD_UI.ui_config or {}).back_colour,
+        outline_colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+                (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour,
         back_func = (args and args.back_func) or G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', snap_back = args.snap_back, infotip = args.infotip, contents = {
           {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables}, 
           (not args.hide_single_page or cards_per_page < #pool) and {n=G.UIT.R, config={align = "cm"}, nodes={
