@@ -4,11 +4,11 @@
 ---@field obj_table? table<string, SMODS.Font|table> Table of objects registered to this class. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field path? string Name of the font file, including the extension. 
----@field render_scale? number Determine the font size the text is being rendered after multiplying by `G.TILESIZE`. This is usually set to a high number for better font readability. The default font's value is `10`.
----@field TEXT_HEIGHT_SCALE? number Determines line spacing. The default font's value is `0.83`.
----@field TEXT_OFFSET? table|{x: number, y: number} Determines the offset that the font is rendered. You might need to adjust this if the font render in unexpected places. This one depends on how far the font is from expected place and is entirely up to the font itself so it is necessary to test which value works best.
----@field FONTSCALE? number Determines how big the font actually is rendered after scaling with `render_scale`. This is usually set to a lower number in inverse proportion to `render_scale` so that it renders at a proper size. The default font's value is `0.1`.
----@field squish? number Determines horizontal scaling factor of the font. Value less than 1 will result in fonts being squished together. All fonts in the base game has this value set to `1` by default.
+---@field render_scale? number Set the size of the font. This is generally better as a higher value so it can be scaled down. The default value is `200`.
+---@field TEXT_HEIGHT_SCALE? number Determines line spacing. The default value is `0.83`.
+---@field TEXT_OFFSET? table|{x: number, y: number} Determines the offset that the font is rendered. You might need to adjust this if the font renders in unexpected places. The default value is `{x=0, y=0}`.
+---@field FONTSCALE? number Multiplier to scale down the font to the intended display size. Multiplies `render_scale` so that it renders at a proper size. The default value is `0.1`.
+---@field squish? number Determines horizontal width of each character. The default value is `1`.
 ---@field DESCSCALE? number Determines how big the description text should be in relation to normal text. Keep in mind that mobile UI makes this 1.5x bigger. The default font's value is `1`.
 ---@field __call? fun(self: SMODS.Font|table, o: SMODS.Font|table): nil|table|SMODS.Font
 ---@field extend? fun(self: SMODS.Font|table, o: SMODS.Font|table): table Primary method of creating a class. 
