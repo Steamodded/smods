@@ -2419,7 +2419,7 @@ function SMODS.draw_cards(hand_space)
     }))
 end
 
-function SMODS.showman()
+function SMODS.showman(card_key)
     if next(SMODS.find_card('j_ring_master')) then
         return true
     end
