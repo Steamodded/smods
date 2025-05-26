@@ -2244,7 +2244,7 @@ function SMODS.localize_box(lines, args)
         for _, subpart in ipairs(part.strings) do
             assembled_string = assembled_string..(type(subpart) == 'string' and subpart or format_ui_value(args.vars[tonumber(subpart[1])]) or 'ERROR')
         end
-        local desc_scale = G.LANG.font.DESCSCALE
+        local desc_scale = (SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)] or G.LANG.font).DESCSCALE
         if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
         if part.control.E then
             local _float, _silent, _pop_in, _bump, _spacing = nil, true, nil, nil, nil
@@ -2261,7 +2261,7 @@ function SMODS.localize_box(lines, args)
                 pop_in = _pop_in,
                 bump = _bump,
                 spacing = _spacing,
-                font = SMODS.Fonts[part.control.f] and SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
+                font = SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
                 scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale})
             }}
         elseif part.control.X or part.control.B then
@@ -2269,7 +2269,7 @@ function SMODS.localize_box(lines, args)
                 {n=G.UIT.T, config={
                 text = assembled_string,
                 colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil),
-                font = SMODS.Fonts[part.control.f] and SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
+                font = SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
                 scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale}},
             }}
         else
@@ -2278,7 +2278,7 @@ function SMODS.localize_box(lines, args)
             text = assembled_string,
             shadow = args.shadow,
             colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or not part.control.C and args.text_colour or loc_colour(part.control.C or nil, args.default_col),
-            font = SMODS.Fonts[part.control.f] and SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
+            font = SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
             scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale},}
         end
     end

@@ -286,13 +286,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         required_params = {
             'key',
             'path',
-            'render_scale',
-            'TEXT_HEIGHT_SCALE',
-            'TEXT_OFFSET',
-            'FONTSCALE',
-            'squish',
-            'DESCSCALE',
         },
+        render_scale = 200,
+        TEXT_HEIGHT_SCALE = 0.83,
+        TEXT_OFFSET = {x = 0, y = 0},
+        FONTSCALE = 0.1,
+        squish = 1,
+        DESCSCALE = 1,
         register = function(self)
             if self.registered then
                 sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
@@ -309,8 +309,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 'assets/fonts/' .. file_path
             local file_data = assert(NFS.newFileData(self.full_path),
                 ('Failed to collect file data for Font %s'):format(self.key))
-            local rs = (self.render_scale or 1) * G.TILESIZE
-            self.FONT = assert(love.graphics.newFont(file_data, rs),
+            self.FONT = assert(love.graphics.newFont(file_data, self.render_scale or G.TILESIZE),
                 ('Failed to initialize font data for Font %s'):format(self.key))
             
         end,

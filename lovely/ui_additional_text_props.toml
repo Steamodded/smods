@@ -6,207 +6,75 @@ priority = -10
 [[patches]]
 [patches.pattern]
 target = "functions/misc_functions.lua"
-pattern = """              spacing = math.max(0, 0.32*(17 - #assembled_string)),"""
+pattern = """spacing = math.max(0, 0.32*(17 - #assembled_string)),"""
 position = "after"
-payload = """font = SMODS.Fonts[part.control.f] and SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),"""
-overwrite = true
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
 match_indent = true
 
 [[patches]]
 [patches.pattern]
 target = "functions/misc_functions.lua"
-pattern = """            spacing = _spacing,"""
+pattern = """spacing = _spacing,"""
 position = "after"
-payload = """font = SMODS.Fonts[part.control.f] and SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),"""
-overwrite = true
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
 match_indent = true
 
 [[patches]]
 [patches.pattern]
 target = "functions/misc_functions.lua"
-pattern = """                text = assembled_string,"""
+pattern = """text = assembled_string,"""
 position = "after"
-payload = """font = SMODS.Fonts[part.control.f] and SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),"""
-overwrite = true
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
 match_indent = true
+
+# descsacle
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+local desc_scale = G.LANG.font.DESCSCALE
+'''
+payload = '''
+local desc_scale = (SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)] or G.LANG.font).DESCSCALE
+'''
+
 
 [[patches]]
 [patches.pattern]
 target = "functions/misc_functions.lua"
-pattern = """    loc_target = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key]"""
+pattern = """loc_target = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key]"""
 position = "at"
 payload = """
 loc_target = loc_target or {}
 if pcall(function() loc_target.name_parsed = {loc_parse_string(G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name)} end) then
 else loc_target.name_parsed = {} end"""
-overwrite = true
 match_indent = true
 
 [[patches]]
 [patches.pattern]
 target = "functions/misc_functions.lua"
-pattern = """  if ret_string then return ret_string end"""
+pattern = """if ret_string then return ret_string end"""
 position = "before"
 payload = """if ret_string and type(ret_string) == 'string' then ret_string = string.gsub(ret_string, "{.-}", "") end"""
-overwrite = true
 match_indent = true
 
+# Replace all instances of the language font
 [[patches]]
-[patches.pattern]
+[patches.regex]
 target = "engine/ui.lua"
-pattern = """        self.config.text_drawable = love.graphics.newText(self.config.lang.font.FONT, {G.C.WHITE,self.config.text})"""
-position = "before"
-payload = """if self.config.font then
-    self.config.text_drawable = love.graphics.newText(self.config.font.FONT, {G.C.WHITE,self.config.text})
-else
-"""
-overwrite = true
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "engine/ui.lua"
-pattern = """        self.config.text_drawable = love.graphics.newText(self.config.lang.font.FONT, {G.C.WHITE,self.config.text})"""
-position = "after"
-payload = """end"""
-overwrite = true
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "engine/ui.lua"
-pattern = """            local tx = node.config.lang.font.FONT:getWidth(node.config.text)*node.config.lang.font.squish*scale*G.TILESCALE*node.config.lang.font.FONTSCALE
-            local ty = node.config.lang.font.FONT:getHeight()*scale*G.TILESCALE*node.config.lang.font.FONTSCALE*node.config.lang.font.TEXT_HEIGHT_SCALE"""
+pattern = '''
+self.config.lang.font'''
 position = "at"
-payload = """
-local tx,ty
-if node.config.font then
-    tx = node.config.font.FONT:getWidth(node.config.text)*node.config.font.squish*scale*G.TILESCALE*node.config.font.FONTSCALE
-    ty = node.config.font.FONT:getHeight()*scale*G.TILESCALE*node.config.font.FONTSCALE*node.config.font.TEXT_HEIGHT_SCALE
-else
-    tx = node.config.lang.font.FONT:getWidth(node.config.text)*node.config.lang.font.squish*scale*G.TILESCALE*node.config.lang.font.FONTSCALE
-    ty = node.config.lang.font.FONT:getHeight()*scale*G.TILESCALE*node.config.lang.font.FONTSCALE*node.config.lang.font.TEXT_HEIGHT_SCALE
-end
-"""
-overwrite = true
-match_indent = true
+payload = '''(self.config.font or self.config.lang.font)'''
+line_prepend = "$indent"
 
 [[patches]]
-[patches.pattern]
+[patches.regex]
 target = "engine/ui.lua"
-pattern = """            self.ARGS.text_parallax.sx = -self.shadow_parrallax.x*0.5/(self.config.scale*self.config.lang.font.FONTSCALE)
-            self.ARGS.text_parallax.sy = -self.shadow_parrallax.y*0.5/(self.config.scale*self.config.lang.font.FONTSCALE)"""
-position = "before"
-payload = """
-if self.config.font then
-    self.ARGS.text_parallax.sx = -self.shadow_parrallax.x*0.5/(self.config.scale*self.config.font.FONTSCALE)
-    self.ARGS.text_parallax.sy = -self.shadow_parrallax.y*0.5/(self.config.scale*self.config.font.FONTSCALE)
-else
-"""
-overwrite = true
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "engine/ui.lua"
-pattern = """            self.ARGS.text_parallax.sx = -self.shadow_parrallax.x*0.5/(self.config.scale*self.config.lang.font.FONTSCALE)
-            self.ARGS.text_parallax.sy = -self.shadow_parrallax.y*0.5/(self.config.scale*self.config.lang.font.FONTSCALE)"""
-position = "after"
-payload = """
-end
-"""
-overwrite = true
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "engine/ui.lua"
-pattern = """                    love.graphics.setColor(0, 0, 0, 0.3*self.config.colour[4])
-                    love.graphics.draw(
-                        self.config.text_drawable,
-                        (self.config.lang.font.TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                        (self.config.lang.font.TEXT_OFFSET.y + (self.config.vert and self.ARGS.text_parallax.sx or self.ARGS.text_parallax.sy))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                        0,
-                        (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                        (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
-                    )"""
-position = "before"
-payload = """
-if self.config.font then
-    love.graphics.setColor(0, 0, 0, 0.3*self.config.colour[4])
-    love.graphics.draw(
-        self.config.text_drawable,
-        (self.config.font.TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.font.FONTSCALE/G.TILESIZE,
-        (-self.config.font.FONTSCALE+self.config.font.TEXT_OFFSET.y + (self.config.vert and self.ARGS.text_parallax.sx or self.ARGS.text_parallax.sy))*(self.config.scale or 1)*self.config.font.FONTSCALE/G.TILESIZE,
-        0,
-        (self.config.scale)*self.config.font.squish*self.config.font.FONTSCALE/G.TILESIZE,
-        (self.config.scale)*self.config.font.FONTSCALE/G.TILESIZE
-    )
-else
-"""
-overwrite = true
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "engine/ui.lua"
-pattern = """                    love.graphics.setColor(0, 0, 0, 0.3*self.config.colour[4])
-                    love.graphics.draw(
-                        self.config.text_drawable,
-                        (self.config.lang.font.TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                        (self.config.lang.font.TEXT_OFFSET.y + (self.config.vert and self.ARGS.text_parallax.sx or self.ARGS.text_parallax.sy))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                        0,
-                        (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                        (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
-                    )"""
-position = "after"
-payload = """
-end
-"""
-overwrite = true
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "engine/ui.lua"
-pattern = """            love.graphics.draw(
-                self.config.text_drawable,
-                self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                self.config.lang.font.TEXT_OFFSET.y*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                0,
-                (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
-            )"""
-position = "before"
-payload = """
-if self.config.font then
-    love.graphics.draw(
-        self.config.text_drawable,
-        self.config.font.TEXT_OFFSET.x*(self.config.scale)*self.config.font.FONTSCALE/G.TILESIZE,
-        self.config.font.TEXT_OFFSET.y*(self.config.scale)*self.config.font.FONTSCALE/G.TILESIZE,
-        0,
-        (self.config.scale)*self.config.font.squish*self.config.font.FONTSCALE/G.TILESIZE,
-        (self.config.scale)*self.config.font.FONTSCALE/G.TILESIZE
-    )
-else
-"""
-overwrite = true
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "engine/ui.lua"
-pattern = """            love.graphics.draw(
-                self.config.text_drawable,
-                self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                self.config.lang.font.TEXT_OFFSET.y*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                0,
-                (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
-                (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
-            )"""
-position = "after"
-payload = """
-end
-"""
-overwrite = true
-match_indent = true
+pattern = '''
+node.config.lang.font'''
+position = "at"
+payload = '''(node.config.font or node.config.lang.font)'''
+line_prepend = "$indent"
