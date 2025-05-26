@@ -401,6 +401,20 @@ position = 'at'
 payload = '''
 discover = SMODS.bypass_create_card_discover or area==G.jokers or area==G.consumeables, '''
 
+# Fix vanilla copy_card back bug
+# copy_card()
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+local new_card = new_card or Card(other.T.x, other.T.y, G.CARD_W*(card_scale or 1), G.CARD_H*(card_scale or 1), G.P_CARDS.empty, G.P_CENTERS.c_base, {playing_card = playing_card})
+'''
+position = "at"
+payload = '''
+local new_card = new_card or Card(other.T.x, other.T.y, G.CARD_W*(card_scale or 1), G.CARD_H*(card_scale or 1), G.P_CARDS.empty, G.P_CENTERS.c_base, {playing_card = playing_card, bypass_back = G.GAME.selected_back.pos})
+'''
+match_indent = true
+
 # Card:add_to_deck()
 [[patches]]
 [patches.regex]
