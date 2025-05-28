@@ -1958,7 +1958,6 @@ function poll_edition(_key, _mod, _no_neg, _guaranteed, _options)
         	table.insert(available_editions, edition_option)
         end
     end
-	print(available_editions)
 
 	-- Calculate total weight of editions
 	local total_weight = 0
