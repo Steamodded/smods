@@ -364,13 +364,26 @@ function SMODS.create_card(t)
     if not t.area and not t.key and t.set and SMODS.ConsumableTypes[t.set] then
         t.area = G.consumeables
     end
+    if not t.key and t.set == 'Playing Card' or t.set == 'Base' or t.set == 'Enhanced' or (not t.set and (t.front or t.rank or t.suit)) then
+        t.set = t.set == 'Playing Card' and (pseudorandom('front' .. (t.key_append or '') .. G.GAME.round_resets.ante) > (t.enhancement_poll or 0.6) and 'Enhanced' or 'Base') or t.set or 'Base'
+        t.area = t.area or G.hand
+        if not t.front then
+            t.suit = t.suit and (SMODS.Suits["".. t.suit] or {}).card_key or t.suit or
+            pseudorandom_element(SMODS.Suits, pseudoseed('front' .. (t.key_append or '') .. G.GAME.round_resets.ante)).card_key
+            t.rank = t.rank and (SMODS.Ranks["".. t.rank] or {}).card_key or t.rank or
+            pseudorandom_element(SMODS.Ranks, pseudoseed('front' .. (t.key_append or '') .. G.GAME.round_resets.ante)).card_key
+        end
+        t.front = t.front or (t.suit .. "_" .. t.rank)
+    end
     SMODS.bypass_create_card_edition = t.no_edition or t.edition
     SMODS.bypass_create_card_discover = t.discover
     SMODS.bypass_create_card_discovery_center = t.bypass_discovery_center
+    SMODS.set_create_card_front = G.P_CARDS[t.front]
     local _card = create_card(t.set, t.area, t.legendary, t.rarity, t.skip_materialize, t.soulable, t.key, t.key_append)
     SMODS.bypass_create_card_edition = nil
     SMODS.bypass_create_card_discover = nil
     SMODS.bypass_create_card_discovery_center = nil
+    SMODS.set_create_card_front = nil
 
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
@@ -391,6 +404,11 @@ end
 
 function SMODS.add_card(t)
     local card = SMODS.create_card(t)
+    if t.set == "Base" or t.set == "Enhanced" then
+        G.playing_card = (G.playing_card and G.playing_card + 1) or 1
+        card.playing_card = G.playing_card
+        table.insert(G.playing_cards, card)
+    end
     card:add_to_deck()
     local area = t.area or G.jokers
     area:emplace(card)
