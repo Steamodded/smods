@@ -140,6 +140,28 @@ end) then
 [patches.pattern]
 target = "functions/misc_functions.lua"
 pattern = '''
+if pcall(function() ret_string = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name end) then
+'''
+position = 'at'
+match_indent = true
+payload = '''
+if pcall(function()
+    local name_text = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name
+    if type(name_text) == "table" then
+        ret_string = ""
+        for i, line in ipairs(name_text) do
+            ret_string = ret_string.. (i ~= 1 and " " or "")..line
+        end
+    else
+        ret_string = name_text
+    end
+end) then
+'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = '''
     if args.type == 'name' or args.type == 'text' then return final_line end
     args.nodes[#args.nodes+1] = final_line
 end
