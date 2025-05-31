@@ -119,6 +119,20 @@ pool_opts = pool_opts or {}
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
+pattern = '''
+if _type == 'Enhanced' then
+    add = true
+'''
+match_indent = true
+position = 'after'
+payload = '''
+elseif _type == 'Edition' then
+    if v.in_shop then add = true end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
 pattern = 'elseif not (G.GAME.used_jokers[v.key] and not next(find_joker("Showman"))) and'
 match_indent = true
 position = 'at'
@@ -134,6 +148,18 @@ payload = '''
 if v.in_pool and type(v.in_pool) == 'function' then
     add = in_pool and (add or pool_opts.override_base_checks)
 end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''
+elseif _type == 'Tag' then _pool[#_pool + 1] = "tag_handy"
+'''
+match_indent = true
+position = 'after'
+payload = '''
+elseif _type == 'Edition' then _pool[#_pool + 1] = "e_foil"
 '''
 
 ## G.GAME.used_jokers now checks keys, not names
