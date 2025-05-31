@@ -35,7 +35,7 @@ payload = '''
 function eval_card(card, context)
     context = context or {}
     if not card:can_calculate(context.ignore_debuff, context.remove_playing_cards) then
-        if card.ability.rental then 
+        if card.ability.rental then
             local ret = {}
             ret[SMODS.Stickers.rental] = card:calculate_sticker(context, 'rental')
             return ret, {}
@@ -719,6 +719,19 @@ for _, area in ipairs(SMODS.get_card_areas('jokers')) do
         end
     end
 end
+'''
+
+# context.round_eval
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''
+G.GAME.selected_back:trigger_effect({context = 'eval'})
+'''
+position = 'before'
+match_indent = true
+payload = '''
+SMODS.calculate_context{round_eval = true}
 '''
 
 # context.end_of_round
