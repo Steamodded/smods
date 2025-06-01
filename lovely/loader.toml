@@ -34,6 +34,49 @@ pattern = "if (love.system.getOS() == 'OS X' ) and (jit.arch == 'arm64' or jit.a
 position = "before" 
 match_indent = true
 payload = '''
+local function multi_rank_patch_text(txt)
+    txt = txt:gsub(
+        "([%w_.#]+):get_id%(%s*%)%s*%%%s*([%w_.%(%)#]+)%s*==%s*([%w_.%(%)#]+)",
+        "ids_op(%1, \"mod\", %2, %3)"
+    )
+
+    for _, op in ipairs({">=", "<=", "~=", "==", ">", "<"}) do
+        local esc = op:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+
+        txt = txt:gsub(
+            "([%w_.#]+):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.#]+):get_id%(%s*%)",
+            "ids_op(%1, \"" .. op .. "\", %2:get_id())"
+        )
+
+        txt = txt:gsub(
+            "([%w_.#]+):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.#]+)",
+            "ids_op(%1, \"" .. op .. "\", %2)"
+        )
+    end
+
+    txt = txt:gsub(
+        "([%w_.#]+%b[]):get_id%(%s*%)%s*%%%s*([%w_.%(%)]+)%s*==%s*([%w_.%(%)]+)",
+        "ids_op(%1, \"mod\", %2, %3)"
+    )
+
+    for _, op in ipairs({">=", "<=", "~=", "==", ">", "<"}) do
+        local esc = op:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+
+        txt = txt:gsub(
+            "([%w_.#]+%b[]):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.#]+%b[]):get_id%(%s*%)",
+            "ids_op(%1, \"" .. op .. "\", %2:get_id())"
+        )
+
+        txt = txt:gsub(
+            "([%w_.#]+%b[]):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.%(%)]+)",
+            "ids_op(%1, \"" .. op .. "\", %2)"
+        )
+    end
+
+    -- insert other_patch_text additions here
+
+    return txt
+end
 local orig = package.searchers or package.loaders
 table.insert(orig, 1, function(modname)
     local path = modname:gsub("%.", "/")..".lua"
