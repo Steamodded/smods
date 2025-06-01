@@ -183,6 +183,50 @@ function SMODS.process_loc_text(ref_table, ref_value, loc_txt, key)
     ref_table[ref_value] = target
 end
 
+function multi_rank_patch_text(txt)
+    txt = txt:gsub(
+        "([%w_.#]+):get_id%(%s*%)%s*%%%s*([%w_.%(%)#]+)%s*==%s*([%w_.%(%)#]+)",
+        "ids_op(%1, \"mod\", %2, %3)"
+    )
+
+    for _, op in ipairs({">=", "<=", "~=", "==", ">", "<"}) do
+        local esc = op:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+
+        txt = txt:gsub(
+            "([%w_.#]+):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.#]+):get_id%(%s*%)",
+            "ids_op(%1, \"" .. op .. "\", %2:get_id())"
+        )
+
+        txt = txt:gsub(
+            "([%w_.#]+):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.#]+)",
+            "ids_op(%1, \"" .. op .. "\", %2)"
+        )
+    end
+
+    txt = txt:gsub(
+        "([%w_.#]+%b[]):get_id%(%s*%)%s*%%%s*([%w_.%(%)]+)%s*==%s*([%w_.%(%)]+)",
+        "ids_op(%1, \"mod\", %2, %3)"
+    )
+
+    for _, op in ipairs({">=", "<=", "~=", "==", ">", "<"}) do
+        local esc = op:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+
+        txt = txt:gsub(
+            "([%w_.#]+%b[]):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.#]+%b[]):get_id%(%s*%)",
+            "ids_op(%1, \"" .. op .. "\", %2:get_id())"
+        )
+
+        txt = txt:gsub(
+            "([%w_.#]+%b[]):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.%(%)]+)",
+            "ids_op(%1, \"" .. op .. "\", %2)"
+        )
+    end
+
+    -- insert other_patch_text additions here
+
+    return txt
+end
+
 local function parse_loc_file(file_name, force, mod_id)
     local loc_table = nil
     if file_name:lower():match("%.json$") then
