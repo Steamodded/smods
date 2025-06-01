@@ -2,6 +2,49 @@
 --- MODULE MODLOADER
 
 function loadMods(modsDirectory)
+    local function multi_rank_patch_text(txt)
+        txt = txt:gsub(
+            "([%w_.#]+):get_id%(%s*%)%s*%%%s*([%w_.%(%)#]+)%s*==%s*([%w_.%(%)#]+)",
+            "ids_op(%1, \"mod\", %2, %3)"
+        )
+
+        for _, op in ipairs({">=", "<=", "~=", "==", ">", "<"}) do
+            local esc = op:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+
+            txt = txt:gsub(
+                "([%w_.#]+):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.#]+):get_id%(%s*%)",
+                "ids_op(%1, \"" .. op .. "\", %2:get_id())"
+            )
+
+            txt = txt:gsub(
+                "([%w_.#]+):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.#]+)",
+                "ids_op(%1, \"" .. op .. "\", %2)"
+            )
+        end
+
+        txt = txt:gsub(
+            "([%w_.#]+%b[]):get_id%(%s*%)%s*%%%s*([%w_.%(%)]+)%s*==%s*([%w_.%(%)]+)",
+            "ids_op(%1, \"mod\", %2, %3)"
+        )
+
+        for _, op in ipairs({">=", "<=", "~=", "==", ">", "<"}) do
+            local esc = op:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+
+            txt = txt:gsub(
+                "([%w_.#]+%b[]):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.#]+%b[]):get_id%(%s*%)",
+                "ids_op(%1, \"" .. op .. "\", %2:get_id())"
+            )
+
+            txt = txt:gsub(
+                "([%w_.#]+%b[]):get_id%(%s*%)%s*" .. esc .. "%s*([%w_.%(%)]+)",
+                "ids_op(%1, \"" .. op .. "\", %2)"
+            )
+        end
+
+        -- insert other_patch_text additions here
+
+        return txt
+    end
     local real_read = NFS.read
     NFS.read = function(path)
         local content = real_read(path)
