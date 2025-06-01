@@ -25,3 +25,30 @@ for _, t in ipairs{
     end
 end'''
 match_indent = true
+
+# Multi rank stuff
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = "if (love.system.getOS() == 'OS X' ) and (jit.arch == 'arm64' or jit.arch == 'arm') then jit.off() end"
+position = "before" 
+match_indent = true
+payload = '''
+local orig = package.searchers or package.loaders
+table.insert(orig, 1, function(modname)
+    local path = modname:gsub("%.", "/")..".lua"
+    if path:lower():match("misc_functions%.lua") then
+        return "\n\t[patched loader skipped: misc functions]"
+    end
+    if not love.filesystem.getInfo(path) then
+        return "\n\t[patched loader skipped]"
+    end
+    local ok, txt = pcall(love.filesystem.read, path)
+    if not ok or not txt then
+        return "\n\t[patched loader skipped]"
+    end
+    local fixed, err = load(multi_rank_patch_text(txt), path)
+    if not fixed then error(err) end
+    return fixed
+end)
+'''
