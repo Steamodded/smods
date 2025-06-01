@@ -227,6 +227,36 @@ function multi_rank_patch_text(txt)
     return txt
 end
 
+function ids_op(card, op, b, c)
+  local id = card:get_id() 
+
+  local function alias(x)
+    return x
+  end
+
+  if op == "mod" then
+    return (id % b) == c
+  end
+
+  if op == "==" then
+    local lhs = alias(id)
+    local rhs = alias(b) 
+    return lhs == rhs
+  end
+  if op == "~=" then
+    local lhs = alias(id)
+    local rhs = alias(b) 
+    return lhs ~= rhs
+  end
+
+  if op == ">=" then return id >= b end
+  if op == "<=" then return id <= b end
+  if op == ">" then return id > b end
+  if op == "<" then return id < b end
+
+  error("ids_op: unsupported op " .. tostring(op))
+end
+
 local function parse_loc_file(file_name, force, mod_id)
     local loc_table = nil
     if file_name:lower():match("%.json$") then
