@@ -29,3 +29,26 @@ position = 'at'
 pattern = 'if context.blueprint_card then context.blueprint_card:juice_up() else self:juice_up() end'
 payload = 'if context_blueprint_card then context_blueprint_card:juice_up() else self:juice_up() end'
 match_indent = true
+
+
+## Fix for Wee Joker upgrade having the wrong colour and juicing the scored card
+## was caused by nested extra table and missing scored_card
+# Also Card:calculate_joker(context)
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+position = 'at'
+pattern = '''return {
+    extra = {focus = self, message = localize('k_upgrade_ex')},
+    card = self,
+    colour = G.C.CHIPS
+}
+'''
+payload = '''return {
+    focus = self,
+    scored_card = self,
+    message = localize('k_upgrade_ex'),
+    colour = G.C.CHIPS
+}
+'''
+match_indent = true
