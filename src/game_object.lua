@@ -935,8 +935,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         inject_card = function(self, center)
             if center.set ~= self.key then SMODS.insert_pool(G.P_CENTER_POOLS[self.key], center) end
-            if not center.object_types then center.object_types = {} end
-            center.object_types[self.key] = true
+            if not center.pools then center.pools = {} end
+            center.pools[self.key] = true
             local default_rarity_check = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
             if self.rarities and center.rarity and self.rarity_pools[default_rarity_check[center.rarity] or center.rarity] then
                 SMODS.insert_pool(self.rarity_pools[default_rarity_check[center.rarity] or center.rarity], center)
@@ -944,7 +944,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         delete_card = function(self, center)
             if center.set ~= self.key then SMODS.remove_pool(G.P_CENTER_POOLS[self.key], center.key) end
-            if center.object_types then center.object_types[self.key] = nil end
+            if center.pools then center.pools[self.key] = nil end
             local default_rarity_check = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
             if self.rarities and center.rarity and self.rarity_pools[default_rarity_check[center.rarity] or center.rarity] then
                 SMODS.remove_pool(self.rarity_pools[default_rarity_check[center.rarity] or center.rarity], center.key)
