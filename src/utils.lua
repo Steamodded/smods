@@ -2443,20 +2443,6 @@ function SMODS.wrap_around_straight()
     return false
 end
 
-function SMODS.combine_effects()
-    if not effects then effects = table.remove(transfer_effects, 1) end
-
-    local main_effect = effects
-    for _, eff in ipairs(transfer_effects) do
-        while main_effect.extra ~= nil do
-            main_effect = main_effect.extra
-        end
-        main_effect.extra = eff
-    end
-
-    return effects
-end
-
 function SMODS.merge_effects(...)
     local t = {}
     for _, v in ipairs({...}) do
