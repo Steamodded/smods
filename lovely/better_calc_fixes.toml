@@ -32,7 +32,7 @@ match_indent = true
 
 
 ## Fix for Wee Joker upgrade having the wrong colour and juicing the scored card
-## was caused by nested extra table and missing scored_card
+## was caused by missing scored_card value
 # Also Card:calculate_joker(context)
 [[patches]]
 [patches.pattern]
