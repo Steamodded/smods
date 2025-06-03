@@ -45,10 +45,9 @@ pattern = '''return {
 }
 '''
 payload = '''return {
-    focus = self,
+    extra = {focus = self, message = localize('k_upgrade_ex')},
     scored_card = self,
     card = self,
-    message = localize('k_upgrade_ex'),
     colour = G.C.CHIPS
 }
 '''
