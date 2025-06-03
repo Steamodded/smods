@@ -1445,9 +1445,7 @@ end
 SMODS.calculate_effect_table_key = function(effect_table, key, card, ret)
     local effect = effect_table[key]
     if key ~= 'smods' and type(effect) == 'table' then
-        local extra_card = card
-        if effect.extra then extra_card = effect.extra.message_card or effect.extra.focus end --This might need to only happen when the key is jokers or retriggers
-        local calc = SMODS.calculate_effect(effect, effect.scored_card or extra_card or card, key == 'edition')
+        local calc = SMODS.calculate_effect(effect, effect.scored_card or card, key == 'edition')
         for k, v in pairs(calc) do ret[k] = v end
     end
 end
@@ -1456,7 +1454,7 @@ SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
     local ret = {}
     for _, key in ipairs(SMODS.calculation_keys) do
         if effect[key] then
-            if effect.juice_card then G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function () effect.juice_card:juice_up(0.1); scored_card:juice_up(0.1); return true end})) end
+            if effect.juice_card then G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function () effect.juice_card:juice_up(0.1); return true end})) end
             local calc = SMODS.calculate_individual_effect(effect, scored_card, key, effect[key], from_edition)
             if calc == true then ret.calculated = true end
             if type(calc) == 'string' then
