@@ -47,6 +47,7 @@ pattern = '''return {
 payload = '''return {
     focus = self,
     scored_card = self,
+    card = self,
     message = localize('k_upgrade_ex'),
     colour = G.C.CHIPS
 }
