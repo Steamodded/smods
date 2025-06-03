@@ -1445,7 +1445,9 @@ end
 SMODS.calculate_effect_table_key = function(effect_table, key, card, ret)
     local effect = effect_table[key]
     if key ~= 'smods' and type(effect) == 'table' then
-        local calc = SMODS.calculate_effect(effect, effect.scored_card or card, key == 'edition')
+        local extra_card = card
+        if effect.extra then extra_card = effect.extra.message_card or effect.extra.focus end --This might need to only happen when the key is jokers or retriggers
+        local calc = SMODS.calculate_effect(effect, effect.scored_card or extra_card or card, key == 'edition')
         for k, v in pairs(calc) do ret[k] = v end
     end
 end
