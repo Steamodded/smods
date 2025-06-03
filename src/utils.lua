@@ -2442,3 +2442,40 @@ end
 function SMODS.wrap_around_straight()
     return false
 end
+
+function SMODS.combine_effects()
+    if not effects then effects = table.remove(transfer_effects, 1) end
+
+    local main_effect = effects
+    for _, eff in ipairs(transfer_effects) do
+        while main_effect.extra ~= nil do
+            main_effect = main_effect.extra
+        end
+        main_effect.extra = eff
+    end
+
+    return effects
+end
+
+function SMODS.merge_effects(...)
+    local t = {}
+    for _, v in ipairs({...}) do
+        for _, vv in ipairs(v) do
+            table.insert(t, vv)
+        end
+    end
+    local ret = table.remove(t, 1)
+    local current = ret
+    for _, eff in ipairs(t) do
+        assert(type(eff) == 'table', ("\"%s\" is not a table."):format(tostring(eff)))
+        while current.extra ~= nil do
+            if current.extra == true then
+                current.extra = { remove = true }
+            end
+            assert(type(current.extra) == 'table', ("\"%s\" is not a table."):format(tostring(current.extra)))
+            current = current.extra
+        end
+        current.extra = eff
+    end
+    return ret
+end
