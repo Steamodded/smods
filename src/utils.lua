@@ -1414,6 +1414,10 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'cards_to_draw' then
         return { [key] = amount }
     end
+
+    if key == 'calculated' then
+        return { [key] = amount }
+    end
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1479,6 +1483,7 @@ SMODS.calculation_keys = {
     'debuff', 'prevent_debuff', 'debuff_text',
     'add_to_hand', 'remove_from_hand',
     'stay_flipped', 'prevent_stay_flipped',
+    'calculated',
     'cards_to_draw',
     'message',
     'level_up', 'func', 'extra',
