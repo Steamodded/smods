@@ -51,3 +51,21 @@ Jimbo:add_speech_bubble(quip, nil, {quip = true})
 '''
 match_indent = true
 times = 1
+
+[[patches]]
+[patches.pattern]
+target = "card_character.lua"
+pattern = '''self.children.card:start_materialize({G.C.BLUE, G.C.WHITE, G.C.RED})'''
+position = "at"
+payload = '''self.children.card:start_materialize({args.materialize_colours and args.materialize_colours[1] or G.C.BLUE, args.materialize_colours and args.materialize_colours[2] or G.C.WHITE, args.materialize_colours and args.materialize_colours[3] or G.C.RED})'''
+match_indent = true
+times = 1
+
+[[patches]]
+[patches.pattern]
+target = "card_character.lua"
+pattern = '''colours = {G.C.RED, G.C.BLUE, G.C.ORANGE},'''
+position = "at"
+payload = '''colours = {args.particle_colours and args.particle_colours[1] or G.C.RED, args.particle_colours and args.particle_colours[2] or G.C.BLUE, args.particle_colours and args.particle_colours[3] or G.C.ORANGE},'''
+match_indent = true
+times = 1
