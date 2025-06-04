@@ -1,0 +1,53 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''Jimbo = Card_Character({x = 0, y = 5})
+local spot = G.OVERLAY_MENU:get_UIE_by_ID('jimbo_spot')
+spot.config.object:remove()
+spot.config.object = Jimbo
+Jimbo.ui_object_updated = true
+Jimbo:add_speech_bubble('wq_'..math.random(1,7), nil, {quip = true})'''
+position = "at"
+payload = '''
+local quip, extra = SMODS.quip("win")
+extra.x = 0
+extra.y = 5
+Jimbo = Card_Character(extra)
+local spot = G.OVERLAY_MENU:get_UIE_by_ID('jimbo_spot')
+spot.config.object:remove()
+spot.config.object = Jimbo
+Jimbo.ui_object_updated = true
+Jimbo:add_speech_bubble(quip, nil, {quip = true})
+'''
+match_indent = true
+times = 1
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''Jimbo = Card_Character({x = 0, y = 5})
+local spot = G.OVERLAY_MENU:get_UIE_by_ID('jimbo_spot')
+spot.config.object:remove()
+spot.config.object = Jimbo
+Jimbo.ui_object_updated = true
+Jimbo:add_speech_bubble('lq_'..math.random(1,10), nil, {quip = true})
+'''
+position = "at"
+payload = '''
+local quip, extra = SMODS.quip("loss")
+extra.x = 0
+extra.y = 5
+Jimbo = Card_Character(extra)
+local spot = G.OVERLAY_MENU:get_UIE_by_ID('jimbo_spot')
+spot.config.object:remove()
+spot.config.object = Jimbo
+Jimbo.ui_object_updated = true
+Jimbo:add_speech_bubble(quip, nil, {quip = true})
+'''
+match_indent = true
+times = 1

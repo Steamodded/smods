@@ -2442,3 +2442,39 @@ end
 function SMODS.wrap_around_straight()
     return false
 end
+
+function SMODS.quip(quip_type)
+    if not (quip_type == 'win' or quip_type == 'loss') then return nil end
+    local pool = {}
+    for k, v in pairs(SMODS.JimboQuips) do
+        local add = true
+        local in_pool, pool_opts
+        if v.in_pool and type(v.in_pool) == 'function' then
+            in_pool, pool_opts = v:in_pool({ })
+        end
+        local deck = G.P_CENTERS[G.GAME.selected_back.effect.center.key] or SMODS.Centers[G.GAME.selected_back.effect.center.key] or nil
+        if deck and deck.quip_filter and type(deck.quip_filter) == 'function' then
+            add = deck.quip_filter(v, quip_type)
+        end
+        if v.in_pool and type(v.in_pool) == 'function' then
+            add = in_pool and (add or pool_opts.override_base_checks)
+        end
+        if v.type ~= quip_type then
+            add = false
+        end
+        if add then
+            pool[#pool+1] = v
+        end
+    end
+    local quip = pseudorandom_element(pool, pseudoseed(quip_type))
+    local key = (quip and quip.key) or (quip_type == 'win' and 'wq_1' or quip_type == 'loss' and 'lq_1')
+    local args = {}
+    if quip and quip.extra then
+        if type(quip.extra) == 'function' then
+            args = quip.extra()
+        else
+            args = quip.extra
+        end
+    end
+    return key, args
+end
