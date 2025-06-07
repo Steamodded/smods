@@ -13,6 +13,7 @@ target = "functions/misc_functions.lua"
 pattern = "function pseudorandom_element(_t, seed)"
 position = "at"
 payload = """function pseudorandom_element(_t, seed, args)
+    if seed and type(seed) == "string" then seed = pseudoseed(seed) end
     -- TODO special cases for now
     -- Preserves reverse nominal order for Suits, nominal+face_nominal order for Ranks
     -- for vanilla RNG
