@@ -172,7 +172,7 @@ target = "card.lua"
 pattern = '''
 (?<indent>[\t ]*)for k, v in pairs\(G\.P_CENTERS\) do
 [\t ]*if v\.name == self\.ability\.name then
-[\t ]*if not next\(find_joker\(self\.ability\.name, true\)\) then
+[\t ]*if not next\(find_joker\(self\.ability\.name, true\)\) then 
 [\t ]*G\.GAME\.used_jokers\[k\] = nil
 [\t ]*end
 [\t ]*end
