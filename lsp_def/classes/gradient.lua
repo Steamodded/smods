@@ -1,6 +1,6 @@
 ---@meta
 
----@class SMODS.Gradient: SMODS.GameObject
+---@class SMODS.Gradient: SMODS.Colour
 ---@field interpolation? string Interpolation type of the gradient. Currently supported: `'trig'`, '`linear'`.
 ---@field colours? table<number, table<number, number>> List of colours to interpolate between.
 ---@field cycle? number Amount of time (in seconds) for the gradient to cycle through all colours.
@@ -33,6 +33,3 @@ SMODS.Gradient[2] = 0
 SMODS.Gradient[3] = 0
 ---@type number? Opacity component of the current colour
 SMODS.Gradient[4] = 1
-
----@type table<string, SMODS.Gradient|table>
-SMODS.Gradients = {}
