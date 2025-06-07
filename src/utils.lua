@@ -365,7 +365,7 @@ function SMODS.create_card(t)
         t.area = G.consumeables
     end
     if not t.key and t.set == 'Playing Card' or t.set == 'Base' or t.set == 'Enhanced' or (not t.set and (t.front or t.rank or t.suit)) then
-        t.set = t.set == 'Playing Card' and (pseudorandom('front' .. (t.key_append or '') .. G.GAME.round_resets.ante) > (t.enhanced_poll or 0.6) and 'Enhanced' or 'Base') or t.set or 'Base'
+        t.set = t.set == 'Playing Card' and t.enhancement and 'Base' or (pseudorandom('front' .. (t.key_append or '') .. G.GAME.round_resets.ante) > (t.enhanced_poll or 0.6) and 'Enhanced' or 'Base') or t.set or 'Base'
         t.area = t.area or G.hand
         if not t.front then
             t.suit = t.suit and (SMODS.Suits["".. t.suit] or {}).card_key or t.suit or
