@@ -646,7 +646,7 @@ end'''
 target = "card.lua"
 pattern = "if next(find_joker('Smeared Joker')) and (self.base.suit == 'Hearts' or self.base.suit == 'Diamonds') == (suit == 'Hearts' or suit == 'Diamonds') then"
 position = "at"
-payload = "if next(find_joker('Smeared Joker')) and SMODS.smeared_check(self, suit) then"
+payload = "if SMODS.smeared_check(self, suit) then"
 overwrite = true
 match_indent = true
 

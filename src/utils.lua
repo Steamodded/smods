@@ -2220,6 +2220,10 @@ function SMODS.multiplicative_stacking(base, perma)
 end
 
 function SMODS.smeared_check(card, suit)
+    if not next(find_joker('Smeared Joker')) then
+        return false
+    end
+
     if ((card.base.suit == 'Hearts' or card.base.suit == 'Diamonds') and (suit == 'Hearts' or suit == 'Diamonds')) then
         return true
     elseif (card.base.suit == 'Spades' or card.base.suit == 'Clubs') and (suit == 'Spades' or suit == 'Clubs') then
