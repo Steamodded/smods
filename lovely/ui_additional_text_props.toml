@@ -176,7 +176,7 @@ end
 if args.type == 'name' then
     local final_name = {}
 
-    for _, line in ipairs(args.nodes) do
+    for _, line in ipairs(args.nodes or {}) do
         final_name[#final_name+1] = {n=G.UIT.R, config={align = "m"}, nodes=line}
     end
 
