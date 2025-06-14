@@ -2494,3 +2494,10 @@ function SMODS.merge_effects(...)
     end
     return ret
 end
+
+function SMODS.is_poker_hand_visible(handname)
+    if SMODS.PokerHands[handname].is_visible and type(SMODS.PokerHands[handname].is_visible) == "function" then
+        return not not SMODS.PokerHands[handname]:is_visible()
+    end
+    return G.GAME.hands[handname].visible
+end

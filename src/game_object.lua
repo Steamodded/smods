@@ -1534,7 +1534,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if G.GAME.used_vouchers.v_telescope and i == 1 then
                 local _planet, _hand, _tally = nil, nil, 0
                 for k, v in ipairs(G.handlist) do
-                    if G.GAME.hands[v].visible and G.GAME.hands[v].played > _tally then
+                    if SMODS.is_poker_hand_visible(v) and G.GAME.hands[v].played > _tally then
                         _hand = v
                         _tally = G.GAME.hands[v].played
                     end
