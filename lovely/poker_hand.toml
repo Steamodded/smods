@@ -58,3 +58,48 @@ for _, v in ipairs(G.handlist) do
     end
 end'''
 match_indent = true
+
+## is_visible
+
+# create_UIBox_blind_choice
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''if v.visible then _poker_hands[#_poker_hands+1] = k end'''
+position = "at"
+payload = '''
+if SMODS.is_poker_hand_visible(k) then _poker_hands[#_poker_hands+1] = k end
+'''
+match_indent = true
+
+# card:calculate_joker
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''if k ~= context.scoring_name and v.played >= play_more_than and v.visible then'''
+position = "at"
+payload = '''
+if k ~= context.scoring_name and v.played >= play_more_than and SMODS.is_poker_hand_visible(k) then
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''if v.visible and k ~= self.ability.to_do_poker_hand then _poker_hands[#_poker_hands+1] = k end'''
+position = "at"
+payload = '''
+if SMODS.is_poker_hand_visible(k) and k ~= self.ability.to_do_poker_hand then _poker_hands[#_poker_hands+1] = k end
+'''
+match_indent = true
+
+# card:set_ability
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''if v.visible then _poker_hands[#_poker_hands+1] = k end'''
+position = "at"
+payload = '''
+if SMODS.is_poker_hand_visible(k) then _poker_hands[#_poker_hands+1] = k end
+'''
+match_indent = true

@@ -334,7 +334,7 @@ function SMODS.modify_rank(card, amount)
             rank_data = SMODS.Ranks[rank_key]
         end
     end
-    
+
     return SMODS.change_base(card, nil, rank_key)
 end
 
@@ -1022,7 +1022,7 @@ function SMODS.calculate_quantum_enhancements(card, effects, context)
     local old_center = card.config.center
     local old_center_key = card.config.center_key
     -- Note: For now, just trigger extra enhancements in order.
-    -- Future work: combine enhancements during 
+    -- Future work: combine enhancements during
     -- playing card scoring (ex. Mult comes before Glass because +_mult
     -- naturally comes before x_mult)
     local extra_enhancements_list = {}
@@ -1360,7 +1360,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
                     blockable = false,
                     blocking = false,
                     delay =  0.8,
-                    func = (function() 
+                    func = (function()
                             ease_colour(G.C.UI_CHIPS, G.C.BLUE, 0.8)
                             ease_colour(G.C.UI_MULT, G.C.RED, 0.8)
                         return true
@@ -1372,7 +1372,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
                     blocking = false,
                     no_delete = true,
                     delay =  1.3,
-                    func = (function() 
+                    func = (function()
                         G.C.UI_CHIPS[1], G.C.UI_CHIPS[2], G.C.UI_CHIPS[3], G.C.UI_CHIPS[4] = G.C.BLUE[1], G.C.BLUE[2], G.C.BLUE[3], G.C.BLUE[4]
                         G.C.UI_MULT[1], G.C.UI_MULT[2], G.C.UI_MULT[3], G.C.UI_MULT[4] = G.C.RED[1], G.C.RED[2], G.C.RED[3], G.C.RED[4]
                         return true
@@ -1412,7 +1412,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'effect' then
         return true
     end
-    
+
     if key == 'prevent_debuff' or key == 'add_to_hand' or key == 'remove_from_hand' or key == 'stay_flipped' or key == 'prevent_stay_flipped' then
         return key
     end
@@ -1428,7 +1428,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'debuff_text' then
         return { [key] = amount }
     end
-    
+
     if key == 'cards_to_draw' then
         return { [key] = amount }
     end
@@ -1638,7 +1638,7 @@ function Card:calculate_edition(context)
             end
         end
     end
-end 
+end
 
 function SMODS.calculate_card_areas(_type, context, return_table, args)
     local flags = {}
@@ -1655,7 +1655,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
 
                 local effects = {eval}
                 for _,v in ipairs(post) do effects[#effects+1] = v end
-    
+
                 if context.other_joker then
                     for k, v in pairs(effects[1]) do
                         v.other_card = _card
@@ -1762,7 +1762,7 @@ function SMODS.calculate_context(context, return_table)
     context.main_eval = true
     flags[#flags+1] = SMODS.calculate_card_areas('jokers', context, return_table, { joker_area = true, has_area = has_area })
     context.main_eval = nil
-    
+
     flags[#flags+1] = SMODS.calculate_card_areas('playing_cards', context, return_table, { has_area = has_area })
     flags[#flags+1] = SMODS.calculate_card_areas('individual', context, return_table)
     if not return_table then
@@ -1831,7 +1831,7 @@ function SMODS.calculate_main_scoring(context, scoring_hand)
         end
         --if card is debuffed
         if scoring_hand and card.debuff then
-            if in_scoring then 
+            if in_scoring then
                 G.GAME.blind.triggered = true
                 G.E_MANAGER:add_event(Event({
                     trigger = 'immediate',
@@ -1897,7 +1897,7 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
         local destroyed = nil
         --un-highlight all cards
         local in_scoring = scoring_hand and SMODS.in_scoring(card, context.scoring_hand)
-        if scoring_hand and in_scoring and not card.destroyed then 
+        if scoring_hand and in_scoring and not card.destroyed then
             -- Use index of card in scoring hand to determine pitch
             local m = 1
             for j, _card in pairs(scoring_hand) do
@@ -2369,9 +2369,9 @@ function SMODS.destroy_cards(cards)
             playing_cards[#playing_cards+1] = card
         end
     end
-    
+
     check_for_unlock{type = 'shatter', shattered = glass_shattered}
-    
+
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
     for i=1, #cards do
@@ -2415,8 +2415,8 @@ end
 
 function SMODS.draw_cards(hand_space)
     if not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED) and
-        G.hand.config.card_limit <= 0 and #G.hand.cards == 0 then 
-        G.STATE = G.STATES.GAME_OVER; G.STATE_COMPLETE = false 
+        G.hand.config.card_limit <= 0 and #G.hand.cards == 0 then
+        G.STATE = G.STATES.GAME_OVER; G.STATE_COMPLETE = false
         return true
     end
 
@@ -2425,7 +2425,7 @@ function SMODS.draw_cards(hand_space)
     delay(0.3)
     SMODS.drawn_cards = {}
     for i=1, hand_space do --draw cards from deckL
-        if G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK then 
+        if G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK then
             draw_card(G.deck,G.hand, i*100/hand_space,'up', true)
         else
             draw_card(G.deck,G.hand, i*100/hand_space,'up', true)
@@ -2493,4 +2493,11 @@ function SMODS.merge_effects(...)
         current.extra = eff
     end
     return ret
+end
+
+function SMODS.is_poker_hand_visible(handname)
+    if SMODS.PokerHands[handname].is_visible and type(SMODS.PokerHands[handname].is_visible) == "function" then
+        return not not SMODS.PokerHands[handname]:is_visible()
+    end
+    return G.GAME.hands[handname].visible
 end

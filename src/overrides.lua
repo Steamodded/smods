@@ -1143,7 +1143,7 @@ G.FUNCS.your_suits_page = function(args)
 	G.VIEWING_DECK = true
 	table.sort(G.playing_cards, function(a, b) return a:get_nominal('suit') > b:get_nominal('suit') end)
 	local SUITS = {}
-	local suit_map = {} 
+	local suit_map = {}
 	for i = #SMODS.Suit.obj_buffer, 1, -1 do
 		SUITS[SMODS.Suit.obj_buffer[i]] = {}
 		suit_map[#suit_map + 1] = SMODS.Suit.obj_buffer[i]
@@ -1506,7 +1506,7 @@ function create_UIBox_current_hands(simple)
 
 	local visible_hands = {}
 	for _, v in ipairs(G.handlist) do
-		if G.GAME.hands[v].visible then
+		if SMODS.is_poker_hand_visible(v) then
 			table.insert(visible_hands, v)
 		end
 	end
@@ -1565,7 +1565,7 @@ G.FUNCS.your_hands_page = function(args)
 
 	local visible_hands = {}
 	for _, v in ipairs(G.handlist) do
-		if G.GAME.hands[v].visible then
+		if SMODS.is_poker_hand_visible(v) then
 			table.insert(visible_hands, v)
 		end
 	end
@@ -2243,7 +2243,7 @@ end
 local debuff_card = Blind.debuff_card
 function Blind:debuff_card(card, from_blind)
 	local flags = SMODS.calculate_context({ debuff_card = card, ignore_debuff = true })
-	if flags.prevent_debuff then 
+	if flags.prevent_debuff then
 		if card.debuff then card:set_debuff(false) end
 		return
 	elseif flags.debuff then
