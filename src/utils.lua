@@ -1551,10 +1551,25 @@ SMODS.calculate_repetitions = function(card, context, reps)
         for _, _card in ipairs(area.cards) do
             --calculate the joker effects
             local eval, post = eval_card(_card, context)
-            if next(post) then SMODS.trigger_effects({post}, card) end
             for key, value in pairs(eval) do
                 if key ~= 'retriggers' then
+                    local curr_size = #reps
                     SMODS.insert_repetitions(reps, value, _card)
+                    -- After each inserted repetition we insert the post effects
+                    local new_size = #reps
+                    for i = curr_size + 1, new_size do
+                        if next(post) then 
+                            reps[#reps - new_size + i].retriggers.retrigger_flag = true
+                        else break end
+                        -- index from behind since that doesn't change
+                        for idx, eff in ipairs(post) do
+                            if next(eff) then
+                                select(2, next(eff)).retrigger_flag = true          
+                                table.insert(reps, #reps + 1 - new_size + i, eff)
+                            end
+                        end
+                        select(2, next(reps[#reps - new_size + i])).retrigger_flag = false
+                    end
                 end
             end
             if eval.retriggers then
@@ -1786,7 +1801,9 @@ function SMODS.score_card(card, context)
     while j <= #reps do
         if reps[j] ~= 1 then
             local _, eff = next(reps[j])
-            if eff.retrigger_flag then SMODS.calculate_effect(eff, eff.card); j = j+1; _, eff = next(reps[j]) end
+            while eff.retrigger_flag do 
+                SMODS.calculate_effect(eff, eff.card); j = j+1; _, eff = next(reps[j]) 
+            end
             SMODS.calculate_effect(eff, eff.card)
             percent = percent + percent_delta
         end
