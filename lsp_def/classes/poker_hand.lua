@@ -27,7 +27,8 @@
 ---@field take_ownership? fun(self: SMODS.PokerHand|table, key: string, obj: SMODS.PokerHand|table, silent?: boolean): nil|table|SMODS.PokerHand Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.PokerHand|table, key: string): SMODS.PokerHand|table? Returns an object if one matches the `key`. 
 ---@field evaluate? fun(parts: table, hand: table): table? Determines if played cards contain this hand, and what cards are a part of it. 
----@field modify_display_text? fun(self: SMODS.PokerHand|table, cards: Card[]|table[], scoring_hand: Card[]|table[]): string? Allows modifying the display text when this poker hand's text is meant to display. 
+---@field modify_display_text? fun(self: SMODS.PokerHand|table, cards: Card[]|table[], scoring_hand: Card[]|table[]): string? Allows modifying the display text when this poker hand's text is meant to display.
+---@field is_visible? fun(self:SMODS.PokerHand|table): boolean? Allows more precise control over hand visibility in the poker hands menu. If this function is defined, `visible` is ignored. 
 ---@overload fun(self: SMODS.PokerHand): SMODS.PokerHand
 SMODS.PokerHand = setmetatable({}, {
     __call = function(self)

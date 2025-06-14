@@ -584,3 +584,8 @@ function SMODS.draw_cards(hand_space) end
 ---@return table
 ---Flattens given calculation returns into one, utilising `extra` tables. 
 function SMODS.merge_effects(...) end
+
+---@param handname string
+---@return boolean
+---Checks if handname is visible in the poker hands menu.
+function SMODS.is_poker_hand_visible(handname) end

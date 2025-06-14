@@ -29,3 +29,13 @@ payload = '''
 local r = {n=G.UIT.R, config={align = "cm", padding = 0.03}, nodes=SMODS.localize_box(loc_parse_string(text[i]), {scale = 1.25})}
 '''
 match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''return (G.GAME.hands[handname].visible) and'''
+position = "at"
+payload = '''
+return SMODS.is_poker_hand_visible(handname) and
+'''
+match_indent = true
