@@ -2511,7 +2511,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         ps_ref(self, new_stage, new_state, new_game_obj)
         if not G.collab_credits then
             G.FUNCS.show_credits()
-            SMODS.init_collab_credits = false
+            SMODS.init_collab_credits = nil
             G.FUNCS:exit_overlay_menu()
         end
     end
