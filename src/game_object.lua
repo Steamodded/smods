@@ -935,6 +935,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         inject_card = function(self, center)
             if center.set ~= self.key then SMODS.insert_pool(G.P_CENTER_POOLS[self.key], center) end
+            if not center.pools then center.pools = {} end
+            center.pools[self.key] = true
             local default_rarity_check = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
             if self.rarities and center.rarity and self.rarity_pools[default_rarity_check[center.rarity] or center.rarity] then
                 SMODS.insert_pool(self.rarity_pools[default_rarity_check[center.rarity] or center.rarity], center)
@@ -942,6 +944,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         delete_card = function(self, center)
             if center.set ~= self.key then SMODS.remove_pool(G.P_CENTER_POOLS[self.key], center.key) end
+            if center.pools then center.pools[self.key] = nil end
             local default_rarity_check = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
             if self.rarities and center.rarity and self.rarity_pools[default_rarity_check[center.rarity] or center.rarity] then
                 SMODS.remove_pool(self.rarity_pools[default_rarity_check[center.rarity] or center.rarity], center.key)
@@ -3220,6 +3223,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "foil1", per = 1.2, vol = 0.4 },
         weight = 20,
         extra_cost = 2,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return G.GAME.edition_rate * self.weight
         end,
@@ -3251,6 +3256,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "holo1", per = 1.2 * 1.58, vol = 0.4 },
         weight = 14,
         extra_cost = 3,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return G.GAME.edition_rate * self.weight
         end,
@@ -3282,6 +3289,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "polychrome1", per = 1.2, vol = 0.7 },
         weight = 3,
         extra_cost = 5,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return (G.GAME.edition_rate - 1) * G.P_CENTERS["e_negative"].weight + G.GAME.edition_rate * self.weight
         end,
@@ -3313,6 +3322,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "negative", per = 1.5, vol = 0.4 },
         weight = 3,
         extra_cost = 5,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return self.weight
         end,

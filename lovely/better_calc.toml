@@ -35,14 +35,14 @@ payload = '''
 function eval_card(card, context)
     context = context or {}
     if not card:can_calculate(context.ignore_debuff, context.remove_playing_cards) then
-        if card.ability.rental then 
+        if card.ability.rental then
             local ret = {}
             ret[SMODS.Stickers.rental] = card:calculate_sticker(context, 'rental')
             return ret, {}
         end
         return {}, {}
     end
-    if context.other_card and context.other_card.can_calculate and not context.other_card:can_calculate(context.ignore_debuff) then return {}, {} end
+    if context.other_card and context.other_card.can_calculate and not context.other_card:can_calculate(context.ignore_other_debuff or context.ignore_debuff) then return {}, {} end
     local ret = {}
 '''
 
@@ -541,7 +541,7 @@ match_indent = true
 position = "at"
 payload = '''
 local effects = {}
-SMODS.calculate_context({discard = true, other_card =  G.hand.highlighted[i], full_hand = G.hand.highlighted}, effects)
+SMODS.calculate_context({discard = true, other_card =  G.hand.highlighted[i], full_hand = G.hand.highlighted, ignore_other_debuff = true}, effects)
 SMODS.trigger_effects(effects)
 for _, eval in pairs(effects) do
     if type(eval) == 'table' then
@@ -720,6 +720,35 @@ for _, area in ipairs(SMODS.get_card_areas('jokers')) do
     end
 end
 '''
+
+# context.round_eval
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''
+G.GAME.selected_back:trigger_effect({context = 'eval'})
+'''
+position = 'before'
+match_indent = true
+payload = '''
+SMODS.calculate_context{round_eval = true}
+'''
+
+# Add better `add_round_eval_row` support   
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+elseif string.find(config.name, 'joker') then
+'''
+payload = '''
+elseif config.name == 'custom' then
+    if config.number then table.insert(left_text, {n=G.UIT.T, config={text = config.number, scale = 0.8*scale, colour = config.number_colour or G.C.FILTER, shadow = true, juice = true}}) end
+    table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = {" "..config.text}, colours = {config.text_colour or G.C.UI.TEXT_LIGHT}, shadow = true, pop_in = 0, scale = 0.4*scale, silent = true})}})
+'''
+
 
 # context.end_of_round
 [[patches]]
@@ -1458,7 +1487,7 @@ payload = '''
 SMODS.calculate_context({ending_booster = true, booster = booster_obj})
 '''
 
-# Fix playing_card_added jank
+# Fix Certificate to use SMODS.poll_seal and use playing_card_added context correctly
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -1485,25 +1514,19 @@ G.E_MANAGER:add_event(Event({
 playing_card_joker_effects({true})
 '''
 payload = '''
-local _card = create_playing_card({
-    front = pseudorandom_element(G.P_CARDS, pseudoseed('cert_fr')),
-    center = G.P_CENTERS.c_base}, G.discard, true, nil, {G.C.SECONDARY_SET.Enhanced}, true)
-local seal_type = pseudorandom(pseudoseed('certsl'))
-if seal_type > 0.75 then _card:set_seal('Red', true)
-elseif seal_type > 0.5 then _card:set_seal('Blue', true)
-elseif seal_type > 0.25 then _card:set_seal('Gold', true)
-else _card:set_seal('Purple', true)
-end
 G.E_MANAGER:add_event(Event({
     func = function()
-        G.hand:emplace(_card)
-        _card:start_materialize()
+        local _card = create_playing_card({
+            front = pseudorandom_element(G.P_CARDS, pseudoseed('cert_fr')),
+            center = G.P_CENTERS.c_base}, G.hand, nil, nil, {G.C.SECONDARY_SET.Enhanced})
+        _card:set_seal(SMODS.poll_seal({type_key = 'certsl', guaranteed = true}))
         G.GAME.blind:debuff_card(_card)
         G.hand:sort()
         if context.blueprint_card then context.blueprint_card:juice_up() else self:juice_up() end
+        playing_card_joker_effects({_card})
+        save_run()
         return true
     end}))
-playing_card_joker_effects({_card})
 
 '''
 # create_playing_card
@@ -1530,7 +1553,7 @@ payload = '''
 if area and not skip_emplace then area:emplace(card) end
 '''
 
-## playing_card_joker_effects/playing_card_added should get cards, not {true}
+## Fix Marble Joker to send the created card to playing_card_added correctly
 # Marble Joker
 [[patches]]
 [patches.pattern]
@@ -1560,26 +1583,20 @@ G.E_MANAGER:add_event(Event({
 playing_card_joker_effects({true})
 '''
 payload = '''
-local front = pseudorandom_element(G.P_CARDS, pseudoseed('marb_fr'))
-G.playing_card = (G.playing_card and G.playing_card + 1) or 1
-local card = Card(G.discard.T.x + G.discard.T.w/2, G.discard.T.y, G.CARD_W, G.CARD_H, front, G.P_CENTERS.m_stone, {playing_card = G.playing_card})
 G.E_MANAGER:add_event(Event({
     func = function()
-        card:start_materialize({G.C.SECONDARY_SET.Enhanced})
-        G.play:emplace(card)
-        table.insert(G.playing_cards, card)
+        local card = create_playing_card({
+            front = pseudorandom_element(G.P_CARDS, pseudoseed('marb_fr')),
+            center = G.P_CENTERS.m_stone}, G.play, nil, nil, {G.C.SECONDARY_SET.Enhanced})
+        SMODS.calculate_effect({message = localize('k_plus_stone'), colour = G.C.SECONDARY_SET.Enhanced}, context.blueprint_card or self)
+        G.E_MANAGER:add_event(Event({
+        func = function()
+            draw_card(G.play,G.deck, 90,'up', nil)
+            return true
+        end}))
+        playing_card_joker_effects({card})
         return true
     end}))
-card_eval_status_text(context.blueprint_card or self, 'extra', nil, nil, nil, {message = localize('k_plus_stone'), colour = G.C.SECONDARY_SET.Enhanced})
-
-G.E_MANAGER:add_event(Event({
-    func = function()
-        G.deck.config.card_limit = G.deck.config.card_limit + 1
-        return true
-    end}))
-    draw_card(G.play,G.deck, 90,'up', nil)
-
-playing_card_joker_effects({card})
 '''
 # DNA
 [[patches]]

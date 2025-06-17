@@ -149,7 +149,6 @@ pattern = 'elseif desc_nodes ~= full_UI_table.main then'
 payload = 'elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then'
 
 
-
 # check_for_unlock()
 [[patches]]
 [patches.regex]
@@ -367,12 +366,21 @@ match_indent = true
 position = 'after'
 payload = '''
     for _, v in ipairs(SMODS.Consumable.legendaries) do
-        if (_type == v.type.key or _type == v.soul_set) and not (G.GAME.used_jokers[v.key] and not next(find_joker("Showman")) and not v.can_repeat_soul) and (not v.in_pool or (type(v.in_pool) ~= "function") or v:in_pool()) then
+        if (_type == v.type.key or _type == v.soul_set) and not (G.GAME.used_jokers[v.key] and not SMODS.showman(v.key) and not v.can_repeat_soul) and (not v.in_pool or (type(v.in_pool) ~= "function") or v:in_pool()) then
             if pseudorandom('soul_'..v.key.._type..G.GAME.round_resets.ante) > (1 - v.soul_rate) then
                 forced_key = v.key
             end
         end
     end'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = "local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, front, center,"
+match_indent = true
+position = 'at'
+payload = '''
+local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, SMODS.set_create_card_front or front, center,'''
 
 [[patches]]
 [patches.pattern]
@@ -400,6 +408,24 @@ match_indent = true
 position = 'at'
 payload = '''
 discover = SMODS.bypass_create_card_discover or area==G.jokers or area==G.consumeables, '''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''not (G.GAME.used_jokers['c_soul'] and not next(find_joker("Showman")))  then'''
+match_indent = true
+position = 'at'
+payload = '''
+not (G.GAME.used_jokers['c_soul'] and not SMODS.showman('c_soul')) then'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''not (G.GAME.used_jokers['c_black_hole'] and not next(find_joker("Showman")))  then'''
+match_indent = true
+position = 'at'
+payload = '''
+not (G.GAME.used_jokers['c_black_hole'] and not SMODS.showman('c_black_hole')) then'''
 
 # Fix vanilla copy_card back bug
 # copy_card()
@@ -465,7 +491,7 @@ target = 'functions/button_callbacks.lua'
 match_indent = true
 position = 'before'
 pattern = '''
-if area and area.cards[1] then 
+if area and area.cards[1] then
 '''
 payload = '''
 if nc and not area then G.consumeables:emplace(card) end

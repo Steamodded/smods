@@ -579,3 +579,8 @@ function SMODS.destroy_cards(cards) end
 --- Used to draw cards to hand outside of the normal card draw
 --- Allows context.drawing_cards to function
 function SMODS.draw_cards(hand_space) end
+
+---@param ... table<integer, any>
+---@return table
+---Flattens given calculation returns into one, utilising `extra` tables. 
+function SMODS.merge_effects(...) end
