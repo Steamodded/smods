@@ -1646,8 +1646,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     })
     SMODS.Blind:take_ownership('wheel', {
         loc_vars = function(self)
-            local numerator, denominator = SMODS.get_probability_vars(self, 1, 7)
-            return { vars = { numerator, denominator } }
+            return { vars = { SMODS.get_probability_vars(self, 1, 7) } }
         end,
         collection_loc_vars = function(self)
             return { vars = { '1', '7' }}

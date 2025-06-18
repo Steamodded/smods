@@ -1375,6 +1375,10 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'debuff_text' then 
         return { [key] = amount }
     end
+
+    if key == 'numerator' or key == 'denominator' then
+        return { [key] = amount }
+    end
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1440,6 +1444,7 @@ SMODS.calculation_keys = {
     'stay_flipped', 'prevent_stay_flipped',
     'message',
     'level_up', 'func', 'extra',
+    'numerator', 'denominator'
 }
 
 SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
@@ -1625,6 +1630,8 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 else
                     local f = SMODS.trigger_effects(effects, _card)
                     for k,v in pairs(f) do flags[k] = v end
+                    if flags.numerator then context.numerator = flags.numerator end
+                    if flags.denominator then context.denominator = flags.denominator end
                 end
             end
         end
@@ -2281,15 +2288,13 @@ function SMODS.get_multi_boxes(multi_box)
 end
 
 function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
-    return base_numerator * (G.GAME and G.GAME.probabilities.normal or 1), base_denominator
-end
-
-function SMODS.get_probability_vars_table(trigger_obj, base_numerator, base_denominator)
-    local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
-    return {numerator, denominator}
+    local additive = SMODS.calculate_context({mod_probability = true, numerator = base_numerator, denominator = base_denominator})
+    local fixed = SMODS.calculate_context({fix_probability = true, numerator = additive.numerator or base_numerator, denominator = additive.denominator or base_denominator})
+    return (fixed.numerator or additive.numerator or base_numerator) * (G.GAME and G.GAME.probabilities.normal or 1), fixed.denominator or additive.denominator or base_denominator
 end
 
 function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator)
+    assert(seed, "Seed not provided to SMODS.pseudorandom_probability")
     local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
     return pseudorandom(seed) < numerator / denominator
 end
