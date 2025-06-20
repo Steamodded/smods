@@ -1,0 +1,185 @@
+[manifest]
+version = "1.2"
+dump_lua = true
+priority = -10
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """spacing = math.max(0, 0.32*(17 - #assembled_string)),"""
+position = "after"
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """spacing = _spacing,"""
+position = "after"
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """text = assembled_string,"""
+position = "after"
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
+match_indent = true
+
+# descsacle
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+local desc_scale = G.LANG.font.DESCSCALE
+'''
+payload = '''
+local desc_scale = (SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)] or G.LANG.font).DESCSCALE
+'''
+
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """loc_target = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key]"""
+position = "at"
+payload = """
+loc_target = loc_target or {}
+if pcall(function() loc_target.name_parsed = {loc_parse_string(G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name)} end) then
+else loc_target.name_parsed = {} end"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """if ret_string then return ret_string end"""
+position = "before"
+payload = """if ret_string and type(ret_string) == 'string' then ret_string = string.gsub(ret_string, "{.-}", "") end"""
+match_indent = true
+
+# Replace all instances of the language font
+[[patches]]
+[patches.regex]
+target = "engine/ui.lua"
+pattern = '''
+self.config.lang.font'''
+position = "at"
+payload = '''(self.config.font or self.config.lang.font)'''
+line_prepend = "$indent"
+
+[[patches]]
+[patches.regex]
+target = "engine/ui.lua"
+pattern = '''
+node.config.lang.font'''
+position = "at"
+payload = '''(node.config.font or node.config.lang.font)'''
+line_prepend = "$indent"
+
+# Fix name scale when using formatting
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = '''
+local final_line = {}
+'''
+position = 'after'
+match_indent = true
+payload = '''
+local final_name_assembled_string = ''
+if args.type == 'name' and loc_target.name_parsed then
+    for _, part in ipairs(lines) do
+        local assembled_string_part = ''
+        for _, subpart in ipairs(part.strings) do
+            assembled_string_part = assembled_string_part..(type(subpart) == 'string' and subpart or format_ui_value(args.vars[tonumber(subpart[1])]) or 'ERROR')
+        end
+        final_name_assembled_string = final_name_assembled_string..assembled_string_part
+    end
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = '''
+spacing = math.max(0, 0.32*(17 - #assembled_string)),
+'''
+position = 'at'
+match_indent = true
+payload = '''
+spacing = math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string))),
+'''
+
+[[patches]]
+[patches.regex]
+target = 'functions/misc_functions.lua'
+position = 'at'
+pattern = '0\.004\*#assembled_string'
+payload = '0.004*#(final_name_assembled_string or assembled_string)'
+
+# Add support for multi line name
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = '''
+if pcall(function() loc_target.name_parsed = {loc_parse_string(G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name)} end) then
+'''
+position = 'at'
+match_indent = true
+payload = '''
+if pcall(function()
+local name = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key]
+loc_target.name_parsed = name.name_parsed or {loc_parse_string(name.name)}
+end) then
+'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = '''
+if pcall(function() ret_string = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name end) then
+'''
+position = 'at'
+match_indent = true
+payload = '''
+if pcall(function()
+    local name_text = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name
+    if type(name_text) == "table" then
+        ret_string = ""
+        for i, line in ipairs(name_text) do
+            ret_string = ret_string.. (i ~= 1 and " " or "")..line
+        end
+    else
+        ret_string = name_text
+    end
+end) then
+'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = '''
+    if args.type == 'name' or args.type == 'text' then return final_line end
+    args.nodes[#args.nodes+1] = final_line
+end
+'''
+position = 'at'
+match_indent = true
+payload = '''
+    if args.type == 'text' then return final_line end
+    if not args.nodes and args.type == 'name' then args.nodes = {} end
+    args.nodes[#args.nodes+1] = final_line
+end
+if args.type == 'name' then
+    local final_name = {}
+
+    for _, line in ipairs(args.nodes or {}) do
+        final_name[#final_name+1] = {n=G.UIT.R, config={align = "m"}, nodes=line}
+    end
+
+    return final_name
+end
+'''

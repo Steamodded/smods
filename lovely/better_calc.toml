@@ -34,7 +34,15 @@ match_indent = true
 payload = '''
 function eval_card(card, context)
     context = context or {}
-    if not card:can_calculate(context.ignore_debuff) then return {}, {} end
+    if not card:can_calculate(context.ignore_debuff, context.remove_playing_cards) then
+        if card.ability.rental then
+            local ret = {}
+            ret[SMODS.Stickers.rental] = card:calculate_sticker(context, 'rental')
+            return ret, {}
+        end
+        return {}, {}
+    end
+    if context.other_card and context.other_card.can_calculate and not context.other_card:can_calculate(context.ignore_other_debuff or context.ignore_debuff) then return {}, {} end
     local ret = {}
 '''
 
@@ -130,7 +138,7 @@ if context.cardarea == G.hand then
     end
 
     local jokers = card:calculate_joker(context)
-    if jokers then 
+    if jokers then
         ret.jokers = jokers
     end
 '''
@@ -193,7 +201,8 @@ if card.seal then
         ret.seals = seals
     end
 end
-for k,v in pairs(SMODS.Stickers) do
+for _,k in ipairs(SMODS.Sticker.obj_buffer) do
+    local v = SMODS.Stickers[k]
     local sticker = card:calculate_sticker(context, k)
     if sticker then
         ret[v] = sticker
@@ -222,13 +231,14 @@ if card.edition then
         ret.edition = edition
     end
 end
-if card.seal and not card.ability.extra_enhancement then
+if card.seal then
     local seals = card:calculate_seal(context)
     if seals then
         ret.seals = seals
     end
 end
-for k,v in pairs(SMODS.Stickers) do
+for _,k in ipairs(SMODS.Sticker.obj_buffer) do
+    local v = SMODS.Stickers[k]
     local sticker = card:calculate_sticker(context, k)
     if sticker then
         ret[v] = sticker
@@ -531,7 +541,7 @@ match_indent = true
 position = "at"
 payload = '''
 local effects = {}
-SMODS.calculate_context({discard = true, other_card =  G.hand.highlighted[i], full_hand = G.hand.highlighted}, effects)
+SMODS.calculate_context({discard = true, other_card =  G.hand.highlighted[i], full_hand = G.hand.highlighted, ignore_other_debuff = true}, effects)
 SMODS.trigger_effects(effects)
 for _, eval in pairs(effects) do
     if type(eval) == 'table' then
@@ -563,7 +573,9 @@ payload = '''
 -- context.before calculations
 SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, before = true})
 
--- TARGET: effects before scoring starts'''
+-- TARGET: effects before scoring starts
+
+SMODS.displayed_hand = nil'''
 
 # context.final_scoring_step
 [[patches]]
@@ -747,6 +759,35 @@ for _, area in ipairs(SMODS.get_card_areas('jokers')) do
     end
 end
 '''
+
+# context.round_eval
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''
+G.GAME.selected_back:trigger_effect({context = 'eval'})
+'''
+position = 'before'
+match_indent = true
+payload = '''
+SMODS.calculate_context{round_eval = true}
+'''
+
+# Add better `add_round_eval_row` support   
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+elseif string.find(config.name, 'joker') then
+'''
+payload = '''
+elseif config.name == 'custom' then
+    if config.number then table.insert(left_text, {n=G.UIT.T, config={text = config.number, scale = 0.8*scale, colour = config.number_colour or G.C.FILTER, shadow = true, juice = true}}) end
+    table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = {" "..config.text}, colours = {config.text_colour or G.C.UI.TEXT_LIGHT}, shadow = true, pop_in = 0, scale = 0.4*scale, silent = true})}})
+'''
+
 
 # context.end_of_round
 [[patches]]
@@ -982,6 +1023,25 @@ G.E_MANAGER:add_event(Event({
 }))
 '''
 
+# context.hand_space
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if G.GAME.blind.name == 'The Serpent' and
+    not G.GAME.blind.disabled and
+    (G.GAME.current_round.hands_played > 0 or
+    G.GAME.current_round.discards_used > 0) then
+        hand_space = math.min(#G.deck.cards, 3)
+end
+'''
+payload = '''
+local flags = SMODS.calculate_context({drawing_cards = true, amount = hand_space})
+hand_space = math.min(#G.deck.cards, flags.cards_to_draw or hand_space)
+'''
+
 # Used to identify first hand of round
 # new_round
 [[patches]]
@@ -1051,7 +1111,7 @@ position = 'at'
 match_indent = true
 payload = '''
 G.E_MANAGER:add_event(Event({func = function()
-    local eval, post = eval_card(c1, {buying_card = true, card = c1})
+    local eval, post = eval_card(c1, {buying_card = true, buying_self = true, card = c1}) -- buying_card left for back compat, buying_self recommended to use
     SMODS.trigger_effects({eval, post}, c1)
     return true
     end}))
@@ -1148,12 +1208,11 @@ target = 'functions/button_callbacks.lua'
 match_indent = true
 position = 'before'
 pattern = '''
-if G.GAME.current_round.reroll_cost > 0 then 
+if G.GAME.current_round.reroll_cost > 0 then
 '''
 payload = '''
 local reroll_cost = G.GAME.current_round.reroll_cost
 '''
-
 
 
 # Fix purple seal calc
@@ -1179,6 +1238,7 @@ pattern = '''context.blueprint = (context.blueprint and (context.blueprint + 1))
 context.blueprint_card = context.blueprint_card or self
 if context.blueprint > #G.jokers.cards + 1 then return end'''
 payload = '''if (context.blueprint or 0) > #G.jokers.cards then return end
+local old_context_blueprint = context.blueprint
 context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
 local old_context_blueprint_card = context.blueprint_card
 context.blueprint_card = context.blueprint_card or self
@@ -1190,16 +1250,8 @@ target = 'card.lua'
 match_indent = true
 position = 'after'
 pattern = '''local other_joker_ret = other_joker:calculate_joker(context)'''
-payload = '''context.blueprint = nil
+payload = '''context.blueprint = old_context_blueprint
 context.blueprint_card = old_context_blueprint_card'''
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'after'
-pattern = 'context.blueprint_card = context.blueprint_card or self'
-payload = 'local eff_card = context.blueprint_card'
 
 [[patches]]
 [patches.pattern]
@@ -1274,6 +1326,17 @@ payload = '''percent = (i-0.999)/(#G.hand.cards-0.998) + (j-1)*0.1'''
 target = 'functions/common_events.lua'
 match_indent = true
 position = 'after'
+pattern = 'local volume = 1'
+payload = '''
+local trigger = 'before'
+local blocking = nil
+local blockable = nil
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
 pattern = '''
 volume = extra.edition and 0.3 or sound == 'multhit2' and 0.7 or 1
 '''
@@ -1281,6 +1344,9 @@ payload = '''
 sound = extra.sound or sound
 percent = extra.pitch or percent
 volume = extra.volume or volume
+trigger = extra.trigger or 'before'
+blocking = extra.blocking
+blockable = extra.blockable
 '''
 
 # Voucher cardarea
@@ -1429,7 +1495,7 @@ for i=1, #G.play.cards do
         end
     end
     local effects = {}
-    SMODS.calculate_context({modify_scoring_hand = true, other_card =  G.play.cards[i], full_hand = G.play.cards, scoring_hand = scoring_hand}, effects)
+    SMODS.calculate_context({modify_scoring_hand = true, other_card =  G.play.cards[i], full_hand = G.play.cards, scoring_hand = scoring_hand, in_scoring = true}, effects)
     local flags = SMODS.trigger_effects(effects, G.play.cards[i])
     if flags.add_to_hand then splashed = true end
 	if flags.remove_from_hand then unsplashed = true end
@@ -1460,7 +1526,7 @@ payload = '''
 SMODS.calculate_context({ending_booster = true, booster = booster_obj})
 '''
 
-# Fix playing_card_added jank
+# Fix Certificate to use SMODS.poll_seal and use playing_card_added context correctly
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -1487,25 +1553,19 @@ G.E_MANAGER:add_event(Event({
 playing_card_joker_effects({true})
 '''
 payload = '''
-local _card = create_playing_card({
-    front = pseudorandom_element(G.P_CARDS, pseudoseed('cert_fr')),
-    center = G.P_CENTERS.c_base}, G.discard, true, nil, {G.C.SECONDARY_SET.Enhanced}, true)
-local seal_type = pseudorandom(pseudoseed('certsl'))
-if seal_type > 0.75 then _card:set_seal('Red', true)
-elseif seal_type > 0.5 then _card:set_seal('Blue', true)
-elseif seal_type > 0.25 then _card:set_seal('Gold', true)
-else _card:set_seal('Purple', true)
-end
 G.E_MANAGER:add_event(Event({
     func = function()
-        G.hand:emplace(_card)
-        _card:start_materialize()
+        local _card = create_playing_card({
+            front = pseudorandom_element(G.P_CARDS, pseudoseed('cert_fr')),
+            center = G.P_CENTERS.c_base}, G.hand, nil, nil, {G.C.SECONDARY_SET.Enhanced})
+        _card:set_seal(SMODS.poll_seal({type_key = 'certsl', guaranteed = true}))
         G.GAME.blind:debuff_card(_card)
         G.hand:sort()
         if context.blueprint_card then context.blueprint_card:juice_up() else self:juice_up() end
+        playing_card_joker_effects({_card})
+        save_run()
         return true
     end}))
-playing_card_joker_effects({_card})
 
 '''
 # create_playing_card
@@ -1532,6 +1592,7 @@ payload = '''
 if area and not skip_emplace then area:emplace(card) end
 '''
 
+## Fix Marble Joker to send the created card to playing_card_added correctly
 # Marble Joker
 [[patches]]
 [patches.pattern]
@@ -1561,27 +1622,29 @@ G.E_MANAGER:add_event(Event({
 playing_card_joker_effects({true})
 '''
 payload = '''
-local front = pseudorandom_element(G.P_CARDS, pseudoseed('marb_fr'))
-G.playing_card = (G.playing_card and G.playing_card + 1) or 1
-local card = Card(G.discard.T.x + G.discard.T.w/2, G.discard.T.y, G.CARD_W, G.CARD_H, front, G.P_CENTERS.m_stone, {playing_card = G.playing_card})
 G.E_MANAGER:add_event(Event({
     func = function()
-        card:start_materialize({G.C.SECONDARY_SET.Enhanced})
-        G.play:emplace(card)
-        table.insert(G.playing_cards, card)
+        local card = create_playing_card({
+            front = pseudorandom_element(G.P_CARDS, pseudoseed('marb_fr')),
+            center = G.P_CENTERS.m_stone}, G.play, nil, nil, {G.C.SECONDARY_SET.Enhanced})
+        SMODS.calculate_effect({message = localize('k_plus_stone'), colour = G.C.SECONDARY_SET.Enhanced}, context.blueprint_card or self)
+        G.E_MANAGER:add_event(Event({
+        func = function()
+            draw_card(G.play,G.deck, 90,'up', nil)
+            return true
+        end}))
+        playing_card_joker_effects({card})
         return true
     end}))
-card_eval_status_text(context.blueprint_card or self, 'extra', nil, nil, nil, {message = localize('k_plus_stone'), colour = G.C.SECONDARY_SET.Enhanced})
-
-G.E_MANAGER:add_event(Event({
-    func = function()
-        G.deck.config.card_limit = G.deck.config.card_limit + 1
-        return true
-    end}))
-    draw_card(G.play,G.deck, 90,'up', nil)
-
-playing_card_joker_effects({card})
 '''
+# DNA
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = 'playing_cards_created = {true}'
+payload = 'playing_cards_created = {_card}'
 
 ## Remove unneeded area check
 # Card:calculate_joker
@@ -1626,3 +1689,31 @@ payload = '''
 dissolve_colours = dissolve_colours or (type(self.destroyed) == 'table' and self.destroyed.colours) or nil
 dissolve_time_fac = dissolve_time_fac or (type(self.destroyed) == 'table' and self.destroyed.time) or nil
 '''
+
+# Smart level up functionality
+# G.FUNCS.evaluate_play()
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = false
+position = 'after'
+pattern = '''delay = G.GAME.current_round.current_hand.handname ~= disp_text and 0.4 or 0}, {handname=disp_text, level=G.GAME.hands[text].level, mult = G.GAME.hands[text].mult, chips = G.GAME.hands[text].chips})'''
+payload = '''    SMODS.displayed_hand = text; SMODS.displaying_scoring = true'''
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''hand_chips = mod_chips(0)'''
+payload = '''SMODS.displayed_hand = nil'''
+times = 1
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = false
+position = 'after'
+pattern = '''
+  func = (function() G.GAME.current_round.current_hand.handname = '';return true end)
+}))
+delay(0.3)'''
+payload = '''    SMODS.displaying_scoring = nil'''

@@ -176,6 +176,10 @@ function create_UIBox_mods(args)
     end
 
     return (create_UIBox_generic_options({
+        colour = (mod.ui_config or {}).colour,
+        bg_colour = (mod.ui_config or {}).bg_colour,
+        back_colour = (mod.ui_config or {}).back_colour,
+        outline_colour = (mod.ui_config or {}).outline_colour,
         back_func = "mods_button",
         contents = {
             {
@@ -187,7 +191,7 @@ function create_UIBox_mods(args)
                 nodes = {
                     create_tabs({
                         snap_to_nav = true,
-                        colour = G.C.BOOSTER,
+                        colour = (mod.ui_config or {}).tab_button_colour or G.C.BOOSTER,
                         tabs = mod_tabs
                     })
                 }
@@ -220,7 +224,7 @@ function buildModDescTab(mod)
 
             local authors = localize('b_author' .. (#mod.author > 1 and 's' or '')) .. ': ' .. concatAuthors(mod.author)
 
-            -- Authors names in blue
+            -- Authors names
             table.insert(modNodes, {
                 n = G.UIT.R,
                 config = {
@@ -228,7 +232,9 @@ function buildModDescTab(mod)
                     r = 0.1,
                     emboss = 0.1,
                     outline = 1,
-                    padding = 0.07
+                    padding = 0.07,
+                    outline_colour = (mod.ui_config or {}).author_outline_colour,
+                    colour = (mod.ui_config or {}).author_bg_colour,
                 },
                 nodes = {
                     {
@@ -237,7 +243,7 @@ function buildModDescTab(mod)
                             text = authors,
                             shadow = true,
                             scale = scale * 0.65,
-                            colour = G.C.BLUE,
+                            colour = (mod.ui_config or {}).author_colour or G.C.BLUE,
                         }
                     }
                 }
@@ -480,7 +486,17 @@ function create_UIBox_Other_GameObjects()
             {n=G.UIT.R, config={align = "cm", padding = 0.15}, nodes = custom_gameobject_rows}
         }}
     
-        return create_UIBox_generic_options({ back_func = G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', contents = {t}})
+        return create_UIBox_generic_options({
+            colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).colour),
+            bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
+                (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour),
+            back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
+                (G.ACTIVE_MOD_UI.ui_config or {}).back_colour),
+            outline_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+                (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
+            back_func = G.ACTIVE_MOD_UI and "openModUI_" .. G.ACTIVE_MOD_UI.id or 'your_collection', contents = { t } }
+        )
     else
         return nil
     end
@@ -494,7 +510,16 @@ G.FUNCS.your_collection_consumables = function(e)
 end
 
 function create_UIBox_your_collection_consumables()
-    local t = create_UIBox_generic_options({ back_func = G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', contents = {
+    local t = create_UIBox_generic_options({
+        colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).colour),
+        bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour),
+        back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).back_colour),
+        outline_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+                (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
+        back_func = G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', contents = {
         { n = G.UIT.C, config = { align = 'cm', minw = 11.5, minh = 6 }, nodes = {
             { n = G.UIT.O, config = { id = 'consumable_collection', object = Moveable() },}
         }},
@@ -546,7 +571,7 @@ G.UIDEF.consumable_collection_page = function(page)
         opt_callback = 'your_collection_consumables_page',
         focus_args = { snap_to = true, nav = 'wide' },
         current_option = page or 1,
-        colour = G.C.RED,
+        colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED,
         no_pips = true
     }) }
     local function create_consumable_nodes(_start, _end)
@@ -1785,10 +1810,16 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
 
     G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
     
-    local t =  create_UIBox_generic_options({ back_func = (args and args.back_func) or G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', snap_back = args.snap_back, infotip = args.infotip, contents = {
+    local t = create_UIBox_generic_options({
+        colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or (G.ACTIVE_MOD_UI.ui_config or {}).colour),
+        bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour),
+        back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or (G.ACTIVE_MOD_UI.ui_config or {}).back_colour),
+        outline_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+                (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
+        back_func = (args and args.back_func) or G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', snap_back = args.snap_back, infotip = args.infotip, contents = {
           {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables}, 
           (not args.hide_single_page or cards_per_page < #pool) and {n=G.UIT.R, config={align = "cm"}, nodes={
-            create_option_cycle({options = options, w = 4.5, cycle_shoulders = true, opt_callback = 'SMODS_card_collection_page', current_option = 1, colour = G.C.RED, no_pips = true, focus_args = {snap_to = true, nav = 'wide'}})
+            create_option_cycle({options = options, w = 4.5, cycle_shoulders = true, opt_callback = 'SMODS_card_collection_page', current_option = 1, colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED, no_pips = true, focus_args = {snap_to = true, nav = 'wide'}})
           }} or nil,
       }})
     return t

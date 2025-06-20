@@ -136,6 +136,17 @@ return {
                     "{C:money}#1#{} if held at end of round",
                 },
             },
+            artist = {
+                text = {
+                    "{C:inactive}Artist",
+                },
+            },
+            artist_credit = {
+                name = "Artist",
+                text = {
+                    "{E:1}#1#{}"
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {
@@ -227,6 +238,7 @@ return {
             b_deckskins_lc = 'Low Contrast Colors',
             b_deckskins_hc = 'High Contrast Colors',
             b_deckskins_def = 'Default Colors',
+            b_limit = 'Up to '
 		},
 		v_dictionary = {
 			c_types = '#1# Types',

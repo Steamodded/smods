@@ -105,10 +105,10 @@ target = 'card.lua'
 match_indent = true
 position = 'at'
 pattern = '''
-if self.shop_voucher then G.GAME.current_round.voucher = nil end 
+if self.shop_voucher then G.GAME.current_round.voucher = nil end
 '''
 payload = '''
-if self.shop_voucher then G.GAME.current_round.voucher.spawn[self.config.center_key] = false end 
+if self.shop_voucher then G.GAME.current_round.voucher.spawn[self.config.center_key] = false end
 if self.from_tag then G.GAME.current_round.voucher.spawn[G.GAME.current_round.voucher[1]] = false end
 '''
 [[patches]]
@@ -146,7 +146,6 @@ create_shop_card_ui(card, 'Voucher', G.shop_vouchers)
 payload = '''
 card.from_tag = true
 '''
-
 
 
 # Free Rerolls
@@ -235,3 +234,20 @@ payload = '''
 self.shop_voucher = cardTable.shop_voucher
 '''
 match_indent = true
+
+# poll_edition for playing cards in shop
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+local edition_poll = pseudorandom(pseudoseed('illusion'))
+local edition = {}
+if edition_poll > 1 - 0.15 then edition.polychrome = true
+elseif edition_poll > 0.5 then edition.holo = true
+else edition.foil = true
+end
+card:set_edition(edition)
+'''
+position = 'at'
+match_indent = true
+payload = '''card:set_edition(poll_edition('illusion', nil, true, true))'''

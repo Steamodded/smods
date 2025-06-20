@@ -90,7 +90,7 @@ pattern = '''\{card_limit = 4, type = 'title', highlight_limit = 0\}'''
 position = 'at'
 payload = '''{card_limit = 4, type = 'title', highlight_limit = 0, collection = true}'''
 
-## Save and load Card.unique_val
+## Save and load Card.unique_val, edition options
 # Card:save()
 [[patches]]
 [patches.pattern]
@@ -211,7 +211,7 @@ self.ability.extra_value = self.ability.extra_value or 0
 for k, v in pairs(new_ability) do
     self.ability[k] = v
 end
--- reset keys do not persist an ability change
+-- reset keys do not persist on ability change
 local reset_keys = {'name', 'effect', 'set', 'extra', 'played_this_ante', 'perma_debuff'}
 for _, mod in ipairs(SMODS.mod_list) do
     if mod.set_ability_reset_keys then
@@ -646,7 +646,7 @@ end'''
 target = "card.lua"
 pattern = "if next(find_joker('Smeared Joker')) and (self.base.suit == 'Hearts' or self.base.suit == 'Diamonds') == (suit == 'Hearts' or suit == 'Diamonds') then"
 position = "at"
-payload = "if next(find_joker('Smeared Joker')) and SMODS.smeared_check(self, suit) then"
+payload = "if SMODS.smeared_check(self, suit) then"
 overwrite = true
 match_indent = true
 
@@ -693,4 +693,59 @@ payload = """if SMODS.seeing_double_check(context.scoring_hand, 'Clubs') then
     }
 end"""
 overwrite = true
+match_indent = true
+
+# Card:get_end_of_round_effect
+# prevents Blue Seal crash from a hand with no matching planet card (spawns random planet card)
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = """local card = create_card(card_type,G.consumeables, nil, nil, nil, nil, _planet, 'blusl')"""
+position = 'before'
+payload = """if _planet == 0 then _planet = nil end"""
+match_indent = true
+
+## Fix remove_from_deck being called and unlocking stuff when exiting a run and
+## clearing screen
+# Game:delete_run()
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = 'function Game:delete_run()'
+position = 'after'
+payload = '    G.in_delete_run = true'
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = 'G.STATE = -1'
+position = 'after'
+payload = 'G.in_delete_run = false'
+match_indent = true
+# Card:remove()
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'if self.area then self.area:remove_card(self) end'
+position = 'after'
+payload = 'if G.in_delete_run then goto skip_game_actions_during_remove end'
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'if G.playing_cards then'
+position = 'before'
+payload = '::skip_game_actions_during_remove::'
+match_indent = true
+# CardArea:remove_card()
+[[patches]]
+[patches.pattern]
+target = "cardarea.lua"
+pattern = '''
+self:set_ranks()
+if self == G.deck then check_for_unlock({type = 'modify_deck', deck = self}) end'''
+position = 'at'
+payload = '''
+self:set_ranks()
+if not G.in_delete_run and self == G.deck then check_for_unlock({type = 'modify_deck', deck = self}) end'''
 match_indent = true

@@ -38,7 +38,7 @@
 ---@field locked_loc_vars? fun(self: SMODS.Center|table, info_queue: table, card: Card|table): table Provides simple control over displaying descriptions and toolips of this center when not unlocked. 
 ---@field check_for_unlock? fun(self: SMODS.Center|table, args: table): boolean? Configures unlock conditions. See vanilla implementation of `check_for_unlock` for details on `args` parameters. 
 ---@field set_badges? fun(self: SMODS.Center|table, card: Card|table, badges: table) Append `badges` for additional badges on the UI display of the card. To override the rarity/card type badge, see `SMODS.Center:set_card_type_badge()`. 
----@field set_card_type_badge? fun(self: SMODS.Center|table, card: Card|table, badges: table) Overrides the rarity/card type badges, allowing you to Append `badges` to replace them. To add extra badges, see `SMODS.Center:sset_badges()`. 
+---@field set_card_type_badge? fun(self: SMODS.Center|table, card: Card|table, badges: table) Overrides the rarity/card type badges, allowing you to Append `badges` to replace them. To add extra badges, see `SMODS.Center:set_badges()`. 
 ---@field draw? fun(self: SMODS.Center|table, card: Card|table, layer: string) Draws the sprite and shader of the card. 
 ---@field update? fun(self: SMODS.Center|table, card: Card|table, dt: number) Allows logic for this card to be run per-frame. 
 ---@field set_sprites? fun(self: SMODS.Center|table, card: Card|table, front?: Card|table) Used for setting and manipulating sprites of the card when created or loaded. 
