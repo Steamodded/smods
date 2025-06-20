@@ -457,6 +457,10 @@ function Card:draw(layer)
     self.hover_tilt = 1
     if not self.states.visible then return end
     for _, k in ipairs(SMODS.DrawStep.obj_buffer) do
+      if k == 'front' and self.front_hidden then
+        --sendWarnMessage("Should not draw front of "..self.base.name)
+      else
         if SMODS.DrawSteps[k]:check_conditions(self, layer) then SMODS.DrawSteps[k].func(self, layer) end
+      end
     end
 end
