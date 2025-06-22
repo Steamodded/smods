@@ -1213,6 +1213,7 @@ SMODS.smart_level_up_hand = function(card, hand, instant, amount)
     local vals_after_level
     if SMODS.displaying_scoring and not (SMODS.displayed_hand == hand) then
         vals_after_level = copy_table(G.GAME.current_round.current_hand)
+        vals_after_level.level = (G.GAME.hands[vals_after_level.handname] or {}).level or ''
     end
     if not (instant or SMODS.displayed_hand == hand) then
         update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'),chips = G.GAME.hands[hand].chips, mult = G.GAME.hands[hand].mult, level=G.GAME.hands[hand].level})
@@ -1432,6 +1433,10 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'cards_to_draw' then
         return { [key] = amount }
     end
+
+    if key == 'numerator' or key == 'denominator' then
+        return { [key] = amount }
+    end
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1472,7 +1477,14 @@ SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
     local ret = {}
     for _, key in ipairs(SMODS.calculation_keys) do
         if effect[key] then
-            if effect.juice_card then G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function () effect.juice_card:juice_up(0.1); scored_card:juice_up(0.1); return true end})) end
+            if effect.juice_card then
+                G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function ()
+                    effect.juice_card:juice_up(0.1)
+                    if (not effect.message_card) or (effect.message_card and effect.message_card ~= scored_card) then
+                        scored_card:juice_up(0.1)
+                    end
+                    return true end}))
+            end
             local calc = SMODS.calculate_individual_effect(effect, scored_card, key, effect[key], from_edition)
             if calc == true then ret.calculated = true end
             if type(calc) == 'string' then
@@ -1500,6 +1512,7 @@ SMODS.calculation_keys = {
     'cards_to_draw',
     'message',
     'level_up', 'func', 'extra',
+    'numerator', 'denominator'
 }
 
 SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
@@ -1685,6 +1698,8 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 else
                     local f = SMODS.trigger_effects(effects, _card)
                     for k,v in pairs(f) do flags[k] = v end
+                    if flags.numerator then context.numerator = flags.numerator end
+                    if flags.denominator then context.denominator = flags.denominator end
                 end
             end
         end
@@ -2493,6 +2508,18 @@ function SMODS.merge_effects(...)
         current.extra = eff
     end
     return ret
+end
+
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
+    local additive = SMODS.calculate_context({mod_probability = true, numerator = base_numerator, denominator = base_denominator})
+    local fixed = SMODS.calculate_context({fix_probability = true, numerator = additive.numerator or base_numerator, denominator = additive.denominator or base_denominator})
+    return (fixed.numerator or additive.numerator or base_numerator) * (G.GAME and G.GAME.probabilities.normal or 1), fixed.denominator or additive.denominator or base_denominator
+end
+
+function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator)
+    assert(seed, "Seed not provided to SMODS.pseudorandom_probability")
+    local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator)
+    return pseudorandom(seed) < numerator / denominator
 end
 
 function SMODS.is_poker_hand_visible(handname)

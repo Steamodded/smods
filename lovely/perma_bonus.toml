@@ -221,7 +221,7 @@ position = "at"
 match_indent = true
 payload = '''local ret = (not self.ability.extra_enhancement and self.ability.perma_mult) or 0
 if self.ability.effect == "Lucky Card" then
-    if pseudorandom('lucky_mult') < G.GAME.probabilities.normal/5 then
+    if SMODS.pseudorandom_probability(self, 'lucky_mult', 1, 5) then
         self.lucky_trigger = true
         ret = ret + self.ability.mult
     end
