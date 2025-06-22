@@ -1943,7 +1943,15 @@ function poll_edition(_key, _mod, _no_neg, _guaranteed, _options)
 		if _key == "wheel_of_fortune" or _key == "aura" then -- set base game edition polling
 			_options = { 'e_negative', 'e_polychrome', 'e_holo', 'e_foil' }
 		else
-			_options = get_current_pool("Edition", nil, nil, _key or 'edition_generic')
+			local unordered_options = get_current_pool("Edition", nil, nil, _key or 'edition_generic')
+			_options = {}
+			for _, edition in ipairs(unordered_options) do -- Flip the order of vanilla editions
+				if G.P_CENTERS[edition] and G.P_CENTERS[edition].vanilla then
+					table.insert(_options, 1, edition)
+				else
+					table.insert(_options, edition)
+				end
+			end
 		end
 	end
     for _, v in ipairs(_options) do
