@@ -1213,6 +1213,7 @@ SMODS.smart_level_up_hand = function(card, hand, instant, amount)
     local vals_after_level
     if SMODS.displaying_scoring and not (SMODS.displayed_hand == hand) then
         vals_after_level = copy_table(G.GAME.current_round.current_hand)
+        vals_after_level.level = (G.GAME.hands[vals_after_level.handname] or {}).level or ''
     end
     if not (instant or SMODS.displayed_hand == hand) then
         update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'),chips = G.GAME.hands[hand].chips, mult = G.GAME.hands[hand].mult, level=G.GAME.hands[hand].level})

@@ -2506,32 +2506,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     -- weird hook to artificially initialize G.collab_credits early
+    -- this previously used a local recursive function, which broke modded languages
+    SMODS.init_collab_credits = true
     local ps_ref = Game.prep_stage
     function Game:prep_stage(new_stage, new_state, new_game_obj)
         ps_ref(self, new_stage, new_state, new_game_obj)
         if not G.collab_credits then
-            local visited = {}
-            local function recursive_search(t)
-                if visited[t] then return false end
-                visited[t] = true
-                if type(t) == "table" and t.label == "Collabs" and type(t.tab_definition_function) == "function" then
-                    t.tab_definition_function()
-                    return true
-                end
-                for _, v in ipairs(t) do
-                    if type(v) == "table" and recursive_search(v) then
-                        return true
-                    end
-                end
-                for k, v in pairs(t) do
-                    if type(v) == "table" and recursive_search(v) then
-                        return true
-                    end
-                end
-                return false
-            end
             G.FUNCS.show_credits()
-            local result = recursive_search(G.OVERLAY_MENU)
+            SMODS.init_collab_credits = nil
             G.FUNCS:exit_overlay_menu()
         end
     end
