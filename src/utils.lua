@@ -1551,6 +1551,7 @@ SMODS.calculate_repetitions = function(card, context, reps)
         for _, _card in ipairs(area.cards) do
             --calculate the joker effects
             local eval, post = eval_card(_card, context)
+            local first = true
             for key, value in pairs(eval) do
                 if key ~= 'retriggers' then
                     local curr_size = #reps
@@ -1558,6 +1559,13 @@ SMODS.calculate_repetitions = function(card, context, reps)
                     -- After each inserted repetition we insert the post effects
                     local new_size = #reps
                     for i = curr_size + 1, new_size do
+                        if not first then 
+                            post = {}
+                            if not context.post_trigger and SMODS.optional_features.post_trigger then
+                                SMODS.calculate_context({blueprint_card = context.blueprint_card, post_trigger = true, other_card = _card, other_context = context, other_ret = eval}, post)
+                            end
+                        end
+                        first = nil
                         if next(post) then 
                             reps[#reps - new_size + i].retriggers.retrigger_flag = true
                         else break end
