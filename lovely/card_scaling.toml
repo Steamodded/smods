@@ -1,0 +1,239 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 1
+
+# Injects for global scalar modifiers
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''
+probabilities = {
+    normal = 1,
+},
+'''
+position = "after"
+payload = '''
+scalar_mod = {
+    addative = 0,
+    multiplicative = 1
+},
+'''
+match_indent = true
+times = 1
+
+
+# Patch anything with generic x_mult gain
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + self.ability.extra
+'''
+position = "at"
+payload = '''
+self.ability.x_mult = SMODS.scale_value(self.ability.x_mult, self.ability.extra, self)
+'''
+match_indent = true
+
+
+# Patch anything with generic mult gain
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.mult = self.ability.mult + self.ability.extra
+'''
+position = "at"
+payload = '''
+self.ability.mult = SMODS.scale_value(self.ability.mult, self.ability.extra, self)
+'''
+match_indent = true
+
+
+# Patch anything with generic chip gain
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra.chips = self.ability.extra.chips + self.ability.extra.chip_mod
+'''
+position = "at"
+payload = '''
+self.ability.extra.chips = SMODS.scale_value(self.ability.extra.chips, self.ability.extra.chip_mod, self)
+'''
+match_indent = true
+
+
+# Patch anything with extra value scaling
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra_value = self.ability.extra_value + self.ability.extra
+'''
+position = "at"
+payload = '''
+self.ability.extra_value = SMODS.scale_value(self.ability.extra_value, self.ability.extra, self)
+'''
+match_indent = true
+times = 1
+
+
+# Hologram
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + #context.cards*self.ability.extra
+'''
+position = "at"
+payload = '''
+self.ability.x_mult = SMODS.scale_value(self.ability.x_mult, #context.cards*self.ability.extra, self)
+'''
+match_indent = true
+times = 1
+
+
+# Ceremonial Dagger
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.mult = self.ability.mult + sliced_card.sell_cost*2
+'''
+position = "at"
+payload = '''
+self.ability.mult = SMODS.scale_value(self.ability.mult, sliced_card.sell_cost*2, self)
+'''
+match_indent = true
+times = 1
+
+
+# Canio
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.caino_xmult = self.ability.caino_xmult + faces*self.ability.extra
+'''
+position = "at"
+payload = '''
+self.ability.caino_xmult = SMODS.scale_value(self.ability.caino_xmult, faces*self.ability.extra, self)
+'''
+match_indent = true
+times = 1
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.caino_xmult = self.ability.caino_xmult + face_cards*self.ability.extra
+'''
+position = "at"
+payload = '''
+self.ability.caino_xmult = SMODS.scale_value(self.ability.caino_xmult, face_cards*self.ability.extra, self)
+'''
+match_indent = true
+times = 1
+
+
+# Glass Joker
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + self.ability.extra*glasses
+'''
+position = "at"
+payload = '''
+self.ability.x_mult = SMODS.scale_value(self.ability.x_mult, self.ability.extra*glasses, self)
+'''
+match_indent = true
+times = 1
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + self.ability.extra*glass_cards
+'''
+position = "at"
+payload = '''
+self.ability.x_mult = SMODS.scale_value(self.ability.x_mult, self.ability.extra*glass_cards, self)
+'''
+match_indent = true
+times = 1
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + self.ability.extra*shattered_glass
+'''
+position = "at"
+payload = '''
+self.ability.x_mult = SMODS.scale_value(self.ability.x_mult, self.ability.extra*shattered_glass, self)
+'''
+match_indent = true
+times = 1
+
+
+# Yorick
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + self.ability.extra.xmult
+'''
+position = "at"
+payload = '''
+self.ability.x_mult = SMODS.scale_value(self.ability.x_mult, self.ability.extra.xmult, self)
+'''
+match_indent = true
+times = 1
+
+
+# Rocket
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra.dollars = self.ability.extra.dollars + self.ability.extra.increase
+'''
+position = "at"
+payload = '''
+self.ability.extra.dollars = SMODS.scale_value(self.ability.extra.dollars, self.ability.extra.increase, self)
+'''
+match_indent = true
+times = 1
+
+
+# Vampire
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + self.ability.extra*#enhanced
+'''
+position = "at"
+payload = '''
+self.ability.x_mult = SMODS.scale_value(self.ability.x_mult, self.ability.extra*#enhances, self)
+'''
+match_indent = true
+times = 1
+
+
+# Green Joker
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.mult = self.ability.mult + self.ability.extra.hand_add
+'''
+position = "at"
+payload = '''
+self.ability.mult = SMODS.scale_value(self.ability.mult, self.ability.extra.hand_add, self)
+'''
+match_indent = true
+times = 1

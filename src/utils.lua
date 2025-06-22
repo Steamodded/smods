@@ -2494,3 +2494,9 @@ function SMODS.merge_effects(...)
     end
     return ret
 end
+
+function SMODS.scale_value(value, scalar, card)
+    local modified_scalar = (scalar + G.GAME.scalar_mod.addative) * G.GAME.scalar_mod.multiplicative
+    SMODS.calculate_context({scaling_card = true, scalar = modified_scalar, card = card})
+    return value + scalar
+end
