@@ -2496,8 +2496,8 @@ function SMODS.merge_effects(...)
 end
 
 function SMODS.is_poker_hand_visible(handname)
-    if SMODS.PokerHands[handname].is_visible and type(SMODS.PokerHands[handname].is_visible) == "function" then
-        return not not SMODS.PokerHands[handname]:is_visible()
+    if SMODS.PokerHands[handname].visible and type(SMODS.PokerHands[handname].visible) == "function" then
+        return not not SMODS.PokerHands[handname]:visible()
     end
     return G.GAME.hands[handname].visible
 end
