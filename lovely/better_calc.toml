@@ -14,6 +14,7 @@ position = 'at'
 line_prepend = '$indent'
 payload = '''$handtext
 delay(0.3)
+SMODS.calculate_context({initial_scoring_step = true, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands})
 for _, v in ipairs(SMODS.get_card_areas('playing_cards')) do
     SMODS.calculate_main_scoring({cardarea = v, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands}, v == G.play and scoring_hand or nil)
     delay(0.3)
@@ -1718,3 +1719,19 @@ pattern = '''
 }))
 delay(0.3)'''
 payload = '''    SMODS.displaying_scoring = nil'''
+
+# Joker-type removed context added
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function Card:start_dissolve(dissolve_colours, silent, dissolve_time_fac, no_juice)
+'''
+payload = '''
+    if self.getting_sliced and not (self.ability.set == 'Default' or self.ability.set == 'Enhanced') then
+        local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self})
+        if flags.no_destroy then self.getting_sliced = nil; return end
+    end
+'''

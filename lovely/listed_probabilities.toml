@@ -61,33 +61,33 @@ pattern = '''G.GAME.probabilities.normal, cfg.extra'''
 position = 'at'
 payload = "SMODS.get_probability_vars(card, 1, cfg.extra)"
 
-# Modify Oops All 6s! behaviour
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'at'
-pattern = '''
-for k, v in pairs(G.GAME.probabilities) do 
-    G.GAME.probabilities[k] = v*2
-end
-'''
-payload = '''
--- removed by smods
-'''
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'at'
-pattern = '''
-for k, v in pairs(G.GAME.probabilities) do 
-    G.GAME.probabilities[k] = v/2
-end
-'''
-payload = '''
--- removed by smods
-'''
+# Modify Oops All 6s! behaviour - removed for back compat for now
+# [[patches]]
+# [patches.pattern]
+# target = 'card.lua'
+# match_indent = true
+# position = 'at'
+# pattern = '''
+# for k, v in pairs(G.GAME.probabilities) do 
+#     G.GAME.probabilities[k] = v*2
+# end
+# '''
+# payload = '''
+# -- removed by smods
+# '''
+# [[patches]]
+# [patches.pattern]
+# target = 'card.lua'
+# match_indent = true
+# position = 'at'
+# pattern = '''
+# for k, v in pairs(G.GAME.probabilities) do 
+#     G.GAME.probabilities[k] = v/2
+# end
+# '''
+# payload = '''
+# -- removed by smods
+# '''
 # Add Opps All 6s! calculation
 [[patches]]
 [patches.pattern]
@@ -98,7 +98,7 @@ pattern = '''
 elseif context.buying_card then
 '''
 payload = '''
-elseif context.mod_probability and self.config.center_key == 'j_oops' then
+elseif context.mod_probability and not context.blueprint and self.config.center_key == 'j_oops' then
     return {
         numerator = context.numerator * 2
     }
