@@ -20,6 +20,9 @@ function loadAPIs()
     end
 
     function SMODS.GameObject:__call(o)
+        if o == SMODS then
+            error("Tried to initialize a GameObject with the SMODS table. Check you called with SMODS.<name> and not SMODS:<name>.", 2)
+        end
         o = o or {}
         assert(o.mod == nil, "Created object should not have \"mod\" field defined.")
         o.mod = SMODS.current_mod
@@ -3467,6 +3470,33 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         cycle = 1,
     }
 
+    -------------------------------------------------------------------------------------------------
+    ------- API CODE GameObject.Operator
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.Operators = {}
+    SMODS.Operator = SMODS.GameObject:extend {
+        set = 'Operators',
+        obj_table = SMODS.Operators,
+        obj_buffer = {},
+        required_params = {
+            'key',
+            'func',
+            'node_func'
+        },
+        inject = function() end
+    }
+
+    SMODS.Operator {
+        key = "base",
+        func = function(chips, mult) return chips * mult end,
+        node_func = function(e)
+            e.children[1].config.colour = G.C.UI_MULT
+            e.children[1].config.text = "X"
+            e.children[1].config.text_drawable:set("X")
+            e.children[1].UIBox:recalculate()
+        end
+    }
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
