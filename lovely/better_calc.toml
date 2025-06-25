@@ -830,39 +830,17 @@ payload = '''for _,v in ipairs(SMODS.get_card_areas('playing_cards', 'end_of_rou
 end
 '''
 
-# allow passing tag object to new_round()
+# store associated blind tag as a global object
 [[patches]]
 [patches.pattern]
 target = "functions/button_callbacks.lua"
-pattern = "G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext1').config.object.pop_delay = 0"
+pattern = "G.GAME.round_resets.blind = e.config.ref_table"
 position = "before"
 payload = '''
 local _tag = e.UIBox:get_UIE_by_ID('tag_container')
-_tag = _tag.config and _tag.config.ref_table or nil
+G.GAME.round_resets.blind_tag = _tag.config and _tag.config.ref_table or nil
 '''
 match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "functions/button_callbacks.lua"
-pattern = "new_round()"
-position = "at"
-payload = '''
-new_round(_tag)
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''
-function new_round()
-'''
-position = 'at'
-match_indent = true
-payload = '''
-function new_round(_tag)
-'''
 
 # context.setting_blind
 [[patches]]
@@ -876,7 +854,7 @@ end
 position = 'at'
 match_indent = true
 payload = '''
-SMODS.calculate_context({setting_blind = true, blind = G.GAME.round_resets.blind, tag = _tag})
+SMODS.calculate_context({setting_blind = true, blind = G.GAME.round_resets.blind, tag = G.GAME.round_resets.blind_tag})
 
 -- TARGET: setting_blind effects
 '''
