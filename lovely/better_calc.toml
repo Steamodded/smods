@@ -830,20 +830,7 @@ payload = '''for _,v in ipairs(SMODS.get_card_areas('playing_cards', 'end_of_rou
 end
 '''
 
-
 # allow passing tag object to new_round()
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-pattern = '''
-function new_round()
-'''
-position = 'at'
-match_indent = true
-payload = '''
-function new_round(_tag)
-'''
-
 [[patches]]
 [patches.pattern]
 target = "functions/button_callbacks.lua"
@@ -864,6 +851,18 @@ payload = '''
 new_round(_tag)
 '''
 match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''
+function new_round()
+'''
+position = 'at'
+match_indent = true
+payload = '''
+function new_round(_tag)
+'''
 
 # context.setting_blind
 [[patches]]
