@@ -831,6 +831,40 @@ end
 '''
 
 
+# allow passing tag object to new_round()
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''
+function new_round()
+'''
+position = 'at'
+match_indent = true
+payload = '''
+function new_round(_tag)
+'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext1').config.object.pop_delay = 0"
+position = "before"
+payload = '''
+local _tag = e.UIBox:get_UIE_by_ID('tag_container')
+_tag = _tag.config and _tag.config.ref_table or nil
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "new_round()"
+position = "at"
+payload = '''
+new_round(_tag)
+'''
+match_indent = true
+
 # context.setting_blind
 [[patches]]
 [patches.pattern]
@@ -843,7 +877,7 @@ end
 position = 'at'
 match_indent = true
 payload = '''
-SMODS.calculate_context({setting_blind = true, blind = G.GAME.round_resets.blind})
+SMODS.calculate_context({setting_blind = true, blind = G.GAME.round_resets.blind, tag = _tag})
 
 -- TARGET: setting_blind effects
 '''
