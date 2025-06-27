@@ -291,13 +291,42 @@ position = "after"
 payload = "SMODS.enh_cache:clear()"
 match_indent = true
 
-# Invalidate enhancement cache when card changes
+# Invalidate enhancement cache when card changes / Stone Card Fix Part 1
 [[patches]]
 [patches.pattern]
 target = "card.lua"
 pattern = "function Card:set_ability(center, initial, delay_sprites)"
 position = "after"
-payload = "SMODS.enh_cache:write(self, nil)"
+payload = '''  SMODS.enh_cache:write(self, nil)
+  
+  if self.ability and not initial then
+    self.front_hidden = self:should_hide()
+  end'''
+match_indent = true
+
+# Stone Card Fix Part 2
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:set_ability(center, initial, delay_sprites)"
+position = 'before'
+payload = '''function Card:should_hide()
+  if not (self.ability and self.ability.effect) then return false end
+  return self.ability.effect == 'Stone Card'
+end
+
+'''
+match_indent = true
+
+# Stone Card Fix Part 3
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "self:set_sprites(center)"
+position = "after"
+payload = '''if self.ability and not initial then
+  self.front_hidden = self:should_hide()
+end'''
 match_indent = true
 
 [[patches]]
