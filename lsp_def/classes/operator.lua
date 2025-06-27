@@ -33,6 +33,13 @@ SMODS.Operators = {}
 function SMODS.set_operator(name)
 end
 
+--- Creates a `node_func` for a `SMODS.Operator` given display text and a colour. It's easier to use this if you don't need complexity.
+---@param text string The text to display for the operator.
+---@param colour table The color to display the operator as.
+---@return function The function to be passed to `SMODS.Operator`.
+function SMODS.operator_func(text, colour)
+end
+
 --- Calculates a final round score based on chips, mult, and the current operator.
 ---@param chips number
 ---@param mult number

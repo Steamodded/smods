@@ -3490,6 +3490,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.Operator {
         key = "base",
         func = function(chips, mult) return chips * mult end,
+        -- node_func = SMODS.operator_func("X", G.C.UI_MULT)
         node_func = function(e)
             e.children[1].config.colour = G.C.UI_MULT
             e.children[1].config.text = "X"

@@ -2593,6 +2593,15 @@ function SMODS.set_operator(name)
     current_operator = SMODS.Operators[name]
 end
 
+function SMODS.operator_func(text, colour) return
+    function(e)
+        e.children[1].config.colour = colour
+        e.children[1].config.text = text
+        e.children[1].config.text_drawable:set(text)
+        e.children[1].UIBox:recalculate()
+    end
+end
+
 G.FUNCS.SMODS_operator_node_function = function(e)
     if not (e.config.SMODS_operator_name and e.config.SMODS_operator_name == current_operator.key) then
         current_operator.node_func(e)
