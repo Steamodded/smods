@@ -621,7 +621,7 @@ function buildAchievementsTab(mod, current_page)
     for i = 1, achievements_per_row*2 do
         local v = achievement_tab[i+((achievements_per_row*2)*(current_page-1))]
         if not v then break end
-        local temp_achievement = Sprite(0,0,1.1,1.1,G.ASSET_ATLAS[v.atlas or "achievements"], v.earned and v.pos or {x=0, y=0})
+        local temp_achievement = Sprite(0,0,1.1,1.1,G.ASSET_ATLAS[v.atlas or "achievements"], v.earned and v.pos or v.hidden_pos)
         temp_achievement:define_draw_steps({
             {shader = 'dissolve', shadow_height = 0.05},
             {shader = 'dissolve'}
