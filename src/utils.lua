@@ -1441,6 +1441,10 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'no_destroy' then
         return { [key] = amount }
     end
+
+    if key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' then
+        return { [key] = amount }
+    end
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1519,7 +1523,8 @@ SMODS.calculation_keys = {
     'message',
     'level_up', 'func', 'extra',
     'numerator', 'denominator',
-    'no_destroy'
+    'no_destroy',
+    'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
 }
 SMODS.silent_calculation = {
     saved = true, effect = true, remove = true,
