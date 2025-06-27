@@ -2582,3 +2582,51 @@ G.FUNCS.update_blind_debuff_text = function(e)
         e.UIBox:recalculate()
     end
 end
+
+-- Operator API
+
+local current_operator
+
+-- We can't store this in G.GAME since the game can't serialize functions to a savefile
+local operators = {}
+
+local orig_init = Game.init_game_object
+
+function Game:init_game_object()
+    local ret = orig_init(self)
+    operators = {}
+    ret.current_operator = "base"
+    return ret
+end
+
+local orig_start = Game.start_run
+
+function Game:start_run(args)
+    orig_start(self, args)
+    current_operator = SMODS.Operators[G.GAME.current_operator]
+end
+
+function SMODS.set_operator(name)
+    current_operator = SMODS.Operators[name]
+end
+
+function SMODS.operator_func(text, colour) return
+    function(e)
+        e.children[1].config.colour = colour
+        e.children[1].config.text = text
+        e.children[1].config.text_drawable:set(text)
+        e.children[1].UIBox:recalculate()
+    end
+end
+
+G.FUNCS.SMODS_operator_node_function = function(e)
+    if not (e.config.SMODS_operator_name and e.config.SMODS_operator_name == current_operator.key) then
+        current_operator.node_func(e)
+        e.config.SMODS_operator_name = current_operator.key
+    end
+end
+
+SMODS.calculate_round_score = function(chips, mult)
+    if not current_operator then return 0 end
+    return current_operator.func(chips, mult)
+end
