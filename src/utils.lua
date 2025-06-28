@@ -2431,7 +2431,7 @@ function SMODS.destroy_cards(cards)
     
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
-    for i=1, #cards do
+    for i=#cards, 1, -1 do
         G.E_MANAGER:add_event(Event({
             func = function()
                 if cards[i].shattered then
