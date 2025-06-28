@@ -1506,7 +1506,7 @@ function create_UIBox_current_hands(simple)
 
 	local visible_hands = {}
 	for _, v in ipairs(G.handlist) do
-		if G.GAME.hands[v].visible then
+		if SMODS.is_poker_hand_visible(v) then
 			table.insert(visible_hands, v)
 		end
 	end
@@ -1565,7 +1565,7 @@ G.FUNCS.your_hands_page = function(args)
 
 	local visible_hands = {}
 	for _, v in ipairs(G.handlist) do
-		if G.GAME.hands[v].visible then
+		if SMODS.is_poker_hand_visible(v) then
 			table.insert(visible_hands, v)
 		end
 	end
@@ -1940,28 +1940,34 @@ function poll_edition(_key, _mod, _no_neg, _guaranteed, _options)
 	local available_editions = {}                                          -- Table containing a list of editions and their weights
 
 	if not _options then
-		_options = { 'e_negative', 'e_polychrome', 'e_holo', 'e_foil' }
 		if _key == "wheel_of_fortune" or _key == "aura" then -- set base game edition polling
+			_options = { 'e_negative', 'e_polychrome', 'e_holo', 'e_foil' }
 		else
-			for _, v in ipairs(G.P_CENTER_POOLS.Edition) do
-				local in_pool = (v.in_pool and type(v.in_pool) == "function") and v:in_pool({source = _key})
-				if in_pool or v.in_shop then
-					table.insert(_options, v.key)
+			local unordered_options = get_current_pool("Edition", nil, nil, _key or 'edition_generic')
+			_options = {}
+			for _, edition in ipairs(unordered_options) do -- Flip the order of vanilla editions
+				if G.P_CENTERS[edition] and G.P_CENTERS[edition].vanilla then
+					table.insert(_options, 1, edition)
+				else
+					table.insert(_options, edition)
 				end
 			end
 		end
 	end
-	for _, v in ipairs(_options) do
-		local edition_option = {}
-		if type(v) == 'string' then
-			assert(string.sub(v, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(v))
-			edition_option = { name = v, weight = G.P_CENTERS[v].weight }
-		elseif type(v) == 'table' then
-			assert(string.sub(v.name, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(v.name))
-			edition_option = { name = v.name, weight = v.weight }
-		end
-		table.insert(available_editions, edition_option)
-	end
+    for _, v in ipairs(_options) do
+        local edition_option = {}
+        if type(v) == 'string' then
+            if v ~= 'UNAVAILABLE' then
+                assert(string.sub(v, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(v))
+                edition_option = { name = v, weight = G.P_CENTERS[v].weight }
+        		table.insert(available_editions, edition_option)
+            end
+        elseif type(v) == 'table' then
+            assert(string.sub(v.name, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(v.name))
+            edition_option = { name = v.name, weight = v.weight }
+        	table.insert(available_editions, edition_option)
+        end
+    end
 
 	-- Calculate total weight of editions
 	local total_weight = 0

@@ -1,0 +1,105 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+# Listed probabilities vars in Bloodstone (extra values don't play nicely)
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''elseif self.ability.name == 'Bloodstone' then loc_vars = {''..(G.GAME and G.GAME.probabilities.normal or 1), self.ability.extra.odds, self.ability.extra.Xmult}'''
+position = "at"
+match_indent = true
+payload = '''elseif self.ability.name == 'Bloodstone' then local a, b = SMODS.get_probability_vars(self, 1, self.ability.extra.odds); loc_vars = {a, b, self.ability.extra.Xmult}'''
+
+
+# Listed pseudorandom probabilities in cards
+[[patches]]
+[patches.regex]
+target = 'card.lua'
+pattern = '''pseudorandom\((.*?)\) ?< ?G\.GAME\.probabilities\.normal ?\/ ?(.*?)( |\)|$)'''
+position = 'at'
+payload = "SMODS.pseudorandom_probability(self, $1, 1, $2)$3"
+
+# The Wheel
+# Don't have to modify loc_debuff_text since that's already done via override
+# Also don't have for HUD_blind_debuff_prefix since SMODS makes it unused
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+pattern = '''if self.name == 'The Wheel' and pseudorandom(pseudoseed('wheel')) < G.GAME.probabilities.normal/7 then'''
+position = "at"
+match_indent = true
+payload = '''if self.name == 'The Wheel' and SMODS.pseudorandom_probability(self, pseudoseed('wheel'), 1, 7) then'''
+
+# Listed probabilities vars in Jokers
+[[patches]]
+[patches.regex]
+target = 'card.lua'
+pattern = '''''\.\.\(G.GAME and G.GAME.probabilities.normal or 1\), ?([a-z.]+)'''
+position = 'at'
+payload = "SMODS.get_probability_vars(self, 1, $1)"
+
+# Listed probabilities vars in Hallucination (it's formatted differently for some reason)
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''elseif self.ability.name == 'Hallucination' then loc_vars = {G.GAME.probabilities.normal, self.ability.extra}'''
+position = "at"
+match_indent = true
+payload = '''elseif self.ability.name == 'Hallucination' then loc_vars = {SMODS.get_probability_vars(self, 1, self.ability.extra)}'''
+
+
+
+
+# Listed probabilities vars in Glass Card and Wheel of Fortune
+# Using regex to match inside a line
+[[patches]]
+[patches.regex]
+target = 'functions/common_events.lua'
+pattern = '''G.GAME.probabilities.normal, cfg.extra'''
+position = 'at'
+payload = "SMODS.get_probability_vars(card, 1, cfg.extra)"
+
+# Modify Oops All 6s! behaviour - removed for back compat for now
+# [[patches]]
+# [patches.pattern]
+# target = 'card.lua'
+# match_indent = true
+# position = 'at'
+# pattern = '''
+# for k, v in pairs(G.GAME.probabilities) do 
+#     G.GAME.probabilities[k] = v*2
+# end
+# '''
+# payload = '''
+# -- removed by smods
+# '''
+# [[patches]]
+# [patches.pattern]
+# target = 'card.lua'
+# match_indent = true
+# position = 'at'
+# pattern = '''
+# for k, v in pairs(G.GAME.probabilities) do 
+#     G.GAME.probabilities[k] = v/2
+# end
+# '''
+# payload = '''
+# -- removed by smods
+# '''
+# Add Opps All 6s! calculation
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+elseif context.buying_card then
+'''
+payload = '''
+elseif context.mod_probability and not context.blueprint and self.config.center_key == 'j_oops' then
+    return {
+        numerator = context.numerator * 2
+    }
+'''

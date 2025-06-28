@@ -14,6 +14,7 @@ position = 'at'
 line_prepend = '$indent'
 payload = '''$handtext
 delay(0.3)
+SMODS.calculate_context({initial_scoring_step = true, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands})
 for _, v in ipairs(SMODS.get_card_areas('playing_cards')) do
     SMODS.calculate_main_scoring({cardarea = v, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands}, v == G.play and scoring_hand or nil)
     delay(0.3)
@@ -35,14 +36,14 @@ payload = '''
 function eval_card(card, context)
     context = context or {}
     if not card:can_calculate(context.ignore_debuff, context.remove_playing_cards) then
-        if card.ability.rental then 
+        if card.ability.rental then
             local ret = {}
             ret[SMODS.Stickers.rental] = card:calculate_sticker(context, 'rental')
             return ret, {}
         end
         return {}, {}
     end
-    if context.other_card and context.other_card.can_calculate and not context.other_card:can_calculate(context.ignore_debuff) then return {}, {} end
+    if context.other_card and context.other_card.can_calculate and not context.other_card:can_calculate(context.ignore_other_debuff or context.ignore_debuff) then return {}, {} end
     local ret = {}
 '''
 
@@ -279,7 +280,7 @@ if card.area and area_set[card.area] then
     if type(jokers) ~= 'table' then jokers = nil end
     if jokers or triggered then
         ret.jokers = jokers
-        if not (context.retrigger_joker_check or context.retrigger_joker) and not (jokers and jokers.no_retrigger) then
+        if not (context.retrigger_joker_check or context.retrigger_joker) and not (jokers and jokers.no_retrigger) and not context.mod_probability and not context.fix_probability then
             local retriggers = SMODS.calculate_retriggers(card, context, ret)
             if next(retriggers) then
                 ret.retriggers = retriggers
@@ -541,7 +542,7 @@ match_indent = true
 position = "at"
 payload = '''
 local effects = {}
-SMODS.calculate_context({discard = true, other_card =  G.hand.highlighted[i], full_hand = G.hand.highlighted}, effects)
+SMODS.calculate_context({discard = true, other_card =  G.hand.highlighted[i], full_hand = G.hand.highlighted, ignore_other_debuff = true}, effects)
 SMODS.trigger_effects(effects)
 for _, eval in pairs(effects) do
     if type(eval) == 'table' then
@@ -589,6 +590,45 @@ payload = '''
 SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, final_scoring_step = true})
 
 -- TARGET: effects before deck final_scoring_step
+'''
+
+# context.destroying_card
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''
+for j = 1, #G.jokers.cards do
+    destroyed = G.jokers.cards[j]:calculate_joker({destroying_card = scoring_hand[i], full_hand = G.play.cards})
+    if destroyed then break end
+end
+
+if scoring_hand[i].ability.name == 'Glass Card' and not scoring_hand[i].debuff and pseudorandom('glass') < G.GAME.probabilities.normal/scoring_hand[i].ability.extra then
+    destroyed = true
+end'''
+match_indent = true
+position = "at"
+payload = '''
+-- context.destroying_card calculations
+for j = 1, #G.jokers.cards do
+    local eval, post = eval_card(G.jokers.cards[j], {destroying_card = scoring_hand[i], full_hand = G.play.cards})
+    SMODS.trigger_effects({eval, post}, scoring_hand[i])
+    if eval.jokers then destroyed = true end
+
+end
+
+if SMODS.has_enhancement(scoring_hand[i], 'm_glass') and scoring_hand[i]:can_calculate() and SMODS.pseudorandom_probability(scoring_hand[i], 'glass', 1, scoring_hand[i].ability.name == 'Glass Card' and scoring_hand[i].ability.extra or G.P_CENTERS.m_glass.config.extra) then
+    destroyed = true
+end
+
+local eval, post = eval_card(scoring_hand[i], {destroying_card = scoring_hand[i], full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, cardarea = G.play})
+local self_destroy = false
+for key, effect in pairs(eval) do
+    self_destroy = SMODS.calculate_effect(effect, scoring_hand[i])
+end
+SMODS.trigger_effects({post}, scoring_hand[i])
+if self_destroy then destroyed = true end
+
+-- TARGET: card destroyed when played
 '''
 
 # context.remove_playing_cards
@@ -720,6 +760,35 @@ for _, area in ipairs(SMODS.get_card_areas('jokers')) do
     end
 end
 '''
+
+# context.round_eval
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = '''
+G.GAME.selected_back:trigger_effect({context = 'eval'})
+'''
+position = 'before'
+match_indent = true
+payload = '''
+SMODS.calculate_context{round_eval = true}
+'''
+
+# Add better `add_round_eval_row` support   
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+elseif string.find(config.name, 'joker') then
+'''
+payload = '''
+elseif config.name == 'custom' then
+    if config.number then table.insert(left_text, {n=G.UIT.T, config={text = config.number, scale = 0.8*scale, colour = config.number_colour or G.C.FILTER, shadow = true, juice = true}}) end
+    table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = {" "..config.text}, colours = {config.text_colour or G.C.UI.TEXT_LIGHT}, shadow = true, pop_in = 0, scale = 0.4*scale, silent = true})}})
+'''
+
 
 # context.end_of_round
 [[patches]]
@@ -1458,7 +1527,7 @@ payload = '''
 SMODS.calculate_context({ending_booster = true, booster = booster_obj})
 '''
 
-# Fix playing_card_added jank
+# Fix Certificate to use SMODS.poll_seal and use playing_card_added context correctly
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -1485,25 +1554,19 @@ G.E_MANAGER:add_event(Event({
 playing_card_joker_effects({true})
 '''
 payload = '''
-local _card = create_playing_card({
-    front = pseudorandom_element(G.P_CARDS, pseudoseed('cert_fr')),
-    center = G.P_CENTERS.c_base}, G.discard, true, nil, {G.C.SECONDARY_SET.Enhanced}, true)
-local seal_type = pseudorandom(pseudoseed('certsl'))
-if seal_type > 0.75 then _card:set_seal('Red', true)
-elseif seal_type > 0.5 then _card:set_seal('Blue', true)
-elseif seal_type > 0.25 then _card:set_seal('Gold', true)
-else _card:set_seal('Purple', true)
-end
 G.E_MANAGER:add_event(Event({
     func = function()
-        G.hand:emplace(_card)
-        _card:start_materialize()
+        local _card = create_playing_card({
+            front = pseudorandom_element(G.P_CARDS, pseudoseed('cert_fr')),
+            center = G.P_CENTERS.c_base}, G.hand, nil, nil, {G.C.SECONDARY_SET.Enhanced})
+        _card:set_seal(SMODS.poll_seal({type_key = 'certsl', guaranteed = true}))
         G.GAME.blind:debuff_card(_card)
         G.hand:sort()
         if context.blueprint_card then context.blueprint_card:juice_up() else self:juice_up() end
+        playing_card_joker_effects({_card})
+        save_run()
         return true
     end}))
-playing_card_joker_effects({_card})
 
 '''
 # create_playing_card
@@ -1530,7 +1593,7 @@ payload = '''
 if area and not skip_emplace then area:emplace(card) end
 '''
 
-## playing_card_joker_effects/playing_card_added should get cards, not {true}
+## Fix Marble Joker to send the created card to playing_card_added correctly
 # Marble Joker
 [[patches]]
 [patches.pattern]
@@ -1560,26 +1623,20 @@ G.E_MANAGER:add_event(Event({
 playing_card_joker_effects({true})
 '''
 payload = '''
-local front = pseudorandom_element(G.P_CARDS, pseudoseed('marb_fr'))
-G.playing_card = (G.playing_card and G.playing_card + 1) or 1
-local card = Card(G.discard.T.x + G.discard.T.w/2, G.discard.T.y, G.CARD_W, G.CARD_H, front, G.P_CENTERS.m_stone, {playing_card = G.playing_card})
 G.E_MANAGER:add_event(Event({
     func = function()
-        card:start_materialize({G.C.SECONDARY_SET.Enhanced})
-        G.play:emplace(card)
-        table.insert(G.playing_cards, card)
+        local card = create_playing_card({
+            front = pseudorandom_element(G.P_CARDS, pseudoseed('marb_fr')),
+            center = G.P_CENTERS.m_stone}, G.play, nil, nil, {G.C.SECONDARY_SET.Enhanced})
+        SMODS.calculate_effect({message = localize('k_plus_stone'), colour = G.C.SECONDARY_SET.Enhanced}, context.blueprint_card or self)
+        G.E_MANAGER:add_event(Event({
+        func = function()
+            draw_card(G.play,G.deck, 90,'up', nil)
+            return true
+        end}))
+        playing_card_joker_effects({card})
         return true
     end}))
-card_eval_status_text(context.blueprint_card or self, 'extra', nil, nil, nil, {message = localize('k_plus_stone'), colour = G.C.SECONDARY_SET.Enhanced})
-
-G.E_MANAGER:add_event(Event({
-    func = function()
-        G.deck.config.card_limit = G.deck.config.card_limit + 1
-        return true
-    end}))
-    draw_card(G.play,G.deck, 90,'up', nil)
-
-playing_card_joker_effects({card})
 '''
 # DNA
 [[patches]]
@@ -1601,11 +1658,12 @@ pattern = 'if context.cardarea == G.jokers then'
 payload = 'do'
 
 [[patches]]
-[patches.regex]
+[patches.pattern]
 target = 'game.lua'
 position = 'at'
-pattern = 'G.GAME.blind:get_loc_debuff_text\(\)'
-payload = 'SMODS.debuff_text or G.GAME.blind:get_loc_debuff_text()'
+pattern = '{n=G.UIT.O, config={object = DynaText({scale = 0.6, string = G.GAME.blind:get_loc_debuff_text(), maxw = 9, colours = {G.C.WHITE},float = true, shadow = true, silent = true, pop_in = 0, pop_in_rate = 6})}},'
+payload = '{n=G.UIT.O, config={func = "update_blind_debuff_text", object = DynaText({scale = 0.6, string = SMODS.debuff_text or G.GAME.blind:get_loc_debuff_text(), maxw = 9, colours = {G.C.WHITE},float = true, shadow = true, silent = true, pop_in = 0, pop_in_rate = 6})}},'
+match_indent = true
 
 # Custom saved message
 [[patches]]
@@ -1661,3 +1719,19 @@ pattern = '''
 }))
 delay(0.3)'''
 payload = '''    SMODS.displaying_scoring = nil'''
+
+# Joker-type removed context added
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function Card:start_dissolve(dissolve_colours, silent, dissolve_time_fac, no_juice)
+'''
+payload = '''
+    if self.getting_sliced and not (self.ability.set == 'Default' or self.ability.set == 'Enhanced') then
+        local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self})
+        if flags.no_destroy then self.getting_sliced = nil; return end
+    end
+'''

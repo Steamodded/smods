@@ -935,6 +935,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         inject_card = function(self, center)
             if center.set ~= self.key then SMODS.insert_pool(G.P_CENTER_POOLS[self.key], center) end
+            if not center.pools then center.pools = {} end
+            center.pools[self.key] = true
             local default_rarity_check = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
             if self.rarities and center.rarity and self.rarity_pools[default_rarity_check[center.rarity] or center.rarity] then
                 SMODS.insert_pool(self.rarity_pools[default_rarity_check[center.rarity] or center.rarity], center)
@@ -942,6 +944,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         delete_card = function(self, center)
             if center.set ~= self.key then SMODS.remove_pool(G.P_CENTER_POOLS[self.key], center.key) end
+            if center.pools then center.pools[self.key] = nil end
             local default_rarity_check = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
             if self.rarities and center.rarity and self.rarity_pools[default_rarity_check[center.rarity] or center.rarity] then
                 SMODS.remove_pool(self.rarity_pools[default_rarity_check[center.rarity] or center.rarity], center.key)
@@ -1531,7 +1534,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if G.GAME.used_vouchers.v_telescope and i == 1 then
                 local _planet, _hand, _tally = nil, nil, 0
                 for k, v in ipairs(G.handlist) do
-                    if G.GAME.hands[v].visible and G.GAME.hands[v].played > _tally then
+                    if SMODS.is_poker_hand_visible(v) and G.GAME.hands[v].played > _tally then
                         _hand = v
                         _tally = G.GAME.hands[v].played
                     end
@@ -1695,16 +1698,18 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     })
     SMODS.Blind:take_ownership('wheel', {
         loc_vars = function(self)
-            return { vars = { G.GAME.probabilities.normal } }
+            return { vars = { SMODS.get_probability_vars(self, 1, 7) } }
         end,
         collection_loc_vars = function(self)
-            return { vars = { '1' }}
+            return { vars = { '1', '7' }}
         end,
         process_loc_text = function(self)
             local text = G.localization.descriptions.Blind[self.key].text[1]
             if string.sub(text, 1, 3) ~= '#1#' then
                 G.localization.descriptions.Blind[self.key].text[1] = "#1#"..text
             end
+            -- Is this too much hacky?
+            G.localization.descriptions.Blind[self.key].text[1] = string.gsub(G.localization.descriptions.Blind[self.key].text[1], "7", "#2#")
             SMODS.Blind.process_loc_text(self)
         end,
         get_loc_debuff_text = function() return G.GAME.blind.loc_debuff_text end,
@@ -2501,32 +2506,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     -- weird hook to artificially initialize G.collab_credits early
+    -- this previously used a local recursive function, which broke modded languages
+    SMODS.init_collab_credits = true
     local ps_ref = Game.prep_stage
     function Game:prep_stage(new_stage, new_state, new_game_obj)
         ps_ref(self, new_stage, new_state, new_game_obj)
         if not G.collab_credits then
-            local visited = {}
-            local function recursive_search(t)
-                if visited[t] then return false end
-                visited[t] = true
-                if type(t) == "table" and t.label == "Collabs" and type(t.tab_definition_function) == "function" then
-                    t.tab_definition_function()
-                    return true
-                end
-                for _, v in ipairs(t) do
-                    if type(v) == "table" and recursive_search(v) then
-                        return true
-                    end
-                end
-                for k, v in pairs(t) do
-                    if type(v) == "table" and recursive_search(v) then
-                        return true
-                    end
-                end
-                return false
-            end
             G.FUNCS.show_credits()
-            local result = recursive_search(G.OVERLAY_MENU)
+            SMODS.init_collab_credits = nil
             G.FUNCS:exit_overlay_menu()
         end
     end
@@ -3127,10 +3114,18 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.Enhancement:take_ownership('glass', {
         calculate = function(self, card, context)
-            if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and pseudorandom('glass') < G.GAME.probabilities.normal/card.ability.extra then
+            if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and SMODS.pseudorandom_probability(card, 'glass', 1, card.ability.extra) then
                 card.glass_trigger = true
                 return { remove = true }
             end
+        end,
+    })
+    SMODS.Enhancement:take_ownership('lucky', {
+        loc_vars = function (self, info_queue, card)
+            local cfg = (card and card.ability) or self.config
+            local numerator_mult, denominator_mult = SMODS.get_probability_vars(card, 1, 5)
+            local numerator_dollars, denominator_dollars = SMODS.get_probability_vars(card, 1, 15)
+            return {vars = {numerator_mult, cfg.mult, denominator_mult, cfg.p_dollars, denominator_dollars, numerator_dollars}}
         end,
     })
 
@@ -3238,6 +3233,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "foil1", per = 1.2, vol = 0.4 },
         weight = 20,
         extra_cost = 2,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return G.GAME.edition_rate * self.weight
         end,
@@ -3269,6 +3266,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "holo1", per = 1.2 * 1.58, vol = 0.4 },
         weight = 14,
         extra_cost = 3,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return G.GAME.edition_rate * self.weight
         end,
@@ -3300,6 +3299,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "polychrome1", per = 1.2, vol = 0.7 },
         weight = 3,
         extra_cost = 5,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return (G.GAME.edition_rate - 1) * G.P_CENTERS["e_negative"].weight + G.GAME.edition_rate * self.weight
         end,
@@ -3331,6 +3332,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "negative", per = 1.5, vol = 0.4 },
         weight = 3,
         extra_cost = 5,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return self.weight
         end,

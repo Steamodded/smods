@@ -13,6 +13,7 @@ target = "functions/misc_functions.lua"
 pattern = "function pseudorandom_element(_t, seed)"
 position = "at"
 payload = """function pseudorandom_element(_t, seed, args)
+    if seed and type(seed) == "string" then seed = pseudoseed(seed) end
     -- TODO special cases for now
     -- Preserves reverse nominal order for Suits, nominal+face_nominal order for Ranks
     -- for vanilla RNG
@@ -32,13 +33,13 @@ pattern = "keys[#keys+1] = {k = k,v = v}"
 position = "at"
 payload = """
 local keep = true
-local in_pool_func = 
+local in_pool_func =
     args and args.in_pool
     or type(v) == 'table' and type(v.in_pool) == 'function' and v.in_pool
     or _t == G.P_CARDS and function(c)
             --Handles special case for Erratic Deck
             local initial_deck = args and args.starting_deck or false
-            
+
             return not (
                 type(SMODS.Ranks[c.value].in_pool) == 'function' and not SMODS.Ranks[c.value]:in_pool({initial_deck = initial_deck, suit = c.suit})
                 or type(SMODS.Suits[c.suit].in_pool) == 'function' and not SMODS.Suits[c.suit]:in_pool({initial_deck = initial_deck, rank = c.value})
@@ -119,10 +120,24 @@ pool_opts = pool_opts or {}
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
+pattern = '''
+if _type == 'Enhanced' then
+    add = true
+'''
+match_indent = true
+position = 'after'
+payload = '''
+elseif _type == 'Edition' then
+    if v.in_shop then add = true end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
 pattern = 'elseif not (G.GAME.used_jokers[v.key] and not next(find_joker("Showman"))) and'
 match_indent = true
 position = 'at'
-payload = '''elseif not (G.GAME.used_jokers[v.key] and not pool_opts.allow_duplicates and not next(find_joker("Showman"))) and'''
+payload = '''elseif not (G.GAME.used_jokers[v.key] and not pool_opts.allow_duplicates and not SMODS.showman(v.key)) and'''
 
 [[patches]]
 [patches.pattern]
@@ -134,6 +149,18 @@ payload = '''
 if v.in_pool and type(v.in_pool) == 'function' then
     add = in_pool and (add or pool_opts.override_base_checks)
 end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''
+elseif _type == 'Tag' then _pool[#_pool + 1] = "tag_handy"
+'''
+match_indent = true
+position = 'after'
+payload = '''
+elseif _type == 'Edition' then _pool[#_pool + 1] = "e_foil"
 '''
 
 ## G.GAME.used_jokers now checks keys, not names
