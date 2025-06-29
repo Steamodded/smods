@@ -1738,14 +1738,48 @@ end
 local smods_card_load = Card.load
 --
 function Card:load(cardTable, other_card)
+	if SMODS.optional_features.scale_context then
+		self:remove_ability_proxy()
+	end
+
 	local ret = smods_card_load(self, cardTable, other_card)
 	local on_edition_loaded = self.edition and self.edition.key and G.P_CENTERS[self.edition.key].on_load
 	if type(on_edition_loaded) == "function" then
 		on_edition_loaded(self)
 	end
 
+	if SMODS.optional_features.scale_context then
+		self:set_ability_proxy()
+	end
+
 	return ret
 end
+
+local smods_card_save = Card.save
+function Card:save()
+	if SMODS.optional_features.scale_context then
+		self:remove_ability_proxy()
+		local ret = smods_card_save(self)
+		ret.ability = copy_table(self.ability)
+		self:set_ability_proxy()
+		return ret
+	end
+    
+    return smods_card_save(self)
+end
+
+local smods_set_ability = Card.set_ability
+function Card:set_ability(center, initial, delay_sprites)
+	if SMODS.optional_features.scale_context then
+		self:remove_ability_proxy()
+    	local ret = smods_set_ability(self, center, initial, delay_sprites)
+		self:set_ability_proxy()
+		return ret
+	end
+    
+    return smods_set_ability(self, center, initial, delay_sprites)
+end
+
 
 -- self = pass the card
 -- edition =
@@ -2303,4 +2337,59 @@ function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips, scoring_h
 	_G.mult, _G.hand_chips, modded = modify_hand(self, cards, poker_hands, text, mult, hand_chips, scoring_hand)
 	local flags = SMODS.calculate_context({ modify_hand = true, poker_hands = poker_hands, scoring_name = text, scoring_hand = scoring_hand, full_hand = cards })
 	return _G.mult, _G.hand_chips, modded or flags.calculated
+end
+
+
+local card_status_text = card_eval_status_text
+function card_eval_status_text(card, eval_type, amt, percent, dir, extra)
+	if not SMODS.optional_features.scale_context then
+		return card_status_text(card, eval_type, amt, percent, dir, extra)
+	end
+
+	if SMODS.overwrite_scale_message.card == card then
+		if SMODS.overwrite_scale_message.skip then return end
+
+		if SMODS.overwrite_scale_message.overwrite_message then
+			extra.message = SMODS.overwrite_scale_message.overwrite_message
+			return card_status_text(card, eval_type, amt, percent, dir, extra)
+		end
+	end
+
+	SMODS.overwrite_scale_message = {}
+	if SMODS.mod_scale_message.card == card then
+		if amt then
+			amt = amt * (SMODS.mod_scale_message.mod or 1) + (SMODS.mod_scale_message.add or 0)
+		elseif extra and extra.message then
+			local msg = extra.message
+			local sign, sign_end = string.find(msg, '^[+-X]?')
+			local sign_sub = ''
+			if sign then
+				sign_sub = string.sub(msg, sign, sign_end)
+				msg = string.gsub(msg, sign_sub, '')
+			end
+
+			local num, num_end = string.find(msg, '[%d,.]+')
+			if num then
+				local num_sub = string.sub(msg, num, num_end)
+				local to_num = tonumber(num_sub)
+				if to_num then
+					to_num = to_num * (SMODS.mod_scale_message.mod or 1) + (SMODS.mod_scale_message.add or 0)
+					msg = string.gsub(msg, num_sub, tostring(to_num))
+				end
+			end
+
+			extra.message = sign_sub..msg
+		end
+	else
+		SMODS.mod_scale_message = {}
+	end
+
+	local ret = card_status_text(card, eval_type, amt, percent, dir, extra)
+	
+	while SMODS.anticipate_scale_message[1] and SMODS.anticipate_scale_message[1].expect_card == (extra and extra.focus or card) do
+		card_status_text(SMODS.anticipate_scale_message[1].respond_card, 'extra', nil, percent, nil, SMODS.anticipate_scale_message[1].extra)
+		table.remove(SMODS.anticipate_scale_message, 1)
+	end
+
+	return ret
 end

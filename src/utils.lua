@@ -1224,9 +1224,51 @@ SMODS.smart_level_up_hand = function(card, hand, instant, amount)
     end
 end
 
+local valid_message_keys = {
+    ['p_dollars'] = true,
+    ['dollars'] = true,
+    ['h_dollars'] = true,
+    ['mult'] = true,
+    ['h_mult'] = true,
+    ['mult_mod'] = true,
+    ['chips'] = true,
+    ['h_chips'] = true,
+    ['chip_mod'] = true,
+    ['x_chips'] = true,
+    ['xchips'] = true,
+    ['Xchip_mod'] = true,
+    ['x_mult'] = true,
+    ['xmult'] = true,
+    ['Xmult'] = true,
+    ['x_mult_mod'] = true,
+    ['Xmult_mod'] = true,
+    ['swap'] = true,
+    ['balance'] = true,
+    ['level_up'] = true
+}
+
 -- This function handles the calculation of each effect returned to evaluate play.
 -- Can easily be hooked to add more calculation effects ala Talisman
 SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, from_edition)
+    local old_card = effect.card
+    if SMODS.optional_features.scale_context and (next(SMODS.overwrite_scale_message) or next(SMODS.mod_scale_message)) then
+        local key_valid = false
+        for k, _ in pairs(effect) do
+            if valid_message_keys[k] then
+                key_valid = true
+                break
+            end
+        end
+        
+        if next(SMODS.overwrite_scale_message) and not key_valid and (not effect.card or (effect.card and not effect.card.playing_card)) then
+            -- prevents a card from ticking when the message is passed up
+            effect.card = nil
+        elseif key_valid then
+            SMODS.mod_scale_message = {}
+            SMODS.overwrite_scale_message = {}
+        end
+    end
+
     if (key == 'chips' or key == 'h_chips' or key == 'chip_mod') and amount then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         hand_chips = mod_chips(hand_chips + amount)
@@ -1441,6 +1483,9 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'no_destroy' then
         return { [key] = amount }
     end
+
+    SMODS.anticipate_scale_message = {}
+    effect.card = old_card
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -2581,4 +2626,191 @@ G.FUNCS.update_blind_debuff_text = function(e)
         e.config.object:update_text(true)
         e.UIBox:recalculate()
     end
+end
+
+--- table for keys considered valid for scaling
+SMODS.valid_scaling_keys = {
+	['mult'] = true,
+	['h_mult'] = true,
+	['h_x_mult'] = true,
+	['h_dollars'] = true,
+	['p_dollars'] = true,
+	['t_mult'] = true,
+	['t_chips'] = true,
+	['x_mult'] = true,
+	['h_chips'] = true,
+	['x_chips'] = true,
+	['h_x_chips'] = true,
+	['h_size'] = true,
+	['d_size'] = true,
+    ['extra'] = true,
+	['extra_value'] = true,
+	['perma_bonus'] = true,
+	['perma_x_chips'] = true,
+	['perma_mult'] = true,
+	['perma_x_mult'] = true,
+	['perma_h_chips'] = true,
+	['perma_h_mult'] = true,
+	['perma_h_x_mult'] = true,
+	['perma_p_dollars'] = true,
+	['perma_h_dollars'] = true,
+	['caino_xmult'] = true,
+	['invis_rounds'] = true
+}
+
+SMODS.overwrite_scale_message = {}
+SMODS.anticipate_scale_message = {}
+SMODS.mod_scale_message = {}
+
+--- Recursively creates proxies of a give table (typically the ability table)
+--- Does not create proxies of Object items
+--- @param card table Balatro card object to save ability table of
+--- @param tree table Empty table to save the tree to
+--- @param card_table table | nil leave nil on non-recursive call
+--- @param key string | nil leave nil on non-recursive call
+--- @param first_pass boolean | nil leave nil on non-recursive call
+function SMODS.create_ability_proxies(card, tree, card_table, key, first_pass)
+    if first_pass == nil then
+        first_pass = true
+        key = 'ability'
+        if not (card_table or card)[key] then return end
+    else
+        first_pass = nil
+    end
+    
+    -- store the reference to the original table here
+    tree[key..'_orig_table'] = (card_table or card)[key]
+
+    -- find all nested tables by their keys
+    local nested_proxies = {}
+	for k, v in pairs((card_table or card)[key]) do
+        -- don't create proxies of anything but the extra table
+		if type(v) == 'table' and not (v.is and v:is(Object)) and not (key == 'ability' and k ~= 'extra') then
+            -- create a new tree node
+            tree[k] = {}
+
+            -- recursive function call to create deeper proxies
+            nested_proxies[k] = SMODS.create_ability_proxies(card, tree[k], (card_table or card)[key], k, false)
+		end
+	end
+
+    -- set the original table to a proxy and assign all nested proxies
+    (card_table or card)[key] = {}
+    for k, v in pairs(nested_proxies) do
+        (card_table or card)[key][k] = v
+    end
+
+    -- set metatable after actions have been handled on this table level
+    -- to prevent any weird response to setting table values in the recursive calls
+    setmetatable((card_table or card)[key], {
+        __newindex = function (t,k,v)
+            if tree[key..'_orig_table'][k] == v then return end
+
+            if G.STAGE ~= G.STAGES.RUN or not card.area or card.area.config.collection or (t == card.ability and not SMODS.valid_scaling_keys[k]) then
+                tree[key..'_orig_table'][k] = v
+                return
+            end
+
+            local ret = {}
+            for _, joker in ipairs(G.jokers.cards) do
+                local eval = eval_card(joker, {card_scale = card, key = k, old_val = tree[key..'_orig_table'][k], new_val = v})
+               
+                if eval.jokers then
+                    local recurse = eval.jokers
+
+                    repeat
+                        ret.prevent_scale = ret.prevent_scale or recurse.prevent_scale
+                        ret.overwrite = recurse.overwrite or ret.overwrite
+
+                        if not ret.prevent_scale and not ret.overwrite then
+                            if recurse.scale_add and type(recurse.scale_add) == 'number' and type(tree[key..'_orig_table'][k]) == 'number' then
+                                ret.add = (ret.add or 0) + recurse.scale_add
+                            end
+
+                            if recurse.scale_mod and type(recurse.scale_mod) == 'number' and type(tree[key..'_orig_table'][k]) == 'number' then
+                                ret.mod = (ret.mod or 1) * recurse.scale_mod
+                            end
+
+                            -- you can do multiple scale messages in a row if you want
+                            if recurse.scale_message then
+                                sendDebugMessage('respond card: '..(recurse.message_card or recurse.juice_card or joker or recurse.card or recurse.focus).config.center.key)
+                                sendDebugMessage('expect card: '..card.config.center.key)
+                                SMODS.anticipate_scale_message[#SMODS.anticipate_scale_message+1] = {
+                                    respond_card = recurse.message_card or recurse.juice_card or joker or recurse.card or recurse.focus,
+                                    expect_card = card,
+                                    extra = {
+                                        message = recurse.scale_message,
+                                        colour = recurse.colour,
+                                        delay = recurse.delay
+                                    }
+                                }
+                            end
+                        end
+                        recurse = recurse.extra
+                        
+                    until recurse == nil or type(recurse) ~= 'table'
+                end
+                
+                SMODS.trigger_effects({eval}, joker)
+            end
+
+            if ret.prevent_scale or ret.overwrite then 
+                SMODS.overwrite_scale_message = { card = card, overwrite_message = ret.overwrite, skip = (not not ret.prevent_scale) }
+                return
+            end
+
+            SMODS.overwrite_scale_message = {}
+
+            local new_val = v
+            if ret.overwrite then
+                new_val = ret.overwrite
+            elseif ret.mod then
+                local diff = new_val - tree[key..'_orig_table'][k]
+                new_val = tree[key..'_orig_table'][k] + diff * ret.mod
+                SMODS.mod_scale_message = { card = card, mod = ret.mod, add = ret.add }
+            else
+                SMODS.mod_scale_message = {}
+            end
+
+            tree[key..'_orig_table'][k] = new_val
+        end,
+
+        __index = function (t,k)
+            return tree[key..'_orig_table'][k]
+        end
+    })
+
+    return (card_table or card)[key]
+end
+
+function SMODS.reset_recursive_proxies(parent, proxy_tree, key)
+    if not key then key = 'ability' end
+
+    -- reset the table reference
+    parent[key] = proxy_tree[key..'_orig_table']
+    setmetatable(parent[key], nil)
+
+    -- search for nested proxies
+    for k, _ in pairs(proxy_tree) do
+        if k ~= key..'_orig_table' then
+            SMODS.reset_recursive_proxies(parent[key], proxy_tree[k], k)
+        end
+    end
+end
+
+function Card:set_ability_proxy()
+    self.ability_ref = nil
+    if self.config.center.config.prevent_proxy then
+        return
+    end
+
+    self.ability_ref = {}
+    SMODS.create_ability_proxies(self, self.ability_ref)
+end
+
+function Card:remove_ability_proxy()
+    if not self.ability_ref then return end
+
+    SMODS.reset_recursive_proxies(self, self.ability_ref)
+    self.ability_ref = nil
 end
