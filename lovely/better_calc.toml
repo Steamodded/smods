@@ -813,7 +813,7 @@ match_indent = true
 payload = '''
 -- context.end_of_round calculations
 SMODS.saved = false
-SMODS.calculate_context({end_of_round = true, game_over = game_over })
+SMODS.calculate_context({end_of_round = true, game_over = game_over, beat_boss = G.GAME.blind.boss })
 if SMODS.saved then game_over = false end
 -- TARGET: main end_of_round evaluation
 '''
@@ -826,7 +826,7 @@ position = 'at'
 pattern = '''(?<indent>[\t ]*)for i=1, #G\.hand\.cards do\n\s+--Check for hand doubling\n(.*\n)*?\s+delay\(0\.3\)'''
 line_prepend = '$indent'
 payload = '''for _,v in ipairs(SMODS.get_card_areas('playing_cards', 'end_of_round')) do
-    SMODS.calculate_end_of_round_effects({ cardarea = v, end_of_round = true })
+    SMODS.calculate_end_of_round_effects({ cardarea = v, end_of_round = true, beat_boss = G.GAME.blind.boss })
 end
 '''
 
