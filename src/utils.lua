@@ -2533,7 +2533,9 @@ function SMODS.merge_effects(...)
     local t = {}
     for _, v in ipairs({...}) do
         for _, vv in ipairs(v) do
-            table.insert(t, vv)
+            if vv == true or type(vv) == "table" then 
+                table.insert(t, vv)
+            end
         end
     end
     local ret = table.remove(t, 1)
