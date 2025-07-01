@@ -24,21 +24,6 @@ line_prepend = '$indent'
 payload = '''
 card:set_seal(SMODS.poll_seal({mod = 10}))'''
 
-# Card:calculate_joker()
-[[patches]]
-[patches.regex]
-target = 'card.lua'
-pattern = '''
-(?<indent>[\t ]*)local seal_type = pseudorandom\(pseudoseed\('certsl'\)\)
-[\n\t ]*if seal_type > 0.75 then _card:set_seal\('Red', true\)
-[\n\t ]*elseif seal_type > 0.5 then _card:set_seal\('Blue', true\)
-[\n\t ]*elseif seal_type > 0.25 then _card:set_seal\('Gold', true\)
-[\n\t ]*else _card:set_seal\('Purple', true\)
-[\n\t ]*end'''
-position = 'at'
-line_prepend = '$indent'
-payload = '''_card:set_seal(SMODS.poll_seal({guaranteed = true, type_key = 'certsl'}))'''
-
 # get_badge_colour()
 [[patches]]
 [patches.pattern]
