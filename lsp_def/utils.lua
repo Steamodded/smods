@@ -84,6 +84,7 @@ function SMODS.merge_lists(...) end
 ---@field quantum_enhancements? boolean Enables "Quantum Enhancement" contexts. Cards can count as having multiple enhancements at once. 
 ---@field retrigger_joker? boolean Enables "Joker Retrigger" contexts. Jokers can be retriggered by other jokers or effects. 
 ---@field post_trigger? boolean Enables "Post Trigger" contexts. Allows calculating effects after a Joker has been calculated. 
+---@field card_scale? boolean Enables "Card Scale" contexts. Allows calculating effects when a card's ability table values scale. 
 ---@field cardareas? SMODS.optional_features.cardareas Enables additional CardArea calculation. 
 
 ---@class SMODS.optional_features.cardareas: table
@@ -610,3 +611,23 @@ function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_
 ---@return boolean
 ---Checks if handname is visible in the poker hands menu.
 function SMODS.is_poker_hand_visible(handname) end
+
+--- @param card table
+--- @param tree table Empty table to save the tree to
+--- @param card_table table | nil leave nil on non-recursive call
+--- @param key string | nil leave nil on non-recursive call
+--- @param first_pass boolean | nil leave nil on non-recursive call
+--- Recursively creates proxies of a card's ability table
+function SMODS.create_ability_proxies(card, tree, card_table, key, first_pass) end
+
+--- @param parent table
+--- @param proxy_tree table Proxy tree provided by SMODS.create_ability_proxies
+--- @param key string | nil leave nil on non-recursive call
+--- Recursively creates proxies of a card's ability table
+function SMODS.reset_recursive_proxies(parent, proxy_tree, key) end
+
+--- Sets proxies of the ability table for context.card_scale
+function Card:set_ability_proxy() end
+
+--- Removes ability proxies for saving purposes
+function Card:remove_ability_proxy() end
