@@ -2573,6 +2573,16 @@ function SMODS.is_poker_hand_visible(handname)
     return G.GAME.hands[handname].visible
 end
 
+G.FUNCS.update_blind_debuff_text = function(e)
+    if not e.config.object then return end
+    local new_str = SMODS.debuff_text or G.GAME.blind:get_loc_debuff_text()
+    if new_str ~= e.config.object.string then
+        e.config.object.config.string = {new_str}
+        e.config.object:update_text(true)
+        e.UIBox:recalculate()
+    end
+end
+
 function SMODS.is_eternal(card)
     local eternal = {}
     SMODS.calculate_context({check_eternal = true, other_card = card, no_blueprint = true}, eternal)
@@ -2591,14 +2601,4 @@ function SMODS.is_eternal(card)
         if G.P_CENTERS[k].config and G.P_CENTERS[k].config.eternal then return true end
     end
     return not not card.ability.eternal
-end
-
-G.FUNCS.update_blind_debuff_text = function(e)
-    if not e.config.object then return end
-    local new_str = SMODS.debuff_text or G.GAME.blind:get_loc_debuff_text()
-    if new_str ~= e.config.object.string then
-        e.config.object.config.string = {new_str}
-        e.config.object:update_text(true)
-        e.UIBox:recalculate()
-    end
 end
