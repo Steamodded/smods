@@ -2583,22 +2583,27 @@ G.FUNCS.update_blind_debuff_text = function(e)
     end
 end
 
-function SMODS.is_eternal(card)
+function SMODS.is_eternal(card, add_context)
+    add_context = add_context or {}
     local eternal = {}
-    SMODS.calculate_context({check_eternal = true, other_card = card, no_blueprint = true}, eternal)
+    local ret = false
+    local context = {check_eternal = true, other_card = card, no_blueprint = true}
+    for k,v in pairs(add_context) do if not context[k] then context[k] = v end end
+    SMODS.calculate_context(context, eternal)
     for _,tab in pairs(eternal) do
         for k, val in pairs(tab) do
             if type(val) == 'table' then
                 for key, val2 in pairs(val) do
-                    if key = 'eternal' and val2 then return true end
+                    if key = 'eternal' and val2 then ret = true end
                 end
             elseif type(k) == 'string' and k == 'eternal' then
-                if val then return true end
+                if val then ret = true end
             end
         end
     end
     for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if G.P_CENTERS[k].config and G.P_CENTERS[k].config.eternal then return true end
+        if G.P_CENTERS[k].config and G.P_CENTERS[k].config.eternal then ret = true end
     end
-    return not not card.ability.eternal
+    if card.ability.eternal then ret = true end
+    return ret
 end
