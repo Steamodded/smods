@@ -2573,6 +2573,26 @@ function SMODS.is_poker_hand_visible(handname)
     return G.GAME.hands[handname].visible
 end
 
+function SMODS.is_eternal(card)
+    local eternal = {}
+    SMODS.calculate_context({check_eternal = true, other_card = card, no_blueprint = true}, eternal)
+    for _,tab in pairs(eternal) do
+        for k, val in pairs(tab) do
+            if type(val) == 'table' then
+                for key, val2 in pairs(val) do
+                    if key = 'eternal' and val2 then return true end
+                end
+            elseif type(k) == 'string' and k == 'eternal' then
+                if val then return true end
+            end
+        end
+    end
+    for k, _ in pairs(SMODS.get_enhancements(card)) do
+        if G.P_CENTERS[k].config and G.P_CENTERS[k].config.eternal then return true end
+    end
+    return not not card.ability.eternal
+end
+
 G.FUNCS.update_blind_debuff_text = function(e)
     if not e.config.object then return end
     local new_str = SMODS.debuff_text or G.GAME.blind:get_loc_debuff_text()
