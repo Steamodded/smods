@@ -1735,3 +1735,65 @@ payload = '''
         if flags.no_destroy then self.getting_sliced = nil; return end
     end
 '''
+
+## Change eternal checks
+# Madness
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if G.jokers.cards[i] ~= self and not G.jokers.cards[i].ability.eternal and not G.jokers.cards[i].getting_sliced then destructable_jokers[#destructable_jokers+1] = G.jokers.cards[i] end
+'''
+payload = '''
+if G.jokers.cards[i] ~= self and not SMODS.is_eternal(G.jokers.cards[i], self) and not G.jokers.cards[i].getting_sliced then destructable_jokers[#destructable_jokers+1] = G.jokers.cards[i] end
+'''
+# Card:can_sell()
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+not self.ability.eternal then
+'''
+payload = '''
+not SMODS.is_eternal(self, {from_sell = true}) then
+'''
+# Ankh
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if not v.ability.eternal then deletable_jokers[#deletable_jokers + 1] = v end
+'''
+payload = '''
+if not SMODS.is_eternal(v, self) then deletable_jokers[#deletable_jokers + 1] = v end
+'''
+# Hex
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if v ~= eligible_card and (not v.ability.eternal) then v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
+'''
+payload = '''
+if v ~= eligible_card and (not SMODS.is_eternal(v, self)) then v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
+'''
+# Ceremonial Dagger
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if my_pos and G.jokers.cards[my_pos+1] and not self.getting_sliced and not G.jokers.cards[my_pos+1].ability.eternal and not G.jokers.cards[my_pos+1].getting_sliced then 
+'''
+payload = '''
+if my_pos and G.jokers.cards[my_pos+1] and not self.getting_sliced and not SMODS.is_eternal(G.jokers.cards[my_pos+1], self) and not G.jokers.cards[my_pos+1].getting_sliced then
+'''
