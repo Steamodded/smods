@@ -615,5 +615,5 @@ function SMODS.is_poker_hand_visible(handname) end
 ---@param trigger? Card|table
 ---@return boolean
 --- Checks whether the card is eternal.
---- `trigger` is the effect that runs the check and may not be present
+--- `trigger` is the card or effect that runs the check
 function SMODS.is_eternal(card, trigger) end
