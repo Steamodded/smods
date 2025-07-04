@@ -30,3 +30,38 @@ match_indent = true
 payload = '''
 UIBox_button({id = k, col = true, label = {challenge_unlocked and localize(v.id, 'challenge_names') or localize('k_locked'),}, button = challenge_unlocked and 'change_challenge_description' or 'nil', colour = challenge_unlocked and (v.button_colour or G.C.RED) or G.C.GREY, minw = 4, scale = 0.4, minh = 0.6, focus_args = {snap_to = not snapped}}),
 '''
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''if _ch.restrictions.banned_cards then'''
+position = "after"
+payload = '''   if type(_ch.restrictions.banned_cards) == 'function' then
+        _ch.restrictions.banned_cards = _ch.restrictions.banned_cards()
+	end'''
+match_indent = true
+times = 1
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''if _ch.restrictions.banned_tags then'''
+position = "after"
+payload = '''
+    if type(_ch.restrictions.banned_tags) == 'function' then
+        _ch.restrictions.banned_tags = _ch.restrictions.banned_tags()
+    end'''
+match_indent = true
+times = 1
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''if _ch.restrictions.banned_other then'''
+position = "after"
+payload = '''   
+    if type(_ch.restrictions.banned_other) == 'function' then
+        _ch.restrictions.banned_other = _ch.restrictions.banned_other()
+    end'''
+match_indent = true
+times = 1
