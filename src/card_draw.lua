@@ -28,6 +28,7 @@ SMODS.DrawStep = SMODS.GameObject:extend {
     check_individual_condition = function(self, card, layer, k, v)
         if k == 'vortex' then return not not card.vortex == v end
         if k == 'facing' then return card.sprite_facing == v end
+        if k == 'front_hidden' then return not not card.front_hidden == v end
         return true
     end,
     check_conditions = function(self, card, layer)
@@ -218,7 +219,7 @@ SMODS.DrawStep {
             end
         end
     end,
-    conditions = { vortex = false, facing = 'front' },
+    conditions = { vortex = false, facing = 'front', front_hidden = false },
 }
 SMODS.DrawStep {
     key = 'card_type_shader',
@@ -457,10 +458,6 @@ function Card:draw(layer)
     self.hover_tilt = 1
     if not self.states.visible then return end
     for _, k in ipairs(SMODS.DrawStep.obj_buffer) do
-      if k == 'front' and self.front_hidden then
-        --sendWarnMessage("Should not draw front of "..self.base.name)
-      else
         if SMODS.DrawSteps[k]:check_conditions(self, layer) then SMODS.DrawSteps[k].func(self, layer) end
-      end
     end
 end

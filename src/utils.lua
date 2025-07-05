@@ -2494,3 +2494,7 @@ function SMODS.merge_effects(...)
     end
     return ret
 end
+
+function Card:should_hide_front()
+  return self.ability.effect == 'Stone Card' or self.config.center.overrides_base_rank
+end
