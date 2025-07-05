@@ -1506,7 +1506,7 @@ function create_UIBox_current_hands(simple)
 
 	local visible_hands = {}
 	for _, v in ipairs(G.handlist) do
-		if G.GAME.hands[v].visible then
+		if SMODS.is_poker_hand_visible(v) then
 			table.insert(visible_hands, v)
 		end
 	end
@@ -1565,7 +1565,7 @@ G.FUNCS.your_hands_page = function(args)
 
 	local visible_hands = {}
 	for _, v in ipairs(G.handlist) do
-		if G.GAME.hands[v].visible then
+		if SMODS.is_poker_hand_visible(v) then
 			table.insert(visible_hands, v)
 		end
 	end
