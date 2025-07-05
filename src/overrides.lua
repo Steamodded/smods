@@ -1492,6 +1492,7 @@ function G.FUNCS.get_poker_hand_info(_cards)
     disp_text = flags.replace_display_name or flags.replace_scoring_name or disp_text
 	poker_hands = flags.replace_poker_hands or poker_hands
 	loc_disp_text = localize(disp_text, 'poker_hands')
+	loc_disp_text = loc_disp_text == 'ERROR' and disp_text or loc_disp_text
 	return text, loc_disp_text, poker_hands, scoring_hand, disp_text
 end
 
