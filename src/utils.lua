@@ -1496,7 +1496,9 @@ SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
             elseif type(calc) == 'table' then
                 for k,v in pairs(calc) do ret[k] = v end
             end
-            percent = (percent or 0) + (percent_delta or 0.08)
+            if not SMODS.silent_calculation[key] then
+                percent = (percent or 0) + (percent_delta or 0.08)
+            end
         end
     end
     return ret
@@ -1518,6 +1520,16 @@ SMODS.calculation_keys = {
     'level_up', 'func', 'extra',
     'numerator', 'denominator',
     'no_destroy'
+}
+SMODS.silent_calculation = {
+    saved = true, effect = true, remove = true,
+    debuff = true, prevent_debuff = true, debuff_text = true,
+    add_to_hand = true, remove_from_hand = true,
+    stay_flipped = true, prevent_stay_flipped = true,
+    cards_to_draw = true,
+    func = true, extra = true,
+    numerator = true, denominator = true,
+    no_destroy = true
 }
 
 SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
