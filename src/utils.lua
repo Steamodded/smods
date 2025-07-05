@@ -1212,8 +1212,17 @@ SMODS.smart_level_up_hand = function(card, hand, instant, amount)
     -- Level ups outside anything -> always update to empty chips/mult
     local vals_after_level
     if SMODS.displaying_scoring and not (SMODS.displayed_hand == hand) then
-        vals_after_level = copy_table(G.GAME.current_round.current_hand)
-        vals_after_level.level = (G.GAME.hands[vals_after_level.handname] or {}).level or ''
+        if not G.GAME.current_round.current_hand.handname == '????' then
+            vals_after_level = copy_table(G.GAME.current_round.current_hand)
+            vals_after_level.level = (G.GAME.hands[vals_after_level.handname] or {}).level or ''
+        else
+            local text,disp_text,_,_,_ = G.FUNCS.get_poker_hand_info(G.play.cards)
+            vals_after_level = {}
+            vals_after_level.handname = disp_text or ''
+            vals_after_level.level = (G.GAME.hands[text] or {}).level or ''
+            vals_after_level.chips = (G.GAME.hands[text] or {}).chips or 0
+            vals_after_level.mult = (G.GAME.hands[text] or {}).mult or 0
+        end
     end
     if not (instant or SMODS.displayed_hand == hand) then
         update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'),chips = G.GAME.hands[hand].chips, mult = G.GAME.hands[hand].mult, level=G.GAME.hands[hand].level})
