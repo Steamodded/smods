@@ -1474,19 +1474,25 @@ function G.FUNCS.get_poker_hand_info(_cards)
 	end
 	disp_text = text
 	local _hand = SMODS.PokerHands[text]
-	if text == 'Straight Flush' then
-		local royal = true
-		for j = 1, #scoring_hand do
-			local rank = SMODS.Ranks[scoring_hand[j].base.value]
-			royal = royal and (rank.key == 'Ace' or rank.key == '10' or rank.face)
-		end
-		if royal then
-			disp_text = 'Royal Flush'
-		end
-	elseif _hand and _hand.modify_display_text and type(_hand.modify_display_text) == 'function' then
-		disp_text = _hand:modify_display_text(_cards, scoring_hand) or disp_text
-	end
+    if text == 'Straight Flush' then
+        local royal = true
+        for j = 1, #scoring_hand do
+            local rank = SMODS.Ranks[scoring_hand[j].base.value]
+            royal = royal and (rank.key == 'Ace' or rank.key == '10' or rank.face)
+        end
+        if royal then
+            disp_text = 'Royal Flush'
+        end
+    elseif _hand and _hand.modify_display_text and type(_hand.modify_display_text) == 'function' then
+        disp_text = _hand:modify_display_text(_cards, scoring_hand) or disp_text
+    end
+    local flags = SMODS.calculate_context({ evaluate_poker_hand = true, full_hand = _cards, scoring_hand = scoring_hand, scoring_name =
+    text, poker_hands = poker_hands, display_name = disp_text })
+    text = flags.replace_scoring_name or text
+    disp_text = flags.replace_display_name or flags.replace_scoring_name or disp_text
+	poker_hands = flags.replace_poker_hands or poker_hands
 	loc_disp_text = localize(disp_text, 'poker_hands')
+	loc_disp_text = loc_disp_text == 'ERROR' and disp_text or loc_disp_text
 	return text, loc_disp_text, poker_hands, scoring_hand, disp_text
 end
 

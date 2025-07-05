@@ -1441,6 +1441,10 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'no_destroy' then
         return { [key] = amount }
     end
+
+    if key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' then
+        return { [key] = amount }
+    end
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1519,7 +1523,8 @@ SMODS.calculation_keys = {
     'message',
     'level_up', 'func', 'extra',
     'numerator', 'denominator',
-    'no_destroy'
+    'no_destroy',
+    'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
 }
 SMODS.silent_calculation = {
     saved = true, effect = true, remove = true,
@@ -2408,22 +2413,24 @@ function SMODS.get_multi_boxes(multi_box)
     return multi_boxes
 end
 
-function SMODS.destroy_cards(cards)
+function SMODS.destroy_cards(cards, bypass_eternal, immediate)
     if not cards[1] then
         cards = {cards}
     end
     local glass_shattered = {}
     local playing_cards = {}
     for _, card in ipairs(cards) do
-        card.getting_sliced = true
-        if SMODS.shatters(card) then
-            card.shattered = true
-            glass_shattered[#glass_shattered+1] = card
-        else
-            card.destroyed = true
-        end
-        if card.base.name then
-            playing_cards[#playing_cards+1] = card
+        if bypass_eternal or not card.ability.eternal then
+            card.getting_sliced = true
+            if SMODS.shatters(card) then
+                card.shattered = true
+                glass_shattered[#glass_shattered + 1] = card
+            else
+                card.destroyed = true
+            end
+            if card.base.name then
+                playing_cards[#playing_cards + 1] = card
+            end
         end
     end
     
@@ -2431,17 +2438,25 @@ function SMODS.destroy_cards(cards)
     
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
-    for i=1, #cards do
-        G.E_MANAGER:add_event(Event({
-            func = function()
-                if cards[i].shattered then
-                    cards[i]:shatter()
-                else
-                    cards[i]:start_dissolve()
-                end
-                return true
+    for i = 1, #cards do
+        if immediate then
+            if cards[i].shattered then
+                cards[i]:shatter()
+            elseif cards[i].destroyed then
+                cards[i]:start_dissolve()
             end
-        }))
+        else
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    if cards[i].shattered then
+                        cards[i]:shatter()
+                    elseif cards[i].destroyed then
+                        cards[i]:start_dissolve()
+                    end
+                    return true
+                end
+            }))
+        end
     end
 end
 
@@ -2581,6 +2596,10 @@ G.FUNCS.update_blind_debuff_text = function(e)
         e.config.object:update_text(true)
         e.UIBox:recalculate()
     end
+end
+
+function Card:should_hide_front()
+  return self.ability.effect == 'Stone Card' or self.config.center.overrides_base_rank
 end
 
 function SMODS.is_eternal(card, trigger)

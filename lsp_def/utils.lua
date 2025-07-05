@@ -71,6 +71,8 @@
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand. 
 ---@field drawing_cards? true `true` when cards are being drawn
 ---@field amount? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
+---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
+---@field display_name? integer Display name of the scoring poker hand
 
 --- Util Functions
 
@@ -573,8 +575,11 @@ function SMODS.localize_box(lines, args) end
 function SMODS.get_multi_boxes(multi_box) end
 
 ---@param cards Card|Card[]
+---@param bypass_eternal boolean?
+---@param immediate boolean?
 --- Destroys the cards passed to the function, handling calculation events that need to happen
-function SMODS.destroy_cards(cards) end
+function SMODS.destroy_cards(cards, bypass_eternal, immediate) end
+
 ---@param hand_space number
 --- Used to draw cards to hand outside of the normal card draw
 --- Allows context.drawing_cards to function
