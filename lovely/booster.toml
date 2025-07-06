@@ -64,7 +64,8 @@ pattern = '''(?<indent>[\t ]*)self\.STATES = \{'''
 position = "after"
 payload = '''
 
-    SMODS_BOOSTER_OPENED = 999,'''
+    SMODS_BOOSTER_OPENED = 999,
+    SMODS_REDEEM_VOUCHER = 998,'''
 line_prepend = '$indent'
 
 # Game:update
@@ -323,3 +324,13 @@ pattern = "if e.config.ref_table.ability.set ~= 'Joker' or (e.config.ref_table.e
 payload = '''local card = e.config.ref_table
 local card_limit = card.edition and card.edition.card_limit or 0
 if card.ability.set ~= 'Joker' or #G.jokers.cards < G.jokers.config.card_limit + card_limit then'''
+
+# Card:redeem()
+# Specific G.STATE for when a Voucher is redeemed
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''if self.shop_voucher then G.GAME.current_round.voucher = nil end'''
+payload = '''G.STATE = G.STATES.SMODS_REDEEM_VOUCHER'''
