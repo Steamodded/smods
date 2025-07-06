@@ -2591,10 +2591,11 @@ function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_
 end
 
 function SMODS.is_poker_hand_visible(handname)
-    if SMODS.PokerHands[handname].visible and type(SMODS.PokerHands[handname].visible) == "function" then
+    if SMODS.PokerHands[handname] and SMODS.PokerHands[handname].visible and type(SMODS.PokerHands[handname].visible) == "function" then
         return not not SMODS.PokerHands[handname]:visible()
     end
-    return G.GAME.hands[handname].visible
+	assert(G.GAME.hands[handname], "handname '" .. handname .. "' not found!")
+    return not not SMODS.PokerHands[handname] and G.GAME.hands[handname].visible
 end
 
 G.FUNCS.update_blind_debuff_text = function(e)
