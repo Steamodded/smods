@@ -2310,3 +2310,17 @@ function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips, scoring_h
 	local flags = SMODS.calculate_context({ modify_hand = true, poker_hands = poker_hands, scoring_name = text, scoring_hand = scoring_hand, full_hand = cards })
 	return _G.mult, _G.hand_chips, modded or flags.calculated
 end
+
+local use_consumeable = Card.use_consumeable
+function Card:use_consumeable(area, copier)
+	local ret = use_consumeable(self, area, copier)
+	if next(SMODS.post_prob) then
+        local prob_tables = SMODS.post_prob
+        SMODS.post_prob = {}
+        for i, v in ipairs(prob_tables) do
+            v.pseudorandom_results = true
+            SMODS.calculate_context(v)
+        end
+    end
+	return ret
+end
