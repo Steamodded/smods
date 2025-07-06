@@ -159,7 +159,7 @@ if delay_sprites then
     })) 
 '''
 payload = '''
-if delay_sprites == 'quantum' then
+if delay_sprites == 'quantum' or delay_sprites == 'manual' then
 elseif delay_sprites then 
     self.ability.delayed = true
     G.E_MANAGER:add_event(Event({

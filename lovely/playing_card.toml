@@ -329,3 +329,19 @@ payload = '''if card_type == 'Default' or card_type == 'Enhanced' and not _c.rep
 end
 
 '''
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''function Card:set_base(card, initial)'''
+position = 'at'
+match_indent = true
+payload = '''function Card:set_base(card, initial, manual_sprites)'''
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''if next(card) then'''
+position = 'at'
+match_indent = true
+payload = '''if next(card) and not manual_sprites then'''

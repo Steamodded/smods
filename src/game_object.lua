@@ -1129,6 +1129,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 target.scale = res.scale
                 target.text_colour = res.text_colour
             end
+
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = self.set == 'Enhanced' and 'temp_value' or localize { type = 'name', set = target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {} }
             elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name and self.set ~= 'Enhanced' then
@@ -1141,7 +1142,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if res.main_start then
                 desc_nodes[#desc_nodes + 1] = res.main_start
             end
+
             localize(target)
+            
             if res.main_end then
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
@@ -1698,7 +1701,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     })
     SMODS.Blind:take_ownership('wheel', {
         loc_vars = function(self)
-            return { vars = { SMODS.get_probability_vars(self, 1, 7) } }
+            return { vars = { SMODS.get_probability_vars(self, 1, 7, 'wheel') } }
         end,
         collection_loc_vars = function(self)
             return { vars = { '1', '7' }}
@@ -3120,11 +3123,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
         end,
     })
+
     SMODS.Enhancement:take_ownership('lucky', {
         loc_vars = function (self, info_queue, card)
             local cfg = (card and card.ability) or self.config
-            local numerator_mult, denominator_mult = SMODS.get_probability_vars(card, 1, 5)
-            local numerator_dollars, denominator_dollars = SMODS.get_probability_vars(card, 1, 15)
+            local numerator_mult, denominator_mult = SMODS.get_probability_vars(card, 1, 5, 'lucky_mult')
+            local numerator_dollars, denominator_dollars = SMODS.get_probability_vars(card, 1, 15, 'lucky_money')
             return {vars = {numerator_mult, cfg.mult, denominator_mult, cfg.p_dollars, denominator_dollars, numerator_dollars}}
         end,
     })
