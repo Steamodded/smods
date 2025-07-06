@@ -367,13 +367,13 @@ function SMODS.create_card(t)
     if not t.key and t.set == 'Playing Card' or t.set == 'Base' or t.set == 'Enhanced' or (not t.set and (t.front or t.rank or t.suit)) then
         t.set = t.set == 'Playing Card' and (t.enhancement and 'Base' or (pseudorandom('front' .. (t.key_append or '') .. G.GAME.round_resets.ante) > (t.enhanced_poll or 0.6) and 'Enhanced' or 'Base')) or t.set or 'Base'
         t.area = t.area or G.hand
-        if not t.front then
+        if not t.front and (t.suit or t.rank) then
             t.suit = t.suit and (SMODS.Suits["".. t.suit] or {}).card_key or t.suit or
             pseudorandom_element(SMODS.Suits, pseudoseed('front' .. (t.key_append or '') .. G.GAME.round_resets.ante)).card_key
             t.rank = t.rank and (SMODS.Ranks["".. t.rank] or {}).card_key or t.rank or
             pseudorandom_element(SMODS.Ranks, pseudoseed('front' .. (t.key_append or '') .. G.GAME.round_resets.ante)).card_key
         end
-        t.front = t.front or (t.suit .. "_" .. t.rank)
+        t.front = t.front or (t.suit and t.rank and (t.suit .. "_" .. t.rank)) or nil
     end
     SMODS.bypass_create_card_edition = t.no_edition or t.edition
     SMODS.bypass_create_card_discover = t.discover
@@ -1441,6 +1441,10 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'no_destroy' then
         return { [key] = amount }
     end
+
+    if key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' then
+        return { [key] = amount }
+    end
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1519,7 +1523,8 @@ SMODS.calculation_keys = {
     'message',
     'level_up', 'func', 'extra',
     'numerator', 'denominator',
-    'no_destroy'
+    'no_destroy',
+    'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
 }
 SMODS.silent_calculation = {
     saved = true, effect = true, remove = true,
@@ -2408,22 +2413,24 @@ function SMODS.get_multi_boxes(multi_box)
     return multi_boxes
 end
 
-function SMODS.destroy_cards(cards)
+function SMODS.destroy_cards(cards, bypass_eternal, immediate)
     if not cards[1] then
         cards = {cards}
     end
     local glass_shattered = {}
     local playing_cards = {}
     for _, card in ipairs(cards) do
-        card.getting_sliced = true
-        if SMODS.shatters(card) then
-            card.shattered = true
-            glass_shattered[#glass_shattered+1] = card
-        else
-            card.destroyed = true
-        end
-        if card.base.name then
-            playing_cards[#playing_cards+1] = card
+        if bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
+            card.getting_sliced = true
+            if SMODS.shatters(card) then
+                card.shattered = true
+                glass_shattered[#glass_shattered + 1] = card
+            else
+                card.destroyed = true
+            end
+            if card.base.name then
+                playing_cards[#playing_cards + 1] = card
+            end
         end
     end
     
@@ -2431,17 +2438,25 @@ function SMODS.destroy_cards(cards)
     
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
-    for i=1, #cards do
-        G.E_MANAGER:add_event(Event({
-            func = function()
-                if cards[i].shattered then
-                    cards[i]:shatter()
-                else
-                    cards[i]:start_dissolve()
-                end
-                return true
+    for i = 1, #cards do
+        if immediate then
+            if cards[i].shattered then
+                cards[i]:shatter()
+            elseif cards[i].destroyed then
+                cards[i]:start_dissolve()
             end
-        }))
+        else
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    if cards[i].shattered then
+                        cards[i]:shatter()
+                    elseif cards[i].destroyed then
+                        cards[i]:start_dissolve()
+                    end
+                    return true
+                end
+            }))
+        end
     end
 end
 
@@ -2581,4 +2596,29 @@ G.FUNCS.update_blind_debuff_text = function(e)
         e.config.object:update_text(true)
         e.UIBox:recalculate()
     end
+end
+
+function Card:should_hide_front()
+  return self.ability.effect == 'Stone Card' or self.config.center.overrides_base_rank
+end
+
+function SMODS.is_eternal(card, trigger)
+    local calc_return = {}
+    local ovr_compat = false
+    local ret = false
+    if not trigger then trigger = {} end
+    SMODS.calculate_context({check_eternal = true, other_card = card, trigger = trigger, no_blueprint = true,}, calc_return)
+    for _,eff in pairs(calc_return) do
+        for _,tab in pairs(eff) do
+            if tab.no_destroy then --Reuses key from context.joker_type_destroyed
+                ret = true
+                if type(tab.no_destroy) == 'table' then
+                    if tab.no_destroy.override_compat then ovr_compat = true end
+                end
+            end
+        end
+    end
+    if card.ability.eternal then ret = true end
+    if not card.config.center.eternal_compat and not ovr_compat then ret = false end
+    return ret
 end
