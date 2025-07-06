@@ -854,7 +854,7 @@ end
 position = 'at'
 match_indent = true
 payload = '''
-SMODS.calculate_context({setting_blind = true, blind = G.GAME.round_resets.blind, tag = G.GAME.round_resets.blind_tag})
+SMODS.calculate_context({setting_blind = true, blind = G.GAME.round_resets.blind})
 
 -- TARGET: setting_blind effects
 '''
