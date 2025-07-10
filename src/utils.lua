@@ -2037,7 +2037,7 @@ function SMODS.get_card_areas(_type, _context)
     end
     if _type == 'individual' then
         local t = {
-            { object = G.GAME.selected_back, scored_card = G.deck.cards[1] or G.deck },
+            { object = G.GAME.selected_back, scored_card = (G.deck and G.deck.cards[1]) or G.deck },
         }
         if G.GAME.blind then t[#t+1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite } end
         -- TARGET: add your own individual scoring targets
@@ -2491,6 +2491,7 @@ function SMODS.update_hand_limit_text(play, discard)
 end
 
 function SMODS.draw_cards(hand_space)
+    if not G.deck then return end
     if not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED) and
         G.hand.config.card_limit <= 0 and #G.hand.cards == 0 then 
         G.STATE = G.STATES.GAME_OVER; G.STATE_COMPLETE = false 
@@ -2632,3 +2633,64 @@ function SMODS.is_eternal(card, trigger)
     if not card.config.center.eternal_compat and not ovr_compat then ret = false end
     return ret
 end
+
+-- Operator API
+
+local current_operator
+
+-- We can't store this in G.GAME since the game can't serialize functions to a savefile
+local operators = {}
+
+local orig_init = Game.init_game_object
+
+function Game:init_game_object()
+    local ret = orig_init(self)
+    operators = {}
+    ret.current_operator = {name = "multiply", config = {}}
+    return ret
+end
+
+local orig_start = Game.start_run
+
+function Game:start_run(args)
+    orig_start(self, args)
+    current_operator = SMODS.Operators[G.GAME.current_operator.name]:new {
+        config = G.GAME.current_operator.config
+    }
+end
+
+function SMODS.get_operator()
+    return current_operator
+end
+
+function SMODS.set_operator(operator)
+    current_operator = SMODS.Operators[operator]:new()
+    G.GAME.current_operator.name = operator
+    G.GAME.current_operator.config = current_operator.config
+end
+
+function SMODS.operator_func(text, colour) return
+    function(self, e, init)
+        if init then
+            e.children[1].config.colour = colour
+            e.children[1].config.text = text
+            e.children[1].config.text_drawable:set(text)
+            e.children[1].UIBox:recalculate()
+        end
+    end
+end
+
+G.FUNCS.SMODS_operator_node_function = function(e)
+    local first = false
+    if not (e.config.SMODS_operator_name and e.config.SMODS_operator_name == current_operator.key) then
+        first = true
+        e.config.SMODS_operator_name = current_operator.key
+    end
+    current_operator:node_func(e, first)
+end
+
+SMODS.calculate_round_score = function(chips, mult)
+    if not current_operator then return 0 end
+    return current_operator:func(chips, mult)
+end
+

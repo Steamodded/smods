@@ -3471,6 +3471,63 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         cycle = 1,
     }
 
+    -------------------------------------------------------------------------------------------------
+    ------- API CODE GameObject.Operator
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.Operators = {}
+    SMODS.Operator = SMODS.GameObject:extend {
+        set = 'Operators',
+        obj_table = SMODS.Operators,
+        obj_buffer = {},
+        required_params = {
+            'key',
+            'init',
+            'func',
+            'node_func'
+        },
+        inject = function() end,
+        new = function(self, def)
+            def = def or {}
+            if self.init then def.config = def.config or self.init(def) end
+            return setmetatable(def, {__index = self})
+        end
+    }
+
+    SMODS.Operator {
+        key = "multiply",
+        func = function(self, chips, mult) return chips * mult end,
+        node_func = function(self, e, init)
+            if init then
+                e.children[1].config.colour = G.C.UI_MULT
+                e.children[1].config.text = "X"
+                e.children[1].config.text_drawable:set("X")
+                e.children[1].UIBox:recalculate()
+            end
+        end
+    }
+
+    --[[
+    -- Example of state-aware operator
+
+    SMODS.Operator {
+        key = "__test_calc_count",
+        func = function(self)
+            self.config.additive = self.config.additive + 1
+            self.config.dirty = true
+            return self.config.additive
+        end,
+        init = function(def) return {additive = 0} end,
+        node_func = function(self, e, init)
+            if init or self.config.dirty then
+                e.children[1].config.colour = G.C.UI_ATTENTION
+                e.children[1].config.text = "" .. self.config.additive
+                e.children[1].config.text_drawable:set("" .. self.config.additive)
+                e.children[1].UIBox:recalculate()
+            end
+        end
+    }
+    --]]
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
