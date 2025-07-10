@@ -2663,11 +2663,9 @@ function SMODS.get_operator()
 end
 
 function SMODS.set_operator(operator)
-    if type(operator) == "string" then
-        current_operator = SMODS.Operators[operator]:new()
-    else
-        current_operator = operator
-    end
+    current_operator = SMODS.Operators[operator]:new()
+    G.GAME.current_operator.name = operator
+    G.GAME.current_operator.config = current_operator.config
 end
 
 function SMODS.operator_func(text, colour) return

@@ -12,7 +12,7 @@ G.E_MANAGER:add_event(Event({
 }))
 '''
 position = "before"
-payload = '''local round_score = SMODS.calculate_round_score(hand_chips, mult)
+payload = '''round_score = SMODS.calculate_round_score(hand_chips, mult)
 '''
 match_indent = true
 times = 1

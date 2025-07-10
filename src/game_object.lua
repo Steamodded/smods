@@ -3489,7 +3489,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         inject = function() end,
         new = function(self, def)
             def = def or {}
-            if self.init then def.config = self.init(def) end
+            if self.init then def.config = def.config or self.init(def) end
             return setmetatable(def, {__index = self})
         end
     }
