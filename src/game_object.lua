@@ -3470,7 +3470,35 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         colours = { G.C.WHITE, G.C.RED },
         cycle = 1,
     }
+    
+    -------------------------------------------------------------------------------------------------
+    ------- API CODE GameObject.Operator
+    -------------------------------------------------------------------------------------------------
 
+    SMODS.Operators = {}
+    SMODS.Operator = SMODS.GameObject:extend {
+        set = 'Operators',
+        obj_table = SMODS.Operators,
+        obj_buffer = {},
+        required_params = {
+            'key',
+            'func',
+            'node_func'
+        },
+        inject = function() end
+    }
+
+    SMODS.Operator {
+        key = "base",
+        func = function(chips, mult) return chips * mult end,
+        -- node_func = SMODS.operator_func("X", G.C.UI_MULT)
+        node_func = function(e)
+            e.children[1].config.colour = G.C.UI_MULT
+            e.children[1].config.text = "X"
+            e.children[1].config.text_drawable:set("X")
+            e.children[1].UIBox:recalculate()
+        end
+    }
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
