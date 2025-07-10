@@ -1,10 +1,6 @@
 ---@meta
 
 ---@class SMODS.Operator: SMODS.GameObject
----@field interpolation? string Interpolation type of the Operator. Currently supported: `'trig'`, '`linear'`.
----@field colours? table<number, table<number, number>> List of colours to interpolate between.
----@field cycle? number Amount of time (in seconds) for the Operator to cycle through all colours.
----@field __call? fun(self: SMODS.Operator|table, o: SMODS.Operator|table): nil|table|SMODS.Operator
 ---@field extend? fun(self: SMODS.Operator|table, o: SMODS.Operator|table): table Primary method of creating a class.
 ---@field check_duplicate_register? fun(self: SMODS.Operator|table): boolean? Ensures objects already registered will not register.
 ---@field check_duplicate_key? fun(self: SMODS.Operator|table): boolean? Ensures objects with duplicate keys will not register. Checked on `__call` but not `take_ownership`. For take_ownership, the key must exist.
@@ -18,6 +14,7 @@
 ---@field inject? fun(self: SMODS.Operator|table, i?: number) Called during `inject_class`. Injects the object into the game.
 ---@field take_ownership? fun(self: SMODS.Operator|table, key: string, obj: SMODS.Operator|table, silent?: boolean): nil|table|SMODS.Operator Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.Operator|table, key: string): SMODS.Operator|table? Returns an object if one matches the `key`.
+---@field new? fun(self, config): SMODS.Operator Creates a new instance of this operator.
 ---@overload fun(self: SMODS.Operator): SMODS.Operator
 SMODS.Operator = setmetatable({}, {
     __call = function(self)
@@ -29,14 +26,20 @@ SMODS.Operator = setmetatable({}, {
 SMODS.Operators = {}
 
 --- Sets the current operator used on chips and mult.
----@param name string The name of the operator, plus the mod prefix.
-function SMODS.set_operator(name)
+---@param operator string|SMODS.Operator The name of the operator, plus the mod prefix, or the SMODS.Operator instance returned from calling :new.
+---@param config table? The operator's config.
+function SMODS.set_operator(operator)
+end
+
+--- Gets the current operator used on chips and mult.
+---@return SMODS.Operator opr The current operator.
+function SMODS.get_operator()
 end
 
 --- Creates a `node_func` for a `SMODS.Operator` given display text and a colour. It's easier to use this if you don't need complexity.
 ---@param text string The text to display for the operator.
 ---@param colour table The color to display the operator as.
----@return function The function to be passed to `SMODS.Operator`.
+---@return function func The function to be passed to `SMODS.Operator`.
 function SMODS.operator_func(text, colour)
 end
 
@@ -46,3 +49,4 @@ end
 ---@return number
 SMODS.calculate_round_score = function(chips, mult)
 end
+

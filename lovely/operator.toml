@@ -1,6 +1,6 @@
 [manifest]
 version = "1.0.0"
-priority = -1
+priority = 5
 
 [[patches]]
 [patches.pattern]
@@ -12,8 +12,9 @@ G.E_MANAGER:add_event(Event({
 }))
 '''
 position = "before"
-payload = '''local round_score = SMODS.calculate_round_score(hand_chips, mult)'''
-match_indent = false
+payload = '''local round_score = SMODS.calculate_round_score(hand_chips, mult)
+'''
+match_indent = true
 times = 1
 
 [[patches]]
