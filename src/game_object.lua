@@ -3513,7 +3513,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.Operator {
         key = "__test_calc_count",
         func = function(self)
-            print(self)
             self.config.additive = self.config.additive + 1
             self.config.dirty = true
             return self.config.additive
