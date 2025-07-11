@@ -1470,7 +1470,7 @@ SMODS.trigger_effects = function(effects, card)
         -- todo: might want to move these keys to a customizable list/lists
     end
 
-    if next(SMODS.post_prob) then
+    if SMODS.post_prob and next(SMODS.post_prob) then
         local prob_tables = SMODS.post_prob
         SMODS.post_prob = {}
         for i, v in ipairs(prob_tables) do
@@ -2596,7 +2596,7 @@ function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_
     local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier or seed, true)
     local result = pseudorandom(seed) < numerator / denominator
     SMODS.post_prob = SMODS.post_prob or {}
-    SMODS.post_prob[#SMODS.post_prob+1] = {success = result, trigger_obj = trigger_obj, numerator = numerator, denominator = denominator, identifier = identifier or seed}
+    SMODS.post_prob[#SMODS.post_prob+1] = {pseudorandom_result = true, result = result, trigger_obj = trigger_obj, numerator = numerator, denominator = denominator, identifier = identifier or seed}
     return result
 end
 

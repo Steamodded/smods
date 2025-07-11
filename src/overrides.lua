@@ -2314,7 +2314,7 @@ end
 local use_consumeable = Card.use_consumeable
 function Card:use_consumeable(area, copier)
 	local ret = use_consumeable(self, area, copier)
-	if next(SMODS.post_prob) then
+	if SMODS.post_prob and next(SMODS.post_prob) then
         local prob_tables = SMODS.post_prob
         SMODS.post_prob = {}
         for i, v in ipairs(prob_tables) do
