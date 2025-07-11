@@ -1474,7 +1474,7 @@ SMODS.trigger_effects = function(effects, card)
         local prob_tables = SMODS.post_prob
         SMODS.post_prob = {}
         for i, v in ipairs(prob_tables) do
-            v.pseudorandom_results = true
+            v.pseudorandom_result = true
             SMODS.calculate_context(v)
         end
     end
