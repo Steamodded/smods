@@ -2569,14 +2569,14 @@ function SMODS.merge_effects(...)
         end
     end
     local ret = table.remove(t, 1)
-    local current = ret
+    local current = ret == true and { remove = true } or ret
     for _, eff in ipairs(t) do
-        assert(type(eff) == 'table', ("\"%s\" is not a table."):format(tostring(eff)))
+        assert(eff == true or type(eff) == 'table', ("\"%s\" is not a valid calculate return."):format(tostring(eff)))
         while current.extra ~= nil do
             if current.extra == true then
                 current.extra = { remove = true }
             end
-            assert(type(current.extra) == 'table', ("\"%s\" is not a table."):format(tostring(current.extra)))
+            assert(type(current.extra) == 'table', ("\"%s\" is not a valid calculate return."):format(tostring(current.extra)))
             current = current.extra
         end
         current.extra = eff
