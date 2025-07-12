@@ -2569,7 +2569,8 @@ function SMODS.merge_effects(...)
         end
     end
     local ret = table.remove(t, 1)
-    local current = ret == true and { remove = true } or ret
+    ret = ret == true and { remove = true } or ret
+    local current = ret
     for _, eff in ipairs(t) do
         assert(eff == true or type(eff) == 'table', ("\"%s\" is not a valid calculate return."):format(tostring(eff)))
         while current.extra ~= nil do
@@ -2579,7 +2580,7 @@ function SMODS.merge_effects(...)
             assert(type(current.extra) == 'table', ("\"%s\" is not a valid calculate return."):format(tostring(current.extra)))
             current = current.extra
         end
-        current.extra = eff
+        current.extra = eff == true and { remove = true } or eff
     end
     return ret
 end
