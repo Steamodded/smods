@@ -1715,7 +1715,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
     if _type == 'jokers' then
         for _, area in ipairs(SMODS.get_card_areas('jokers')) do
             if args and args.joker_area and not args.has_area then context.cardarea = area end
-            for _, _card in ipairs(area.cards) do
+            for _, _card in ipairs(area.cards or {}) do
                 --calculate the joker effects
                 local eval, post = eval_card(_card, context)
                 if args and args.main_scoring and eval.jokers then
@@ -1770,7 +1770,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
         for _, area in ipairs(SMODS.get_card_areas('playing_cards')) do
             if area == G.play and not context.scoring_hand then goto continue end
             if not args or not args.has_area then context.cardarea = area end
-            for _, card in ipairs(area.cards) do
+            for _, card in ipairs(area.cards or {}) do
                 if not args or not args.has_area then
                     if area == G.play then
                         context.cardarea = SMODS.in_scoring(card, context.scoring_hand) and G.play or 'unscored'
@@ -2049,7 +2049,7 @@ function SMODS.get_card_areas(_type, _context)
     end
     if _type == 'individual' then
         local t = {
-            { object = G.GAME.selected_back, scored_card = G.deck.cards[1] or G.deck },
+            { object = G.GAME.selected_back, scored_card = G.deck.cards and G.deck.cards[1] or G.deck },
         }
         if G.GAME.blind then t[#t+1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite } end
         -- TARGET: add your own individual scoring targets
