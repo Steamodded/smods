@@ -1551,14 +1551,22 @@ function SMODS.GUI.DynamicUIManager.initTab(args)
 end
 
 -- Call this to trigger an update for a list of dynamic content areas
-function SMODS.GUI.DynamicUIManager.updateDynamicAreas(uiDefinitions)
+function SMODS.GUI.DynamicUIManager.updateDynamicAreas(uiDefinitions, config)
+    base_conf = config or {
+        offset = {x=0, y=0},
+        align = 'cm',
+    }
+
     for id, uiDefinition in pairs(uiDefinitions) do
         local dynamicArea = G.OVERLAY_MENU:get_UIE_by_ID(id)
         if dynamicArea and dynamicArea.config.object then
+            cfg = SMODS.shallow_copy(base_conf)
+            cfg.parent = dynamicArea
+
             dynamicArea.config.object:remove()
             dynamicArea.config.object = UIBox{
                 definition = uiDefinition,
-                config = {offset = {x=0, y=0}, align = 'cm', parent = dynamicArea}
+                config = cfg
             }
         end
     end
