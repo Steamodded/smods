@@ -9,7 +9,17 @@ priority = -5
 target = 'card.lua'
 pattern = '''pseudorandom\((.*?)\) ?< ?G\.GAME\.probabilities\.normal ?\/ ?(.*?)( |\)|$)'''
 position = 'at'
-payload = "SMODS.pseudorandom_probability(self, $1, 1, $2)$3"
+payload = "SMODS.pseudorandom_probability(self, $1, 1, $2, 'no_identifier', context)$3"
+
+# Hacky Lucky card mult for this ^
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''if SMODS.pseudorandom_probability(self, 'lucky_mult', 1, 5) then'''
+position = 'at'
+payload = "SMODS.pseudorandom_probability(self,'lucky_mult', 1, 5, 'lucky_mult', context) then"
+match_indent = true
+
 
 # The Wheel
 # Don't have to modify loc_debuff_text since that's already done via override
