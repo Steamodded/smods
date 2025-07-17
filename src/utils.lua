@@ -1768,21 +1768,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             for _,v in ipairs(context.scoring_hand) do scoring_map[v] = true end
         end
         for _, area in ipairs(SMODS.get_card_areas('playing_cards')) do
-            if area == G.play and not context.scoring_hand then
-                -- If context is for probability, eval_card() anyway
-                -- This allows Seals, etc. to affect Joker probabilities during individual scoring:
-                -- For example; A seal can double the probability of Blood Stone hitting for the playing card it is applied to.
-                if context.mod_probability or context.fix_probability then
-                    for _, card in ipairs(area.cards) do
-                        local effects = {eval_card(card, context)}
-                        local f = SMODS.trigger_effects(effects, card)
-                        for k,v in pairs(f) do flags[k] = v end
-                        if flags.numerator then flags.numerator = flags.numerator end
-                        if flags.denominator then flags.denominator = flags.denominator end
-                    end
-                end
-                goto continue
-            end
+            if area == G.play and not context.scoring_hand then goto continue end
             if not args or not args.has_area then context.cardarea = area end
             for _, card in ipairs(area.cards) do
                 if not args or not args.has_area then
@@ -1803,8 +1789,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     SMODS.calculate_quantum_enhancements(card, effects, context)
                     local f = SMODS.trigger_effects(effects, card)
                     for k,v in pairs(f) do flags[k] = v end
-                    if flags.numerator then context.numerator = flags.numerator end
-                    if flags.denominator then context.denominator = flags.denominator end
                 end
             end
             ::continue::
@@ -1836,8 +1820,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             else
                 local f = SMODS.trigger_effects(effects, area.scored_card)
                 for k,v in pairs(f) do flags[k] = v end
-                if flags.numerator then context.numerator = flags.numerator end
-                if flags.denominator then context.denominator = flags.denominator end
             end
         end
     end
@@ -2604,15 +2586,16 @@ function SMODS.merge_effects(...)
     return ret
 end
 
-function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier, from_roll, source_context)
-    local additive = SMODS.calculate_context({mod_probability = true, from_roll = from_roll, trigger_obj = trigger_obj, identifier = identifier, numerator = base_numerator, denominator = base_denominator, source_context = source_context or {}}, nil, not from_roll)
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier, from_roll)
+    if not G.jokers then return base_numerator, base_denominator end
+    local additive = SMODS.calculate_context({mod_probability = true, from_roll = from_roll, trigger_obj = trigger_obj, identifier = identifier, numerator = base_numerator, denominator = base_denominator}, nil, not from_roll)
     additive.numerator = (additive.numerator or base_numerator) * ((G.GAME and G.GAME.probabilities.normal or 1) / (2 ^ #SMODS.find_card('j_oops')))
-    local fixed = SMODS.calculate_context({fix_probability = true, from_roll = from_roll, trigger_obj = trigger_obj, identifier = identifier, numerator = additive.numerator or base_numerator, denominator = additive.denominator or base_denominator, source_context = source_context or {}}, nil, not from_roll)
+    local fixed = SMODS.calculate_context({fix_probability = true, from_roll = from_roll, trigger_obj = trigger_obj, identifier = identifier, numerator = additive.numerator or base_numerator, denominator = additive.denominator or base_denominator}, nil, not from_roll)
     return fixed.numerator or additive.numerator or base_numerator, fixed.denominator or additive.denominator or base_denominator
 end
 
-function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator, identifier, source_context)
-    local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier or seed, true, source_context)
+function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator, identifier)
+    local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier or seed, true)
     local result = pseudorandom(seed) < numerator / denominator
     SMODS.post_prob = SMODS.post_prob or {}
     SMODS.post_prob[#SMODS.post_prob+1] = {pseudorandom_result = true, result = result, trigger_obj = trigger_obj, numerator = numerator, denominator = denominator, identifier = identifier or seed}
