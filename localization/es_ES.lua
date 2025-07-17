@@ -134,6 +134,17 @@ return {
                     "{C:money}#1#{} si está en tu mano al final de la ronda",
                 },
             },
+            artist = {
+                text = {
+                    "{C:inactive}Artista",
+                },
+            },
+            artist_credit = {
+                name = "Artista",
+                text = {
+                    "{E:1}#1#{}"
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {
@@ -163,6 +174,15 @@ return {
                 name = "Carta multi",
                 text = {
                     "{C:mult}#1#{} multi",
+                },
+            },
+            m_lucky = {
+                name = "Carta de la suerte",
+                text = {
+                    "{C:green}#1# en #3#{} probabilidades",
+                    "de {C:mult}+#2#{} multi",
+                    "{C:green}#6# en #5#{} probabilidades",
+                    "de ganar {C:money}$#4#",
                 },
             },
         }
@@ -195,6 +215,7 @@ return {
             b_unknown = 'Desconocido',
             b_lovely_mod = '(Mod de Lovely) ',
             b_by = ' Por: ',
+            b_priority = 'Prioridad: ',
             b_config = "Configuración",
             b_additions = 'Adiciones',
             b_stickers = 'Stickers',
@@ -215,6 +236,7 @@ return {
             b_deckskins_lc = 'Colores de bajo contraste',
             b_deckskins_hc = 'Colores de alto contraste',
             b_deckskins_def = 'Colores por defecto',
+            b_limit = 'Hasta '
         },
         v_dictionary = {
             c_types = '#1# Tipos',
