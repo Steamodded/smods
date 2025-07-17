@@ -136,6 +136,11 @@ return {
                     "{C:money}#1#{} if held at end of round",
                 },
             },
+            card_extra_repetitions = {
+                text = {
+                    "{C:attention}#1#{} retriggers",
+                },
+            },
             artist = {
                 text = {
                     "{C:inactive}Artist",
