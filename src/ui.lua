@@ -1021,7 +1021,7 @@ local function createClickableModBox(modInfo, scale)
             scale = scale * 0.7,
             colours = {the_colour},
             shadow = true,
-            maxw = 2.7,
+            maxw = 2.4,
             marquee = true,
         }
         table.insert(label_nodes,
