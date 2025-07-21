@@ -627,3 +627,11 @@ function SMODS.is_poker_hand_visible(handname) end
 --- Checks whether the card is eternal.
 --- `trigger` is the card or effect that runs the check
 function SMODS.is_eternal(card, trigger) end
+
+
+---@param prototype_obj any
+---@param args table?
+---@return boolean?, table?
+--- Checks whether an object is in the pool.
+--- i.e. the in_pool method doesn't exist or it returns `true`
+function SMODS.is_in_pool(prototype_obj, args) end

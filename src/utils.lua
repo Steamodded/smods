@@ -308,7 +308,7 @@ function SMODS.modify_rank(card, amount, manual_sprites)
                 rank_key = pseudorandom_element(
                     rank_data.next,
                     pseudoseed('strength'),
-                    { in_pool = function(key) return SMODS.Ranks[key]:in_pool({ suit = card.base.suit}) end }
+                    { in_pool = function(key) return SMODS.is_in_pool(SMODS.Ranks[key], { suit = card.base.suit }) end }
                 )
             else
                 local i = (behavior.fixed and rank_data.next[behavior.fixed]) and behavior.fixed or 1
@@ -325,7 +325,7 @@ function SMODS.modify_rank(card, amount, manual_sprites)
                 rank_key = pseudorandom_element(
                     rank_data.prev,
                     pseudoseed('weakness'),
-                    { in_pool = function(key) return SMODS.Ranks[key]:in_pool({ suit = card.base.suit}) end }
+                    { in_pool = function(key) return SMODS.is_in_pool(SMODS.Ranks[key], { suit = card.base.suit }) end }
                 )
             else
                 local i = (behavior.fixed and rank_data.prev[behavior.fixed]) and behavior.fixed or 1
@@ -2643,4 +2643,11 @@ function SMODS.is_eternal(card, trigger)
     if card.ability.eternal then ret = true end
     if not card.config.center.eternal_compat and not ovr_compat then ret = false end
     return ret
+end
+
+function SMODS.is_in_pool(prototype_obj, args)
+    if type(prototype_obj.in_pool) == "function" then
+        return prototype_obj:in_pool(args)
+    end
+    return true
 end
