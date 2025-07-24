@@ -1,0 +1,40 @@
+[manifest]
+version = "1.0.0"
+priority = 5
+
+[[patches]]
+[patches.regex]
+target = "functions/state_events.lua"
+pattern = "^(.*)hand_chips\\s*\\*\\s*mult(.*)$"
+position = "at"
+payload = '''$1 SMODS.calculate_round_score(hand_chips, mult) $2'''
+match_indent = true
+overwrite = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "G.ARGS.score_intensity.earned_score = G.GAME.current_round.current_hand.chips*G.GAME.current_round.current_hand.mult"
+position = "at"
+payload = '''G.ARGS.score_intensity.earned_score = SMODS.calculate_round_score(G.GAME.current_round.current_hand.chips, G.GAME.current_round.current_hand.mult)'''
+match_indent = true
+overwrite = true
+times = 1
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''
+                {n=G.UIT.C, config={align = "cm"}, nodes={
+                  {n=G.UIT.T, config={text = "X", lang = G.LANGUAGES['en-us'], scale = scale*2, colour = G.C.UI_MULT, shadow = true}},
+                }},
+'''
+position = "at"
+payload = '''
+                {n=G.UIT.C, config={align = "cm", func = "SMODS_operator_node_function"}, nodes={
+                  {n=G.UIT.T, config={text = "X", lang = G.LANGUAGES['en-us'], scale = scale*2, colour = G.C.UI_MULT, shadow = true}},
+                }},
+'''
+match_indent = false
+times = 1
+overwrite = true
