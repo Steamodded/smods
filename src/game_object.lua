@@ -972,8 +972,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         set = 'ConsumableType',
         required_params = {
             'key',
-            'primary_colour',
-            'secondary_colour',
+            'text_colour',
+            'bg_colour',
         },
         prefix_config = { key = false },
         collection_rows = { 6, 6 },
@@ -995,8 +995,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             SMODS.ObjectType.inject(self)
             SMODS.ConsumableTypes[self.key] = self
             G.localization.descriptions[self.key] = G.localization.descriptions[self.key] or {}
-            G.C.SET[self.key] = self.primary_colour
-            G.C.SECONDARY_SET[self.key] = self.secondary_colour
+            G.C.SET[self.key] = self.text_colour
+            G.C.SECONDARY_SET[self.key] = self.bg_colour
             G.FUNCS['your_collection_' .. string.lower(self.key) .. 's'] = function(e)
                 G.SETTINGS.paused = true
                 G.FUNCS.overlay_menu {
@@ -1016,8 +1016,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.ConsumableType {
         key = 'Tarot',
         collection_rows = { 5, 6 },
-        primary_colour = G.C.SET.Tarot,
-        secondary_colour = G.C.SECONDARY_SET.Tarot,
+        text_colour = G.C.UI.TEXT_LIGHT,
+        bg_colour = G.C.SECONDARY_SET.Tarot,
         inject_card = function(self, center)
             SMODS.ObjectType.inject_card(self, center)
             SMODS.insert_pool(G.P_CENTER_POOLS['Tarot_Planet'], center)
@@ -1031,8 +1031,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.ConsumableType {
         key = 'Planet',
         collection_rows = { 6, 6 },
-        primary_colour = G.C.SET.Planet,
-        secondary_colour = G.C.SECONDARY_SET.Planet,
+        text_colour = G.C.UI.TEXT_LIGHT,
+        bg_colour = G.C.SECONDARY_SET.Planet,
         inject_card = function(self, center)
             SMODS.ObjectType.inject_card(self, center)
             SMODS.insert_pool(G.P_CENTER_POOLS['Tarot_Planet'], center)
@@ -1046,8 +1046,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.ConsumableType {
         key = 'Spectral',
         collection_rows = { 4, 5 },
-        primary_colour = G.C.SET.Spectral,
-        secondary_colour = G.C.SECONDARY_SET.Spectral,
+        text_colour = G.C.UI.TEXT_LIGHT,
+        bg_colour = G.C.SECONDARY_SET.Spectral,
         loc_txt = {},
     }
 
