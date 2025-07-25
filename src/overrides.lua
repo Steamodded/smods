@@ -629,8 +629,7 @@ function get_straight(hand, min_length, skip, wrap)
 			new = function (card, av_ranks)
 				local cr = {
 					card = card,
-					ranks = av_ranks,
-					straight_pos = nil
+					ranks = av_ranks
 				}
 				return cr
 			end
@@ -709,10 +708,10 @@ function get_straight(hand, min_length, skip, wrap)
 		-- When called with [direction] = nil, the function first sets the [current_straight] to the best straight from a [direction] = "prev" call to itself
 		-- and then uses that as a base recursively with [direction] = "next"
 		local recursive_get_straight
-		recursive_get_straight = function (rank, current_straight, max_skips, do_wrap, direction)
+		recursive_get_straight = function (rank, current_straight, max_skips, do_wrap, direction, used_c_reps)
 			if direction == nil then
 				direction = "next_base"
-				current_straight = recursive_get_straight(rank, current_straight, max_skips, do_wrap, "prev_base") -- Get best descending straight
+				current_straight = recursive_get_straight(rank, current_straight, max_skips, do_wrap, "prev_base", used_c_reps) -- Get best descending straight
 				if rank.straight_edge then -- If starting c_rep is a straight_edge, return and manually re-call the function with [current_straight] reset and [direction] = "next_base"
 					return current_straight
 				end
@@ -733,29 +732,34 @@ function get_straight(hand, min_length, skip, wrap)
 			else
 				return {}
 			end
-			
+
+			used_c_reps = used_c_reps or {}
+
 			if direction == "prev_base" or direction == "next_base" then
 				direction = (direction == "prev_base" and "prev" or direction == "next_base" and "next")
 				for _, n_rank in pairs(rank_nexts) do
-					local rec_ret_straight = recursive_get_straight(n_rank, best_straight, max_skips, do_wrap, direction)
+					local rec_ret_straight = recursive_get_straight(n_rank, best_straight, max_skips, do_wrap, direction, used_c_reps)
 					if #rec_ret_straight > #ret_straight then
 						ret_straight = rec_ret_straight
+						--if #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
 					end
 				end
 			else
 				for c_rep, exists in pairs(c_reps) do
-					if exists and (c_rep.straight_pos == nil or c_rep.straight_pos >= #best_straight) then
+					if exists and not used_c_reps[c_rep] then
+						used_c_reps[c_rep] = true
 						best_straight[#best_straight+1] = c_rep
 						if #best_straight > #ret_straight then ret_straight = best_straight end
-						c_rep.straight_pos = #best_straight
 						for _, n_rank in pairs(rank_nexts) do
-							local rec_ret_straight = recursive_get_straight(n_rank, best_straight, max_skips, do_wrap, direction)
+							local rec_ret_straight = recursive_get_straight(n_rank, best_straight, max_skips, do_wrap, direction, used_c_reps)
 							if #rec_ret_straight > #ret_straight then
 								ret_straight = rec_ret_straight
 							end
 						end
+						--if #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
 						best_straight = {}
 						for k, v in pairs(current_straight) do best_straight[k] = v end
+						used_c_reps[c_rep] = false
 					end
 				end
 			end
@@ -768,15 +772,17 @@ function get_straight(hand, min_length, skip, wrap)
 
 		local max_hole_size = skip and 1 or 0
 		local best_straight = {}
+		local card_reps_checked = 0
 
 		-- Iterate over all card_reps and all their ranks as starting points of straight calculation
 		for _, c_rep in ipairs(card_reps) do
 			local current_straight = {c_rep}
-			c_rep.straight_pos = 1
+			local used_c_reps = {[c_rep] = true} -- This is a set of all card_reps used during this eval. They are set in recursive_get_straight()
 			for _, rank in ipairs(c_rep.ranks) do
-				local ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, nil)
-				if rank.straight_edge then 						-- Handle the (straight)edge case where the starting c_rep is a straight_edge
-					local next_ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, "next_base")
+				local ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, nil, used_c_reps)
+				if rank.straight_edge then 				-- Handle the (straight)edge case where the starting c_rep is a straight_edge
+					for _, ret_c_rep in ipairs(ret_straight) do used_c_reps[ret_c_rep] = true end -- Make sure all of the card_reps during the "prev" part of straight_edge evaluation aren't reused during the "next" part of evaluation.
+					local next_ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, "next_base", used_c_reps)
 					ret_straight = #next_ret_straight > #ret_straight and next_ret_straight or ret_straight
 				end
 
@@ -784,12 +790,16 @@ function get_straight(hand, min_length, skip, wrap)
 					best_straight = ret_straight
 				end
 				-- Optimization: If the size of the played hand minus the minimum straight length (5 default, 4 four fingers)
-				-- minus the amount of card_reps (cards) checked is less than zero, there cannot be a straight in the played hand.
-				--if #hand - min_length - i + 1 < 0 then
-					--return {}
-				--end
+				-- minus the amount of card_reps (cards) checked is less than zero, there cannot be a straight in the hand.
+				-- (Equally, if the length of the best_straight is more or equal the length of the hand minus one, the remaining card cannot result in a longer straight.)
+				if #hand - min_length - card_reps_checked < 0 or #best_straight >= #hand - 1 then
+					if #best_straight >= min_length then
+						for k, v in ipairs(best_straight) do best_straight[k] = v.card end
+						return {best_straight}
+					else return {} end
+				end
 			end
-			c_rep.straight_pos = nil -- Reset this c_rep for next c_rep to become the starting point.
+			card_reps_checked = card_reps_checked + 1
 		end
 
 		if #best_straight >= min_length then

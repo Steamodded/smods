@@ -32,7 +32,7 @@ end
 function Card:get_ranks()
     if not SMODS.optional_features.quantum_ranks then return {SMODS.Ranks[self.base.value]} end
 
-    local eval = SMODS.calculate_context({get_ranks = true, other_card = self}) or {}
+    local eval = SMODS.calculate_context({get_ranks = true, other_card = self, ranks = {SMODS.Ranks[self.base.value]}}) or {SMODS.Ranks[self.base.value]}
 
     return eval.ranks or {SMODS.Ranks[self.base.value]}
 end
