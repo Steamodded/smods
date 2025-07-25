@@ -1,0 +1,75 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+
+# Oh boy.
+
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''function Card:set_card_area(area)'''
+position = "before"
+match_indent = false
+payload = '''
+
+function Card:is_rank(rank, bypass_debuff)
+    if not rank then return false end
+    if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
+        return type(rank) ~= "string" and SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank --Accepts SMODS.Rank or a rank key / id as input. 
+    end
+
+    for _, r in ipairs(self:get_ranks()) do
+        if rank == r or rank == SMODS.Ranks[r] then -- Accepts SMODS.Rank or its key
+            return true
+        end
+    end
+    return false
+end
+
+function Card:get_ranks()
+    if not SMODS.optional_features.quantum_ranks then return {SMODS.Ranks[self.base.value]} end
+
+    local eval = SMODS.calculate_context({get_ranks = true, other_card = self}) or {}
+
+    return eval.ranks or {SMODS.Ranks[self.base.value]}
+end
+
+'''
+
+
+#[[patches]]
+#[patches.regex]
+#target = "functions/common_events.lua"
+#pattern = ''':get_id\(\)\s+==\s+([0-9]+|[A-Za-z|\.]+)\)$'''
+#position = 'at'
+#payload = ''':is_rank($1)'''
+
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''context.full_hand[1]:get_id() == 6'''
+position = "at"
+match_indent = true
+payload = '''context.full_hand[1]:is_rank(6)'''
+
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''context.other_card:get_id() == G.GAME.current_round.mail_card.id'''
+position = "at"
+match_indent = true
+payload = '''context.other_card:is_rank(G.GAME.current_round.mail_card.id)'''
+
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''context.other_card:get_id() == G.GAME.current_round.mail_card.id'''
+position = "at"
+match_indent = true
+payload = '''context.other_card:is_rank(G.GAME.current_round.mail_card.id)'''

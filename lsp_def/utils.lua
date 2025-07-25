@@ -84,6 +84,7 @@ function SMODS.merge_lists(...) end
 --- A table of SMODS feature that mods can choose to enable. 
 ---@class SMODS.optional_features: table
 ---@field quantum_enhancements? boolean Enables "Quantum Enhancement" contexts. Cards can count as having multiple enhancements at once. 
+---@field quantum_ranks? boolean Enables "Quantum Ranks", allowing playing cards to have more than one rank.
 ---@field retrigger_joker? boolean Enables "Joker Retrigger" contexts. Jokers can be retriggered by other jokers or effects. 
 ---@field post_trigger? boolean Enables "Post Trigger" contexts. Allows calculating effects after a Joker has been calculated. 
 ---@field cardareas? SMODS.optional_features.cardareas Enables additional CardArea calculation. 
