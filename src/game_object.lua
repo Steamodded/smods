@@ -1468,7 +1468,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     local pack_loc_vars = function(self, info_queue, card)
         local cfg = (card and card.ability) or self.config
         return {
-            vars = { cfg.choose, cfg.extra },
+            vars = { math.min(cfg.choose + (G.GAME.modifiers.booster_choice_mod or 0), cfg.extra), cfg.extra },
             key = self.key:sub(1, -3),
         }
     end
