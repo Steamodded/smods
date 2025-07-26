@@ -2311,37 +2311,25 @@ function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips, scoring_h
 	return _G.mult, _G.hand_chips, modded or flags.calculated
 end
 
-local ref = Card.set_base
+local card_set_base = Card.set_base
 function Card:set_base(card, initial)
     if self.playing_card and self.base then
         local new_rank = card and card.value and SMODS.Ranks[card.value] and SMODS.Ranks[card.value].id
         local contexts = {}
-        local function table_add(t1, t2)
-            for i,v in pairs(t1) do
-                t2[i] = v
-            end
-        end
-        local function get_table_length(t)
-            local i = 0
-            for _,_ in pairs(t) do
-                i = i + 1
-            end
-            return i
-        end
         if new_rank then
             if self.base.id and self.base.id ~= new_rank then
-                table_add({change_rank = true, other_card = self, new_rank = new_rank, old_rank = self.base.id, rank_increase = ((self.base.id < new_rank) and true) or false}, contexts)
+                SMODS.merge_defaults(contexts, {change_rank = true, other_card = self, new_rank = new_rank, old_rank = self.base.id, rank_increase = ((self.base.id < new_rank) and true) or false})
             end
         end
         if card and card.suit and self.base.suit ~= card.suit then 
-            table_add({change_suit = true, other_card = self, new_suit = card.suit, old_suit = self.base.suit}, contexts)
+            SMODS.merge_defaults(contexts, {change_suit = true, other_card = self, new_suit = card.suit, old_suit = self.base.suit})
         end
-        if get_table_length(contexts) > 0 then
+        if next(contexts) then
             SMODS.calculate_context(contexts)
         end
     end
 
-    ref(self, card, initial)
+    card_set_base(self, card, initial)
 end
 
 local use_consumeable = Card.use_consumeable
