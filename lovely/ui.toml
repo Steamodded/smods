@@ -307,7 +307,7 @@ elseif self.config.ease_progress_bar then
         progress_config.saved_value = true_value
         G.E_MANAGER:add_event(Event({
             trigger = "ease",
-            ease = progress_config.ease
+            ease = progress_config.ease,
             delay = progress_config.delay or 0.2,
             ref_table = progress_config,
             ref_value = "dummy_value",
