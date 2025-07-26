@@ -3430,13 +3430,28 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     -------------------------------------------------------------------------------------------------
+    ------- API CODE GameObject.Colour
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.Colours = {}
+    SMODS.Colour = SMODS.GameObject:extend {
+        obj_table = SMODS.Colours,
+        obj_buffer = {},
+        required_params = { 'key' },
+        colour = G.C.FILTER,
+        inject = function(self)
+            self[1], self[2], self[3], self[4] = unpack(self.colour)
+            G.C[self.key] = self
+        end,
+    }
+
+    -------------------------------------------------------------------------------------------------
     ------- API CODE GameObject.Gradient
     -------------------------------------------------------------------------------------------------
 
-    SMODS.Gradients = {}
-    SMODS.Gradient = SMODS.GameObject:extend {
-        obj_table = SMODS.Gradients,
-        obj_buffer = {},
+    SMODS.Gradients = SMODS.Colours
+    SMODS.Gradient = SMODS.Colour:extend {
+        -- uses same obj_table and obj_buffer as SMODS.Colour
         required_params = { 'key' },
         interpolation = 'trig',
         cycle = 10,
