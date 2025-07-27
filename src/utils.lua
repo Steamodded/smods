@@ -1414,40 +1414,17 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return true
     end
     
-    if key == 'prevent_debuff' or key == 'add_to_hand' or key == 'remove_from_hand' or key == 'stay_flipped' or key == 'prevent_stay_flipped' then
+    if key == 'prevent_debuff' or key == 'add_to_hand' or key == 'remove_from_hand' or key == 'stay_flipped' or key == 'prevent_stay_flipped' or key == 'prevent_trigger' then
         return key
     end
 
-    if key == 'remove' then
-        return { [key] = amount }
-    end
-
-    if key == 'debuff' then
-        return { [key] = amount, debuff_source = scored_card }
-    end
-
-    if key == 'debuff_text' then
+    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or 
+        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'ranks' then
         return { [key] = amount }
     end
     
-    if key == 'cards_to_draw' then
-        return { [key] = amount }
-    end
-
-    if key == 'numerator' or key == 'denominator' then
-        return { [key] = amount }
-    end
-
-    if key == 'ranks' then
-        return { [key] = amount }
-    end
-
-    if key == 'no_destroy' then
-        return { [key] = amount }
-    end
-
-    if key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' then
-        return { [key] = amount }
+    if key == 'debuff' then
+        return { [key] = amount, debuff_source = scored_card }
     end
 end
 
@@ -1538,7 +1515,7 @@ SMODS.calculation_keys = {
     'level_up', 'func', 'extra',
     'numerator', 'denominator',
     'ranks',
-    'no_destroy',
+    'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
 }
 SMODS.silent_calculation = {
@@ -2695,4 +2672,15 @@ function SMODS.get_rank_from_id(id)
         end
     end
     return nil
+end
+
+-- Adds tag_triggered context
+local tag_apply = Tag.apply_to_run
+function Tag:apply_to_run(_context)
+    local res = tag_apply(self, _context)
+    if self.triggered and not self.triggered_calc then
+        SMODS.calculate_context({tag_triggered = self})
+        self.triggered_calc = true
+    end
+    return res
 end

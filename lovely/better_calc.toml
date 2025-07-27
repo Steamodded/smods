@@ -1816,3 +1816,30 @@ not self.ability.eternal then
 payload = '''
 not SMODS.is_eternal(self, {from_sell = true}) then
 '''
+
+# Adds tag_added context
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+generateTagUi()
+'''
+payload = '''
+if not _tag.from_load then SMODS.calculate_context({tag_added = _tag}) end
+_tag.from_load = nil
+'''
+
+# Prevent tag added context on reloading
+[[patches]]
+[patches.pattern]
+target = 'tag.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+G.GAME.tag_tally = math.max(self.tally, G.GAME.tag_tally) + 1
+'''
+payload = '''
+self.from_load = true
+'''
