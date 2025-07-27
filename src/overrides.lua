@@ -753,7 +753,7 @@ function get_straight(hand, min_length, skip, wrap)
 				local ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, nil, used_c_reps)
 
 				if rank.straight_edge then 	-- Handle the (straight)edge case where the starting c_rep is a straight_edge
-					for _, ret_c_rep in ipairs(ret_straight) do used_c_reps[ret_c_rep] = true end -- Make sure all of the card_reps during the "prev" part of straight_edge evaluation aren't reused during the "next" part of evaluation.
+					for k, _ in ipairs(used_c_reps) do used_c_reps[k] = k ~= c_rep end -- Make sure all of the other c_reps used during the .prev evaluation are free to be used again during the .next evaluation
 					local next_ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, "next_base", used_c_reps)
 					ret_straight = #next_ret_straight > #ret_straight and next_ret_straight or ret_straight
 				end

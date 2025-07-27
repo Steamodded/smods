@@ -73,6 +73,7 @@
 ---@field amount? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
 ---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
 ---@field display_name? integer Display name of the scoring poker hand
+---@field get_ranks? boolean Check if `true` for modifying the rank(s) of the context.other_card
 
 --- Util Functions
 
@@ -628,3 +629,9 @@ function SMODS.is_poker_hand_visible(handname) end
 --- Checks whether the card is eternal.
 --- `trigger` is the card or effect that runs the check
 function SMODS.is_eternal(card, trigger) end
+
+
+---@param id number
+---@return SMODS.Rank rank
+--- Returns the first rank from SMODS.Ranks whose .id == [id].
+function SMODS.get_rank_from_id(id) end
