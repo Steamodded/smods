@@ -2687,3 +2687,12 @@ function SMODS.is_eternal(card, trigger)
     if not card.config.center.eternal_compat and not ovr_compat then ret = false end
     return ret
 end
+
+function SMODS.get_rank_from_id(id)
+    for _, rank in SMODS.Ranks do
+        if rank.id == id then
+            return rank
+        end
+    end
+    return nil
+end

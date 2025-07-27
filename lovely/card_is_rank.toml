@@ -6,7 +6,12 @@ priority = -10
 
 # Oh boy.
 
+# Excluded Jokers: 
+# Even Steven, Odd Todd and Cloud Nine
+# Steven and Todd are a little messy to implement and Cloud Nine requires some kind of caching of ranks which I am NOT going to tackle :)
 
+
+# Card:is_rank() and Card:is_any_rank() and Card:get_ranks()
 [[patches]]
 [patches.pattern]
 target = "card.lua"
@@ -14,62 +19,284 @@ pattern = '''function Card:set_card_area(area)'''
 position = "before"
 match_indent = false
 payload = '''
-
-function Card:is_rank(rank, bypass_debuff)
+function Card:is_rank(rank, bypass_debuff) -- Accepts SMODS.Rank, a rank key or a rank id
     if not rank then return false end
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
-        return type(rank) ~= "string" and SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank --Accepts SMODS.Rank or a rank key / id as input. 
+        return SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank
     end
 
     for _, r in ipairs(self:get_ranks()) do
-        if rank == r or rank == SMODS.Ranks[r] then -- Accepts SMODS.Rank or its key
+        if r == rank or r.key == rank or r.id == rank then
             return true
         end
     end
     return false
 end
 
-function Card:get_ranks()
+function Card:is_any_rank(ranks, bypass_debuff)
+    if not ranks then return false end
+
+    if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
+        for _, rank in ranks do
+            if SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank then --Accepts SMODS.Rank or a rank key / id as input
+                return true
+            end
+        end
+        return false
+    end
+
+    local rank_dict = {}
+    for _, v in pairs(ranks) do
+        if v then
+            rank_dict[v] = true
+        end
+    end
+
+    if not next(rank_dict) then return false end
+
+    for _, r in ipairs(self:get_ranks()) do
+        if rank_dict[r] then
+            return true
+        end
+    end
+    return false
+end
+
+function Card:get_ranks() -- Returns a table of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
     if not SMODS.optional_features.quantum_ranks then return {SMODS.Ranks[self.base.value]} end
 
-    local eval = SMODS.calculate_context({get_ranks = true, other_card = self, ranks = {SMODS.Ranks[self.base.value]}}) or {SMODS.Ranks[self.base.value]}
+    local eval = SMODS.calculate_context({get_ranks = true, other_card = self, ranks = {SMODS.Ranks[self.base.value]}}) or {}
 
-    return eval.ranks or {SMODS.Ranks[self.base.value]}
+    if not eval.ranks then return {SMODS.Ranks[self.base.value]} end
+
+    for i, r in ipairs(eval.ranks) do
+        if type(r) == "string" then
+            eval.ranks[i] = SMODS.Ranks[r]
+        elseif type(r) == "table" and r.key then
+            eval.ranks[i] = SMODS.Ranks[r.key]
+        elseif type(r) == "number" then
+            eval.ranks[i] = SMODS.get_rank_from_id(r)
+        end
+    end
+
+    local ret = {}
+    for _, v in pairs(eval.ranks) do
+        if v then ret[#ret+1] = v end
+    end
+
+    if not next(ret) then return {SMODS.Ranks[self.base.value]} end
+
+    return ret
 end
 
 '''
 
 
-#[[patches]]
-#[patches.regex]
-#target = "functions/common_events.lua"
-#pattern = ''':get_id\(\)\s+==\s+([0-9]+|[A-Za-z|\.]+)\)$'''
-#position = 'at'
-#payload = ''':is_rank($1)'''
+# Help
+# [[patches]]
+# [patches.regex]
+# target = "functions/common_events.lua"
+# pattern = ''':get_id\(\)\s+==\s+(.*?)\s(?:and|or|then)''' # Problem: Some
+# position = 'at'
+# payload = ''':is_rank(SMODS.get_rank_from_id($1)) '''
 
 
+# Sixth Sense
 [[patches]]
 [patches.pattern]
 target = "card.lua"
-pattern = '''context.full_hand[1]:get_id() == 6'''
+pattern = '''
+            if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:get_id() == 6 and G.GAME.current_round.hands_played == 0 then'''
 position = "at"
-match_indent = true
-payload = '''context.full_hand[1]:is_rank(6)'''
+match_indent = false
+payload = '''
+            if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:is_rank(6) and G.GAME.current_round.hands_played == 0 then'''
 
 
+# Mail-In Rebate
 [[patches]]
 [patches.pattern]
 target = "card.lua"
-pattern = '''context.other_card:get_id() == G.GAME.current_round.mail_card.id'''
+pattern = '''
+            context.other_card:get_id() == G.GAME.current_round.mail_card.id then'''
 position = "at"
-match_indent = true
-payload = '''context.other_card:is_rank(G.GAME.current_round.mail_card.id)'''
+match_indent = false
+payload = '''
+            context.other_card:is_rank(G.GAME.current_round.mail_card.id) then'''
 
 
+# Hit the Road
 [[patches]]
 [patches.pattern]
 target = "card.lua"
-pattern = '''context.other_card:get_id() == G.GAME.current_round.mail_card.id'''
+pattern = '''context.other_card:get_id() == 11 and not context.blueprint then'''
 position = "at"
 match_indent = true
-payload = '''context.other_card:is_rank(G.GAME.current_round.mail_card.id)'''
+payload = '''context.other_card:is_rank(11) and not context.blueprint then'''
+
+
+# Wee Joker
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''context.other_card:get_id() == 2 and not context.blueprint then'''
+position = "at"
+match_indent = true
+payload = '''context.other_card:is_rank(2) and not context.blueprint then'''
+
+
+# 8 Ball
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                    if (context.other_card:get_id() == 8) and (pseudorandom('8ball') < G.GAME.probabilities.normal/self.ability.extra) then''' # This gets injected before listed_probabilities.toml
+position = "at"
+match_indent = false
+payload = '''
+                    if (context.other_card:is_rank(8)) and (pseudorandom('8ball') < G.GAME.probabilities.normal/self.ability.extra) then''' 
+
+
+# The Idol
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                    context.other_card:get_id() == G.GAME.current_round.idol_card.id and '''
+position = "at"
+match_indent = false
+payload = '''
+                    context.other_card:is_rank(G.GAME.current_round.idol_card.id) and '''
+
+
+# Scholar
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                    context.other_card:get_id() == 14 then'''
+position = "at"
+match_indent = false
+payload = '''
+                    context.other_card:is_rank(14) then'''
+
+
+# Walkie Talkie
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                (context.other_card:get_id() == 10 or context.other_card:get_id() == 4) then'''
+position = "at"
+match_indent = false
+payload = '''
+                (context.other_card:is_any_rank({10, 4})) then'''
+
+
+# Fibonacci
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Fibonacci' and (
+                context.other_card:get_id() == 2 or 
+                context.other_card:get_id() == 3 or 
+                context.other_card:get_id() == 5 or 
+                context.other_card:get_id() == 8 or 
+                context.other_card:get_id() == 14) then
+                    return {
+                        mult = self.ability.extra,
+                        card = self
+                    }
+                end
+'''
+position = "at"
+match_indent = true
+payload = '''
+if self.ability.name == 'Fibonacci' and (
+    context.other_card:is_any_rank({2, 3, 5, 8, 14})) then
+        return {
+            mult = self.ability.extra,
+            card = self
+        }
+    end
+'''
+
+# Triboulet
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                    (context.other_card:get_id() == 12 or context.other_card:get_id() == 13) then'''
+position = "at"
+match_indent = false
+payload = '''
+                    (context.other_card:is_any_rank({12, 13})) then'''
+
+
+# Shoot the Moon
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                        context.other_card:get_id() == 12 then'''
+position = "at"
+match_indent = false
+payload = '''
+                        context.other_card:is_rank(12) then'''
+
+
+# Baron
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                        context.other_card:get_id() == 13 then'''
+position = "at"
+match_indent = false
+payload = '''
+                        context.other_card:is_rank(13) then'''
+
+
+
+# Hack
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Hack' and (
+                context.other_card:get_id() == 2 or 
+                context.other_card:get_id() == 3 or 
+                context.other_card:get_id() == 4 or 
+                context.other_card:get_id() == 5) then
+                    return {
+                        message = localize('k_again_ex'),
+                        repetitions = self.ability.extra,
+                        card = self
+                    }
+                end
+'''
+position = "at"
+match_indent = true
+payload = '''
+if self.ability.name == 'Hack' and (
+    context.other_card:is_any_rank({2, 3, 4, 5})) then
+        return {
+            message = localize('k_again_ex'),
+            repetitions = self.ability.extra,
+            card = self
+        }
+    end
+'''
+
+
+# Superposition
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                                if context.scoring_hand[i]:get_id() == 14 then aces = aces + 1 end'''
+position = "at"
+match_indent = false
+payload = '''
+                                if context.scoring_hand[i]:is_rank(14) then aces = aces + 1 end'''

@@ -555,7 +555,7 @@ function G.UIDEF.deck_stake_column(_deck_key)
 end
 
 --#endregion
---#region straights and view deck UI
+--#region straights and X same
 
 function get_straight(hand, min_length, skip, wrap)
     min_length = min_length or 5
@@ -625,7 +625,9 @@ function get_straight(hand, min_length, skip, wrap)
 		return ret
 
 	else 													-- If quantum ranks are toggled on
-		local CardRep = { -- Card Representer Struct
+		-- Card Representer Struct
+		-- This is placed into [ranks] at every rank its card may be. 
+		local CardRep = {
 			new = function (card, av_ranks)
 				local cr = {
 					card = card,
@@ -638,10 +640,10 @@ function get_straight(hand, min_length, skip, wrap)
 		-- All card_rep instances
 		local card_reps = {}
 
-		for i, pcard in ipairs(hand) do
+		for _, pcard in ipairs(hand) do
 			local pcard_ranks = pcard:get_ranks()
 
-			if pcard_ranks then
+			if next(pcard_ranks) then
 				local card_rep = CardRep.new(pcard, pcard_ranks)
 				card_reps[#card_reps+1] = card_rep						-- Add card_rep to card_reps_holder
 
@@ -651,47 +653,16 @@ function get_straight(hand, min_length, skip, wrap)
 			end
 		end
 
-		-- Propagate card_reps like so;
-		-- If a card_rep only has one rank available, delete all other card_reps for its rank. -> Repeat until no card_reps are deleted.
-		-- If N card_reps share all of their N ranks, set each of them to one of the N ranks and redo above step. 
-		-- I have no idea if this is worth it :)
-		local propagate = function ()
-			-- local c_reps_by_length = {}
-			local removed = false
-			for _, c_rep in ipairs(card_reps) do
-				if #c_rep.ranks == 1 then
-					for other, _ in pairs(ranks[c_rep.ranks[1].key]) do
-						if other ~= c_rep then
-							removed = true
-							local i = #other.ranks
-							while i > 0 do
-								if other.ranks[i] == c_rep.ranks[1] then
-									other.ranks.remove(i)
-									break
-								else
-									i = i - 1
-								end
-							end
-							ranks[c_rep.ranks[1].key][other] = nil
-						end
-					end
-				else
-					--[[
-					if not c_reps_by_length[#c_rep.ranks] then c_reps_by_length[#c_rep.ranks] = {c_rep}
-					else c_reps_by_length[#c_rep.ranks][#c_reps_by_length[#c_rep.ranks]+1] = c_rep end
-					--]]
-				end
-			end
-			return removed
-		end
-		--propagate()
+		-- TODO: Optimization that may or may not be worth it: 
+		-- Remove all card_reps that share a rank with a 1-rank card_rep at that rank. Repeat until none are removed.
+		-- Also, collapse any N card_reps that share N ranks into one of those ranks each. (Hard to implement / too inefficient maybe)
 
-		-- Recursive function to get all .nexts of a rank and its .next ranks down to a depth [depth] (which should be the shortcut level) in one table
-		-- [depth] = 0 is base, 1 is shortcut. 
+		-- Recursive function to get all .nexts/.prevs of a rank and its .next/.prev ranks down to a [depth] (which should be the shortcut level), merged into one table
+		-- [depth] = 0 is base, 1 is shortcut
 		local get_next_ranks
 		get_next_ranks = function (rank, depth, do_wrap, previous)
 			local rec_ret = {}
-			if rank.straight_edge and not do_wrap then return {} end
+			if rank.straight_edge and not do_wrap then return {} end -- If it's an ace (or custom straight_edge rank), return an empty table. -> This causes an edge case that is later taken care of
 			for _, r in ipairs(rank[previous and "prev" or "next"]) do
 				rec_ret[#rec_ret+1] = SMODS.Ranks[r]
 				if depth > 0 then
@@ -705,8 +676,8 @@ function get_straight(hand, min_length, skip, wrap)
 
 		-- Recursive function to find a valid straight, with [rank] as the starting point
 		-- This function goes both ways; .next and .prev
-		-- When called with [direction] = nil, the function first sets the [current_straight] to the best straight from a [direction] = "prev" call to itself
-		-- and then uses that as a base recursively with [direction] = "next"
+		-- When called with [direction] = nil, the function first sets the [current_straight] to the best straight from a [direction] = "prev_base" call to itself
+		-- and then uses that as a base recursively with [direction] = "next_base"
 		local recursive_get_straight
 		recursive_get_straight = function (rank, current_straight, max_skips, do_wrap, direction, used_c_reps)
 			if direction == nil then
@@ -735,8 +706,8 @@ function get_straight(hand, min_length, skip, wrap)
 
 			used_c_reps = used_c_reps or {}
 
-			if direction == "prev_base" or direction == "next_base" then
-				direction = (direction == "prev_base" and "prev" or direction == "next_base" and "next")
+			if direction == "prev_base" or direction == "next_base" then -- These are required to avoid including the starting card_rep again / to avoid looping over the starting rank's card_reps, because the evaluation loop below does that already
+				direction = (direction == "prev_base" and "prev" or direction == "next_base" and "next") -- Strip the "_base" from the direction to continue in the 'else' part of the if statement (once the function calls itself)
 				for _, n_rank in pairs(rank_nexts) do
 					local rec_ret_straight = recursive_get_straight(n_rank, best_straight, max_skips, do_wrap, direction, used_c_reps)
 					if #rec_ret_straight > #ret_straight then
@@ -746,7 +717,7 @@ function get_straight(hand, min_length, skip, wrap)
 				end
 			else
 				for c_rep, exists in pairs(c_reps) do
-					if exists and not used_c_reps[c_rep] then
+					if exists and not used_c_reps[c_rep] then -- If the encountered card_rep hasn't assumed a rank yet
 						used_c_reps[c_rep] = true
 						best_straight[#best_straight+1] = c_rep
 						if #best_straight > #ret_straight then ret_straight = best_straight end
@@ -763,11 +734,11 @@ function get_straight(hand, min_length, skip, wrap)
 					end
 				end
 			end
-			
+
 			return ret_straight
 		end
 
-		
+
 		-- Alright now we can evaluate the straight :)
 
 		local max_hole_size = skip and 1 or 0
@@ -780,7 +751,8 @@ function get_straight(hand, min_length, skip, wrap)
 			local used_c_reps = {[c_rep] = true} -- This is a set of all card_reps used during this eval. They are set in recursive_get_straight()
 			for _, rank in ipairs(c_rep.ranks) do
 				local ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, nil, used_c_reps)
-				if rank.straight_edge then 				-- Handle the (straight)edge case where the starting c_rep is a straight_edge
+
+				if rank.straight_edge then 	-- Handle the (straight)edge case where the starting c_rep is a straight_edge
 					for _, ret_c_rep in ipairs(ret_straight) do used_c_reps[ret_c_rep] = true end -- Make sure all of the card_reps during the "prev" part of straight_edge evaluation aren't reused during the "next" part of evaluation.
 					local next_ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, "next_base", used_c_reps)
 					ret_straight = #next_ret_straight > #ret_straight and next_ret_straight or ret_straight
@@ -789,9 +761,9 @@ function get_straight(hand, min_length, skip, wrap)
 				if #ret_straight >= min_length and #ret_straight > #best_straight then
 					best_straight = ret_straight
 				end
-				-- Optimization: If the size of the played hand minus the minimum straight length (5 default, 4 four fingers)
+				-- Optimization: If the size of the played hand minus the minimum straight length (5=default, 4=Four Fingers)
 				-- minus the amount of card_reps (cards) checked is less than zero, there cannot be a straight in the hand.
-				-- (Equally, if the length of the best_straight is more or equal the length of the hand minus one, the remaining card cannot result in a longer straight.)
+				-- (Equally, if the length of the best_straight is more or equal the length of the hand minus one, the remaining card cannot result in a longer straight (it must be a fork in .next/.prev))
 				if #hand - min_length - card_reps_checked < 0 or #best_straight >= #hand - 1 then
 					if #best_straight >= min_length then
 						for k, v in ipairs(best_straight) do best_straight[k] = v.card end
@@ -810,6 +782,57 @@ function get_straight(hand, min_length, skip, wrap)
 		return {}
 	end
 end
+
+
+function get_X_same(num, hand, or_more)
+	if not SMODS.optional_features.quantum_ranks then
+		local vals = {}
+		for i = 1, SMODS.Rank.max_id.value do
+			vals[i] = {}
+		end
+		for i=#hand, 1, -1 do
+			local curr = {}
+			table.insert(curr, hand[i])
+			for j=1, #hand do
+				if hand[i]:get_id() == hand[j]:get_id() and i ~= j then
+					table.insert(curr, hand[j])
+				end
+			end
+			if or_more and (#curr >= num) or (#curr == num) then
+				vals[curr[1]:get_id()] = curr
+			end
+		end
+		local ret = {}
+		for i=#vals, 1, -1 do
+			if next(vals[i]) then table.insert(ret, vals[i]) end
+		end
+		return ret
+	else
+		local rank_tally = {} -- {rank: int}
+		local rank_cards = {} -- {rank: {_: card}}
+		for _, v in pairs(SMODS.Ranks) do rank_tally[v] = 0 end
+
+		for _, pcard in ipairs(hand) do
+			local pcard_ranks = pcard:get_ranks()
+			for _, r in ipairs(pcard_ranks) do
+				rank_tally[r] = rank_tally[r] and rank_tally[r] + 1 or 1
+				rank_cards[r] = rank_cards[r] or {}
+				rank_cards[r][#rank_cards[r]+1] = pcard
+			end
+		end
+
+		local ret = {}
+		for rank, tally in pairs(rank_tally) do
+			if or_more and (tally >= num) or (tally == num) then
+				table.insert(ret, rank_cards[rank])
+			end
+		end
+		return ret
+	end
+end
+
+--#endregion
+--#region view deck UI
 
 function G.UIDEF.deck_preview(args)
 	local _minh, _minw = 0.35, 0.5
