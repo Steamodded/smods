@@ -749,3 +749,54 @@ payload = '''
 self:set_ranks()
 if not G.in_delete_run and self == G.deck then check_for_unlock({type = 'modify_deck', deck = self}) end'''
 match_indent = true
+
+# Fixing description error when info_queue has multi-box descriptions.
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = '''
+args.AUT.multi_box = {}
+'''
+position = "at"
+payload = '''
+if not args.is_info_queue then
+    args.AUT.multi_box = {} 
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''
+for _, v in ipairs(info_queue) do
+    generate_card_ui(v, full_UI_table)
+end
+'''
+position = "at"
+payload = '''
+for _, v in ipairs(info_queue) do
+    generate_card_ui(v, full_UI_table, {is_info_queue = true})
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = '=[SMODS _ "src/game_object.lua"]'
+pattern = '''
+local target = {
+    type = 'descriptions',
+    key = self.key,
+    set = self.set,
+    nodes = desc_nodes,
+    AUT = full_UI_table,
+    vars = 
+        specific_vars or {}
+}
+'''
+position = "after"
+payload = '''
+if specific_vars and specific_vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
+'''
+match_indent = true
