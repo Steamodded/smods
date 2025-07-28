@@ -2907,7 +2907,7 @@ SMODS.OG_cardrate = SMODS.OG_cardrate or {
     playing = G.GAME.playing_card_rate,
 }
 function Card:set_card_rate(card_kind, new_rate)
-    for rcard, rate in pairs(SMODS.OG_cardrate) do
+    for rcard, rate in ipairs(SMODS.OG_cardrate or {}) do
         local cardtable = rcard
         if card_kind == true or rcard == card_kind then
             if cardtable == nil then cardtable = rate end
