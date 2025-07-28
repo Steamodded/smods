@@ -745,30 +745,40 @@ function get_straight(hand, min_length, skip, wrap)
 		local best_straight = {}
 		local card_reps_checked = 0
 
-		-- Iterate over all card_reps and all their ranks as starting points of straight calculation
+		local appeared_in_ret_straight = {} -- {card_rep: boolean}
+
+		-- Iterate over all card_reps and all their ranks as starting points of straight calculation, however:
+		-- card_reps that have appeared in a returned straight are no longer used as starting points, because they cannot yield a new straight.
+		-- (Even if their .next/.prev forks, because then the fork's card_reps will yield the fork's straight later on)
 		for _, c_rep in ipairs(card_reps) do
-			local current_straight = {c_rep}
-			local used_c_reps = {[c_rep] = true} -- This is a set of all card_reps used during this eval. They are set in recursive_get_straight()
-			for _, rank in ipairs(c_rep.ranks) do
-				local ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, nil, used_c_reps)
+			if not appeared_in_ret_straight[c_rep] then
+				local current_straight = {c_rep}
+				local used_c_reps = {[c_rep] = true} -- This is a set of all card_reps used during this eval. They are set in recursive_get_straight()
+				for _, rank in ipairs(c_rep.ranks) do
+					local ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, nil, used_c_reps)
 
-				if rank.straight_edge then 	-- Handle the (straight)edge case where the starting c_rep is a straight_edge
-					for k, _ in ipairs(used_c_reps) do used_c_reps[k] = k ~= c_rep end -- Make sure all of the other c_reps used during the .prev evaluation are free to be used again during the .next evaluation
-					local next_ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, "next_base", used_c_reps)
-					ret_straight = #next_ret_straight > #ret_straight and next_ret_straight or ret_straight
-				end
+					if rank.straight_edge then 	-- Handle the (straight)edge case where the starting c_rep is a straight_edge
+						for k, _ in ipairs(used_c_reps) do used_c_reps[k] = k ~= c_rep end -- Make sure all of the other c_reps used during the .prev evaluation are free to be used again during the .next evaluation
+						local next_ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, "next_base", used_c_reps)
+						ret_straight = #next_ret_straight > #ret_straight and next_ret_straight or ret_straight
+					end
 
-				if #ret_straight >= min_length and #ret_straight > #best_straight then
-					best_straight = ret_straight
-				end
-				-- Optimization: If the size of the played hand minus the minimum straight length (5=default, 4=Four Fingers)
-				-- minus the amount of card_reps (cards) checked is less than zero, there cannot be a straight in the hand.
-				-- (Equally, if the length of the best_straight is more or equal the length of the hand minus one, the remaining card cannot result in a longer straight (it must be a fork in .next/.prev))
-				if #hand - min_length - card_reps_checked < 0 or #best_straight >= #hand - 1 then
-					if #best_straight >= min_length then
-						for k, v in ipairs(best_straight) do best_straight[k] = v.card end
-						return {best_straight}
-					else return {} end
+					if #ret_straight >= min_length and #ret_straight > #best_straight then
+						best_straight = ret_straight
+					end
+
+					for _, ret_c_rep in ipairs(ret_straight) do
+						appeared_in_ret_straight[ret_c_rep] = true
+					end
+					-- Optimization: If the size of the played hand minus the minimum straight length (5=default, 4=Four Fingers)
+					-- minus the amount of card_reps (cards) checked is less than zero, there cannot be a straight in the hand.
+					-- (Equally, if the length of the best_straight is more or equal the length of the hand minus one, the remaining card cannot result in a longer straight (it must be a fork in .next/.prev))
+					if #hand - min_length - card_reps_checked < 0 or #best_straight >= #hand - 1 then
+						if #best_straight >= min_length then
+							for k, v in ipairs(best_straight) do best_straight[k] = v.card end
+							return {best_straight}
+						else return {} end
+					end
 				end
 			end
 			card_reps_checked = card_reps_checked + 1
