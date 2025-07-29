@@ -724,9 +724,15 @@ function buildAchievementsTab(mod, current_page)
             return wrappedText
         end
     
-        local loc_target = (v.hidden_text and not v.earned) and {localize("hidden_achievement", 'achievement_descriptions')} or localize(v.key, 'achievement_descriptions')
+        local loc_target
+        if (v.hidden_text and not v.earned) then
+            loc_target = (localize(v.key.."_hidden", 'achievement_descriptions') ~= 'ERROR') and localize(v.key.."_hidden", 'achievement_descriptions') or {localize("hidden_achievement", 'achievement_descriptions')}
+        else loc_target = localize(v.key, 'achievement_descriptions') end
         if type(loc_target) == 'string' then loc_target = wrapText(loc_target, maxCharsPerLine) end
-        local loc_name = (v.hidden_name and not v.earned) and localize("hidden_achievement", 'achievement_names') or localize(v.key, 'achievement_names')
+        local loc_name
+        if (v.hidden_name and not v.earned) then
+            loc_name = (localize(v.key.."_hidden", 'achievement_names') ~= 'ERROR') and localize(v.key.."_hidden", 'achievement_names') or localize("hidden_achievement", 'achievement_names')
+        else loc_name = localize(v.key, 'achievement_names') end
 
         local ability_text = {}
         if loc_target then 
