@@ -295,14 +295,27 @@ match_indent = true
 [patches.pattern]
 target = 'functions/common_events.lua'
 pattern = '''
+if _c.specific_vars then specific_vars = _c.specific_vars end
+'''
+position = "before"
+payload = '''
+local is_info_queue = false
+if specific_vars and specific_vars.is_info_queue then is_info_queue = true; specific_vars = nil end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''
 for _, v in ipairs(info_queue) do
-    generate_card_ui(v, full_UI_table)
+  generate_card_ui(v, full_UI_table)
 end
 '''
 position = "at"
 payload = '''
 for _, v in ipairs(info_queue) do
-    generate_card_ui(v, full_UI_table, {is_info_queue = true})
+  generate_card_ui(v, full_UI_table, {is_info_queue = true})
 end
 '''
 match_indent = true
@@ -312,18 +325,18 @@ match_indent = true
 target = '=[SMODS _ "src/game_object.lua"]'
 pattern = '''
 local target = {
-    type = 'descriptions',
-    key = self.key,
-    set = self.set,
-    nodes = desc_nodes,
-    AUT = full_UI_table,
-    vars = 
-        specific_vars or {}
+  type = 'descriptions',
+  key = self.key,
+  set = self.set,
+  nodes = desc_nodes,
+  AUT = full_UI_table,
+  vars = 
+      specific_vars or {}
 }
 '''
 position = "after"
 payload = '''
-if specific_vars and specific_vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
+if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
 '''
 match_indent = true
 
