@@ -10,6 +10,7 @@
 ---@field scoring_hand? Card[]|table[] All scoring cards in played hand. 
 ---@field scoring_name? string Key to the scoring poker hand. 
 ---@field poker_hands? table<string, Card[]|table[]> All poker hand parts the played hand can form. 
+---@field main_eval? true `true` when no secondary card is evaluated.
 ---@field other_card? Card|table The individual card being checked during scoring. 
 ---@field other_joker? Card|table The individual Joker being checked during scoring. 
 ---@field card_effects? table Table of effects that have been calculated. 
@@ -17,6 +18,7 @@
 ---@field destroying_card? Card|table The individual card being checked for destruction. Only present when calculating G.play. 
 ---@field removed? Card[]|table[] Table of destroyed playing cards. 
 ---@field game_over? boolean Whether the run is lost or not. 
+---@field beat_boss? boolean Whether a boss was defeated.
 ---@field blind? Blind|table Current blind being selected. 
 ---@field hook? boolean `true` when "The Hook" discards cards. 
 ---@field card? Card|table The individual card being checked outside of scoring. 
@@ -52,7 +54,8 @@
 ---@field hand_drawn? true Check if `true` for effects after drawing a hand. 
 ---@field using_consumeable? true Check if `true` for effects after using a Consumable. 
 ---@field skip_blind? true Check if `true` for effects after skipping a blind. 
----@field playing_card_added? true Check if `true` for effects after a playing card was added into the deck. 
+---@field playing_card_added? true Check if `true` for effects after a playing card was added into the deck.
+---@field card_added? true Check if `true` for effects after a non-playing card was added into the deck.
 ---@field check_enhancement? true Check if `true` for applying quantum enhancements. 
 ---@field post_trigger? true Check if `true` for effects after another Joker is triggered. 
 ---@field modify_scoring_hand? true Check if `true` for modifying the scoring hand. 
@@ -72,7 +75,31 @@
 ---@field drawing_cards? true `true` when cards are being drawn
 ---@field amount? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
 ---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
----@field display_name? integer Display name of the scoring poker hand
+---@field display_name? integer Display name of the scoring poker hand.
+---@field mod_probability? true Check if `true` for effects that make additive or multiplicative modifications to probabilities.
+---@field fix_probability? true Check if `true` for effects that set probabilities.
+---@field pseudorandom_result? true Check if `true` for effects when a probability is rolled.
+---@field numerator? number Current numerator for probabilty.
+---@field denominator? number Current denominator for probabilty.
+---@field trigger_obj? table Current object for probability. Not guaranteed to be a Card object.
+---@field identifier? string Identifies the source of the probability roll.
+---@field from_roll? true `true` when a roll is made (as opposed to getting the values to display).
+---@field result? boolean Result of the probability roll.
+---@field initial_scoring_step? true Check if `true` for scoring effects before cards are scored.
+---@field joker_type_destroyed? true Check if `true` for effects when a non-playing card is destroyed.
+---@field check_eternal? true Check if `true` for applying the eternal effect without the sticker being applied.
+---@field trigger? table Source for the check. Not guaranteed to be a Card object.
+---@field tag_added? Tag|table Check for effects when a Tag is added.
+---@field tag_triggered? Tag|table Check for effects when a Tag is triggered.
+---@field prevent_tag_trigger? Tag|table Check to prevent a Tag for being triggered.
+---@field change_rank? true Check for effects when a card's rank changes.
+---@field change_suit? true Check for effects when a card's suit changes.
+---@field new_rank? number ID of the new rank the card changed to.
+---@field old_rank? number ID of the old rank the card changed from.
+---@field rank_increase? boolean `true` if rank increased.
+---@field new_suit? number New suit the card changed to.
+---@field old_suit? number Old suit the card changed from.
+---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
 
 --- Util Functions
 
