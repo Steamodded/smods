@@ -409,7 +409,8 @@ _c:generate_ui(info_queue, card, desc_nodes, specific_vars, full_UI_table)
 '''
 position = "before"
 payload = '''
-local is_info_queue = (specific_vars and specific_vars.is_info_queue and true) or false
+local specific_vars = specific_vars or {}
+if is_info_queue then specific_vars.is_info_queue = true end
 '''
 match_indent = true
 
