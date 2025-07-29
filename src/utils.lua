@@ -2877,13 +2877,14 @@ function Tag:apply_to_run(_context)
     return res
 end
 
-SMODS.OG_boostw = SMODS.OG_boostw or {}
-function Card:set_booster_weight(booster_kind, new_weight)
+SMODS.og_boostweight = SMODS.og_boostweight or {}
+function Card:set_booster_weight(booster_kind, new_weight, override)
     for _, booster in pairs(G.P_CENTER_POOLS.Booster or {}) do
-        if SMODS.OG_boostw[booster.kind] == nil then
-            SMODS.OG_boostw[booster.kind] = booster.weight
+        if SMODS.og_boostweight[booster.kind] == nil then
+            SMODS.og_boostweight[booster.kind] = booster.weight
         end
-        local boostertable = SMODS.OG_boostw[booster.kind]
+        local boostertable = SMODS.og_boostweight[booster.kind]
+        if override == true then G.GAME.first_shop_buffoon = true end
         if booster_kind == true or booster.kind == booster_kind then
             if boostertable == nil then boostertable = booster.weight end
             if new_weight == nil then
@@ -2894,30 +2895,38 @@ function Card:set_booster_weight(booster_kind, new_weight)
                 else
                     booster.weight = boostertable
                 end
+            else
+                print('invalid use of set_booster_weight')
             end
         end
     end
 end
 
-SMODS.OG_cardrate = SMODS.OG_cardrate or {
-    joker = G.GAME.joker_rate,
-    tarot = G.GAME.tarot_rate,
-    planet = G.GAME.planet_rate,
-    spectral = G.GAME.spectral_rate,
-    playing = G.GAME.playing_card_rate,
-}
 function Card:set_card_rate(card_kind, new_rate)
-    for rcard, rate in ipairs(SMODS.OG_cardrate or {}) do
-        local cardtable = rcard
-        if card_kind == true or rcard == card_kind then
-            if cardtable == nil then cardtable = rate end
+    local rate_map = {
+        joker = "joker_rate",
+        tarot = "tarot_rate",
+        planet = "planet_rate",
+        spectral = "spectral_rate",
+        playing = "playing_card_rate"
+    }
+    if not G or not G.GAME then return end
+    for rcard, rate in pairs(rate_map) do
+        if card_kind == true or card_kind == rcard then
+            if SMODS.og_cardrate[rcard] == nil then
+                SMODS.og_cardrate[rcard] = G.GAME[rate]
+            end
             if new_rate == nil then
-                rate = cardtable
+                if type(SMODS.og_cardrate[rcard]) == "number" then
+                    G.GAME[rate] = SMODS.og_cardrate[rcard]
+                end
             elseif type(new_rate) == "number" then
                 if new_rate >= 0 then
-                    rate = new_rate
+                    G.GAME[rate] = new_rate
                 else
-                    rate = cardtable
+                    if type(SMODS.og_cardrate[rcard]) == "number" then
+                        G.GAME[rate] = SMODS.og_cardrate[rcard]
+                    end
                 end
             end
         end

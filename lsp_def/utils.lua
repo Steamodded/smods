@@ -630,17 +630,32 @@ function SMODS.is_eternal(card, trigger) end
 ---Modifies the weights of boosters in the Booster pool. (`G.P_CENTER_POOLS.Booster`)
 ---@param booster_kind string|true Booster to be modified. Set to `true` to affect all boosters in pool
 ---@param new_weight number? New weight of booster(s). Leave unspecified or `nil` to reset to default
+---@param override boolean? If `true`, will override the first shop's guaranteed Buffoon Pack
 ---\
----`ex:` All Boosters disabled, Standard Packs reenabled at original weight:\
+---__examples:__\
+---All Boosters except Buffoon Packs disabled:\
 ---`Card:set_booster_weight(true, 0)`\
----`Card:set_booster_weight('Standard')`
-function Card:set_booster_weight(booster_kind, new_weight) end
+---`Card:set_booster_weight('Buffoon')` <- within an event\
+---\
+---Standard Packs reenabled at original weight:\
+---`Card:set_booster_weight('Standard')`\
+---\
+---All Buffoon Packs (including the guaranteed) disabled:\
+---`Card:set_booster_weight('Buffoon', 0, true)`
+function Card:set_booster_weight(booster_kind, new_weight, override) end
 
 ---Modifies the weights (rates) of card objects. (`G.GAME.` ? `_rate`)
 ---@param card_kind 'joker'|'tarot'|'planet'|'spectral'|'playing'|true Cardtype to be modified. Set to `true` to affect all cardtypes
 ---@param new_rate number? New weight of cardtype(s). Leave unspecified or `nil` to reset to default
 ---\
----`ex:` Jokers don't appear, weight of Planet cards increased by 10:\
+---__examples:__\
+---Jokers don't appear, weight of Planets becomes 10:\
 ---`Card:set_card_rate('joker', 0)`\
----`Card:set_card_rate('planet', 10)`
+---`Card:set_card_rate('planet', 10)` <- within an event\
+---\
+---Tarots reenabled at original weight:\
+---`Card:set_card_rate('tarot')`\
+---\
+---Spectral cards don't appear:\
+---`Card:set_card_rate('spectral', 0)`
 function Card:set_card_rate(card_kind, new_rate) end
