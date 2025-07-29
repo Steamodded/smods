@@ -73,7 +73,7 @@
 ---@field amount? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
 ---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
 ---@field display_name? integer Display name of the scoring poker hand
----@field get_ranks? boolean Check if `true` for modifying the rank(s) of the context.other_card
+---@field get_ranks? true Check if `true` for modifying the rank(s) of the context.other_card
 
 --- Util Functions
 

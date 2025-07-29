@@ -19,13 +19,13 @@ pattern = '''function Card:set_card_area(area)'''
 position = "before"
 match_indent = false
 payload = '''
-function Card:is_rank(rank, bypass_debuff) -- Accepts SMODS.Rank, a rank key or a rank id
+function Card:is_rank(rank, bypass_debuff, source_context) -- Accepts SMODS.Rank, a rank key or a rank id
     if not rank then return false end
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
         return SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank
     end
 
-    for _, r in ipairs(self:get_ranks()) do
+    for _, r in ipairs(self:get_ranks(source_context)) do
         if r == rank or r.key == rank or r.id == rank then
             return true
         end
@@ -33,11 +33,11 @@ function Card:is_rank(rank, bypass_debuff) -- Accepts SMODS.Rank, a rank key or 
     return false
 end
 
-function Card:is_any_rank(ranks, bypass_debuff)
+function Card:is_any_rank(ranks, bypass_debuff, source_context)
     if not ranks then return false end
 
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
-        for _, rank in ranks do
+        for _, rank in pairs(ranks) do
             if SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank then --Accepts SMODS.Rank or a rank key / id as input
                 return true
             end
@@ -54,7 +54,7 @@ function Card:is_any_rank(ranks, bypass_debuff)
 
     if not next(rank_dict) then return false end
 
-    for _, r in ipairs(self:get_ranks()) do
+    for _, r in ipairs(self:get_ranks(source_context)) do
         if rank_dict[r] then
             return true
         end
@@ -62,10 +62,10 @@ function Card:is_any_rank(ranks, bypass_debuff)
     return false
 end
 
-function Card:get_ranks() -- Returns a table of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
+function Card:get_ranks(source_context) -- Returns a table of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
     if not SMODS.optional_features.quantum_ranks then return {SMODS.Ranks[self.base.value]} end
 
-    local eval = SMODS.calculate_context({get_ranks = true, other_card = self, ranks = {SMODS.Ranks[self.base.value]}}) or {}
+    local eval = SMODS.calculate_context({get_ranks = true, other_card = self, ranks = {SMODS.Ranks[self.base.value]}, source_context = source_context or {}}) or {}
 
     if not eval.ranks then return {SMODS.Ranks[self.base.value]} end
 
@@ -96,9 +96,9 @@ end
 # [[patches]]
 # [patches.regex]
 # target = "functions/common_events.lua"
-# pattern = ''':get_id\(\)\s+==\s+(.*?)\s(?:and|or|then)''' # Problem: Some
+# pattern = ''':get_id\(\)\s+==\s+([^\)]*?)\s(and|then)'''
 # position = 'at'
-# payload = ''':is_rank(SMODS.get_rank_from_id($1)) '''
+# payload = ''':is_rank(SMODS.get_rank_from_id($1)) $2'''
 
 
 # Sixth Sense
@@ -110,7 +110,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-            if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:is_rank(6) and G.GAME.current_round.hands_played == 0 then'''
+            if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:is_rank(6, false, context) and G.GAME.current_round.hands_played == 0 then'''
 
 
 # Mail-In Rebate
@@ -122,7 +122,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-            context.other_card:is_rank(G.GAME.current_round.mail_card.id) then'''
+            context.other_card:is_rank(G.GAME.current_round.mail_card.id, false, context) then'''
 
 
 # Hit the Road
@@ -132,7 +132,7 @@ target = "card.lua"
 pattern = '''context.other_card:get_id() == 11 and not context.blueprint then'''
 position = "at"
 match_indent = true
-payload = '''context.other_card:is_rank(11) and not context.blueprint then'''
+payload = '''context.other_card:is_rank(11, false, context) and not context.blueprint then'''
 
 
 # Wee Joker
@@ -142,7 +142,7 @@ target = "card.lua"
 pattern = '''context.other_card:get_id() == 2 and not context.blueprint then'''
 position = "at"
 match_indent = true
-payload = '''context.other_card:is_rank(2) and not context.blueprint then'''
+payload = '''context.other_card:is_rank(2, false, context) and not context.blueprint then'''
 
 
 # 8 Ball
@@ -154,7 +154,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                    if (context.other_card:is_rank(8)) and (pseudorandom('8ball') < G.GAME.probabilities.normal/self.ability.extra) then''' 
+                    if (context.other_card:is_rank(8, false, context)) and (pseudorandom('8ball') < G.GAME.probabilities.normal/self.ability.extra) then''' 
 
 
 # The Idol
@@ -166,7 +166,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                    context.other_card:is_rank(G.GAME.current_round.idol_card.id) and '''
+                    context.other_card:is_rank(G.GAME.current_round.idol_card.id, false, context) and '''
 
 
 # Scholar
@@ -178,7 +178,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                    context.other_card:is_rank(14) then'''
+                    context.other_card:is_rank(14, false, context) then'''
 
 
 # Walkie Talkie
@@ -190,7 +190,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                (context.other_card:is_any_rank({10, 4})) then'''
+                (context.other_card:is_any_rank({10, 4}, false, context)) then'''
 
 
 # Fibonacci
@@ -214,7 +214,7 @@ position = "at"
 match_indent = true
 payload = '''
 if self.ability.name == 'Fibonacci' and (
-    context.other_card:is_any_rank({2, 3, 5, 8, 14})) then
+    context.other_card:is_any_rank({2, 3, 5, 8, 14}, false, context)) then
         return {
             mult = self.ability.extra,
             card = self
@@ -231,7 +231,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                    (context.other_card:is_any_rank({12, 13})) then'''
+                    (context.other_card:is_any_rank({12, 13}, false, context)) then'''
 
 
 # Shoot the Moon
@@ -243,7 +243,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                        context.other_card:is_rank(12) then'''
+                        context.other_card:is_rank(12, false, context) then'''
 
 
 # Baron
@@ -255,7 +255,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                        context.other_card:is_rank(13) then'''
+                        context.other_card:is_rank(13, false, context) then'''
 
 
 
@@ -280,7 +280,7 @@ position = "at"
 match_indent = true
 payload = '''
 if self.ability.name == 'Hack' and (
-    context.other_card:is_any_rank({2, 3, 4, 5})) then
+    context.other_card:is_any_rank({2, 3, 4, 5}, false, context)) then
         return {
             message = localize('k_again_ex'),
             repetitions = self.ability.extra,
@@ -299,4 +299,4 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                                if context.scoring_hand[i]:is_rank(14) then aces = aces + 1 end'''
+                                if context.scoring_hand[i]:is_rank(14, false, context) then aces = aces + 1 end'''
