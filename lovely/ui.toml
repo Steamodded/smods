@@ -450,10 +450,9 @@ payload = '''
   local name_nodes = {}
   local function deep_find(t, index)
     for i,v in pairs(t) do
+      if i == index then return true end
       if type(v) == "table" then
         return deep_find(v, index)
-      elseif i == index then
-        return true
       end
     end
     return false
