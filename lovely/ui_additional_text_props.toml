@@ -183,3 +183,134 @@ if args.type == 'name' then
     return final_name
 end
 '''
+
+# Marquee text in DynaText
+# Adjust width when marquee is enabled
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if self.strings[k].W > self.config.W then self.config.W = self.strings[k].W; self.strings[k].W_offset = 0 end
+'''
+payload = '''
+if self.strings[k].W > self.config.W then
+    self.config.W = self.strings[k].W
+    self.strings[k].W_offset = 0
+    if self.config.marquee and self.config.maxw then
+        if self.config.W > self.config.maxw then
+            self.config.marquee_width = self.config.W/self.config.maxw
+            self.config.W = self.config.maxw
+        else
+            self.config.marquee = 'no'
+        end
+    end
+end
+'''
+# Adjust width when marquee is enabled
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if self.config.maxw and self.config.W > self.config.maxw then
+'''
+payload = '''
+if self.config.maxw and self.config.W > self.config.maxw and not self.config.marquee then
+'''
+# Adjust width when marquee is enabled
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+v.W_offset = 0.5*(self.config.W - v.W)
+'''
+payload = '''
+v.W_offset = 0.5*(self.config.W - (self.config.marquee and self.config.maxw and self.config.maxw < v.W and self.config.maxw or v.W))
+'''
+
+# Add start/end index calculation
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if self.children.particle_effect then self.children.particle_effect:draw() end
+'''
+payload = '''
+local start_index = 1
+local end_index = #self.strings[self.focused_string].letters
+if self.config.marquee and self.config.marquee ~= 'no' then
+    local padding = math.floor(#self.strings[self.focused_string].letters / (self.config.marquee_width or 1)) - 1
+    if self.dt and (self.dt - self.config.hold) / self.config.scroll_speed > (#self.strings[self.focused_string].letters + math.ceil(padding/4)) then self.dt = 0 end
+    if self.dt and self.dt > self.config.hold then
+        start_index = 1 + (math.floor((self.dt - self.config.hold) / self.config.scroll_speed) % (#self.strings[self.focused_string].letters + math.ceil(padding/4)))
+    end
+    end_index = math.min(start_index + padding, #self.strings[self.focused_string].letters)
+end
+'''
+
+# Use start/end index
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+for k, letter in ipairs(self.strings[self.focused_string].letters) do
+    local real_pop_in = self.config.min_cycle_time == 0 and 1 or letter.pop_in
+'''
+payload = '''
+for k=start_index, end_index do
+    local letter = self.strings[self.focused_string].letters[k]
+    local real_pop_in = self.config.min_cycle_time == 0 and 1 or letter.pop_in
+'''
+
+# Update dt
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+function DynaText:update(dt)
+'''
+payload = '''
+function DynaText:update(dt, real_dt)
+if self.config.marquee then
+    self.dt = (self.dt or 0) + real_dt
+end
+'''
+
+# Ensure hold is present
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+self.silent = (config.silent)
+'''
+payload = '''
+self.config.marquee = self.config.marquee and not G.SETTINGS.reduced_motion
+self.config.hold = self.config.hold or self.config.marquee and 1.5 or nil
+self.config.scroll_speed = self.config.scroll_speed or self.config.marquee and 0.1 or nil
+'''
+
+# Pass real_dt to update function
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+v:update(dt*self.SPEEDFACTOR)
+'''
+payload = '''
+v:update(dt*self.SPEEDFACTOR, self.real_dt)
+'''

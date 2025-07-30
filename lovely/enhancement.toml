@@ -315,6 +315,16 @@ payload = '''if self.ability and not initial then
 end'''
 match_indent = true
 
+# replace_base_card Fix Part 3
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if not G.OVERLAY_MENU then "
+position = "before"
+payload = '''if self.ability and not initial then
+  self.front_hidden = self:should_hide_front()
+end'''
+match_indent = true
 [[patches]]
 [patches.pattern]
 target = "card.lua"

@@ -3126,10 +3126,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.Enhancement:take_ownership('lucky', {
         loc_vars = function (self, info_queue, card)
-            local cfg = (card and card.ability) or self.config
             local numerator_mult, denominator_mult = SMODS.get_probability_vars(card, 1, 5, 'lucky_mult')
             local numerator_dollars, denominator_dollars = SMODS.get_probability_vars(card, 1, 15, 'lucky_money')
-            return {vars = {numerator_mult, cfg.mult, denominator_mult, cfg.p_dollars, denominator_dollars, numerator_dollars}}
+            return {vars = {numerator_mult, card.ability.mult, denominator_mult, card.ability.p_dollars, denominator_dollars, numerator_dollars}}
         end,
     })
 

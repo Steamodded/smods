@@ -449,9 +449,11 @@ if next(joker_eval) then
     if joker_eval.retriggers then
         for rt = 1, #joker_eval.retriggers do
             local rt_eval, rt_post = eval_card(_card, {cardarea = G.jokers, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, joker_main = true, retrigger_joker = true})
-            table.insert(effects, {retriggers = joker_eval.retriggers[rt]})
-            table.insert(effects, rt_eval)
-            for _, v in ipairs(rt_post) do effects[#effects+1] = v end
+            if next(rt_eval) then
+                table.insert(effects, {retriggers = joker_eval.retriggers[rt]})
+                table.insert(effects, rt_eval)
+                for _, v in ipairs(rt_post) do effects[#effects+1] = v end
+            end
         end
     end
 end'''
@@ -493,9 +495,11 @@ for _, _area in ipairs(SMODS.get_card_areas('jokers')) do
             if joker_eval.retriggers then
                 for rt = 1, #joker_eval.retriggers do
                     local rt_eval, rt_post = eval_card(_joker, {full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, [other_key] = _card, retrigger_joker = true})
-                    table.insert(effects, {retriggers = joker_eval.retriggers[rt]})
-                    table.insert(effects, rt_eval)
-                    for _, v in ipairs(rt_post) do effects[#effects+1] = v end
+                    if next(rt_eval) then
+                        table.insert(effects, {retriggers = joker_eval.retriggers[rt]})
+                        table.insert(effects, rt_eval)
+                        for _, v in ipairs(rt_post) do effects[#effects+1] = v end
+                    end
                 end
             end
         end
@@ -515,9 +519,11 @@ for _, _area in ipairs(SMODS.get_card_areas('individual')) do
         if _eval.retriggers then
             for rt = 1, #_eval.retriggers do
                 local rt_eval, rt_post = SMODS.eval_individual(_area, {full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, [other_key] = _card, retrigger_joker = true})
-                table.insert(effects, {_eval.retriggers[rt]})
-                table.insert(effects, rt_eval)
-                for _, v in ipairs(rt_post) do effects[#effects+1] = v end
+                if next(rt_eval) then
+                    table.insert(effects, {_eval.retriggers[rt]})
+                    table.insert(effects, rt_eval)
+                    for _, v in ipairs(rt_post) do effects[#effects+1] = v end
+                end
             end
         end
     end
@@ -892,9 +898,11 @@ for _,v in ipairs(post) do effects[#effects+1] = v end
 if eval.retriggers then
     for rt = 1, #eval.retriggers do
         local rt_eval, rt_post = eval_card(self, { selling_self = true, retrigger_joker = true})
-        table.insert(effects, {eval.retriggers[rt]})
-        table.insert(effects, rt_eval)
-        for _, v in ipairs(rt_post) do effects[#effects+1] = v end
+        if next(rt_eval) then
+            table.insert(effects, {eval.retriggers[rt]})
+            table.insert(effects, rt_eval)
+            for _, v in ipairs(rt_post) do effects[#effects+1] = v end
+        end
     end
 end
 SMODS.trigger_effects(effects, self)
@@ -1807,4 +1815,31 @@ not self.ability.eternal then
 '''
 payload = '''
 not SMODS.is_eternal(self, {from_sell = true}) then
+'''
+
+# Adds tag_added context
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+generateTagUi()
+'''
+payload = '''
+if not _tag.from_load then SMODS.calculate_context({tag_added = _tag}) end
+_tag.from_load = nil
+'''
+
+# Prevent tag added context on reloading
+[[patches]]
+[patches.pattern]
+target = 'tag.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+G.GAME.tag_tally = math.max(self.tally, G.GAME.tag_tally) + 1
+'''
+payload = '''
+self.from_load = true
 '''
