@@ -2666,7 +2666,7 @@ function SMODS.is_eternal(card, trigger)
 end
 
 function SMODS.get_rank_from_id(id)
-    for _, rank in SMODS.Ranks do
+    for _, rank in pairs(SMODS.Ranks) do
         if rank.id == id then
             return rank
         end

@@ -820,7 +820,6 @@ function get_X_same(num, hand, or_more)
 	else
 		local rank_tally = {} -- {rank: int}
 		local rank_cards = {} -- {rank: {_: card}}
-		for _, v in pairs(SMODS.Ranks) do rank_tally[v] = 0 end
 
 		for _, pcard in ipairs(hand) do
 			local pcard_ranks = pcard:get_ranks()
@@ -831,10 +830,64 @@ function get_X_same(num, hand, or_more)
 			end
 		end
 
+		-- Sort the ranks by tally, descending
+		local sorter_func =  function (a, b)
+			return a[2] > b[2]
+		end
+		local rank_tally_sorted = {}
+		for k, v in pairs(rank_tally) do
+			rank_tally_sorted[#rank_tally_sorted+1] = {k, v}
+		end
+		rank_tally_sorted = table.sort(rank_tally_sorted, sorter_func) or rank_tally_sorted
+
+
 		local ret = {}
-		for rank, tally in pairs(rank_tally) do
+		local appeared_cards_counter = 0
+		local card_has_appeared = {}
+
+		-- Check pairing function, separate because yes 
+		local check_pairing = function (rank, tally)
+			local current_pairing = {}
+			local valid_pairing = true
+			for _, card in ipairs(rank_cards[rank]) do
+				if not card_has_appeared[card] then
+					card_has_appeared[card] = true
+					appeared_cards_counter = appeared_cards_counter + 1
+					current_pairing[#current_pairing+1] = card
+				else
+					tally = tally - 1
+					valid_pairing = or_more and (tally >= num) or (tally == num)
+				end
+			end
+			if valid_pairing then
+				ret[#ret+1] = current_pairing
+			end
+		end
+
+		-- Evaluation
+		for _, tup in ipairs(rank_tally_sorted) do
+			local rank = tup[1]
+			local tally = tup[2]
 			if or_more and (tally >= num) or (tally == num) then
-				table.insert(ret, rank_cards[rank])
+				check_pairing(rank, tally)
+			else
+				local new_tally = tally
+				for _, card in ipairs(rank_cards[rank]) do
+					if card_has_appeared[card] then
+						new_tally = new_tally - 1
+					end
+				end
+				if or_more and (new_tally >= num) or (new_tally == num) then
+					check_pairing(rank, tally)
+				else
+					for _, card in ipairs(rank_cards[rank]) do
+						card_has_appeared[card] = true
+						appeared_cards_counter = appeared_cards_counter + 1
+					end
+				end
+			end
+			if appeared_cards_counter >= #hand then
+				return ret
 			end
 		end
 		return ret

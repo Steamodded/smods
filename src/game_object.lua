@@ -2684,7 +2684,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     for i = 2, 5 do
         SMODS.PokerHandPart {
             key = '_'..i,
-            func = function(hand) return get_X_same(i, hand, true) end
+            func = function(hand) return get_X_same(i, hand, i >= 5) end
         }
     end
 
@@ -2695,7 +2695,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             return { SMODS.merge_lists(parts._5, parts._flush) }
         end,
         ['Flush House'] = function(parts)
-            if #parts._3 < 1 or #parts._2 < 2 or not next(parts._flush) then return {} end
+            if #parts._3 < 1 or #parts._2 < 1 or not next(parts._flush) then return {} end
             return { SMODS.merge_lists(parts._all_pairs, parts._flush) }
         end,
         ['Five of a Kind'] = function(parts) return parts._5 end,
@@ -2705,7 +2705,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         ['Four of a Kind'] = function(parts) return parts._4 end,
         ['Full House'] = function(parts)
-            if #parts._3 < 1 or #parts._2 < 2 then return {} end
+            if #parts._3 < 1 or #parts._2 < 1 then return {} end
             return parts._all_pairs
         end,
         ['Flush'] = function(parts) return parts._flush end,
