@@ -449,6 +449,7 @@ position = "after"
 payload = '''
   local name_nodes = {}
   local function deep_find(t, index)
+    if t[index] then return true end
     for i,v in pairs(t) do
       if i == index then return true end
       if type(v) == "table" then
