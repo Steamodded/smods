@@ -1764,22 +1764,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             for _,v in ipairs(context.scoring_hand) do scoring_map[v] = true end
         end
         for _, area in ipairs(SMODS.get_card_areas('playing_cards')) do
-            if area == G.play and not context.scoring_hand then
-                -- If context is for probability, eval_card() anyway
-                -- This allows Seals, etc. to affect Joker probabilities during individual scoring:
-                -- For example; A seal can double the probability of Blood Stone hitting for the playing card it is applied to.
-                if context.mod_probability or context.fix_probability then
-                    for _, card in ipairs(area.cards) do
-                        local effects = {eval_card(card, context)}
-                        local f = SMODS.trigger_effects(effects, card)
-                        for k,v in pairs(f) do flags[k] = v end
-                        if flags.numerator then flags.numerator = flags.numerator end
-                        if flags.denominator then flags.denominator = flags.denominator end
-                        if flags.ranks then context.ranks = flags.ranks end
-                    end
-                end
-                goto continue
-            end
+            if area == G.play and not context.scoring_hand then goto continue end
             if not args or not args.has_area then context.cardarea = area end
             for _, card in ipairs(area.cards) do
                 if not args or not args.has_area then
@@ -1800,8 +1785,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     SMODS.calculate_quantum_enhancements(card, effects, context)
                     local f = SMODS.trigger_effects(effects, card)
                     for k,v in pairs(f) do flags[k] = v end
-                    if flags.numerator then context.numerator = flags.numerator end
-                    if flags.denominator then context.denominator = flags.denominator end
                     if flags.ranks then context.ranks = flags.ranks end
                 end
             end
@@ -1838,8 +1821,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             else
                 local f = SMODS.trigger_effects(effects, area.scored_card)
                 for k,v in pairs(f) do flags[k] = v end
-                if flags.numerator then context.numerator = flags.numerator end
-                if flags.denominator then context.denominator = flags.denominator end
                 if flags.ranks then context.ranks = flags.ranks end
             end
         end
