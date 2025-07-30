@@ -2049,7 +2049,8 @@ function SMODS.get_card_areas(_type, _context)
         local t = {
             { object = G.GAME.selected_back, scored_card = G.deck.cards[1] or G.deck },
         }
-        if G.GAME.blind then t[#t+1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite } end
+        if G.GAME.blind then t[#t + 1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite } end
+        if G.GAME.challenge then t[#t + 1] = { object = SMODS.Challenges[G.GAME.challenge], scored_card = G.deck.cards[1] or G.deck } end 
         -- TARGET: add your own individual scoring targets
         return t
     end
