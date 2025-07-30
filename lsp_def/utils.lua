@@ -75,7 +75,7 @@
 ---@field drawing_cards? true `true` when cards are being drawn
 ---@field amount? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
 ---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
----@field display_name? integer Display name of the scoring poker hand
+---@field display_name? integer Display name of the scoring poker hand.
 ---@field mod_probability? true Check if `true` for effects that make additive or multiplicative modifications to probabilities.
 ---@field fix_probability? true Check if `true` for effects that set probabilities.
 ---@field pseudorandom_result? true Check if `true` for effects when a probability is rolled.
@@ -100,7 +100,8 @@
 ---@field new_suit? number New suit the card changed to.
 ---@field old_suit? number Old suit the card changed from.
 ---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
----@field get_ranks? true Check if `true` for modifying the rank(s) of the context.other_card
+---@field get_ranks? true Check if `true` for modifying the rank(s) of the context.other_card. 
+---@field eval_getting_ranks? table Passed as [source_context] param by hand type evaluation when calling get_ranks(). (Allows quantum ranks exclusively during / outside hand type evaluation)
 
 --- Util Functions
 

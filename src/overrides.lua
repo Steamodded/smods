@@ -641,7 +641,7 @@ function get_straight(hand, min_length, skip, wrap)
 		local card_reps = {}
 
 		for _, pcard in ipairs(hand) do
-			local pcard_ranks = pcard:get_ranks()
+			local pcard_ranks = pcard:get_ranks({eval_getting_ranks = {type = "straight"}})
 
 			if next(pcard_ranks) then
 				local card_rep = CardRep.new(pcard, pcard_ranks)
@@ -822,7 +822,7 @@ function get_X_same(num, hand, or_more)
 		local rank_cards = {} -- {rank: {_: card}}
 
 		for _, pcard in ipairs(hand) do
-			local pcard_ranks = pcard:get_ranks()
+			local pcard_ranks = pcard:get_ranks({eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}})
 			for _, r in ipairs(pcard_ranks) do
 				rank_tally[r] = rank_tally[r] and rank_tally[r] + 1 or 1
 				rank_cards[r] = rank_cards[r] or {}

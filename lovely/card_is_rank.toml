@@ -55,7 +55,7 @@ function Card:is_any_rank(ranks, bypass_debuff, source_context)
     if not next(rank_dict) then return false end
 
     for _, r in ipairs(self:get_ranks(source_context)) do
-        if rank_dict[r] then
+        if rank_dict[r] or rank_dict[r.key] or rank_dict[r.id] then
             return true
         end
     end
