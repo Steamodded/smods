@@ -470,7 +470,7 @@ function SMODS.create_mod_badges(obj, badges)
             end
         end
         for i, mod in ipairs(mods) do
-            local mod_name = string.sub(mod.display_name, 1, 20)
+            local mod_name = mod.display_name
             local size = 0.9
             local font = G.LANG.font
             local max_text_width = 2 - 2*0.05 - 4*0.03*size - 2*0.03
@@ -480,13 +480,13 @@ function SMODS.create_mod_badges(obj, badges)
                 local tx = font.FONT:getWidth(c)*(0.33*size)*G.TILESCALE*font.FONTSCALE + 2.7*1*G.TILESCALE*font.FONTSCALE
                 calced_text_width = calced_text_width + tx/(G.TILESIZE*G.TILESCALE)
             end
-            local scale_fac =
-                calced_text_width > max_text_width and max_text_width/calced_text_width
-                or 1
+            local scale_fac = 1
+                -- calced_text_width > max_text_width and max_text_width/calced_text_width
+                -- or 1
             badges[#badges + 1] = {n=G.UIT.R, config={align = "cm"}, nodes={
                 {n=G.UIT.R, config={align = "cm", colour = mod.badge_colour or G.C.GREEN, r = 0.1, minw = 2, minh = 0.36, emboss = 0.05, padding = 0.03*size}, nodes={
                   {n=G.UIT.B, config={h=0.1,w=0.03}},
-                  {n=G.UIT.O, config={object = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE},float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = 0.33*size*scale_fac})}},
+                  {n=G.UIT.O, config={object = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE},float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = 0.33*size*scale_fac, marquee = calced_text_width > max_text_width and not mod.no_marquee, maxw = max_text_width})}},
                   {n=G.UIT.B, config={h=0.1,w=0.03}},
                 }}
               }}
@@ -1414,37 +1414,19 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return true
     end
     
-    if key == 'prevent_debuff' or key == 'add_to_hand' or key == 'remove_from_hand' or key == 'stay_flipped' or key == 'prevent_stay_flipped' then
+    if key == 'prevent_debuff' or key == 'add_to_hand' or key == 'remove_from_hand' or key == 'stay_flipped' or key == 'prevent_stay_flipped' or key == 'prevent_trigger' then
         return key
     end
 
-    if key == 'remove' then
+    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or 
+        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' then
         return { [key] = amount }
     end
-
+    
     if key == 'debuff' then
         return { [key] = amount, debuff_source = scored_card }
     end
 
-    if key == 'debuff_text' then
-        return { [key] = amount }
-    end
-    
-    if key == 'cards_to_draw' then
-        return { [key] = amount }
-    end
-
-    if key == 'numerator' or key == 'denominator' then
-        return { [key] = amount }
-    end
-
-    if key == 'no_destroy' then
-        return { [key] = amount }
-    end
-
-    if key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' then
-        return { [key] = amount }
-    end
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1469,6 +1451,16 @@ SMODS.trigger_effects = function(effects, card)
         SMODS.calculate_effect_table_key(effect_table, 'individual', card, ret)
         -- todo: might want to move these keys to a customizable list/lists
     end
+
+    if SMODS.post_prob and next(SMODS.post_prob) then
+        local prob_tables = SMODS.post_prob
+        SMODS.post_prob = {}
+        for i, v in ipairs(prob_tables) do
+            v.pseudorandom_result = true
+            SMODS.calculate_context(v)
+        end
+    end
+
     return ret
 end
 
@@ -1523,7 +1515,7 @@ SMODS.calculation_keys = {
     'message',
     'level_up', 'func', 'extra',
     'numerator', 'denominator',
-    'no_destroy',
+    'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
 }
 SMODS.silent_calculation = {
@@ -1619,12 +1611,14 @@ SMODS.calculate_repetitions = function(card, context, reps)
                 context.retrigger_joker = true
                 for rt = 1, #eval.retriggers do
                     context.retrigger_joker = eval.retriggers[rt].retrigger_card
-                    SMODS.insert_repetitions(reps, eval.retriggers[rt], eval.retriggers[rt].message_card or _card)
                     local rt_eval, rt_post = eval_card(_card, context)
-                    if next(rt_post) then SMODS.trigger_effects({rt_post}, card) end
-                    for key, value in pairs(rt_eval) do
-                        if key ~= 'retriggers' then
-                            SMODS.insert_repetitions(reps, value, _card)
+                    if next(rt_eval) then
+                        SMODS.insert_repetitions(reps, eval.retriggers[rt], eval.retriggers[rt].message_card or _card)
+                        if next(rt_post) then SMODS.trigger_effects({rt_post}, card) end
+                        for key, value in pairs(rt_eval) do
+                            if key ~= 'retriggers' then
+                                SMODS.insert_repetitions(reps, value, _card)
+                            end
                         end
                     end
                 end
@@ -1645,10 +1639,12 @@ SMODS.calculate_repetitions = function(card, context, reps)
             for rt = 1, #eval.retriggers do
                 context.retrigger_joker = eval.retriggers[rt].retrigger_card
                 local rt_eval, rt_post = SMODS.eval_individual(area, context)
-                if next(rt_post) then SMODS.trigger_effects({rt_post}, card) end
-                for key, value in pairs(rt_eval) do
-                    if key ~= 'retriggers' then
-                        SMODS.insert_repetitions(reps, value, area.scored_card)
+                if next(rt_eval) then
+                    if next(rt_post) then SMODS.trigger_effects({rt_post}, card) end
+                    for key, value in pairs(rt_eval) do
+                        if key ~= 'retriggers' then
+                            SMODS.insert_repetitions(reps, value, area.scored_card)
+                        end
                     end
                 end
             end
@@ -1664,22 +1660,26 @@ SMODS.calculate_retriggers = function(card, context, _ret)
     for _, area in ipairs(SMODS.get_card_areas('jokers')) do
         for _, _card in ipairs(area.cards) do
             local eval, post = eval_card(_card, {retrigger_joker_check = true, other_card = card, other_context = context, other_ret = _ret})
-            if next(post) then SMODS.trigger_effects({post}, _card) end
-            for key, value in pairs(eval) do
-                if not value.no_retrigger_juice then
-                    value.retrigger_juice = card
+            if next(eval) then
+                if next(post) then SMODS.trigger_effects({post}, _card) end
+                for key, value in pairs(eval) do
+                    if not value.no_retrigger_juice then
+                        value.retrigger_juice = card
+                    end
+                    SMODS.insert_repetitions(retriggers, value, _card, 'joker_retrigger')
                 end
-                SMODS.insert_repetitions(retriggers, value, _card, 'joker_retrigger')
             end
         end
     end
 
     for _, area in ipairs(SMODS.get_card_areas('individual')) do
         local eval, post = SMODS.eval_individual(area, {retrigger_joker_check = true, other_card = card, other_context = context, other_ret = _ret})
-        if next(post) then SMODS.trigger_effects({post}, _card) end
-        for key, value in pairs(eval) do
-            if value.repetitions then
-                SMODS.insert_repetitions(retriggers, value, area, 'individual_retrigger')
+        if next(eval) then
+            if next(post) then SMODS.trigger_effects({post}, _card) end
+            for key, value in pairs(eval) do
+                if value.repetitions then
+                    SMODS.insert_repetitions(retriggers, value, area, 'individual_retrigger')
+                end
             end
         end
     end
@@ -1731,9 +1731,13 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                             rt_eval.jokers.juice_card = rt_eval.jokers.juice_card or rt_eval.jokers.card or _card
                             rt_eval.jokers.message_card = rt_eval.jokers.message_card or context.other_card
                         end
-                        table.insert(effects, {retriggers = eval.retriggers[rt]})
-                        table.insert(effects, rt_eval)
-                        for _,v in ipairs(rt_post) do effects[#effects+1] = v end
+                        if next(rt_eval) then
+                            if next(rt_eval) then
+                                table.insert(effects, {retriggers = eval.retriggers[rt]})
+                                table.insert(effects, rt_eval)
+                                for _,v in ipairs(rt_post) do effects[#effects+1] = v end
+                            end
+                        end
                     end
                     context.retrigger_joker = nil
                 end
@@ -1799,9 +1803,13 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 for rt = 1, #effects[1].retriggers do
                     context.retrigger_joker = effects[1].retriggers[rt].retrigger_card
                     local rt_eval, rt_post = SMODS.eval_individual(area, context)
-                    table.insert(effects, {retriggers = effects[1].retriggers[rt]})
-                    table.insert(effects, rt_eval)
-                    for _,v in ipairs(rt_post) do effects[#effects+1] = v end
+                    if next(rt_eval) then
+                        if next(rt_eval) then
+                            table.insert(effects, {retriggers = effects[1].retriggers[rt]})
+                            table.insert(effects, rt_eval)
+                            for _,v in ipairs(rt_post) do effects[#effects+1] = v end
+                        end
+                    end
                 end
                 context.retrigger_joker = nil
             end
@@ -1827,7 +1835,9 @@ function SMODS.calculate_context(context, return_table, no_resolve)
     context.main_eval = nil
     
     flags[#flags+1] = SMODS.calculate_card_areas('playing_cards', context, return_table, { has_area = has_area })
+    context.main_eval = true
     flags[#flags+1] = SMODS.calculate_card_areas('individual', context, return_table)
+    context.main_eval = nil
     
     if SMODS.no_resolve then SMODS.no_resolve = nil end
     
@@ -2003,7 +2013,7 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
 end
 
 function SMODS.blueprint_effect(copier, copied_card, context)
-    if not copied_card or copied_card == copier or context.no_blueprint then return end
+    if not copied_card or copied_card == copier or copied_card.debuff or context.no_blueprint then return end
     if (context.blueprint or 0) > #G.jokers.cards then return end
     local old_context_blueprint = context.blueprint
     context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
@@ -2067,7 +2077,6 @@ function SMODS.eval_individual(individual, context)
     if (eff and not eff.no_retrigger) or triggered then
         --if type(eff) == 'table' then eff.juice_card = eff.juice_card or individual.scored_card end
         ret.individual = eff
-
         if not (context.retrigger_joker_check or context.retrigger_joker) then
             local retriggers = SMODS.calculate_retriggers(individual.object, context, ret)
             if next(retriggers) then
@@ -2586,7 +2595,7 @@ function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_
     local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier or seed, true)
     local result = pseudorandom(seed) < numerator / denominator
     SMODS.post_prob = SMODS.post_prob or {}
-    SMODS.calculate_context({pseudorandom_result = true, result = result, numerator = numerator, denominator = denominator, identifier = identifier or seed, trigger_obj = trigger_obj }) -- timing on this is a bit jank, will fix another time
+    SMODS.post_prob[#SMODS.post_prob+1] = {pseudorandom_result = true, result = result, trigger_obj = trigger_obj, numerator = numerator, denominator = denominator, identifier = identifier or seed}
     return result
 end
 
@@ -2631,4 +2640,15 @@ function SMODS.is_eternal(card, trigger)
     if card.ability.eternal then ret = true end
     if not card.config.center.eternal_compat and not ovr_compat then ret = false end
     return ret
+end
+
+-- Adds tag_triggered context
+local tag_apply = Tag.apply_to_run
+function Tag:apply_to_run(_context)
+    local res = tag_apply(self, _context)
+    if self.triggered and not self.triggered_calc then
+        SMODS.calculate_context({tag_triggered = self})
+        self.triggered_calc = true
+    end
+    return res
 end
