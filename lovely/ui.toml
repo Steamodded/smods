@@ -448,7 +448,17 @@ function info_tip_from_rows(desc_nodes, name)
 position = "after"
 payload = '''
   local name_nodes = {}
-  if not desc_nodes.loc_name then
+  local function deep_find(t, index)
+    for i,v in pairs(t) do
+      if type(v) == "table" then
+        return deep_find(v, index)
+      elseif i == index then
+        return true
+      end
+    end
+    return false
+  end
+  if not desc_nodes.loc_name or not deep_find(desc_nodes.loc_name, "object") then
     name_nodes = {{n=G.UIT.T, config={text = name, scale = 0.32, colour = G.C.UI.TEXT_LIGHT}}}
   else
     name_nodes = {desc_nodes.loc_name}
