@@ -2030,6 +2030,16 @@ function SMODS.blueprint_effect(copier, copied_card, context)
     end
 end
 
+function SMODS.get_mods_scoring_targets()
+    local ret = {}
+    for _, mod in ipairs(SMODS.mod_list) do
+        if mod.can_load and mod.calculate and type(mod.calculate) == "function" then
+            table.insert(ret, mod)
+        end
+    end
+    return ret
+end
+
 function SMODS.get_card_areas(_type, _context)
     if _type == 'playing_cards' then
         local t = {}
@@ -2049,7 +2059,10 @@ function SMODS.get_card_areas(_type, _context)
         local t = {
             { object = G.GAME.selected_back, scored_card = G.deck.cards[1] or G.deck },
         }
-        if G.GAME.blind then t[#t+1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite } end
+        if G.GAME.blind then t[#t + 1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite } end
+        for _, mod in ipairs(SMODS.get_mods_scoring_targets()) do
+            t[#t + 1] = { object = mod, scored_card = G.deck.cards[1] or G.deck }
+        end
         -- TARGET: add your own individual scoring targets
         return t
     end
