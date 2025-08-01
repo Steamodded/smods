@@ -1419,14 +1419,13 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     end
 
     if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or 
-        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' then
+        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'ranks' then
         return { [key] = amount }
     end
     
     if key == 'debuff' then
         return { [key] = amount, debuff_source = scored_card }
     end
-
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1515,6 +1514,7 @@ SMODS.calculation_keys = {
     'message',
     'level_up', 'func', 'extra',
     'numerator', 'denominator',
+    'ranks',
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
 }
@@ -1526,6 +1526,7 @@ SMODS.silent_calculation = {
     cards_to_draw = true,
     func = true, extra = true,
     numerator = true, denominator = true,
+    ranks = true,
     no_destroy = true
 }
 
@@ -1751,6 +1752,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     for k,v in pairs(f) do flags[k] = v end
                     if flags.numerator then context.numerator = flags.numerator end
                     if flags.denominator then context.denominator = flags.denominator end
+                    if flags.ranks then context.ranks = flags.ranks end
                 end
             end
         end
@@ -1783,6 +1785,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     SMODS.calculate_quantum_enhancements(card, effects, context)
                     local f = SMODS.trigger_effects(effects, card)
                     for k,v in pairs(f) do flags[k] = v end
+                    if flags.ranks then context.ranks = flags.ranks end
                 end
             end
             ::continue::
@@ -1818,6 +1821,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             else
                 local f = SMODS.trigger_effects(effects, area.scored_card)
                 for k,v in pairs(f) do flags[k] = v end
+                if flags.ranks then context.ranks = flags.ranks end
             end
         end
     end
@@ -2640,6 +2644,15 @@ function SMODS.is_eternal(card, trigger)
     if card.ability.eternal then ret = true end
     if not card.config.center.eternal_compat and not ovr_compat then ret = false end
     return ret
+end
+
+function SMODS.get_rank_from_id(id)
+    for _, rank in pairs(SMODS.Ranks) do
+        if rank.id == id then
+            return rank
+        end
+    end
+    return nil
 end
 
 -- Adds tag_triggered context

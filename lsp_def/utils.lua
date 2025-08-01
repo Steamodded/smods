@@ -100,6 +100,8 @@
 ---@field new_suit? number New suit the card changed to.
 ---@field old_suit? number Old suit the card changed from.
 ---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
+---@field get_ranks? true Check if `true` for modifying the rank(s) of the context.other_card. 
+---@field eval_getting_ranks? table Passed as [source_context] param by hand type evaluation when calling get_ranks(). (Allows quantum ranks exclusively during / outside hand type evaluation)
 
 --- Util Functions
 
@@ -111,6 +113,7 @@ function SMODS.merge_lists(...) end
 --- A table of SMODS feature that mods can choose to enable. 
 ---@class SMODS.optional_features: table
 ---@field quantum_enhancements? boolean Enables "Quantum Enhancement" contexts. Cards can count as having multiple enhancements at once. 
+---@field quantum_ranks? boolean Enables "Quantum Ranks", allowing playing cards to have more than one rank.
 ---@field retrigger_joker? boolean Enables "Joker Retrigger" contexts. Jokers can be retriggered by other jokers or effects. 
 ---@field post_trigger? boolean Enables "Post Trigger" contexts. Allows calculating effects after a Joker has been calculated. 
 ---@field cardareas? SMODS.optional_features.cardareas Enables additional CardArea calculation. 
@@ -654,3 +657,9 @@ function SMODS.is_poker_hand_visible(handname) end
 --- Checks whether the card is eternal.
 --- `trigger` is the card or effect that runs the check
 function SMODS.is_eternal(card, trigger) end
+
+
+---@param id number
+---@return SMODS.Rank rank
+--- Returns the first rank from SMODS.Ranks whose .id == [id].
+function SMODS.get_rank_from_id(id) end
