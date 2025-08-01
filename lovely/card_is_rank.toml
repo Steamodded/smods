@@ -21,7 +21,11 @@ match_indent = false
 payload = '''
 function Card:is_rank(rank, bypass_debuff, source_context) -- Accepts SMODS.Rank, a rank key or a rank id
     if not rank then return false end
+    
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
+        if not self.vampired and SMODS.has_enhancement(self, "m_stone") then
+            return false
+        end
         return SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank
     end
 
@@ -37,6 +41,9 @@ function Card:is_any_rank(ranks, bypass_debuff, source_context)
     if not ranks then return false end
 
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
+        if not self.vampired and SMODS.has_enhancement(self, "m_stone") then
+            return false
+        end
         for _, rank in pairs(ranks) do
             if SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank then --Accepts SMODS.Rank or a rank key / id as input
                 return true
@@ -65,9 +72,11 @@ end
 function Card:get_ranks(source_context) -- Returns a table of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
     if not SMODS.optional_features.quantum_ranks then return {SMODS.Ranks[self.base.value]} end
 
-    local eval = SMODS.calculate_context({get_ranks = true, other_card = self, ranks = {SMODS.Ranks[self.base.value]}, source_context = source_context or {}}) or {}
+    local default_ranks = (not self.vampired and SMODS.has_enhancement(self, "m_stone") and {}) or {SMODS.Ranks[self.base.value]}
 
-    if not eval.ranks then return {SMODS.Ranks[self.base.value]} end
+    local eval = SMODS.calculate_context({get_ranks = true, other_card = self, ranks = default_ranks, source_context = source_context or {}}) or {}
+
+    if not eval.ranks then return default_ranks end
 
     for i, r in ipairs(eval.ranks) do
         if type(r) == "string" then
@@ -84,7 +93,7 @@ function Card:get_ranks(source_context) -- Returns a table of "SMODS.Rank"s, san
         if v then ret[#ret+1] = v end
     end
 
-    if not next(ret) then return {SMODS.Ranks[self.base.value]} end
+    if not next(ret) then return default_ranks end
 
     return ret
 end
