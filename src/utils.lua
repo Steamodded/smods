@@ -1783,6 +1783,8 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     SMODS.calculate_quantum_enhancements(card, effects, context)
                     local f = SMODS.trigger_effects(effects, card)
                     for k,v in pairs(f) do flags[k] = v end
+                    if flags.numerator then context.numerator = flags.numerator end
+                    if flags.denominator then context.denominator = flags.denominator end
                 end
             end
             ::continue::
@@ -1818,6 +1820,8 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             else
                 local f = SMODS.trigger_effects(effects, area.scored_card)
                 for k,v in pairs(f) do flags[k] = v end
+                if flags.numerator then context.numerator = flags.numerator end
+                if flags.denominator then context.denominator = flags.denominator end
             end
         end
     end
