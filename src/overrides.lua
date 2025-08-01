@@ -555,7 +555,7 @@ function G.UIDEF.deck_stake_column(_deck_key)
 end
 
 --#endregion
---#region straights, X same and quantum pair set (Quantum Full House and Two Pair)
+--#region Straights, X same, quantum Full House and Two Pair
 
 function get_straight(hand, min_length, skip, wrap)
     min_length = min_length or 5
@@ -873,7 +873,6 @@ function get_quantum_full_house(_3, _2)
 				end
 			end
 			if valid then
-				print("Threes: ", #threes, " Pair: ", #pair)
 				local threes_cards_map = {}
 				local merged = {}
 				for _, v in pairs(threes) do
