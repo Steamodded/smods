@@ -1827,6 +1827,8 @@ end
 -- Used to calculate contexts across G.jokers, scoring_hand (if present), G.play and G.GAME.selected_back
 -- Hook this function to add different areas to MOST calculations
 function SMODS.calculate_context(context, return_table, no_resolve)
+    if G.STAGE ~= G.STAGES.RUN then return end
+
     local has_area = context.cardarea and true or nil
     if no_resolve then SMODS.no_resolve = true end
     local flags = {}
