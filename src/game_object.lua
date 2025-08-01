@@ -2684,7 +2684,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     for i = 2, 5 do
         SMODS.PokerHandPart {
             key = '_'..i,
-            func = function(hand) return get_X_same(i, hand, i >= 5) end
+            func = function(hand) return get_X_same(i, hand, true) end
         }
     end
 
@@ -2695,8 +2695,17 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             return { SMODS.merge_lists(parts._5, parts._flush) }
         end,
         ['Flush House'] = function(parts)
-            if #parts._3 < 1 or #parts._2 < 1 or not next(parts._flush) then return {} end
-            return { SMODS.merge_lists(parts._all_pairs, parts._flush) }
+            if not SMODS.optional_features.quantum_ranks then
+                if #parts._3 > 0 and #parts._2 > 1 and next(parts._flush) then
+                    return { SMODS.merge_lists(parts._all_pairs, parts._flush) }
+                end
+            else
+                local full_house = get_quantum_full_house(parts._3, parts._2)
+                if next(full_house) and next(parts._flush) then
+                    return { SMODS.merge_lists(full_house, parts._flush) }
+                end
+            end
+            return {}
         end,
         ['Five of a Kind'] = function(parts) return parts._5 end,
         ['Straight Flush'] = function(parts)
@@ -2705,15 +2714,27 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         ['Four of a Kind'] = function(parts) return parts._4 end,
         ['Full House'] = function(parts)
-            if #parts._3 < 1 or #parts._2 < 1 then return {} end
-            return parts._all_pairs
+            if not SMODS.optional_features.quantum_ranks then
+                if #parts._3 > 0 and #parts._2 > 1 then
+                    return parts._all_pairs
+                end
+            else
+                return get_quantum_full_house(parts._3, parts._2)
+            end
+            return {}
         end,
         ['Flush'] = function(parts) return parts._flush end,
         ['Straight'] = function(parts) return parts._straight end,
         ['Three of a Kind'] = function(parts) return parts._3 end,
         ['Two Pair'] = function(parts)
-            if #parts._2 < 2 then return {} end
-            return parts._all_pairs
+            if not SMODS.optional_features.quantum_ranks then
+                if #parts._2 > 1 then
+                    return parts._all_pairs
+                end
+            else
+                return get_quantum_two_pair(parts._2)
+            end
+            return {}
         end,
         ['Pair'] = function(parts) return parts._2 end,
         ['High Card'] = function(parts) return parts._highest end,

@@ -555,7 +555,7 @@ function G.UIDEF.deck_stake_column(_deck_key)
 end
 
 --#endregion
---#region straights and X same
+--#region straights, X same and quantum pair set (Quantum Full House and Two Pair)
 
 function get_straight(hand, min_length, skip, wrap)
     min_length = min_length or 5
@@ -830,68 +830,113 @@ function get_X_same(num, hand, or_more)
 			end
 		end
 
-		-- Sort the ranks by tally, descending
-		local sorter_func =  function (a, b)
-			return a[2] > b[2]
-		end
-		local rank_tally_sorted = {}
-		for k, v in pairs(rank_tally) do
-			rank_tally_sorted[#rank_tally_sorted+1] = {k, v}
-		end
-		rank_tally_sorted = table.sort(rank_tally_sorted, sorter_func) or rank_tally_sorted
-
-
 		local ret = {}
-		local appeared_cards_counter = 0
-		local card_has_appeared = {}
 
-		-- Check pairing function, separate because yes 
-		local check_pairing = function (rank, tally)
-			local current_pairing = {}
-			local valid_pairing = true
-			for _, card in ipairs(rank_cards[rank]) do
-				if not card_has_appeared[card] then
-					card_has_appeared[card] = true
-					appeared_cards_counter = appeared_cards_counter + 1
-					current_pairing[#current_pairing+1] = card
-				else
-					tally = tally - 1
-					valid_pairing = or_more and (tally >= num) or (tally == num)
-				end
-			end
-			if valid_pairing then
-				ret[#ret+1] = current_pairing
-			end
-		end
-
-		-- Evaluation
-		for _, tup in ipairs(rank_tally_sorted) do
-			local rank = tup[1]
-			local tally = tup[2]
+		for rank, tally in pairs(rank_tally) do
 			if or_more and (tally >= num) or (tally == num) then
-				check_pairing(rank, tally)
-			else
-				local new_tally = tally
-				for _, card in ipairs(rank_cards[rank]) do
-					if card_has_appeared[card] then
-						new_tally = new_tally - 1
-					end
-				end
-				if or_more and (new_tally >= num) or (new_tally == num) then
-					check_pairing(rank, tally)
-				else
-					for _, card in ipairs(rank_cards[rank]) do
-						card_has_appeared[card] = true
-						appeared_cards_counter = appeared_cards_counter + 1
-					end
-				end
-			end
-			if appeared_cards_counter >= #hand then
-				return ret
+				table.insert(ret, rank_cards[rank])
 			end
 		end
 		return ret
 	end
+end
+
+
+function get_quantum_full_house(_3, _2)
+	if not SMODS.optional_features.quantum_ranks then return {} end
+
+	-- This loops over all Three-card sets and checks if there exists a Pair which doesn't overlap 
+	-- or which overlaps with few enough cards (because get_X_same is now always called with or_more=true, so a Pair can have more than 2 cards)
+
+	for _, threes in ipairs(_3) do
+		local _3_over_by = #threes - 3
+		local used_cards = {}
+		for _, card in ipairs(threes) do
+			used_cards[card] = true
+		end
+		for _, pair in ipairs(_2) do
+			local _2_over_by = #pair - 2
+			local _3_decrease = 0
+			local valid = true
+			for _, card in ipairs(pair) do
+				if used_cards[card] then
+					if _2_over_by + (_3_over_by - _3_decrease) <= 0 then
+						valid = false
+						break
+					else
+						if _2_over_by > 0 then
+							_2_over_by = _2_over_by - 1
+						else
+							_3_decrease = _3_decrease + 1
+						end
+					end
+				end
+			end
+			if valid then
+				print("Threes: ", #threes, " Pair: ", #pair)
+				local threes_cards_map = {}
+				local merged = {}
+				for _, v in pairs(threes) do
+					threes_cards_map[v] = true
+					merged[#merged+1] = v
+				end
+				for _, v in pairs(pair) do
+					if not threes_cards_map[v] then
+						merged[#merged+1] = v
+					end
+				end
+				return { merged }
+			end
+		end
+	end
+	return {}
+end
+
+
+function get_quantum_two_pair(_2)
+	if not SMODS.optional_features.quantum_ranks then return {} end
+
+	for _, pair_1 in pairs(_2) do
+		local _pair_1_over_by = #pair_1 - 2
+		local used_cards = {}
+		for _, card in ipairs(pair_1) do
+			used_cards[card] = true
+		end
+		for _, pair_2 in ipairs(_2) do
+			local _pair_2_over_by = #pair_2 - 2
+			local _pair_1_decrease = 0
+			local valid = true
+			for _, card in ipairs(pair_2) do
+				if used_cards[card] then
+					if _pair_2_over_by + (_pair_1_over_by - _pair_1_decrease) <= 0 then
+						valid = false
+						break
+					else
+						if _pair_2_over_by > 0 then
+							_pair_2_over_by = _pair_2_over_by - 1
+						else
+							_pair_1_decrease = _pair_1_decrease + 1
+						end
+					end
+				end
+			end
+			if valid then
+				local pair_1_cards_map = {}
+				local merged = {}
+				for _, v in pairs(pair_1) do
+					pair_1_cards_map[v] = true
+					merged[#merged+1] = v
+				end
+				for _, v in pairs(pair_2) do
+					if not pair_1_cards_map[v] then
+						merged[#merged+1] = v
+					end
+				end
+				return { merged }
+			end
+		end
+	end
+	return {}
 end
 
 --#endregion
