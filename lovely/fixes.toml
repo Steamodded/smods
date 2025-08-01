@@ -713,7 +713,8 @@ match_indent = true
 target = "game.lua"
 pattern = 'function Game:delete_run()'
 position = 'after'
-payload = '    G.in_delete_run = true'
+payload = '''    G.in_delete_run = true
+    booster_obj = nil'''
 match_indent = true
 [[patches]]
 [patches.pattern]
