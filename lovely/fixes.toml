@@ -737,6 +737,7 @@ pattern = 'if G.playing_cards then'
 position = 'before'
 payload = '::skip_game_actions_during_remove::'
 match_indent = true
+
 # CardArea:remove_card()
 [[patches]]
 [patches.pattern]
@@ -748,4 +749,57 @@ position = 'at'
 payload = '''
 self:set_ranks()
 if not G.in_delete_run and self == G.deck then check_for_unlock({type = 'modify_deck', deck = self}) end'''
+match_indent = true
+
+
+# Game:start_run()
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''for k, v in pairs(G.I.CARD) do
+    if v.sort_id == saveTable.ACTION.card then
+        G.FUNCS.use_card({config = {ref_table = v}}, nil, true)
+    end
+end'''
+position = 'at'
+payload = '''local action_card = nil
+for _, card in pairs(G.I.CARD) do 
+    if card.sort_id == saveTable.ACTION.card then
+        action_card = card
+    end
+
+    if saveTable.ACTION.highlights then
+        for k, v in pairs(saveTable.ACTION.highlights) do
+            if card.area and G[k] == card.area and v[card.sort_id] then 
+                card.area:add_to_highlighted(card, true)
+            end
+        end
+    end
+end
+
+if action_card then
+    SMODS.action_nosave = true
+    G.FUNCS[saveTable.ACTION.type]({config = {ref_table = action_card}}, saveTable.ACTION.args and unpack(saveTable.ACTION.args))
+    SMODS.action_nosave = nil
+end'''
+match_indent = true
+
+# Game:start_run()
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = '''if card.ability.set == 'Booster' and not nosave and G.STATE == G.STATES.SHOP then
+  save_with_action({
+      type = 'use_card',
+      card = card.sort_id,
+    })
+  end'''
+position = 'at'
+payload = '''if card.ability.set == 'Booster' and not SMODS.action_nosave and G.STATE == G.STATES.SHOP then
+    save_with_action({
+        type = 'use_card',
+        args = {mute},
+        card = card.sort_id,
+    })
+end'''
 match_indent = true

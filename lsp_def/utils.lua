@@ -654,3 +654,9 @@ function SMODS.is_poker_hand_visible(handname) end
 --- Checks whether the card is eternal.
 --- `trigger` is the card or effect that runs the check
 function SMODS.is_eternal(card, trigger) end
+
+---@param cardareas table | nil a map of cardarea keys to access them from the global G table. Passing nil saves all global cardarea highights
+---@return table
+--- Saves highlighted cards for saved actions that require them
+--- Returns a table of sort_id maps, indexed by the keys of their cardareas
+function SMODS.save_action_highights(cardareas) end
