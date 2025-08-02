@@ -2748,6 +2748,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         vouchers = {},
         restrictions = { banned_cards = {}, banned_tags = {}, banned_other = {} },
         unlocked = function(self) return true end,
+        calculate = function (self, context) end,
         class_prefix = 'c',
         process_loc_text = function(self)
             SMODS.process_loc_text(G.localization.misc.challenge_names, self.key, self.loc_txt, 'name')
