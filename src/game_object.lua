@@ -3426,6 +3426,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function(self)
             SMODS.process_loc_text(G.localization.misc.achievement_names, self.key, self.loc_txt, "name")
             SMODS.process_loc_text(G.localization.misc.achievement_descriptions, self.key, self.loc_txt, "description")
+            SMODS.process_loc_text(G.localization.misc.achievement_names, self.key.."_hidden", self.loc_txt, "hidden_name")
+            SMODS.process_loc_text(G.localization.misc.achievement_descriptions, self.key.."_hidden", self.loc_txt, "hidden_description")
         end,
     }
 
