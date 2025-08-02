@@ -180,8 +180,10 @@ function SMODS.GUI.createOptionSelector(args) end
 function SMODS.GUI.DynamicUIManager.initTab(args) end
 
 ---@param uiDefinitions table<string, UIBox|table>
---- Updates all provided dynamic UIBoxes. 
-function SMODS.GUI.DynamicUIManager.updateDynamicAreas(uiDefinitions) end
+---@param config? UINode.config
+--- Updates all provided dynamic UIBoxes.
+--- Optionally accepts a config to be used for all dynamic areas.
+function SMODS.GUI.DynamicUIManager.updateDynamicAreas(uiDefinitions, config) end
 
 ---@return UINode
 --- Define the content in the pane that does not need to update
