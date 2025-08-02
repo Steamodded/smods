@@ -275,3 +275,48 @@ payload = """if args.hide_label then
     t.nodes = t2
 end"""
 match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+pattern = '''
+    self:draw_pixellated_rect('fill', parallax_dist, nil, self.config.progress_bar.ref_table[self.config.progress_bar.ref_value]/self.config.progress_bar.max)
+'''
+position = "after"
+payload = '''
+elseif self.config.ease_progress_bar then
+    local progress_config = self.config.ease_progress_bar
+    local dir = nil
+
+    if progress_config.dir and string.lower(progress_config.dir) == "rl" then
+        love.graphics.setColor(progress_config.filled_col or G.C.BLUE)
+        self:draw_pixellated_rect('fill', parallax_dist)
+        love.graphics.setColor(progress_config.empty_col or G.C.GREY)
+        dir = "rl"
+    elseif not progress_config.dir or (progress_config.dir and string.lower(progress_config.dir) == "lr") then
+        love.graphics.setColor(progress_config.empty_col or G.C.GREY)
+        self:draw_pixellated_rect('fill', parallax_dist)
+        love.graphics.setColor(progress_config.filled_col or G.C.BLUE)
+        dir = "lr"
+    end
+
+    progress_config.dummy_value = progress_config.dummy_value or 0
+    progress_config.saved_value = progress_config.saved_value or 0
+    local true_value = progress_config.ref_table[progress_config.ref_value]
+    if progress_config.saved_value ~= true_value then
+        progress_config.saved_value = true_value
+        G.E_MANAGER:add_event(Event({
+            trigger = "ease",
+            ease = progress_config.ease,
+            delay = progress_config.delay or 0.2,
+            ref_table = progress_config,
+            ref_value = "dummy_value",
+            ease_to = progress_config.saved_value,
+            blocking = false,
+            blockable = false,
+        }))
+    end
+
+    self:draw_pixellated_rect('fill', parallax_dist, nil, (dir == "lr" and progress_config.dummy_value/progress_config.max) or (dir == "rl" and math.abs(1 - progress_config.dummy_value/progress_config.max)))
+'''
+match_indent = true
