@@ -308,7 +308,7 @@ function SMODS.modify_rank(card, amount, manual_sprites)
                 rank_key = pseudorandom_element(
                     rank_data.next,
                     pseudoseed('strength'),
-                    { in_pool = function(key) return SMODS.Ranks[key]:in_pool({ suit = card.base.suit}) end }
+                    { in_pool = function(key) return SMODS.Ranks[key].in_pool and SMODS.Ranks[key]:in_pool({ suit = card.base.suit}) or true end }
                 )
             else
                 local i = (behavior.fixed and rank_data.next[behavior.fixed]) and behavior.fixed or 1
@@ -325,7 +325,7 @@ function SMODS.modify_rank(card, amount, manual_sprites)
                 rank_key = pseudorandom_element(
                     rank_data.prev,
                     pseudoseed('weakness'),
-                    { in_pool = function(key) return SMODS.Ranks[key]:in_pool({ suit = card.base.suit}) end }
+                    { in_pool = function(key) return SMODS.Ranks[key].in_pool and SMODS.Ranks[key]:in_pool({ suit = card.base.suit}) or true end }
                 )
             else
                 local i = (behavior.fixed and rank_data.prev[behavior.fixed]) and behavior.fixed or 1
