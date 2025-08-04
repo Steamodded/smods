@@ -195,18 +195,6 @@ local new_code = SMODS.Suits[new_suit].card_key
 local new_val = SMODS.Ranks[self.base.value].card_key
 local new_card = G.P_CARDS[new_code..'_'..new_val]'''
 
-# Card:is_face()
-[[patches]]
-[patches.regex]
-target = 'card.lua'
-pattern = "(?<indent>[\t ]*)if id == 11 or id == 12 or id == 13 or next\\(find_joker\\(\"Pareidolia\"\\)\\) then"
-position = 'at'
-line_prepend = '$indent'
-payload = '''
-local rank = SMODS.Ranks[self.base.value]
-if not id then return end
-if (id > 0 and rank and rank.face) or next(find_joker("Pareidolia")) then'''
-
 
 # tally_sprite()
 [[patches]]

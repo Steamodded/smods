@@ -2663,3 +2663,23 @@ function Card:use_consumeable(area, copier)
     end
 	return ret
 end
+
+function Card:is_face(from_boss)
+    if self.debuff and not from_boss then return end
+	if not SMODS.optional_features.quantum_ranks then
+		local id = self:get_id()
+		local rank = SMODS.Ranks[self.base.value]
+		if not id then return end
+		if (id > 0 and rank and rank.face) or next(find_joker("Pareidolia")) then
+			return true
+		end
+	else
+		local ranks = self:get_ranks({is_face_getting_ranks = true})
+		if next(find_joker("Pareidolia")) then return true end
+
+		for _, rank in ipairs(ranks) do
+			if rank.face then return true end
+		end
+	end
+	return false
+end

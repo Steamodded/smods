@@ -102,6 +102,8 @@
 ---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
 ---@field get_ranks? true Check if `true` for modifying the rank(s) of the context.other_card. 
 ---@field eval_getting_ranks? table Passed as [source_context] param by hand type evaluation when calling get_ranks(). (Allows quantum ranks exclusively during / outside hand type evaluation)
+---@field is_face_getting_ranks? table Passed as [source_context] param by Card:is_face() when calling get_ranks(). (Allows quantum ranks exclusively during / outside is_face() evaluation)
+---@field no_mod? true Check if `true` to decide whether an effect should modify context.get_ranks' ranks field. (If you want to override and block other effects, return `no_mod=true` alongside ranks=[only your ranks])
 
 --- Util Functions
 
