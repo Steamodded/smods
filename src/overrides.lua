@@ -1870,7 +1870,7 @@ function Card:set_edition(edition, immediate, silent, delay)
 						end
 						G.hand.config.card_limit = G.hand.config.card_limit + self.edition.card_limit
 						if not is_in_pack and G.GAME.blind.in_blind and G.hand.config.card_limit > #G.hand.cards then
-							G.FUNCS.draw_from_deck_to_hand(self.edition.card_limit)
+							G.FUNCS.draw_from_deck_to_hand(math.min(self.edition.card_limit, G.hand.config.card_limit - #G.hand.cards))
 						end
 						return true
 					end
