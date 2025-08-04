@@ -2734,8 +2734,6 @@ function Card:get_ranks(source_context) -- Returns a table of "SMODS.Rank"s, san
         if v then ret[#ret+1] = v end
     end
 
-    if not next(ret) then return default_ranks end
-
     return ret
 end
 
