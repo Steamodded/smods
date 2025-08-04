@@ -2712,9 +2712,8 @@ function Card:is_any_rank(ranks, bypass_debuff, source_context)
 end
 
 function Card:get_ranks(source_context) -- Returns a table of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
-    if not SMODS.optional_features.quantum_ranks then return {SMODS.Ranks[self.base.value]} end
-
     local default_ranks = (not self.vampired and SMODS.has_enhancement(self, "m_stone") and {}) or {SMODS.Ranks[self.base.value]}
+    if not SMODS.optional_features.quantum_ranks then return default_ranks end
 
     local eval = SMODS.calculate_context({get_ranks = true, other_card = self, ranks = default_ranks, source_context = source_context or {}, no_mod = false}) or {}
 
