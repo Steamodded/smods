@@ -2674,8 +2674,8 @@ function Card:is_face(from_boss)
 			return true
 		end
 	else
-		local ranks = self:get_ranks({is_face_getting_ranks = true})
 		if next(find_joker("Pareidolia")) then return true end
+		local ranks = self:get_ranks({is_face_getting_ranks = true})
 
 		for _, rank in ipairs(ranks) do
 			if rank.face then return true end
