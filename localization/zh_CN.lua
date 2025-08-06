@@ -98,7 +98,7 @@ return {
             },
             card_extra_p_dollars = {
                 text = {
-                    "打出并计分时获得{C:money}$#1#{}",
+                    "打出并计分时获得{C:money}#1#{}",
                 }
             },
             card_extra_h_chips = {
@@ -136,12 +136,23 @@ return {
                     "回合结束时还在手牌中则获得{C:money}#1#{}",
                 },
             },
+            artist = {
+                text = {
+                    "{C:inactive}艺术家",
+                },
+            },
+            artist_credit = {
+                name = "艺术家",
+                text = {
+                    "{E:1}#1#{}"
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {
                 name = "负片",
                 text = {
-                    "手牌上限{C:dark_edition}+#1#"
+                    "手牌上限{C:dark_edition}+#1#{}"
                 },
             },
         },
@@ -151,7 +162,7 @@ return {
                 text={
                     "如果这张卡牌",
                     "在回合结束时还在手牌中",
-                    "你获得{C:money}$#1#{}",
+                    "你获得{C:money}#1#{}",
                 },
             },
             m_stone={
@@ -165,6 +176,15 @@ return {
                 name="倍率牌",
                 text={
                     "{C:mult}#1#{}倍率",
+                },
+            },
+            m_lucky={
+                name="幸运牌",
+                text={
+                    "{C:green}#1#/#3#{}几率",
+                    "{C:mult}+#2#{}倍率",
+                    "{C:green}#1#/#5#{}几率",
+                    "获得{C:money}$#4#",
                 },
             },
         },
@@ -194,7 +214,7 @@ return {
             b_disable_mod_badges = '禁用模组横标',
             b_author = '作者',
             b_authors = '作者',
-            b_unknown = '未知',
+            b_unknown = '未知'，
             b_lovely_mod = '(依赖Lovely加载器的补丁模组)',
             b_by = ' 作者：',
             b_priority = '优先级：',
@@ -218,6 +238,7 @@ return {
             b_deckskins_lc = '低对比度配色',
             b_deckskins_hc = '高对比度配色',
             b_deckskins_def = '默认配色',
+            b_limit = '最多',
         },
         v_dictionary = {
             c_types = '共有#1#种',
