@@ -44,13 +44,13 @@ SMODS.Sticker = setmetatable({}, {
 SMODS.Stickers = {}
 
 ---@param self Card|table
----@param sticker string Key to the sticker to apply. 
+---@param sticker Stickers|string Key to the sticker to apply. 
 ---@param bypass_check? boolean Whether the sticker's `should_apply` function is called. 
 --- Adds the sticker onto the card. 
 function Card:add_sticker(sticker, bypass_check) end
 
 ---@param self Card|table
----@param sticker string Key to the sticker to remove. 
+---@param sticker Stickers|string Key to the sticker to remove. 
 --- Removes the sticker from the card, if it has the sticker. 
 function Card:remove_sticker(sticker) end
 

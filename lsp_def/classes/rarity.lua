@@ -36,7 +36,7 @@ SMODS.Rarities = {}
 
 ---@param _pool_key string Key to ObjectType
 ---@param _rand_key? string Used as polling seed
----@return string|number rarity_key
+---@return Rarities|string|number rarity_key
 ---Polls all rarities tied to provided ObjectType. 
 function SMODS.poll_rarity(_pool_key, _rand_key) end
 

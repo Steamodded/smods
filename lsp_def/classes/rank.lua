@@ -13,8 +13,8 @@
 ---@field shorthand? string Short description of this rank in deck preview. 
 ---@field face_nominal? number Determines the displayed order of ranks with the same nominal value. 
 ---@field face? boolean Sets if this rank counts as a "face" card. 
----@field next? string[] List of keys to other ranks that come after this card. 
----@field prev? string[] List of keys to other ranks that come before this card. Used when evaluating straights. 
+---@field next? Ranks|string[] List of keys to other ranks that come after this card. 
+---@field prev? Ranks|string[] List of keys to other ranks that come before this card. Used when evaluating straights. 
 ---@field strength_effect? table|{fixed?: number, random?: boolean, ignore?: boolean} Determines how cards with this rank behave when Strength is used. 
 ---@field straight_edge? boolean Sets if this rank behaves like an Ace for straights. 
 ---@field suit_map? table<string, number> For any suit keys in this table, use this rank's atlas over the suit's atlas. Provided number is the `y` position of the suit on the rank's atlas. 

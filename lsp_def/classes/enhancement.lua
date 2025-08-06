@@ -38,6 +38,6 @@ SMODS.Enhancement = setmetatable({}, {
 function Card:calculate_enhancement(context) end
 
 ---@param args table|{key?: string, type_key?: string, mod?: number, guaranteed?: true, options?: table}
----@return string?
+---@return Enhancements|string?
 --- Polls all Enhancements with `args` for additional settings, and returns the key to a selected enhancement. 
 function SMODS.poll_enhancement(args) end

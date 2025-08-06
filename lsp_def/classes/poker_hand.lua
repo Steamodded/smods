@@ -10,7 +10,7 @@
 ---@field l_chips? number Chips gained per hand level. 
 ---@field example? table Table of cards used to represent the hand example in the "Run Info" tab. 
 ---@field visible? boolean|fun(self:SMODS.PokerHand|table): boolean? Sets hand visibility in the poker hands menu. If `false`, poker hand is shown only after being played once.  A function allows more precise control over hand visibility in the poker hands menu.  
----@field above_hand? string Key to a poker hand. Used to order this poker hand above specified poker hand. 
+---@field above_hand? PokerHands|string Key to a poker hand. Used to order this poker hand above specified poker hand. 
 ---@field order_offset? number Adds this value to poker hand's mult and chips to offset ordering. 
 ---@field __call? fun(self: SMODS.PokerHand|table, o: SMODS.PokerHand|table): nil|table|SMODS.PokerHand
 ---@field extend? fun(self: SMODS.PokerHand|table, o: SMODS.PokerHand|table): table Primary method of creating a class. 

@@ -2,7 +2,7 @@
 
 ---@class SMODS.Seal: SMODS.GameObject
 ---@field obj_table? table<string, SMODS.Seal|table> Table of objects registered to this class. 
----@field loc_txt? table|{name: string, text: string[], label: string} Contains strings used for displaying text related to this object. 
+---@field loc_txt? table|{name: string|string[], text: string[]|string[][], label: string} Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field atlas? string Key to the seal's atlas. 
 ---@field pos? table|{x: integer, y: integer} Position of the seal's sprite. 
@@ -43,6 +43,6 @@ SMODS.Seal = setmetatable({}, {
 SMODS.Seals = {}
 
 ---@param args table|{key?: string, mod?: number, guaranteed?: boolean, options?: table, type_key?: string}
----@return string?
+---@return Seals|string?
 --- Polls seals. 
 function SMODS.poll_seal(args) end
