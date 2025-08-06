@@ -368,8 +368,21 @@ function SMODS.modify_rank(card, amount) end
 --- Returns all cards matching provided `key`. 
 function SMODS.find_card(key, count_debuffed) end
 
+---@alias CreateCardSets
+---| 'Base' # Playing Cards without enhancements.
+---| 'Enhanced' # Playing Cards with enhancements.
+---| 'Playing Card' # Playing Cards with a random chance for enhancements.
+---| 'Joker'
+---| 'Tarot'
+---| 'Planet'
+---| 'Tarot_Planet'
+---| 'Spectral'
+---| 'Consumeables'
+---| 'Booster'
+---| 'Voucher'
+
 ---@class CreateCard
----@field set? string Set of the card. 
+---@field set? CreateCardSets|string Set of the card. 
 ---@field area? CardArea|table CardArea to emplace this card to. 
 ---@field legendary? boolean Pools legendary cards, if applicable. 
 ---@field rarity? number|string Only spawns cards with provided rarity, if applicable. 
@@ -383,7 +396,12 @@ function SMODS.find_card(key, count_debuffed) end
 ---@field edition? string Apply this edition. 
 ---@field enhancement? string Apply this enhancement. 
 ---@field seal? string Apply this seal. 
----@field stickers? string[] Apply all stickers in this array. 
+---@field stickers? string[] Apply all stickers in this array.
+---@field allow_duplicates? boolean Allows duplicated cards to be created, even without Showman.
+---@field rank? string|integer Rank of the playing card.
+---@field suit? string Suit of the playing card.
+---@field front? string Front of the playing card. Ignores rank and suit.
+---@field enhanced_poll? number Chance to pick 'Base' over 'Enhanced' with set 'Playing Card'.
 
 ---@param t CreateCard|table
 ---@return Card|table

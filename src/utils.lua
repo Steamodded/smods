@@ -379,11 +379,13 @@ function SMODS.create_card(t)
     SMODS.bypass_create_card_discover = t.discover
     SMODS.bypass_create_card_discovery_center = t.bypass_discovery_center
     SMODS.set_create_card_front = G.P_CARDS[t.front]
+    SMODS.create_card_allow_duplicates = t.allow_duplicates
     local _card = create_card(t.set, t.area, t.legendary, t.rarity, t.skip_materialize, t.soulable, t.key, t.key_append)
     SMODS.bypass_create_card_edition = nil
     SMODS.bypass_create_card_discover = nil
     SMODS.bypass_create_card_discovery_center = nil
     SMODS.set_create_card_front = nil
+    SMODS.create_card_allow_duplicates = nil
 
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
@@ -2534,7 +2536,7 @@ function SMODS.draw_cards(hand_space)
 end
 
 function SMODS.showman(card_key)
-    if next(SMODS.find_card('j_ring_master')) then
+    if SMODS.create_card_allow_duplicates or next(SMODS.find_card('j_ring_master')) then
         return true
     end
     return false
