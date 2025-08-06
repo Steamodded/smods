@@ -1,6 +1,8 @@
 ---@meta
 
 ---@class SMODS.Edition: SMODS.Center
+---@field obj_buffer? Editions|string[] Array of keys to all objects registered to this class. 
+---@field obj_table? table<Editions|string, SMODS.Edition|table> Table of objects registered to this class. 
 ---@field loc_txt? table|{name: string|string[], text: string[]|string[][], label: string} Contains strings used for displaying text related to this object. 
 ---@field shader? string|false Key to the shader drawn on cards with this Edition. If set to `false`, a shader will not be drawn. 
 ---@field atlas? string Defines the atlas for the card this Edition is drawn on in the collection. 

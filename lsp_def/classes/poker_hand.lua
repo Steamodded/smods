@@ -1,7 +1,8 @@
 ---@meta
 
 ---@class SMODS.PokerHand: SMODS.GameObject
----@field obj_table? table<string, SMODS.PokerHand|table> Table of objects registered to this class. 
+---@field obj_buffer? PokerHands|string[] Array of keys to all objects registered to this class. 
+---@field obj_table? table<PokerHands|string, SMODS.PokerHand|table> Table of objects registered to this class. 
 ---@field loc_txt? table|{name: string, description: string[]} Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field mult? number Base mult for poker hand. 
@@ -35,7 +36,7 @@ SMODS.PokerHand = setmetatable({}, {
     end
 })
 
----@type table<string, SMODS.PokerHand|table>
+---@type table<PokerHands|string, SMODS.PokerHand|table>
 SMODS.PokerHands = {}
 
 ---@class SMODS.PokerHandPart: SMODS.GameObject

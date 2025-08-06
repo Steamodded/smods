@@ -1,7 +1,8 @@
 ---@meta
 
 ---@class SMODS.Rarity: SMODS.GameObject
----@field obj_table? table<string, SMODS.Rarity|table> Table of objects registered to this class. 
+---@field obj_buffer? Rarities|string[] Array of keys to all objects registered to this class. 
+---@field obj_table? table<Rarities|string, SMODS.Rarity|table> Table of objects registered to this class. 
 ---@field loc_txt? table|{name: string} Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field pools? table Table with a list of ObjectTypes keys this rarity should be added to.
@@ -31,7 +32,7 @@ SMODS.Rarity = setmetatable({}, {
     end
 })
 
----@type table<string, SMODS.Rarity|table>
+---@type table<Rarities|string, SMODS.Rarity|table>
 SMODS.Rarities = {}
 
 ---@param _pool_key string Key to ObjectType

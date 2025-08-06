@@ -1,7 +1,8 @@
 ---@meta
 
 ---@class SMODS.Rank: SMODS.GameObject
----@field obj_table? table<string, SMODS.Rank|table> Table of objects registered to this class. 
+---@field obj_buffer? Ranks|string[] Array of keys to all objects registered to this class. 
+---@field obj_table? table<Ranks|string, SMODS.Rank|table> Table of objects registered to this class. 
 ---@field loc_txt? table|{name: string} Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field atlas? string Key to the rank's atlas. 
@@ -43,5 +44,5 @@ SMODS.Rank = setmetatable({}, {
     end
 })
 
----@type table<string, SMODS.Rank|table>
+---@type table<Ranks|string, SMODS.Rank|table>
 SMODS.Ranks = {}
