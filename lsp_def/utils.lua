@@ -375,9 +375,9 @@ function SMODS.find_card(key, count_debuffed) end
 ---| 'Joker'
 ---| 'Tarot'
 ---| 'Planet'
----| 'Tarot_Planet'
+---| 'Tarot_Planet' # Random pick between Tarot and Planet.
 ---| 'Spectral'
----| 'Consumeables'
+---| 'Consumeables' # Random pick between any consumable type.
 ---| 'Booster'
 ---| 'Voucher'
 
