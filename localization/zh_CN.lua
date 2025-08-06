@@ -214,7 +214,7 @@ return {
             b_disable_mod_badges = '禁用模组横标',
             b_author = '作者',
             b_authors = '作者',
-            b_unknown = '未知'，
+            b_unknown = '未知',
             b_lovely_mod = '(依赖Lovely加载器的补丁模组)',
             b_by = ' 作者：',
             b_priority = '优先级：',
