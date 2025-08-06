@@ -8,7 +8,7 @@ priority = -10
 [patches.pattern]
 target = "card.lua"
 pattern = '''card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type = 'variable', key = 'a_mult', vars = {self.ability.mult+2*sliced_card.sell_cost}}, colour = G.C.RED, no_juice = true})'''
-position = 'after'
+position = 'before'
 match_indent = true
 payload = '''
 SMODS.scale_card(self, {
@@ -292,7 +292,7 @@ payload = '''
 target = "card.lua"
 pattern = '''
 if reset then
-    if to_big(self.ability.x_mult) > to_big(1) then
+    if self.ability.x_mult > 1 then
         self.ability.x_mult = 1
         return {
             card = self,
