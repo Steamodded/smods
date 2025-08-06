@@ -183,7 +183,7 @@ return {
                 text={
                     "{C:green}#1# in #3#{} chance",
                     "for {C:mult}+#2#{} Mult",
-                    "{C:green}#6# in #5#{} chance",
+                    "{C:green}#1# in #5#{} chance",
                     "to win {C:money}$#4#",
                 },
             },
@@ -214,9 +214,9 @@ return {
             b_disable_mod_badges = 'Disable Mod Badges',
             b_author = 'Author',
             b_authors = 'Authors',
-            b_unknown = 'Unknown',
+            b_unknown = 'Unknown'，
             b_lovely_mod = '(Lovely Mod) ',
-            b_by = 'By: ',
+            b_by = ' By: ',
             b_priority = 'Priority: ',
 			b_config = "Config",
 			b_additions = 'Additions',
@@ -238,7 +238,7 @@ return {
             b_deckskins_lc = 'Low Contrast Colors',
             b_deckskins_hc = 'High Contrast Colors',
             b_deckskins_def = 'Default Colors',
-            b_limit = 'Up to '
+            b_limit = 'Up to ',
 		},
 		v_dictionary = {
 			c_types = '#1# Types',
@@ -252,7 +252,7 @@ return {
                 "unexpected behaviour and game crashes.",
                 "Starting version: #1#",
                 "Current version: #2#",
-            }
+            },
 		},
-	}
+	},
 }
