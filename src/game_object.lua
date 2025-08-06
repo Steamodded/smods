@@ -677,11 +677,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     function SMODS.setup_stake(i)
         local applied_stakes = SMODS.build_stake_chain(G.P_CENTER_POOLS.Stake[i])
+        G.GAME.applied_stakes = {}
         for stake, _ in pairs(applied_stakes) do
             if G.P_CENTER_POOLS['Stake'][stake].modifiers then
                 G.P_CENTER_POOLS['Stake'][stake].modifiers()
             end
+            table.insert(G.GAME.applied_stakes, stake)
         end
+        table.sort(G.GAME.applied_stakes)
     end
 
     --Register vanilla stakes
