@@ -2652,3 +2652,61 @@ function Tag:apply_to_run(_context)
     end
     return res
 end
+
+function SMODS.scale_card(card, args)
+    if not G.deck then return end
+    if not args.operation then args.operation = "+" end
+    for _, area in ipairs(SMODS.get_card_areas('jokers')) do
+        for _, _card in ipairs(area.cards) do
+            if _card.config and _card.config.center and _card.config.center.calc_scaling and type(_card.config.center.calc_scaling) == "function" then
+                local ret = _card.config.center:calc_scaling(_card, card, args.ref_table[args.ref_value], (args.scalar_table or args.ref_table)[args.scalar_value], args)
+                if ret then
+                    if ret.scaling_value then args.ref_table[args.ref_value] = ret.scaling_value end
+                    if ret.scalar_value then (args.scalar_table or args.ref_table)[args.scalar_value] = ret.scalar_value end
+                    for i2, v2 in pairs(ret) do
+                        SMODS.calculate_individual_effect(ret, _card, i2, result, false)
+                    end
+                end
+            end
+        end
+    end
+end
+
+local calculate_jokerref = Card.calculate_joker
+function Card:calculate_joker(context, ...)
+    local ret, ret2 = calculate_jokerref(self, context, ...)
+    if self.ability.name == "Caino" or self.ability.name == "Glass Joker" then
+        if context.remove_playing_cards then
+            if self.ability.name == "Caino" then
+                local faces = 0
+                for k, v in ipairs(context.removed) do
+                    if v:is_face() then
+                        faces = faces + 1
+                    end
+                end
+                if faces > 0 then
+                    SMODS.scale_card(self, {
+                        ref_table = self.ability,
+                        ref_value = "caino_xmult",
+                        scalar_value = "extra",
+                    })
+                end
+            else
+                local glasses = 0
+                for k, v in ipairs(context.removed) do
+                    if v.shattered then
+                        glasses = glasses + 1
+                    end
+                end
+                if glasses > 0 then
+                    SMODS.scale_card(self, {
+                        ref_table = self.ability,
+                        ref_value = "x_mult",
+                        scalar_value = "extra",
+                    })
+                end
+            end
+        end
+    end
+    return ret, ret2
+end

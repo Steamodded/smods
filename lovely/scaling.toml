@@ -1,0 +1,544 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Ceremonial Dagger
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type = 'variable', key = 'a_mult', vars = {self.ability.mult+2*sliced_card.sell_cost}}, colour = G.C.RED, no_juice = true})'''
+position = 'after'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "mult",
+    scalar_table = sliced_card,
+    scalar_value = "sell_cost"
+})
+'''
+
+# Ride The Bus
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Ride the Bus' and not context.blueprint then
+    local faces = false
+    for i = 1, #context.scoring_hand do
+        if context.scoring_hand[i]:is_face() then faces = true end
+    end
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    if not faces then 
+        SMODS.scale_card(self, {
+            ref_table = self.ability,
+            ref_value = "mult",
+            scalar_value = "extra"
+        })
+    end
+'''
+
+# Egg
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra_value = self.ability.extra_value + self.ability.extra
+self:set_cost()
+'''
+position = 'after'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "extra_value",
+    scalar_value = "extra"
+})
+'''
+
+# Runner
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Runner' and next(context.poker_hands['Straight']) and not context.blueprint then
+    self.ability.extra.chips = self.ability.extra.chips + self.ability.extra.chip_mod
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability.extra,
+        ref_value = "chips",
+        scalar_value = "chip_mod"
+    })
+'''
+
+# Ice Cream
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Ice Cream' and not context.blueprint then
+    if self.ability.extra.chips - self.ability.extra.chip_mod <= 0 then 
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                play_sound('tarot1')
+                self.T.r = -0.2
+                self:juice_up(0.3, 0.4)
+                self.states.drag.is = true
+                self.children.center.pinch.x = true
+                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
+                    func = function()
+                            G.jokers:remove_card(self)
+                            self:remove()
+                            self = nil
+                        return true; end})) 
+                return true
+            end
+        })) 
+        return {
+            message = localize('k_melted_ex'),
+            colour = G.C.CHIPS
+        }
+    else
+        self.ability.extra.chips = self.ability.extra.chips - self.ability.extra.chip_mod
+'''
+position = 'after'
+match_indent = true
+payload = '''
+        SMODS.scale_card(self, {
+            ref_table = self.ability.extra,
+            ref_value = "chips",
+            scalar_value = "chip_mod",
+            operation = "-"
+        })
+'''
+
+# Constellation
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Constellation' and not context.blueprint and context.consumeable.ability.set == 'Planet' then
+    self.ability.x_mult = self.ability.x_mult + self.ability.extra
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "x_mult",
+        scalar_value = "extra"
+    })
+'''
+
+# Green Joker: Subtraction
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Green Joker' and not context.blueprint and context.other_card == context.full_hand[#context.full_hand] then
+    local prev_mult = self.ability.mult
+    self.ability.mult = math.max(0, self.ability.mult - self.ability.extra.discard_sub)
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "mult",
+        scalar_table = "extra",
+        scalar_value = "discard_sub",
+        operation = "-"
+    })
+'''
+
+# Green Joker: Addition
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Green Joker' and not context.blueprint then
+    self.ability.mult = self.ability.mult + self.ability.extra.hand_add
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "mult",
+        scalar_table = "extra",
+        scalar_value = "hand_add",
+    })
+'''
+
+# Red Card
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Red Card' and not context.blueprint then
+    self.ability.mult = self.ability.mult + self.ability.extra
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "mult",
+        scalar_value = "extra",
+    })
+'''
+
+# Madness
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Madness' and not context.blueprint and not context.blind.boss then
+    self.ability.x_mult = self.ability.x_mult + self.ability.extra
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "x_mult",
+        scalar_value = "extra",
+    })
+'''
+
+# Square Joker
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Square Joker' and #context.full_hand == 4 and not context.blueprint then
+    self.ability.extra.chips = self.ability.extra.chips + self.ability.extra.chip_mod
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability.extra,
+        ref_value = "chips",
+        scalar_value = "chip_mod",
+    })
+'''
+
+# Vampire
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if #enhanced > 0 then 
+    self.ability.x_mult = self.ability.x_mult + self.ability.extra*#enhanced
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "x_mult",
+        scalar_value = "extra",
+    })
+'''
+
+# Hologram
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Hologram' and (not context.blueprint)
+and context.cards and context.cards[1] then
+    self.ability.x_mult = self.ability.x_mult + #context.cards*self.ability.extra
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "x_mult",
+        scalar_value = "extra",
+    })
+'''
+
+# Rocket
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Rocket' and G.GAME.blind.boss then
+    self.ability.extra.dollars = self.ability.extra.dollars + self.ability.extra.increase
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability.extra,
+        ref_value = "dollars",
+        scalar_value = "increase",
+    })
+'''
+
+# Obelisk
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if reset then
+    if to_big(self.ability.x_mult) > to_big(1) then
+        self.ability.x_mult = 1
+        return {
+            card = self,
+            message = localize('k_reset')
+        }
+    end
+else
+    self.ability.x_mult = self.ability.x_mult + self.ability.extra
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "x_mult",
+        scalar_value = "extra",
+    })
+'''
+
+# Turtle Bean
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra.h_size = self.ability.extra.h_size - self.ability.extra.h_mod
+G.hand:change_size(- self.ability.extra.h_mod)
+'''
+position = 'after'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability.extra,
+    ref_value = "h_size",
+    scalar_value = "h_mod",
+    operation = "-"
+})
+'''
+
+# Lucky Cat
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Lucky Cat' and context.other_card.lucky_trigger and not context.blueprint then
+    self.ability.x_mult = self.ability.x_mult + self.ability.extra
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "x_mult",
+        scalar_value = "extra",
+    })
+'''
+
+# Flash Card
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Flash Card' and not context.blueprint then
+    self.ability.mult = self.ability.mult + self.ability.extra
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "mult",
+        scalar_value = "extra",
+    })
+'''
+
+# Popcorn
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Popcorn' and not context.blueprint then
+    if self.ability.mult - self.ability.extra <= 0 then 
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                play_sound('tarot1')
+                self.T.r = -0.2
+                self:juice_up(0.3, 0.4)
+                self.states.drag.is = true
+                self.children.center.pinch.x = true
+                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
+                    func = function()
+                            G.jokers:remove_card(self)
+                            self:remove()
+                            self = nil
+                        return true; end})) 
+                return true
+            end
+        })) 
+        return {
+            message = localize('k_eaten_ex'),
+            colour = G.C.RED
+        }
+    else
+        self.ability.mult = self.ability.mult - self.ability.extra
+'''
+position = 'after'
+match_indent = true
+payload = '''
+        SMODS.scale_card(self, {
+            ref_table = self.ability,
+            ref_value = "mult",
+            scalar_value = "extra",
+        })
+'''
+
+# Spare Trousers
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Spare Trousers' and (next(context.poker_hands['Two Pair']) or next(context.poker_hands['Full House'])) and not context.blueprint then
+    self.ability.mult = self.ability.mult + self.ability.extra
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "mult",
+        scalar_value = "extra",
+    })
+'''
+
+# Ramen
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Ramen' and not context.blueprint then
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    if self.ability.x_mult - self.ability.extra >= 1 then 
+        SMODS.scale_card(self, {
+            ref_table = self.ability,
+            ref_value = "x_mult",
+            scalar_value = "extra",
+            operation = "-"
+        })
+    end
+'''
+
+# Castle
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Castle' and
+not context.other_card.debuff and
+context.other_card:is_suit(G.GAME.current_round.castle_card.suit) and not context.blueprint then
+    self.ability.extra.chips = self.ability.extra.chips + self.ability.extra.chip_mod
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability.extra,
+        ref_value = "chips",
+        scalar_value = "chip_mod",
+    })
+'''
+
+# Campfire
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Campfire' and not context.blueprint then
+    self.ability.x_mult = self.ability.x_mult + self.ability.extra
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "x_mult",
+        scalar_value = "extra",
+    })
+'''
+
+# Wee Joker
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Wee Joker' and
+    context.other_card:get_id() == 2 and not context.blueprint then
+        self.ability.extra.chips = self.ability.extra.chips + self.ability.extra.chip_mod
+'''
+position = 'after'
+match_indent = true
+payload = '''
+        SMODS.scale_card(self, {
+            ref_table = self.ability.extra,
+            ref_value = "chips",
+            scalar_value = "chip_mod",
+        })
+'''
+
+# Hit The Road
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Hit the Road' and
+not context.other_card.debuff and
+context.other_card:get_id() == 11 and not context.blueprint then
+    self.ability.x_mult = self.ability.x_mult + self.ability.extra
+'''
+position = 'after'
+match_indent = true
+payload = '''
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "x_mult",
+        scalar_value = "extra",
+    })
+'''
+
+# Yorick
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Yorick' and not context.blueprint then
+    if self.ability.yorick_discards <= 1 then
+        self.ability.yorick_discards = self.ability.extra.discards
+        self.ability.x_mult = self.ability.x_mult + self.ability.extra.xmult
+'''
+position = 'after'
+match_indent = true
+payload = '''
+        SMODS.scale_card(self, {
+            ref_table = self.ability,
+            ref_value = "x_mult",
+            scalar_table = self.ability.extra,
+            scalar_value = "xmult",
+        })
+'''

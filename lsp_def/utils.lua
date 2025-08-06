@@ -654,3 +654,12 @@ function SMODS.is_poker_hand_visible(handname) end
 --- Checks whether the card is eternal.
 --- `trigger` is the card or effect that runs the check
 function SMODS.is_eternal(card, trigger) end
+
+---@param card Card|table
+---@param args? table
+---@return table? results
+--- Tells Jokers that this card is scaling allowing for scaling detection
+--- Can return scaling_value and scalar_value in results to change the scaling cards values
+--- Args must contain ref_table, ref_value, and scalar_value and may optionally contain scalar_table used in place of ref_table for the scalar_value
+--- and operation to designate the scaling operation, which defaults to "+"
+function SMODS.scale_card(card, args) end
