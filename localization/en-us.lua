@@ -214,9 +214,9 @@ return {
             b_disable_mod_badges = 'Disable Mod Badges',
             b_author = 'Author',
             b_authors = 'Authors',
-            b_unknown = 'Unknown'，
+            b_unknown = 'Unknown',
             b_lovely_mod = '(Lovely Mod) ',
-            b_by = ' By: ',
+            b_by = 'By: ',
             b_priority = 'Priority: ',
 			b_config = "Config",
 			b_additions = 'Additions',
