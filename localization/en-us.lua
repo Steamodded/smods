@@ -178,6 +178,15 @@ return {
                     "{C:mult}#1#{} Mult",
                 },
             },
+            m_lucky={
+                name="Lucky Card",
+                text={
+                    "{C:green}#1# in #3#{} chance",
+                    "for {C:mult}+#2#{} Mult",
+                    "{C:green}#6# in #5#{} chance",
+                    "to win {C:money}$#4#",
+                },
+            },
         }
     },
     misc = {
@@ -207,7 +216,7 @@ return {
             b_authors = 'Authors',
             b_unknown = 'Unknown',
             b_lovely_mod = '(Lovely Mod) ',
-            b_by = ' By: ',
+            b_by = 'By: ',
             b_priority = 'Priority: ',
 			b_config = "Config",
 			b_additions = 'Additions',
