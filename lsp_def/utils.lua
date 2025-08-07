@@ -660,6 +660,5 @@ function SMODS.is_eternal(card, trigger) end
 ---@return table? results
 --- Tells Jokers that this card is scaling allowing for scaling detection
 --- Can return scaling_value and scalar_value in results to change the scaling cards values
---- Args must contain ref_table, ref_value, and scalar_value and may optionally contain scalar_table used in place of ref_table for the scalar_value
---- and operation to designate the scaling operation, which defaults to "+"
+--- Args must contain `ref_table`, `ref_value`, and `scalar_value`. It may optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
 function SMODS.scale_card(card, args) end

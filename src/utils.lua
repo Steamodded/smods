@@ -2658,14 +2658,13 @@ function SMODS.scale_card(card, args)
     if not args.operation then args.operation = "+" end
     for _, area in ipairs(SMODS.get_card_areas('jokers')) do
         for _, _card in ipairs(area.cards) do
-            if _card.config and _card.config.center and _card.config.center.calc_scaling and type(_card.config.center.calc_scaling) == "function" then
-                local ret = _card.config.center:calc_scaling(_card, card, args.ref_table[args.ref_value], (args.scalar_table or args.ref_table)[args.scalar_value], args)
+            local obj = _card.config.center
+            if obj.calc_scaling and type(obj.calc_scaling) == "function" then
+                local ret = obj:calc_scaling(_card, card, args.ref_table[args.ref_value], (args.scalar_table or args.ref_table)[args.scalar_value], args)
                 if ret then
                     if ret.scaling_value then args.ref_table[args.ref_value] = ret.scaling_value end
                     if ret.scalar_value then (args.scalar_table or args.ref_table)[args.scalar_value] = ret.scalar_value end
-                    for i2, v2 in pairs(ret) do
-                        SMODS.calculate_individual_effect(ret, _card, i2, result, false)
-                    end
+                    SMODS.calculate_effect(ret, _card)
                 end
             end
         end
