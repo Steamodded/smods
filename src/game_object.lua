@@ -2636,7 +2636,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
         end,
         inject = function(self)
-            send('injecting '..self.key)
+            self.extra = self.extra or {center = 'j_joker'}
         end
     }
 

@@ -2450,7 +2450,7 @@ function SMODS.quip(quip_type)
         local add = true
         local in_pool, pool_opts
         if v.filter and type(v.filter) == 'function' then
-            in_pool, pool_opts = v:filter({})
+            in_pool, pool_opts = v:filter(quip_type)
         end
         local deck = G.P_CENTERS[G.GAME.selected_back.effect.center.key] or SMODS.Centers[G.GAME.selected_back.effect.center.key]
         if deck and deck.quip_filter and type(deck.quip_filter) == 'function' then
@@ -2463,7 +2463,7 @@ function SMODS.quip(quip_type)
             add = false
         end
         if add then
-            local rarity = (pool_opts and pool_opts.rarity and math.max(1, math.floor(pool_opts.rarity))) or 1
+            local rarity = (pool_opts and pool_opts.weight and math.max(1, math.floor(pool_opts.weight))) or 1
             for i = 1, rarity do
                 pool[#pool+1] = v
             end

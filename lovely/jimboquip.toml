@@ -3,6 +3,7 @@ version = "1.0.0"
 dump_lua = true
 priority = -10
 
+# Select custom win quips
 [[patches]]
 [patches.pattern]
 target = "functions/state_events.lua"
@@ -25,8 +26,8 @@ Jimbo.ui_object_updated = true
 Jimbo:add_speech_bubble(quip, nil, {quip = true})
 '''
 match_indent = true
-times = 1
 
+# Select custom loss quips
 [[patches]]
 [patches.pattern]
 target = "game.lua"
@@ -50,8 +51,8 @@ Jimbo.ui_object_updated = true
 Jimbo:add_speech_bubble(quip, nil, {quip = true})
 '''
 match_indent = true
-times = 1
 
+# Allow custom materialize colours
 [[patches]]
 [patches.pattern]
 target = "card_character.lua"
@@ -59,8 +60,8 @@ pattern = '''self.children.card:start_materialize({G.C.BLUE, G.C.WHITE, G.C.RED}
 position = "at"
 payload = '''self.children.card:start_materialize({args.materialize_colours and args.materialize_colours[1] or G.C.BLUE, args.materialize_colours and args.materialize_colours[2] or G.C.WHITE, args.materialize_colours and args.materialize_colours[3] or G.C.RED})'''
 match_indent = true
-times = 1
 
+# Allow custom particle_colours
 [[patches]]
 [patches.pattern]
 target = "card_character.lua"
@@ -68,4 +69,16 @@ pattern = '''colours = {G.C.RED, G.C.BLUE, G.C.ORANGE},'''
 position = "at"
 payload = '''colours = {args.particle_colours and args.particle_colours[1] or G.C.RED, args.particle_colours and args.particle_colours[2] or G.C.BLUE, args.particle_colours and args.particle_colours[3] or G.C.ORANGE},'''
 match_indent = true
-times = 1
+
+# Allow custom centers to be used for quips
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.children.card = Card(self.T.x, self.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, args.center or G.P_CENTERS.j_joker, {bypass_discovery_center = true})
+'''
+payload = '''
+self.children.card = Card(self.T.x, self.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, args.center and G.P_CENTERS[args.center] or G.P_CENTERS.j_joker, {bypass_discovery_center = true})
+'''

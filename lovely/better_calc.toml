@@ -591,45 +591,6 @@ SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, 
 -- TARGET: effects before deck final_scoring_step
 '''
 
-# context.destroying_card
-[[patches]]
-[patches.pattern]
-target = "functions/state_events.lua"
-pattern = '''
-for j = 1, #G.jokers.cards do
-    destroyed = G.jokers.cards[j]:calculate_joker({destroying_card = scoring_hand[i], full_hand = G.play.cards})
-    if destroyed then break end
-end
-
-if scoring_hand[i].ability.name == 'Glass Card' and not scoring_hand[i].debuff and pseudorandom('glass') < G.GAME.probabilities.normal/scoring_hand[i].ability.extra then
-    destroyed = true
-end'''
-match_indent = true
-position = "at"
-payload = '''
--- context.destroying_card calculations
-for j = 1, #G.jokers.cards do
-    local eval, post = eval_card(G.jokers.cards[j], {destroying_card = scoring_hand[i], full_hand = G.play.cards})
-    SMODS.trigger_effects({eval, post}, scoring_hand[i])
-    if eval.jokers then destroyed = true end
-
-end
-
-if SMODS.has_enhancement(scoring_hand[i], 'm_glass') and scoring_hand[i]:can_calculate() and pseudorandom('glass') < G.GAME.probabilities.normal/(scoring_hand[i].ability.name == 'Glass Card' and scoring_hand[i].ability.extra or G.P_CENTERS.m_glass.config.extra) then
-    destroyed = true
-end
-
-local eval, post = eval_card(scoring_hand[i], {destroying_card = scoring_hand[i], full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, cardarea = G.play})
-local self_destroy = false
-for key, effect in pairs(eval) do
-    self_destroy = SMODS.calculate_effect(effect, scoring_hand[i])
-end
-SMODS.trigger_effects({post}, scoring_hand[i])
-if self_destroy then destroyed = true end
-
--- TARGET: card destroyed when played
-'''
-
 # context.remove_playing_cards
 [[patches]]
 [patches.regex]
