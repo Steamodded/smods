@@ -2652,3 +2652,17 @@ function Tag:apply_to_run(_context)
     end
     return res
 end
+
+-- saving highights for any card actions you might want saved between runs, similar to boosters
+function SMODS.save_action_highights(cardareas)
+    local highlights = {}
+    for k, v in pairs(G) do
+        if (type(v) == "table") and v.is and v:is(CardArea) and (not cardareas or cardareas[k]) and #v.highlighted > 0 then
+            highlights[k] = {}
+            for _, highlight in ipairs(v.highlighted) do
+                highlights[k][highlight.sort_id] = true
+            end
+        end
+    end
+    return next(highlights) and highlights or nil
+end
