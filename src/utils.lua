@@ -2721,6 +2721,7 @@ end
 function SMODS.quip(quip_type)
     if not quip_type then return nil end
     local pool = {}
+    local total_weight = 0
     for k, v in pairs(SMODS.JimboQuips) do
         local add = true
         local in_pool, pool_opts, deck_pool_opts, mod_pool_opts
@@ -2741,27 +2742,31 @@ function SMODS.quip(quip_type)
         if v.filter and type(v.filter) == 'function' then
             add = in_pool and (add or (mod_pool_opts and mod_pool_opts.override_base_checks) or (deck_pool_opts and deck_pool_opts.override_base_checks) or (pool_opts and pool_opts.override_base_checks))
         end
-        if v.type ~= quip_type then
+        if v.type and v.type ~= quip_type then
             add = false
         end
         if add then
-            local rarity = (mod_pool_opts and mod_pool_opts.weight and math.max(1, math.floor(mod_pool_opts.weight))) or (deck_pool_opts and deck_pool_opts.weight and math.max(1, math.floor(deck_pool_opts.weight))) or (pool_opts and pool_opts.weight and math.max(1, math.floor(pool_opts.weight))) or 1
-            for i = 1, rarity do
-                pool[#pool+1] = v
+            local weight = (mod_pool_opts and mod_pool_opts.weight and math.max(1, math.floor(mod_pool_opts.weight))) or (deck_pool_opts and deck_pool_opts.weight and math.max(1, math.floor(deck_pool_opts.weight))) or (pool_opts and pool_opts.weight and math.max(1, math.floor(pool_opts.weight))) or 1
+            pool[#pool+1] = {quip = v, weight = weight}
+            total_weight = total_weight + weight
+        end
+    end
+    local quip_poll = pseudorandom(quip_type)
+    local it = 0
+    for _, v in ipairs(pool) do
+        it = it + v.weight
+        if it/total_weight >= quip_poll then
+            local args = {}
+            if v.quip.extra then
+                if type(v.quip.extra) == 'function' then
+                    args = v.quip.extra()
+                else
+                    args = v.quip.extra
+                end
             end
+            return v.quip.key, args
         end
     end
-    local quip = pseudorandom_element(pool, pseudoseed(quip_type))
-    local key = (quip and quip.key) or (quip_type == 'win' and 'wq_1' or 'lq_1')
-    local args = {}
-    if quip and quip.extra then
-        if type(quip.extra) == 'function' then
-            args = quip.extra()
-        else
-            args = quip.extra
-        end
-    end
-    return key, args
 end
 
 

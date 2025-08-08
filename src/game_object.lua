@@ -2604,8 +2604,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         obj_table = SMODS.JimboQuips,
         obj_buffer = {},
         required_params = {
-            'key',
-            'type'
+            'key'
         },
         set = 'JimboQuip',
         process_loc_text = function(self)
