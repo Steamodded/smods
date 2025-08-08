@@ -4,6 +4,7 @@
 ---@field type? 'win'|'loss'|string Whether it's a win, loss or another type quip.
 ---@field loc_txt? string[] Text for the quip.
 ---@field extra? table|fun():table? Arguments for Card_Character.
+---@field filter? fun(self: SMODS.JimboQuip|table, quip_type: string): boolean?, table? Allows configuring if the quip is allowed to appear. 
 ---@field update? fun(self: SMODS.JimboQuip|table, dt: number) Allows finer per-frame control over the implementation.
 ---@field __call? fun(self: SMODS.JimboQuip|table, o: SMODS.JimboQuip|table): nil|table|SMODS.JimboQuip
 ---@field extend? fun(self: SMODS.JimboQuip|table, o: SMODS.JimboQuip|table): table Primary method of creating a class.
