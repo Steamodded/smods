@@ -1,7 +1,7 @@
 ---@meta
 
 ---@class SMODS.Gradient: SMODS.GameObject
----@field interpolation? string Interpolation type of the gradient. Currently supported: `'trig'`, '`linear'`.
+---@field interpolation? 'trig'|'linear'|string Interpolation type of the gradient. Currently supported: `'trig'`, `'linear'`.
 ---@field colours? table<number, table<number, number>> List of colours to interpolate between.
 ---@field cycle? number Amount of time (in seconds) for the gradient to cycle through all colours.
 ---@field __call? fun(self: SMODS.Gradient|table, o: SMODS.Gradient|table): nil|table|SMODS.Gradient
