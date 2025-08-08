@@ -1872,7 +1872,6 @@ else
 end
 '''
 payload = '''
-if not instant then delay(0.4) end
 SMODS.calculate_context({
     money_altered = true,
     amount = mod,
