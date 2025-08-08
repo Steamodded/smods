@@ -630,23 +630,25 @@ function SMODS.merge_effects(...) end
 ---@param from_roll? boolean
 ---@return number numerator
 ---@return number denominator
+---@param no_mod boolean|nil optional boolean to bypass other probability modifying effects
 --- Returns a *`numerator` in `denominator`* listed probability opportunely modified by in-game effects
 --- starting from a *`base_numerator` in `base_denominator`* probability. 
 --- 
 --- Can be hooked for more complex probability behaviour. `trigger_obj` is optionally the object that queues the probability.
-function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier, from_roll) end
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier, from_roll, no_mod) end
 
 ---@param trigger_obj? Card|table
 ---@param seed string|number
 ---@param base_numerator number
 ---@param base_denominator number
 ---@param identifier? string
+---@param no_mod boolean|nil optional boolean to bypass other probability modifying effects
 ---@return boolean
 --- Sets the seed to `seed` and runs a *`base_numerator` in `base_denominator`* listed probability check. 
 --- Returns `true` if the probability succeeds. You do not need to multiply `base_numerator` by `G.GAME.probabilities.normal`. 
 --- 
 --- Can be hooked to run code when a listed probability succeeds and/or fails. `trigger_obj` is optionally the object that queues the probability.
-function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator, identifier) end
+function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator, identifier, no_mod) end
 
 ---@param handname PokerHands|string
 ---@return boolean

@@ -2630,7 +2630,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     }
 
-    for i=1,9 do
+    for i=1,10 do
         SMODS.JimboQuip{
             key = "lq_"..tostring(i),
             type = 'loss',
