@@ -629,7 +629,7 @@ function SMODS.is_poker_hand_visible(handname) end
 function SMODS.is_eternal(card, trigger) end
 
 
----@param prototype_obj table
+---@param prototype_obj SMODS.GameObject|table
 ---@param args table?
 ---@return boolean?, table?
 --- Checks whether an object is in the pool.
