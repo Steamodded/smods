@@ -39,34 +39,7 @@ match_indent = true
 target = "functions/common_events.lua"
 pattern = "elseif _c.set == 'Enhanced' then"
 position = "before"
-payload = '''
-if specific_vars and specific_vars.bonus_x_chips then
-    localize{type = 'other', key = 'card_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_x_chips}}
-end
-if specific_vars and specific_vars.bonus_mult then
-    localize{type = 'other', key = 'card_extra_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_mult)}}
-end
-if specific_vars and specific_vars.bonus_x_mult then
-    localize{type = 'other', key = 'card_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_x_mult}}
-end
-if specific_vars and specific_vars.bonus_h_chips then
-    localize{type = 'other', key = 'card_extra_h_chips', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_chips)}}
-end
-if specific_vars and specific_vars.bonus_h_x_chips then
-    localize{type = 'other', key = 'card_h_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_chips}}
-end
-if specific_vars and specific_vars.bonus_h_mult then
-    localize{type = 'other', key = 'card_extra_h_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_mult)}}
-end
-if specific_vars and specific_vars.bonus_h_x_mult then
-    localize{type = 'other', key = 'card_h_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_mult}}
-end
-if specific_vars and specific_vars.bonus_p_dollars then
-    localize{type = 'other', key = 'card_extra_p_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_p_dollars)}}
-end
-if specific_vars and specific_vars.bonus_h_dollars then
-    localize{type = 'other', key = 'card_extra_h_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_h_dollars)}}
-end'''
+payload = '''SMODS.localize_perma_bonuses(specific_vars, desc_nodes)'''
 match_indent = true
 overwrite = false
 
@@ -94,34 +67,7 @@ payload = "localize{type = 'other', key = 'card_extra_chips', nodes = desc_nodes
 target = "functions/common_events.lua"
 pattern = "elseif _c.set == 'Booster' then"
 position = "before"
-payload = '''
-if specific_vars and specific_vars.bonus_x_chips then
-    localize{type = 'other', key = 'card_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_x_chips}}
-end
-if specific_vars and specific_vars.bonus_mult and _c.effect ~= 'Mult Card'  then
-    localize{type = 'other', key = 'card_extra_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_mult)}}
-end
-if specific_vars and specific_vars.bonus_x_mult then
-    localize{type = 'other', key = 'card_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_x_mult}}
-end
-if specific_vars and specific_vars.bonus_h_chips then
-    localize{type = 'other', key = 'card_extra_h_chips', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_chips)}}
-end
-if specific_vars and specific_vars.bonus_h_x_chips then
-    localize{type = 'other', key = 'card_h_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_chips}}
-end
-if specific_vars and specific_vars.bonus_h_mult then
-    localize{type = 'other', key = 'card_extra_h_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_mult)}}
-end
-if specific_vars and specific_vars.bonus_h_x_mult then
-    localize{type = 'other', key = 'card_h_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_mult}}
-end
-if specific_vars and specific_vars.bonus_p_dollars then
-    localize{type = 'other', key = 'card_extra_p_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_p_dollars)}}
-end
-if specific_vars and specific_vars.bonus_h_dollars and _c.effect ~= 'Gold Card' then
-    localize{type = 'other', key = 'card_extra_h_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_h_dollars)}}
-end'''
+payload = '''SMODS.localize_perma_bonuses(specific_vars, desc_nodes)'''
 match_indent = true
 overwrite = false
 
@@ -153,7 +99,8 @@ bonus_h_x_mult = self.ability.perma_h_x_mult ~= 0 and (self.ability.perma_h_x_mu
 bonus_p_dollars = self.ability.perma_p_dollars ~= 0 and self.ability.perma_p_dollars or nil,
 bonus_h_dollars = self.ability.perma_h_dollars ~= 0 and self.ability.perma_h_dollars or nil,
 total_h_dollars = total_h_dollars ~= 0 and total_h_dollars or nil,
-bonus_chips = bonus_chips ~= 0 and bonus_chips or nil,'''
+bonus_chips = bonus_chips ~= 0 and bonus_chips or nil,
+bonus_repetitions = self.ability.perma_repetitions ~= 0 and self.ability.perma_repetitions or nil,'''
 match_indent = true
 overwrite = false
 
@@ -169,6 +116,7 @@ x_mult = center.config.Xmult or center.config.x_mult or 1,
 h_chips = center.config.h_chips or 0,
 x_chips = center.config.x_chips or 1,
 h_x_chips = center.config.h_x_chips or 1,
+repetitions = center.config.repetitions or 0,
 '''
 match_indent = true
 overwrite = false
@@ -189,6 +137,7 @@ perma_h_mult = self.ability and self.ability.perma_h_mult or 0,
 perma_h_x_mult = self.ability and self.ability.perma_h_x_mult or 0,
 perma_p_dollars = self.ability and self.ability.perma_p_dollars or 0,
 perma_h_dollars = self.ability and self.ability.perma_h_dollars or 0,
+perma_repetitions = self.ability and self.ability.perma_repetitions or 0,
 '''
 match_indent = true
 overwrite = false
@@ -344,4 +293,3 @@ if h_dollars ~= 0 then
     ret.card = self
 end
 '''
-times = 1

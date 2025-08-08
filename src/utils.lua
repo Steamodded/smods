@@ -2590,16 +2590,17 @@ function SMODS.merge_effects(...)
     return ret
 end
 
-function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier, from_roll)
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier, from_roll, no_mod)
     if not G.jokers then return base_numerator, base_denominator end
+    if no_mod then return base_numerator, base_denominator end
     local additive = SMODS.calculate_context({mod_probability = true, from_roll = from_roll, trigger_obj = trigger_obj, identifier = identifier, numerator = base_numerator, denominator = base_denominator}, nil, not from_roll)
     additive.numerator = (additive.numerator or base_numerator) * ((G.GAME and G.GAME.probabilities.normal or 1) / (2 ^ #SMODS.find_card('j_oops')))
     local fixed = SMODS.calculate_context({fix_probability = true, from_roll = from_roll, trigger_obj = trigger_obj, identifier = identifier, numerator = additive.numerator or base_numerator, denominator = additive.denominator or base_denominator}, nil, not from_roll)
     return fixed.numerator or additive.numerator or base_numerator, fixed.denominator or additive.denominator or base_denominator
 end
 
-function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator, identifier)
-    local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier or seed, true)
+function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator, identifier, no_mod)
+    local numerator, denominator = SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier or seed, true, no_mod)
     local result = pseudorandom(seed) < numerator / denominator
     SMODS.post_prob = SMODS.post_prob or {}
     SMODS.post_prob[#SMODS.post_prob+1] = {pseudorandom_result = true, result = result, trigger_obj = trigger_obj, numerator = numerator, denominator = denominator, identifier = identifier or seed}
@@ -2779,4 +2780,36 @@ function G.UIDEF.challenge_description_tab(args)
 	end
 
 	return ref_challenge_desc(args)
+end
+function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
+    if specific_vars and specific_vars.bonus_x_chips then
+        localize{type = 'other', key = 'card_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_x_chips}}
+    end
+    if specific_vars and specific_vars.bonus_mult then
+        localize{type = 'other', key = 'card_extra_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_mult)}}
+    end
+    if specific_vars and specific_vars.bonus_x_mult then
+        localize{type = 'other', key = 'card_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_x_mult}}
+    end
+    if specific_vars and specific_vars.bonus_h_chips then
+        localize{type = 'other', key = 'card_extra_h_chips', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_chips)}}
+    end
+    if specific_vars and specific_vars.bonus_x_chips then
+        localize{type = 'other', key = 'card_h_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_chips}}
+    end
+    if specific_vars and specific_vars.bonus_h_mult then
+        localize{type = 'other', key = 'card_extra_h_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_mult)}}
+    end
+    if specific_vars and specific_vars.bonus_h_x_mult then
+        localize{type = 'other', key = 'card_h_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_mult}}
+    end
+    if specific_vars and specific_vars.bonus_p_dollars then
+        localize{type = 'other', key = 'card_extra_p_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_p_dollars)}}
+    end
+    if specific_vars and specific_vars.bonus_h_dollars then
+        localize{type = 'other', key = 'card_extra_h_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_h_dollars)}}
+    end
+    if specific_vars and specific_vars.bonus_repetitions then
+        localize{type = 'other', key = 'card_extra_repetitions', nodes = desc_nodes, vars = {specific_vars.bonus_repetitions, localize(specific_vars.bonus_repetitions > 1 and 'b_retrigger_plural' or 'b_retrigger_single')}}
+    end
 end

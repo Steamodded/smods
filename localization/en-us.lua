@@ -136,6 +136,12 @@ return {
                     "{C:money}#1#{} if held at end of round",
                 },
             },
+            card_extra_repetitions = {
+                text = {
+                    "Retrigger this",
+                    "card {C:attention}#1#{} #2#",
+                },
+            },
             artist = {
                 text = {
                     "{C:inactive}Artist",
@@ -238,7 +244,9 @@ return {
             b_deckskins_lc = 'Low Contrast Colours',
             b_deckskins_hc = 'High Contrast Colours',
             b_deckskins_def = 'Default Colours',
-            b_limit = 'Up to '
+            b_limit = 'Up to ',
+            b_retrigger_single = 'time',
+            b_retrigger_plural = 'times'
 		},
 		v_dictionary = {
 			c_types = '#1# Types',
