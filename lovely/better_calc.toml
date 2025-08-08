@@ -1843,3 +1843,33 @@ G.GAME.tag_tally = math.max(self.tally, G.GAME.tag_tally) + 1
 payload = '''
 self.from_load = true
 '''
+
+# context.money_altered
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if instant then
+    _mod(mod)
+else
+    G.E_MANAGER:add_event(Event({
+    trigger = 'immediate',
+    func = function()
+        _mod(mod)
+        return true
+    end
+    }))
+end
+'''
+payload = '''
+if not instant then delay(0.4) end
+SMODS.calculate_context({
+    money_altered = true,
+    amount = mod,
+    from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
+    from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
+    from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
+})
+'''

@@ -1638,7 +1638,6 @@ local function generateBaseNode(staticPageDefinition)
             r = 0.1,
             minw = 8,
             align = "cm",
-            padding = 0.2,
             colour = G.C.BLACK
         },
         nodes = {

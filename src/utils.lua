@@ -1215,7 +1215,11 @@ SMODS.smart_level_up_hand = function(card, hand, instant, amount)
     local vals_after_level
     if SMODS.displaying_scoring and not (SMODS.displayed_hand == hand) then
         vals_after_level = copy_table(G.GAME.current_round.current_hand)
-        vals_after_level.level = (G.GAME.hands[vals_after_level.handname] or {}).level or ''
+        local text,disp_text,_,_,_ = G.FUNCS.get_poker_hand_info(G.play.cards)
+        vals_after_level.handname = disp_text or ''
+        vals_after_level.level = (G.GAME.hands[text] or {}).level or ''
+        vals_after_level.chips = number_format(hand_chips) or 0
+        vals_after_level.mult = number_format(mult) or 0
     end
     if not (instant or SMODS.displayed_hand == hand) then
         update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'),chips = G.GAME.hands[hand].chips, mult = G.GAME.hands[hand].mult, level=G.GAME.hands[hand].level})
@@ -1271,7 +1275,6 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
 
     if (key == 'p_dollars' or key == 'dollars' or key == 'h_dollars') and amount then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        ease_dollars(amount)
         if not effect.remove_default_message then
             if effect.dollar_message then
                 card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.dollar_message)
@@ -1279,6 +1282,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
                 card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'dollars', amount, percent)
             end
         end
+        ease_dollars(amount)
         return true
     end
 
@@ -1829,6 +1833,8 @@ end
 -- Used to calculate contexts across G.jokers, scoring_hand (if present), G.play and G.GAME.selected_back
 -- Hook this function to add different areas to MOST calculations
 function SMODS.calculate_context(context, return_table, no_resolve)
+    if G.STAGE ~= G.STAGES.RUN then return end
+
     local has_area = context.cardarea and true or nil
     if no_resolve then SMODS.no_resolve = true end
     local flags = {}
@@ -2653,4 +2659,125 @@ function Tag:apply_to_run(_context)
         self.triggered_calc = true
     end
     return res
+end
+
+function SMODS.scale_card(card, args)
+    if not G.deck then return end
+    if not args.operation then args.operation = "+" end
+    for _, area in ipairs(SMODS.get_card_areas('jokers')) do
+        for _, _card in ipairs(area.cards) do
+            local obj = _card.config.center
+            if obj.calc_scaling and type(obj.calc_scaling) == "function" then
+                local ret = obj:calc_scaling(_card, card, args.ref_table[args.ref_value], (args.scalar_table or args.ref_table)[args.scalar_value], args)
+                if ret then
+                    if ret.scaling_value then args.ref_table[args.ref_value] = ret.scaling_value end
+                    if ret.scalar_value then (args.scalar_table or args.ref_table)[args.scalar_value] = ret.scalar_value end
+                    SMODS.calculate_effect(ret, _card)
+                end
+            end
+        end
+    end
+end
+
+local calculate_jokerref = Card.calculate_joker
+function Card:calculate_joker(context, ...)
+    local ret, ret2 = calculate_jokerref(self, context, ...)
+    if self.ability.name == "Caino" or self.ability.name == "Glass Joker" then
+        if context.remove_playing_cards then
+            if self.ability.name == "Caino" then
+                local faces = 0
+                for k, v in ipairs(context.removed) do
+                    if v:is_face() then
+                        faces = faces + 1
+                    end
+                end
+                if faces > 0 then
+                    SMODS.scale_card(self, {
+                        ref_table = self.ability,
+                        ref_value = "caino_xmult",
+                        scalar_value = "extra",
+                    })
+                end
+            else
+                local glasses = 0
+                for k, v in ipairs(context.removed) do
+                    if v.shattered then
+                        glasses = glasses + 1
+                    end
+                end
+                if glasses > 0 then
+                    SMODS.scale_card(self, {
+                        ref_table = self.ability,
+                        ref_value = "x_mult",
+                        scalar_value = "extra",
+                    })
+                end
+            end
+        end
+    end
+    return ret, ret2
+end
+
+function SMODS.quip(quip_type)
+    if not (quip_type == 'win' or quip_type == 'loss') then return nil end
+    local pool = {}
+    for k, v in pairs(SMODS.JimboQuips) do
+        local add = true
+        local in_pool, pool_opts
+        if v.filter and type(v.filter) == 'function' then
+            in_pool, pool_opts = v:filter(quip_type)
+        end
+        local deck = G.P_CENTERS[G.GAME.selected_back.effect.center.key] or SMODS.Centers[G.GAME.selected_back.effect.center.key]
+        if deck and deck.quip_filter and type(deck.quip_filter) == 'function' then
+            add = deck.quip_filter(v, quip_type)
+        end
+        if v.filter and type(v.filter) == 'function' then
+            add = in_pool and (add or (pool_opts and pool_opts.override_base_checks))
+        end
+        if v.type ~= quip_type then
+            add = false
+        end
+        if add then
+            local rarity = (pool_opts and pool_opts.weight and math.max(1, math.floor(pool_opts.weight))) or 1
+            for i = 1, rarity do
+                pool[#pool+1] = v
+            end
+        end
+    end
+    local quip = pseudorandom_element(pool, pseudoseed(quip_type))
+    local key = (quip and quip.key) or (quip_type == 'win' and 'wq_1' or 'lq_1')
+    local args = {}
+    if quip and quip.extra then
+        if type(quip.extra) == 'function' then
+            args = quip.extra()
+        else
+            args = quip.extra
+        end
+    end
+    return key, args
+end
+
+
+local ref_challenge_desc = G.UIDEF.challenge_description_tab
+function G.UIDEF.challenge_description_tab(args)
+	args = args or {}
+
+	if args._tab == 'Restrictions' then
+		local challenge = G.CHALLENGES[args._id]
+		if challenge.restrictions then
+            if challenge.restrictions.banned_cards and type(challenge.restrictions.banned_cards) == 'function' then
+                challenge.restrictions.banned_cards = challenge.restrictions.banned_cards()
+            end
+
+            if challenge.restrictions.banned_tags and type(challenge.restrictions.banned_tags) == 'function' then
+                challenge.restrictions.banned_tags = challenge.restrictions.banned_tags()
+            end
+
+            if challenge.restrictions.banned_other and type(challenge.restrictions.banned_other) == 'function' then
+                challenge.restrictions.banned_other = challenge.restrictions.banned_other()
+            end
+        end
+	end
+
+	return ref_challenge_desc(args)
 end
