@@ -216,7 +216,7 @@ return {
             b_authors = 'Authors',
             b_unknown = 'Unknown',
             b_lovely_mod = '(Lovely Mod) ',
-            b_by = ' By: ',
+            b_by = 'By: ',
             b_priority = 'Priority: ',
 			b_config = "Config",
 			b_additions = 'Additions',
@@ -235,9 +235,9 @@ return {
                 'Enabled',
                 'Bypass Restrictions'
             },
-            b_deckskins_lc = 'Low Contrast Colors',
-            b_deckskins_hc = 'High Contrast Colors',
-            b_deckskins_def = 'Default Colors',
+            b_deckskins_lc = 'Low Contrast Colours',
+            b_deckskins_hc = 'High Contrast Colours',
+            b_deckskins_def = 'Default Colours',
             b_limit = 'Up to '
 		},
 		v_dictionary = {
