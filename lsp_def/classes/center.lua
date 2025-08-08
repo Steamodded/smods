@@ -9,7 +9,7 @@
 ---@field unlocked? boolean Sets the unlock state of the center. 
 ---@field discovered? boolean Sets the discovery state of the center. 
 ---@field no_collection? boolean Sets whether the card shows up in the collections menu. 
----@field loc_txt? table|{name: string, text: string[]} Contains strings used for displaying text related to this object. 
+---@field loc_txt? table|{name: string|string[], text: string[]|string[][]} Contains strings used for displaying text related to this object. 
 ---@field pools? string[] Array of keys to ObjectTypes this center will be added to.
 ---@field cost? number Sell cost of this center. 
 ---@field no_pool_flag? string Key to a pool flag defined in `G.GAME.pool_flags`. This center is removed from pools as long as this flag is `true`. 

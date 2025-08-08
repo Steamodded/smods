@@ -889,7 +889,13 @@ function buildModtag(mod)
 
     local tag_sprite_tab = nil
     local units = SMODS.pixels_to_unit(34) * 2
-    local tag_sprite = Sprite(0, 0, units, units, G.ASSET_ATLAS[tag_atlas] or G.ASSET_ATLAS['tags'], tag_pos)
+    local animated = G.ANIMATION_ATLAS[tag_atlas] or nil
+    local tag_sprite
+    if animated then
+      tag_sprite = AnimatedSprite(0, 0, 0.8*1, 0.8*1, animated or G.ASSET_ATLAS[tag_atlas] or G.ASSET_ATLAS['tags'], tag_pos)
+    else
+      tag_sprite = Sprite(0, 0, 0.8*1, 0.8*1, G.ASSET_ATLAS[tag_atlas] or G.ASSET_ATLAS['tags'], tag_pos)
+    end
     tag_sprite.T.scale = 1
     tag_sprite_tab = {n= G.UIT.C, config={align = "cm", padding = 0}, nodes={
         {n=G.UIT.O, config={w=units, h=units, colour = G.C.BLUE, object = tag_sprite, focus_with_object = true}},
@@ -1021,7 +1027,7 @@ local function createClickableModBox(modInfo, scale)
             scale = scale * 0.7,
             colours = {the_colour},
             shadow = true,
-            maxw = 2.7,
+            maxw = 2.4,
             marquee = true,
         }
         table.insert(label_nodes,
@@ -1632,7 +1638,6 @@ local function generateBaseNode(staticPageDefinition)
             r = 0.1,
             minw = 8,
             align = "cm",
-            padding = 0.2,
             colour = G.C.BLACK
         },
         nodes = {
