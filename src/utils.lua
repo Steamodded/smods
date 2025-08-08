@@ -1269,7 +1269,6 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
 
     if (key == 'p_dollars' or key == 'dollars' or key == 'h_dollars') and amount then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        ease_dollars(amount)
         if not effect.remove_default_message then
             if effect.dollar_message then
                 card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.dollar_message)
@@ -1277,6 +1276,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
                 card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'dollars', amount, percent)
             end
         end
+        ease_dollars(amount)
         return true
     end
 

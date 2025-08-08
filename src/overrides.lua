@@ -2311,18 +2311,15 @@ function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips, scoring_h
 	return _G.mult, _G.hand_chips, modded or flags.calculated
 end
 
-local ease_dollars_ref = ease_dollars
-function ease_dollars(mod,instant)
-	local ret = ease_dollars_ref(mod, instant)
-	G.E_MANAGER:add_event(Event({trigger='immediate',func=function()
-		SMODS.calculate_context({
-			money_altered = true,
-			amount = mod,
-			from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
-			from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
-			from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
-		})
-		return true
-	end}))
-	return ret
-end
+-- local ease_dollars_ref = ease_dollars
+-- function ease_dollars(mod,instant)
+-- 	local ret = ease_dollars_ref(mod, instant)
+-- 	SMODS.calculate_context({
+-- 		money_altered = true,
+-- 		amount = mod,
+-- 		from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
+-- 		from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
+-- 		from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
+-- 	})
+-- 	return ret
+-- end
