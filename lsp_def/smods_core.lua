@@ -35,7 +35,7 @@ SMODS.path = ""
 ---@field custom_collection_tabs? fun(): table[] Creates additional buttons displayed inside the "Other" tab in collections.
 ---@field description_loc_vars? fun(self: Mod|table): table Allows dynamic display of this mod's description.
 ---@field custom_ui? fun(mod_nodes: table) Allows manipulating this mod's description tab.
----@field ui_config? fun(mod_nodes: table) Allows specifying custom values for this mod's menu UI elements.
+---@field ui_config? table Allows specifying custom values for this mod's menu UI elements.
 ---@field set_ability_reset_keys? fun(): string[] When a card's `ability` table is changed, values with a key matching a string inside the returned table .
 ---@field reset_game_globals? fun(run_start: boolean) Allows resetting global values every new run or round.
 ---@field set_debuff? fun(card: Card|table): boolean|string? Allows controlling when a card is debuffed or not. Return `"prevent_debuff"` to force a card to be undebuffable.
