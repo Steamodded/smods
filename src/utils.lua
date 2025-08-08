@@ -2663,6 +2663,7 @@ end
 
 function SMODS.scale_card(card, args)
     if not G.deck then return end
+    local scaling_message
     if not args.operation then args.operation = "+" end
     for _, area in ipairs(SMODS.get_card_areas('jokers')) do
         for _, _card in ipairs(area.cards) do
@@ -2673,10 +2674,12 @@ function SMODS.scale_card(card, args)
                     if ret.scaling_value then args.ref_table[args.ref_value] = ret.scaling_value end
                     if ret.scalar_value then (args.scalar_table or args.ref_table)[args.scalar_value] = ret.scalar_value end
                     SMODS.calculate_effect(ret, _card)
+                    if ret.scaling_message then scaling_message = ret.scaling_message end
                 end
             end
         end
     end
+    return scaling_message
 end
 
 local calculate_jokerref = Card.calculate_joker
