@@ -997,6 +997,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.localization.descriptions[self.key] = G.localization.descriptions[self.key] or {}
             G.C.SET[self.key] = self.primary_colour
             G.C.SECONDARY_SET[self.key] = self.secondary_colour
+            G.C.UI[self.key] = self.text_colour or G.C.UI.TEXT_LIGHT
             G.FUNCS['your_collection_' .. string.lower(self.key) .. 's'] = function(e)
                 G.SETTINGS.paused = true
                 G.FUNCS.overlay_menu {
@@ -2595,6 +2596,55 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.JimboQuip
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.JimboQuips = {}
+    SMODS.JimboQuip = SMODS.GameObject:extend {
+        obj_table = SMODS.JimboQuips,
+        obj_buffer = {},
+        required_params = {
+            'key',
+            'type'
+        },
+        set = 'JimboQuip',
+        process_loc_text = function(self)
+            SMODS.process_loc_text(G.localization.misc.quips, self.key:lower(), self.loc_txt)
+        end,
+        register = function(self)
+            if self.registered then
+                sendWarnMessage(('Detected duplicate register call on JimboQuip %s'):format(self.key:lower()), self.set)
+                return
+            end
+            if self:check_dependencies() then
+                if not (self.type == "win" or self.type == 'loss') then
+                    sendWarnMessage(("Invalid type on JimboQuote %s. Value must be 'win' or 'loss'"):format(self.key:lower()), self.set)
+                    return
+                end
+                self.obj_buffer[#self.obj_buffer + 1] = self.key:lower()
+                self.obj_table[self.key:lower()] = self
+                self.registered = true
+            end
+        end,
+        inject = function(self)
+            self.extra = self.extra or {center = 'j_joker'}
+        end
+    }
+
+    for i=1,10 do
+        SMODS.JimboQuip{
+            key = "lq_"..tostring(i),
+            type = 'loss',
+        }
+    end
+    for i=1,7 do
+        SMODS.JimboQuip{
+            key = "wq_"..tostring(i),
+            type = 'win',
+        }
+    end
+
+    -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.PokerHand
     -------------------------------------------------------------------------------------------------
 
@@ -2917,6 +2967,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         apply = function(self, card, val)
             card.ability[self.key] = val
+            if val and self.config and next(self.config) then
+                card.ability[self.key] = {}
+                for k, v in pairs(self.config) do
+                    if type(v) == 'table' then
+                        card.ability[self.key][k] = copy_table(v)
+                    else
+                        card.ability[self.key][k] = v
+                    end
+                end
+            end
         end
     }
 
@@ -3052,33 +3112,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     localize { type = 'other', key = 'card_extra_chips', nodes = desc_nodes, vars = { SMODS.signed(remaining_bonus_chips) } }
                 end
             end
-            if specific_vars and specific_vars.bonus_x_chips then
-                localize{type = 'other', key = 'card_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_x_chips}}
-            end
-            if specific_vars and specific_vars.bonus_mult then
-                localize{type = 'other', key = 'card_extra_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_mult)}}
-            end
-            if specific_vars and specific_vars.bonus_x_mult then
-                localize{type = 'other', key = 'card_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_x_mult}}
-            end
-            if specific_vars and specific_vars.bonus_h_chips then
-                localize{type = 'other', key = 'card_extra_h_chips', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_chips)}}
-            end
-            if specific_vars and specific_vars.bonus_x_chips then
-                localize{type = 'other', key = 'card_h_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_chips}}
-            end
-            if specific_vars and specific_vars.bonus_h_mult then
-                localize{type = 'other', key = 'card_extra_h_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_mult)}}
-            end
-            if specific_vars and specific_vars.bonus_h_x_mult then
-                localize{type = 'other', key = 'card_h_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_mult}}
-            end
-            if specific_vars and specific_vars.bonus_p_dollars then
-                localize{type = 'other', key = 'card_extra_p_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_p_dollars)}}
-            end
-            if specific_vars and specific_vars.bonus_h_dollars then
-                localize{type = 'other', key = 'card_extra_h_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_h_dollars)}}
-            end
+            SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
         end,
         -- other methods:
         -- calculate(self, context, effect)
@@ -3126,10 +3160,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.Enhancement:take_ownership('lucky', {
         loc_vars = function (self, info_queue, card)
-            local cfg = (card and card.ability) or self.config
             local numerator_mult, denominator_mult = SMODS.get_probability_vars(card, 1, 5, 'lucky_mult')
             local numerator_dollars, denominator_dollars = SMODS.get_probability_vars(card, 1, 15, 'lucky_money')
-            return {vars = {numerator_mult, cfg.mult, denominator_mult, cfg.p_dollars, denominator_dollars, numerator_dollars}}
+            return {vars = {numerator_mult, card.ability.mult, denominator_mult, card.ability.p_dollars, denominator_dollars, numerator_dollars}}
         end,
     })
 

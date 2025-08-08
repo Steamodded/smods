@@ -378,7 +378,7 @@ function buildAdditionsTab(mod)
         local id = 'your_collection_'..key:lower()..'s'
         local tally = modsCollectionTally(G.P_CENTER_POOLS[key])
         if tally.of > 0 then
-            consumable_nodes[#consumable_nodes+1] = UIBox_button({button = id, label = {localize('b_'..key:lower()..'_cards')}, count = tally, minw = 4, id = id, colour = G.C.SECONDARY_SET[key]})
+            consumable_nodes[#consumable_nodes+1] = UIBox_button({button = id, label = {localize('b_'..key:lower()..'_cards')}, count = tally, minw = 4, id = id, colour = G.C.SECONDARY_SET[key], text_colour = G.C.UI[key]})
         end
     end
     if #consumable_nodes > 3 then
@@ -623,7 +623,7 @@ G.UIDEF.consumable_collection_page = function(page)
                 t[#t+1] = { n = G.UIT.R, config = { align ='cm', minh = 0.81 }, nodes = {}}
             else 
                 local id = 'your_collection_'..key:lower()..'s'
-                t[#t+1] = UIBox_button({button = id, label = {localize('b_'..key:lower()..'_cards')}, count = G.ACTIVE_MOD_UI and modsCollectionTally(G.P_CENTER_POOLS[key]) or G.DISCOVER_TALLIES[key:lower()..'s'], minw = 4, id = id, colour = G.C.SECONDARY_SET[key]})
+                t[#t+1] = UIBox_button({button = id, label = {localize('b_'..key:lower()..'_cards')}, count = G.ACTIVE_MOD_UI and modsCollectionTally(G.P_CENTER_POOLS[key]) or G.DISCOVER_TALLIES[key:lower()..'s'], minw = 4, id = id, colour = G.C.SECONDARY_SET[key], text_colour = G.C.UI[key]})
             end
         end
         return t
@@ -889,7 +889,13 @@ function buildModtag(mod)
 
     local tag_sprite_tab = nil
     local units = SMODS.pixels_to_unit(34) * 2
-    local tag_sprite = Sprite(0, 0, units, units, G.ASSET_ATLAS[tag_atlas] or G.ASSET_ATLAS['tags'], tag_pos)
+    local animated = G.ANIMATION_ATLAS[tag_atlas] or nil
+    local tag_sprite
+    if animated then
+      tag_sprite = AnimatedSprite(0, 0, 0.8*1, 0.8*1, animated or G.ASSET_ATLAS[tag_atlas] or G.ASSET_ATLAS['tags'], tag_pos)
+    else
+      tag_sprite = Sprite(0, 0, 0.8*1, 0.8*1, G.ASSET_ATLAS[tag_atlas] or G.ASSET_ATLAS['tags'], tag_pos)
+    end
     tag_sprite.T.scale = 1
     tag_sprite_tab = {n= G.UIT.C, config={align = "cm", padding = 0}, nodes={
         {n=G.UIT.O, config={w=units, h=units, colour = G.C.BLUE, object = tag_sprite, focus_with_object = true}},
@@ -1021,7 +1027,7 @@ local function createClickableModBox(modInfo, scale)
             scale = scale * 0.7,
             colours = {the_colour},
             shadow = true,
-            maxw = 2.7,
+            maxw = 2.4,
             marquee = true,
         }
         table.insert(label_nodes,
@@ -1632,7 +1638,6 @@ local function generateBaseNode(staticPageDefinition)
             r = 0.1,
             minw = 8,
             align = "cm",
-            padding = 0.2,
             colour = G.C.BLACK
         },
         nodes = {
