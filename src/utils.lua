@@ -2908,3 +2908,15 @@ function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
         localize{type = 'other', key = 'card_extra_repetitions', nodes = desc_nodes, vars = {specific_vars.bonus_repetitions, localize(specific_vars.bonus_repetitions > 1 and 'b_retrigger_plural' or 'b_retrigger_single')}}
     end
 end
+
+local ease_dollar_ref = ease_dollars
+function ease_dollars(mod, instant)
+    ease_dollar_ref(mod, instant)
+    SMODS.calculate_context({
+        money_altered = true,
+        amount = mod,
+        from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
+        from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
+        from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
+    })
+end
