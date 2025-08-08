@@ -211,6 +211,14 @@ for _,k in ipairs(SMODS.Sticker.obj_buffer) do
 end
 
 -- TARGET: evaluate your own repetition effects
+if card.ability.repetitions and card.ability.repetitions > 0 then
+    ret.seals = ret.seals or { card = card, message = localize('k_again_ex') }
+    ret.seals.repetitions = (ret.seals.repetitions and ret.seals.repetitions + card.ability.repetitions) or card.ability.repetitions
+end
+if card.ability.perma_repetitions and card.ability.perma_repetitions > 0 then
+    ret.seals = ret.seals or { card = card, message = localize('k_again_ex') }
+    ret.seals.repetitions = (ret.seals.repetitions and ret.seals.repetitions + card.ability.perma_repetitions) or card.ability.perma_repetitions
+end
 """
 [[patches]]
 [patches.pattern]

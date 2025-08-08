@@ -138,7 +138,8 @@ return {
             },
             card_extra_repetitions = {
                 text = {
-                    "{C:attention}#1#{} retriggers",
+                    "Retrigger this",
+                    "card {C:attention}#1#{} #2#",
                 },
             },
             artist = {
@@ -243,7 +244,9 @@ return {
             b_deckskins_lc = 'Low Contrast Colors',
             b_deckskins_hc = 'High Contrast Colors',
             b_deckskins_def = 'Default Colors',
-            b_limit = 'Up to '
+            b_limit = 'Up to ',
+            b_retrigger_single = 'time',
+            b_retrigger_plural = 'times'
 		},
 		v_dictionary = {
 			c_types = '#1# Types',
