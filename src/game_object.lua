@@ -2617,10 +2617,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 return
             end
             if self:check_dependencies() then
-                if not (self.type == "win" or self.type == 'loss') then
-                    sendWarnMessage(("Invalid type on JimboQuote %s. Value must be 'win' or 'loss'"):format(self.key:lower()), self.set)
-                    return
-                end
                 self.obj_buffer[#self.obj_buffer + 1] = self.key:lower()
                 self.obj_table[self.key:lower()] = self
                 self.registered = true
