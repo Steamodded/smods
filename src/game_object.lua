@@ -997,6 +997,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.localization.descriptions[self.key] = G.localization.descriptions[self.key] or {}
             G.C.SET[self.key] = self.primary_colour
             G.C.SECONDARY_SET[self.key] = self.secondary_colour
+            G.C.UI[self.key] = self.text_colour or G.C.UI.TEXT_LIGHT
             G.FUNCS['your_collection_' .. string.lower(self.key) .. 's'] = function(e)
                 G.SETTINGS.paused = true
                 G.FUNCS.overlay_menu {

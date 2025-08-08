@@ -275,3 +275,33 @@ payload = """if args.hide_label then
     t.nodes = t2
 end"""
 match_indent = true
+
+# UIBox_button():
+# the counters on collection buttons use text_colour instead of being hardcoded to white
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = "{n=G.UIT.T, config={scale = 0.35,text = args.count.tally..' / '..args.count.of, colour = {1,1,1,0.9}}}"
+position = "at"
+match_indent = true
+payload = "{n=G.UIT.T, config={scale = 0.35,text = args.count.tally..' / '..args.count.of, colour = args.text_colour}}"
+
+# G.UIDEF.card_h_popup():
+# add a "card_type_text_colour" variable
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = 'local card_type_colour = get_type_colour(card.config.center or card.config, card)'
+position = 'after'
+match_indent = true
+payload = 'local card_type_text_colour = (AUT.card_type and SMODS.ConsumableTypes[AUT.card_type] and SMODS.ConsumableTypes[AUT.card_type].text_colour) or G.C.UI.TEXT_LIGHT'
+
+# G.UIDEF.card_h_popup():
+# pass "card_type_text_colour" variable to create_badge() when creating the badge for a card type
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = "badges[#badges + 1] = create_badge(((card.ability.name == 'Pluto' or card.ability.name == 'Ceres' or card.ability.name == 'Eris') and localize('k_dwarf_planet')) or (card.ability.name == 'Planet X' and localize('k_planet_q') or card_type),card_type_colour, nil, 1.2)"
+position = 'at'
+match_indent = true
+payload = "badges[#badges + 1] = create_badge(((card.ability.name == 'Pluto' or card.ability.name == 'Ceres' or card.ability.name == 'Eris') and localize('k_dwarf_planet')) or (card.ability.name == 'Planet X' and localize('k_planet_q') or card_type), card_type_colour, card_type_text_colour, 1.2)"
