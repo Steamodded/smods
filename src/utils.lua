@@ -1423,14 +1423,13 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     end
 
     if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or 
-        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' then
+        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'ranks' then
         return { [key] = amount }
     end
     
     if key == 'debuff' then
         return { [key] = amount, debuff_source = scored_card }
     end
-
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1519,6 +1518,7 @@ SMODS.calculation_keys = {
     'message',
     'level_up', 'func', 'extra',
     'numerator', 'denominator',
+    'ranks',
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
 }
@@ -1530,6 +1530,7 @@ SMODS.silent_calculation = {
     cards_to_draw = true,
     func = true, extra = true,
     numerator = true, denominator = true,
+    ranks = true,
     no_destroy = true
 }
 
@@ -1751,10 +1752,13 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                         return_table[#return_table+1] = v
                     end
                 else
-                    local f = SMODS.trigger_effects(effects, _card)
+                    local f = SMODS.trigger_effects(effects, _card) or {}
                     for k,v in pairs(f) do flags[k] = v end
                     if flags.numerator then context.numerator = flags.numerator end
                     if flags.denominator then context.denominator = flags.denominator end
+                    if flags.ranks and not context.no_mod then context.ranks = flags.ranks
+                    elseif context.no_mod then flags.ranks = context.ranks end -- If the context has [no_mod] = true, reset flags.ranks to context.ranks, because [flags] gets returned
+                    if flags.no_mod then context.no_mod = flags.no_mod end
                 end
             end
         end
@@ -1787,6 +1791,9 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     SMODS.calculate_quantum_enhancements(card, effects, context)
                     local f = SMODS.trigger_effects(effects, card)
                     for k,v in pairs(f) do flags[k] = v end
+                    if flags.ranks and not context.no_mod then context.ranks = flags.ranks
+                    elseif context.no_mod then flags.ranks = context.ranks end -- If the context has [no_mod] = true, reset flags.ranks to context.ranks, because [flags] gets returned 
+                    if flags.no_mod then context.no_mod = flags.no_mod end
                 end
             end
             ::continue::
@@ -1822,6 +1829,9 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             else
                 local f = SMODS.trigger_effects(effects, area.scored_card)
                 for k,v in pairs(f) do flags[k] = v end
+                if flags.ranks and not context.no_mod then context.ranks = flags.ranks
+                elseif context.no_mod then flags.ranks = context.ranks end -- If the context has [no_mod] = true, reset flags.ranks to context.ranks, because [flags] gets returned 
+                if flags.no_mod then context.no_mod = flags.no_mod end
             end
         end
     end
@@ -2647,6 +2657,91 @@ function SMODS.is_eternal(card, trigger)
     end
     if card.ability.eternal then ret = true end
     if not card.config.center.eternal_compat and not ovr_compat then ret = false end
+    return ret
+end
+
+function SMODS.get_rank_from_id(id)
+    for _, rank in pairs(SMODS.Ranks) do
+        if rank.id == id then
+            return rank
+        end
+    end
+    return nil
+end
+
+function Card:is_rank(rank, bypass_debuff, source_context) -- Accepts SMODS.Rank, a rank key or a rank id
+    if not rank then return false end
+    
+    if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
+        if not self.vampired and SMODS.has_enhancement(self, "m_stone") then
+            return false
+        end
+        return SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank
+    end
+
+    for _, r in ipairs(self:get_ranks(source_context)) do
+        if r == rank or r.key == rank or r.id == rank then
+            return true
+        end
+    end
+    return false
+end
+
+function Card:is_any_rank(ranks, bypass_debuff, source_context)
+    if not ranks then return false end
+
+    if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
+        if not self.vampired and SMODS.has_enhancement(self, "m_stone") then
+            return false
+        end
+        for _, rank in pairs(ranks) do
+            if SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank then --Accepts SMODS.Rank or a rank key / id as input
+                return true
+            end
+        end
+        return false
+    end
+
+    local rank_dict = {}
+    for _, v in pairs(ranks) do
+        if v then
+            rank_dict[v] = true
+        end
+    end
+
+    if not next(rank_dict) then return false end
+
+    for _, r in ipairs(self:get_ranks(source_context)) do
+        if rank_dict[r] or rank_dict[r.key] or rank_dict[r.id] then
+            return true
+        end
+    end
+    return false
+end
+
+function Card:get_ranks(source_context) -- Returns a table of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
+    local default_ranks = (not self.vampired and SMODS.has_enhancement(self, "m_stone") and {}) or {SMODS.Ranks[self.base.value]}
+    if not SMODS.optional_features.quantum_ranks then return default_ranks end
+
+    local eval = SMODS.calculate_context({get_ranks = true, other_card = self, ranks = default_ranks, source_context = source_context or {}, no_mod = false}) or {}
+
+    if not eval.ranks then return default_ranks end
+
+    for i, r in ipairs(eval.ranks) do
+        if type(r) == "string" then
+            eval.ranks[i] = SMODS.Ranks[r]
+        elseif type(r) == "table" and r.key then
+            eval.ranks[i] = SMODS.Ranks[r.key]
+        elseif type(r) == "number" then
+            eval.ranks[i] = SMODS.get_rank_from_id(r)
+        end
+    end
+
+    local ret = {}
+    for _, v in pairs(eval.ranks) do
+        if v then ret[#ret+1] = v end
+    end
+
     return ret
 end
 

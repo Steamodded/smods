@@ -138,35 +138,6 @@ position = 'at'
 payload = "if flush_count >= four_fingers then"
 match_indent = true
 
-# get_X_same()
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-pattern = 'local vals = {{},{},{},{},{},{},{},{},{},{},{},{},{},{}}'
-position = 'at'
-match_indent = true
-payload = '''
-local vals = {}
-for i = 1, SMODS.Rank.max_id.value do
-    vals[i] = {}
-end'''
-
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-pattern = 'function get_X_same(num, hand)'
-position = 'at'
-match_indent = true
-payload = '''function get_X_same(num, hand, or_more)'''
-
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-pattern = 'if #curr == num then'
-position = 'at'
-match_indent = true
-payload = '''if or_more and (#curr >= num) or (#curr == num) then'''
-
 # Card:get_nominal()
 [[patches]]
 [patches.regex]
@@ -223,18 +194,6 @@ payload = '''
 local new_code = SMODS.Suits[new_suit].card_key
 local new_val = SMODS.Ranks[self.base.value].card_key
 local new_card = G.P_CARDS[new_code..'_'..new_val]'''
-
-# Card:is_face()
-[[patches]]
-[patches.regex]
-target = 'card.lua'
-pattern = "(?<indent>[\t ]*)if id == 11 or id == 12 or id == 13 or next\\(find_joker\\(\"Pareidolia\"\\)\\) then"
-position = 'at'
-line_prepend = '$indent'
-payload = '''
-local rank = SMODS.Ranks[self.base.value]
-if not id then return end
-if (id > 0 and rank and rank.face) or next(find_joker("Pareidolia")) then'''
 
 
 # tally_sprite()
