@@ -23,7 +23,8 @@
 ---@field get_obj? fun(self: SMODS.Consumable|table, key: string): SMODS.Consumable|table? Returns an object if one matches the `key`. 
 ---@field use? fun(self: SMODS.Consumable|table, card: Card|table, area: CardArea|table, copier?: table) Defines behaviour when this consumable is used. 
 ---@field can_use? fun(self: SMODS.Consumable|table, card: Card|table): boolean? Return `true` if the consumable is allowed to be used. 
----@field keep_on_use? fun(self: SMODS.Consumable|table, card: Card|table): boolean? Return `true` if the consumable should stay after use. 
+---@field keep_on_use? fun(self: SMODS.Consumable|table, card: Card|table): boolean? Return `true` if the consumable should stay after use.
+---@field calc_scaling? fun(self: SMODS.Consumable|table, card: Card|table, other_card: Card|table, scaling_value: number, scalar_value: number, args: table): table? Called by `SMODS.scale_card`. Allows detection and modification of cards when scaling values. The return may include a `scaling_value` or `scalar_value` field to modify those values or any standard calculation return.
 ---@overload fun(self: SMODS.Consumable): SMODS.Consumable
 SMODS.Consumable = setmetatable({}, {
     __call = function(self)
