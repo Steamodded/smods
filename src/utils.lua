@@ -2733,7 +2733,9 @@ function SMODS.quip(quip_type)
         end
         for _, mod in ipairs(SMODS.mod_list) do
             if mod.can_load and mod.quip_filter and type(mod.quip_filter) == "function" then
-                add, mod_pool_opts = mod.quip_filter(v, quip_type)
+                local mod_add
+                mod_add, mod_pool_opts = mod.quip_filter(v, quip_type)
+                add = add and mod_add
             end
         end
         if v.filter and type(v.filter) == 'function' then
