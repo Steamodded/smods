@@ -1,7 +1,7 @@
 ---@meta
 
 ---@class SMODS.JimboQuip: SMODS.GameObject
----@field type? 'win'|'loss' Whether it's a win or loss quip.
+---@field type? 'win'|'loss'|string Whether it's a win, loss or another type quip.
 ---@field loc_txt? string[] Text for the quip.
 ---@field extra? table|fun():table? Arguments for Card_Character.
 ---@field update? fun(self: SMODS.JimboQuip|table, dt: number) Allows finer per-frame control over the implementation.
