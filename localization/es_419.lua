@@ -134,6 +134,12 @@ return {
                     "{C:money}#1#{} si está en tu mano al final de la ronda",
                 },
             },
+            card_extra_repetitions = {
+                text = {
+                    "Reactiva esta",
+                    "carta {C:attention}#1#{} #2#",
+                },
+            },
             artist = {
                 text = {
                     "{C:inactive}Artista",
@@ -236,7 +242,9 @@ return {
             b_deckskins_lc = 'Colores de bajo contraste',
             b_deckskins_hc = 'Colores de alto contraste',
             b_deckskins_def = 'Colores por defecto',
-            b_limit = 'Hasta '
+            b_limit = 'Hasta ',
+            b_retrigger_single = 'vez',
+            b_retrigger_plural = 'veces'
         },
         v_dictionary = {
             c_types = '#1# Tipos',
