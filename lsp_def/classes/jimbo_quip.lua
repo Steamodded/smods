@@ -3,9 +3,6 @@
 ---@class SMODS.JimboQuip: SMODS.GameObject
 ---@field type? 'win'|'loss'|string Whether it's a win, loss or another type quip.
 ---@field loc_txt? string[] Text for the quip.
----@field extra? table|fun():table? Arguments for Card_Character.
----@field filter? fun(self: SMODS.JimboQuip|table, quip_type: string): boolean?, table? Allows configuring if the quip is allowed to appear. 
----@field update? fun(self: SMODS.JimboQuip|table, dt: number) Allows finer per-frame control over the implementation.
 ---@field __call? fun(self: SMODS.JimboQuip|table, o: SMODS.JimboQuip|table): nil|table|SMODS.JimboQuip
 ---@field extend? fun(self: SMODS.JimboQuip|table, o: SMODS.JimboQuip|table): table Primary method of creating a class.
 ---@field check_duplicate_register? fun(self: SMODS.JimboQuip|table): boolean? Ensures objects already registered will not register.
@@ -20,6 +17,8 @@
 ---@field inject? fun(self: SMODS.JimboQuip|table, i?: number) Called during `inject_class`. Injects the object into the game.
 ---@field take_ownership? fun(self: SMODS.JimboQuip|table, key: string, obj: SMODS.JimboQuip|table, silent?: boolean): nil|table|SMODS.JimboQuip Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.JimboQuip|table, key: string): SMODS.JimboQuip|table? Returns an object if one matches the `key`.
+---@field extra? table|fun():table? Arguments for Card_Character.
+---@field filter? fun(self: SMODS.JimboQuip|table, quip_type: string): boolean?, table? Allows configuring if the quip is allowed to appear. 
 ---@overload fun(self: SMODS.JimboQuip): SMODS.JimboQuip
 SMODS.JimboQuip = setmetatable({}, {
     __call = function(self)
