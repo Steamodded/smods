@@ -118,7 +118,7 @@ payload = '''
     SMODS.scale_card(self, {
         ref_table = self.ability,
         ref_value = "mult",
-        scalar_table = "extra",
+        scalar_table = self.ability.extra,
         scalar_value = "discard_sub",
         operation = "-"
     })
@@ -137,7 +137,7 @@ payload = '''
 SMODS.scale_card(self, {
     ref_table = self.ability,
     ref_value = "mult",
-    scalar_table = "extra",
+    scalar_table = self.ability.extra,
     scalar_value = "hand_add",
 })
 '''
