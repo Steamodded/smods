@@ -1668,6 +1668,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         class_prefix = 'bl',
         debuff = {},
         vars = {},
+        config = {},
         dollars = 5,
         mult = 2,
         atlas = 'blind_chips',
