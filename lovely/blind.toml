@@ -467,6 +467,16 @@ payload = '''end
 if self.name == 'Crimson Heart' and not self.disabled'''
 
 ### Add blind.ability
+# Blind.set_blind
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+match_indent = true
+pattern = "self.config.blind = blind or {}"
+position = "after"
+payload = '''
+self.ability = type(self.config.blind.config) == "table" and copy_table(self.config.blind.config) or {}
+'''
 # Blind.load
 [[patches]]
 [patches.pattern]
