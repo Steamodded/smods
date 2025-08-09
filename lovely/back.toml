@@ -191,3 +191,17 @@ if self.effect.config.jokers then
         }))
     end
 '''
+
+# Load deck when continuing the run
+# Game.start_run
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = "self.GAME.selected_back = Back(selected_back)"
+position = 'after'
+match_indent = true
+payload = '''
+if saveTable then
+    self.GAME.selected_back:load(saveTable.BACK)
+end
+'''
