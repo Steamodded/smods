@@ -997,6 +997,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.localization.descriptions[self.key] = G.localization.descriptions[self.key] or {}
             G.C.SET[self.key] = self.primary_colour
             G.C.SECONDARY_SET[self.key] = self.secondary_colour
+            G.C.UI[self.key] = self.text_colour or G.C.UI.TEXT_LIGHT
             G.FUNCS['your_collection_' .. string.lower(self.key) .. 's'] = function(e)
                 G.SETTINGS.paused = true
                 G.FUNCS.overlay_menu {
@@ -1120,6 +1121,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 vars =
                     specific_vars or {}
             }
+            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 res = self:loc_vars(info_queue, card) or {}
@@ -1347,7 +1349,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             SMODS.process_loc_text(G.localization.misc.dictionary, 'k_booster_group_'..self.key, self.loc_txt, 'group_name')
         end,
         loc_vars = function(self, info_queue, card)
-            return { vars = {card.ability.choose, card.ability.extra} }
+            return { vars = {math.min(card.ability.choose + (G.GAME.modifiers.booster_choice_mod or 0), math.max(1, card.ability.extra + (G.GAME.modifiers.booster_size_mod or 0))), math.max(1, card.ability.extra + (G.GAME.modifiers.booster_size_mod or 0))} }
         end,
         generate_ui = function(self, info_queue, card, desc_nodes, specific_vars, full_UI_table)
             if not card then
@@ -1360,6 +1362,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 AUT = full_UI_table,
                 vars = {}
             }
+            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 res = self:loc_vars(info_queue, card) or {}
@@ -1425,7 +1428,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             ease_background_colour{new_colour = G.C.FILTER, special_colour = G.C.BLACK, contrast = 2}
         end,
         create_UIBox = function(self)
-            local _size = SMODS.OPENED_BOOSTER.ability.extra
+            local _size = math.max(1, SMODS.OPENED_BOOSTER.ability.extra + (G.GAME.modifiers.booster_size_mod or 0))
             G.pack_cards = CardArea(
                 G.ROOM.T.x + 9 + G.hand.T.x, G.hand.T.y,
                 math.max(1,math.min(_size,5))*G.CARD_W*1.1,
@@ -1468,7 +1471,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     local pack_loc_vars = function(self, info_queue, card)
         local cfg = (card and card.ability) or self.config
         return {
-            vars = { cfg.choose, cfg.extra },
+            vars = { math.min(cfg.choose + (G.GAME.modifiers.booster_choice_mod or 0), math.max(1, cfg.extra + (G.GAME.modifiers.booster_size_mod or 0))), math.max(1, cfg.extra + (G.GAME.modifiers.booster_size_mod or 0)) },
             key = self.key:sub(1, -3),
         }
     end
@@ -1760,6 +1763,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 AUT = full_UI_table,
                 vars = specific_vars or {},
             }
+            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 res = self:loc_vars(info_queue, card) or {}
@@ -2595,6 +2599,50 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.JimboQuip
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.JimboQuips = {}
+    SMODS.JimboQuip = SMODS.GameObject:extend {
+        obj_table = SMODS.JimboQuips,
+        obj_buffer = {},
+        required_params = {
+            'key'
+        },
+        set = 'JimboQuip',
+        process_loc_text = function(self)
+            SMODS.process_loc_text(G.localization.misc.quips, self.key:lower(), self.loc_txt)
+        end,
+        register = function(self)
+            if self.registered then
+                sendWarnMessage(('Detected duplicate register call on JimboQuip %s'):format(self.key:lower()), self.set)
+                return
+            end
+            if self:check_dependencies() then
+                self.obj_buffer[#self.obj_buffer + 1] = self.key:lower()
+                self.obj_table[self.key:lower()] = self
+                self.registered = true
+            end
+        end,
+        inject = function(self)
+            self.extra = self.extra or {center = 'j_joker'}
+        end
+    }
+
+    for i=1,10 do
+        SMODS.JimboQuip{
+            key = "lq_"..tostring(i),
+            type = 'loss',
+        }
+    end
+    for i=1,7 do
+        SMODS.JimboQuip{
+            key = "wq_"..tostring(i),
+            type = 'win',
+        }
+    end
+
+    -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.PokerHand
     -------------------------------------------------------------------------------------------------
 
@@ -2832,6 +2880,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 AUT = full_UI_table,
                 vars = specific_vars
             }
+            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 -- card is actually a `Tag` here
@@ -2917,6 +2966,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         apply = function(self, card, val)
             card.ability[self.key] = val
+            if val and self.config and next(self.config) then
+                card.ability[self.key] = {}
+                for k, v in pairs(self.config) do
+                    if type(v) == 'table' then
+                        card.ability[self.key][k] = copy_table(v)
+                    else
+                        card.ability[self.key][k] = v
+                    end
+                end
+            end
         end
     }
 
@@ -3052,33 +3111,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     localize { type = 'other', key = 'card_extra_chips', nodes = desc_nodes, vars = { SMODS.signed(remaining_bonus_chips) } }
                 end
             end
-            if specific_vars and specific_vars.bonus_x_chips then
-                localize{type = 'other', key = 'card_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_x_chips}}
-            end
-            if specific_vars and specific_vars.bonus_mult then
-                localize{type = 'other', key = 'card_extra_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_mult)}}
-            end
-            if specific_vars and specific_vars.bonus_x_mult then
-                localize{type = 'other', key = 'card_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_x_mult}}
-            end
-            if specific_vars and specific_vars.bonus_h_chips then
-                localize{type = 'other', key = 'card_extra_h_chips', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_chips)}}
-            end
-            if specific_vars and specific_vars.bonus_x_chips then
-                localize{type = 'other', key = 'card_h_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_chips}}
-            end
-            if specific_vars and specific_vars.bonus_h_mult then
-                localize{type = 'other', key = 'card_extra_h_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_mult)}}
-            end
-            if specific_vars and specific_vars.bonus_h_x_mult then
-                localize{type = 'other', key = 'card_h_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_mult}}
-            end
-            if specific_vars and specific_vars.bonus_p_dollars then
-                localize{type = 'other', key = 'card_extra_p_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_p_dollars)}}
-            end
-            if specific_vars and specific_vars.bonus_h_dollars then
-                localize{type = 'other', key = 'card_extra_h_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_h_dollars)}}
-            end
+            SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
         end,
         -- other methods:
         -- calculate(self, context, effect)
