@@ -277,79 +277,16 @@ end"""
 match_indent = true
 
 # Fixing description error when info_queue has multi-box descriptions.
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-pattern = '''
-args.AUT.multi_box = {}
-'''
-position = "at"
-payload = '''
-if not args.is_info_queue then
-    args.AUT.multi_box = {} 
-end
-'''
-match_indent = true
 
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
 pattern = '''
-if _c.specific_vars then specific_vars = _c.specific_vars end
-'''
-position = "before"
-payload = '''
-local is_info_queue = false
-if specific_vars and specific_vars.is_info_queue then is_info_queue = true; specific_vars = nil end
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''
-for _, v in ipairs(info_queue) do
-  generate_card_ui(v, full_UI_table)
-end
+generate_card_ui(v, full_UI_table)
 '''
 position = "at"
 payload = '''
-for _, v in ipairs(info_queue) do
-  generate_card_ui(v, full_UI_table, {is_info_queue = true})
-end
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = '=[SMODS _ "src/game_object.lua"]'
-pattern = '''
-local target = {
-  type = 'descriptions',
-  key = self.key,
-  set = self.set,
-  nodes = desc_nodes,
-  AUT = full_UI_table,
-  vars = 
-      specific_vars or {}
-}
-'''
-position = "after"
-payload = '''
-if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
-'''
-match_indent = true
-
-# info_queue supporting stylized names.
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-pattern = '''
-scale =  (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*(part.control.s and tonumber(part.control.s) or args.scale  or 1)
-'''
-position = "at"
-payload = '''
-scale =  (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*(args.fixed_scale or 1)
+generate_card_ui(v, full_UI_table, {is_info_queue = true})
 '''
 match_indent = true
 
@@ -364,7 +301,6 @@ pop_in_rate = 4,
 maxw = 5,
 shadow = true,
 y_offset = -0.6,
-spacing = math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string))),
 '''
 position = "at"
 payload = '''
@@ -374,9 +310,7 @@ pop_in = (not args.no_pop_in and (args.pop_in or 0)) or nil,
 pop_in_rate = (not args.no_pop_in and (args.pop_in_rate or 4)) or nil,
 maxw = args.maxw or 5,
 shadow = not args.no_shadow,
-y_offset = args.y_offset or -0.6,
-spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
-'''
+y_offset = args.y_offset or -0.6,'''
 match_indent = true
 
 [[patches]]
@@ -390,52 +324,14 @@ payload = '''
 local set = name_override and "Other" or _c.set
 local key = name_override or _c.key
 if set == "Seal" then
-  if G.localization.descriptions["Other"][_c.key.."_seal"] then set = "Other"; key = key.."_seal" end
+	if G.localization.descriptions["Other"][_c.key.."_seal"] then set = "Other"; key = key.."_seal" end
 else
-  if not G.localization.descriptions[set][_c.key] then set = "Other" end
+	if not G.localization.descriptions[set][_c.key] then set = "Other" end
 end
 desc_nodes.loc_name = {}
 localize{type = 'name', key = key, set = set, nodes = desc_nodes.loc_name, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars(info_queue, _c:create_fake_card()) or {}).vars) or {colours = {}}} 
-desc_nodes.loc_name = info_queue_desc_from_rows(desc_nodes.loc_name, true)
+desc_nodes.loc_name = SMODS.info_queue_desc_from_rows(desc_nodes.loc_name, true)
 desc_nodes.loc_name.config.align = "cm"
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''
-_c:generate_ui(info_queue, card, desc_nodes, specific_vars, full_UI_table)
-'''
-position = "before"
-payload = '''
-local specific_vars = specific_vars or {}
-if is_info_queue then specific_vars.is_info_queue = true end
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''
-_c:generate_ui(info_queue, card, desc_nodes, specific_vars, full_UI_table)
-'''
-position = "after"
-payload = '''
-if is_info_queue then
-  desc_nodes.loc_name = {}
-  local set = name_override and "Other" or _c.set
-  local key = name_override or _c.key
-  if set == "Seal" then
-    if G.localization.descriptions["Other"][_c.key.."_seal"] then set = "Other"; key = key.."_seal" end
-  else
-    if not G.localization.descriptions[set] or not G.localization.descriptions[set][_c.key] then set = "Other" end
-  end
-
-  localize{type = 'name', key = key, set = set, nodes = desc_nodes.loc_name, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars(info_queue, _c:create_fake_card()) or {}).vars) or {colours = {}}} 
-  desc_nodes.loc_name = info_queue_desc_from_rows(desc_nodes.loc_name, true)
-  desc_nodes.loc_name.config.align = "cm"
-end
 '''
 match_indent = true
 
@@ -463,26 +359,6 @@ payload = '''
   else
     name_nodes = {desc_nodes.loc_name}
   end
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = 'functions/UI_definitions.lua'
-pattern = '''
-function desc_from_rows(desc_nodes, empty, maxw)
-'''
-position = "before"
-payload = '''
-function info_queue_desc_from_rows(desc_nodes, empty, maxw)
-  local t = {}
-  for k, v in ipairs(desc_nodes) do
-    t[#t+1] = {n=G.UIT.R, config={align = "cm", maxw = maxw}, nodes=v}
-  end
-  return {n=G.UIT.R, config={align = "cm", colour = desc_nodes.background_colour or empty and G.C.CLEAR or G.C.UI.BACKGROUND_WHITE, r = 0.1, emboss = not empty and 0.05 or nil, filler = true, main_box_flag = desc_nodes.main_box_flag and true or nil}, nodes={
-    {n=G.UIT.R, config={align = "cm"}, nodes=t}
-  }}
-end
 '''
 match_indent = true
 

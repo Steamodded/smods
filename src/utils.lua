@@ -2385,21 +2385,24 @@ function SMODS.localize_box(lines, args)
             end
             final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = part.control.B and args.vars.colours[tonumber(part.control.B)] or part.control.X and loc_colour(part.control.X) or nil, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
             final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
-            object = DynaText({string = {assembled_string}, colours = {part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil)},
-                float = _float,
-                silent = _silent,
-                pop_in = _pop_in,
-                bump = _bump,
-                spacing = _spacing,
-                font = SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
-                scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale})
-            }}
+                underline = part.control.u and loc_colour(part.control.u),
+                object = DynaText({string = {assembled_string}, colours = {part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil)},
+                    float = _float,
+                    silent = _silent,
+                    pop_in = _pop_in,
+                    bump = _bump,
+                    spacing = _spacing,
+                    font = SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
+                    scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale})
+                }
+            }
         elseif part.control.X or part.control.B then
             final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = part.control.B and args.vars.colours[tonumber(part.control.B)] or loc_colour(part.control.X), r = 0.05, padding = 0.03, res = 0.15}, nodes={
                 {n=G.UIT.T, config={
                 text = assembled_string,
                 colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil),
                 font = SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
+                underline = part.control.u and loc_colour(part.control.u),
                 scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale}},
             }}
         else
@@ -2409,6 +2412,7 @@ function SMODS.localize_box(lines, args)
             shadow = args.shadow,
             colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or not part.control.C and args.text_colour or loc_colour(part.control.C or nil, args.default_col),
             font = SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
+            underline = part.control.u and loc_colour(part.control.u),
             scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale},}
         end
     end
@@ -2425,6 +2429,16 @@ function SMODS.get_multi_boxes(multi_box)
         end
     end
     return multi_boxes
+end
+
+function SMODS.info_queue_desc_from_rows(desc_nodes, empty, maxw)
+  local t = {}
+  for k, v in ipairs(desc_nodes) do
+    t[#t+1] = {n=G.UIT.R, config={align = "cm", maxw = maxw}, nodes=v}
+  end
+  return {n=G.UIT.R, config={align = "cm", colour = desc_nodes.background_colour or empty and G.C.CLEAR or G.C.UI.BACKGROUND_WHITE, r = 0.1, emboss = not empty and 0.05 or nil, filler = true, main_box_flag = desc_nodes.main_box_flag and true or nil}, nodes={
+    {n=G.UIT.R, config={align = "cm"}, nodes=t}
+  }}
 end
 
 function SMODS.destroy_cards(cards, bypass_eternal, immediate)

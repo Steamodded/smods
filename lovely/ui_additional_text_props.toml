@@ -110,15 +110,16 @@ spacing = math.max(0, 0.32*(17 - #assembled_string)),
 position = 'at'
 match_indent = true
 payload = '''
-spacing = math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string))),
+spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
 '''
 
 [[patches]]
-[patches.regex]
+[patches.pattern]
 target = 'functions/misc_functions.lua'
 position = 'at'
-pattern = '0\.004\*#assembled_string'
-payload = '0.004*#(final_name_assembled_string or assembled_string)'
+match_indent = true
+pattern = 'scale =  (0.55 - 0.004*#assembled_string)*(part.control.s and tonumber(part.control.s) or 1)'
+payload = 'scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*(part.control.s and tonumber(part.control.s) or 1)*(args.fixed_scale or 1)'
 
 # Add support for multi line name
 [[patches]]
@@ -313,4 +314,48 @@ v:update(dt*self.SPEEDFACTOR)
 '''
 payload = '''
 v:update(dt*self.SPEEDFACTOR, self.real_dt)
+'''
+
+
+# Add underline property for text
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+--Draw the 'chosen triangle'
+'''
+payload = '''
+if self.config.underline and self.config.underline[4] > 0.01 then 
+    prep_draw(self, 1)
+    love.graphics.scale(1/(G.TILESIZE))
+    love.graphics.setLineWidth(1)
+    love.graphics.setColor(self.config.underline)
+    self:draw_pixellated_under('line', parallax_dist)
+    love.graphics.pop()
+end
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
+'''
+payload = '''
+underline = part.control.u and loc_colour(part.control.u),
+'''
+# DynaText compat
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
+'''
+payload = '''
+underline = part.control.u and loc_colour(part.control.u),
 '''
