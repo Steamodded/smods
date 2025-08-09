@@ -465,3 +465,25 @@ position = 'at'
 line_prepend = '$indent'
 payload = '''end
 if self.name == 'Crimson Heart' and not self.disabled'''
+
+### Add blind.ability
+# Blind.load
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+match_indent = true
+pattern = "function Blind:load(blindTable)"
+position = "after"
+payload = '''
+self.ability = blindTable.ability
+'''
+# Blind.save
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+match_indent = true
+pattern = "local blindTable = {"
+position = "after"
+payload = '''
+ability = self.ability,
+'''
