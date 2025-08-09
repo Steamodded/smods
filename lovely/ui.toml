@@ -101,7 +101,7 @@ target = 'engine/controller.lua'
 pattern = "function Controller:key_press_update(key, dt)"
 position = "after"
 payload = '''
-    if key == "escape" and G.ACTIVE_MOD_UI then
+    if key == "escape" and (G.ACTIVE_MOD_UI or SMODS.IN_MODS_TAB) then
         G.FUNCS.exit_mods()
     end
 '''
