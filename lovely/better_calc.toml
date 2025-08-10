@@ -1851,3 +1851,16 @@ G.GAME.tag_tally = math.max(self.tally, G.GAME.tag_tally) + 1
 payload = '''
 self.from_load = true
 '''
+
+# Fix Campfire 'upgrading' when it is sold
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if self.ability.name == 'Campfire' and not context.blueprint then
+'''
+payload = '''
+if self.ability.name == 'Campfire' and not context.blueprint and self ~= context.card then
+'''

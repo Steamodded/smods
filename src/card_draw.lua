@@ -192,13 +192,13 @@ SMODS.DrawStep {
     func = function(self, layer)
         --Draw the main part of the card
         if (self.edition and self.edition.negative and not self.delay_edition) or (self.ability.name == 'Antimatter' and (self.config.center.discovered or self.bypass_discovery_center)) then
-            if self.children.front and (self.ability.delayed or (self.ability.effect ~= 'Stone Card' and not self.config.center.replace_base_card)) then
+            if self.children.front and (self.ability.delayed or not self:should_hide_front()) then
                 self.children.front:draw_shader('negative', nil, self.ARGS.send_to_shader)
             end
         elseif not self:should_draw_base_shader() then
             -- Don't render base dissolve shader.
         elseif not self.greyed then
-            if self.children.front and (self.ability.delayed or (self.ability.effect ~= 'Stone Card' and not self.config.center.replace_base_card)) then
+            if self.children.front and (self.ability.delayed or not self:should_hide_front()) then
                 self.children.front:draw_shader('dissolve')
             end
         end
@@ -248,7 +248,7 @@ SMODS.DrawStep {
                         v:draw(self, layer)
                     else
                         self.children.center:draw_shader(v.shader, nil, self.ARGS.send_to_shader)
-                        if self.children.front and self.ability.effect ~= 'Stone Card' and not self.config.center.replace_base_card then
+                        if self.children.front and not self:should_hide_front() then
                             self.children.front:draw_shader(v.shader, nil, self.ARGS.send_to_shader)
                         end
                     end
@@ -360,7 +360,7 @@ SMODS.DrawStep {
     func = function(self)
         if self.debuff then
             self.children.center:draw_shader('debuff', nil, self.ARGS.send_to_shader)
-            if self.children.front and (self.ability.delayed or (self.ability.effect ~= 'Stone Card' and not self.config.center.replace_base_card)) then
+            if self.children.front and (self.ability.delayed or not self:should_hide_front()) then
                 self.children.front:draw_shader('debuff', nil, self.ARGS.send_to_shader)
             end
         end
@@ -374,7 +374,7 @@ SMODS.DrawStep {
     func = function(self)
         if self.greyed then
             self.children.center:draw_shader('played', nil, self.ARGS.send_to_shader)
-            if self.children.front and (self.ability.delayed or (self.ability.effect ~= 'Stone Card' and not self.config.center.replace_base_card)) then
+            if self.children.front and (self.ability.delayed or not self:should_hide_front()) then
                 self.children.front:draw_shader('played', nil, self.ARGS.send_to_shader)
             end
         end

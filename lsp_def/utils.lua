@@ -73,7 +73,7 @@
 ---@field from_area? CardArea|table CardArea the card is being drawn from. 
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand. 
 ---@field drawing_cards? true `true` when cards are being drawn
----@field amount? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
+---@field amount? number Used for in some contexts to specify a numerical amount. 
 ---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
 ---@field display_name? PokerHands|'Royal Flush'|string Display name of the scoring poker hand.
 ---@field mod_probability? true Check if `true` for effects that make additive or multiplicative modifications to probabilities.
@@ -104,6 +104,10 @@
 ---@field eval_getting_ranks? table Passed as [source_context] param by hand type evaluation when calling get_ranks(). (Allows quantum ranks exclusively during / outside hand type evaluation)
 ---@field is_face_getting_ranks? table Passed as [source_context] param by Card:is_face() when calling get_ranks(). (Allows quantum ranks exclusively during / outside is_face() evaluation)
 ---@field no_mod? true Check if `true` to decide whether an effect should modify context.get_ranks' ranks field. (If you want to override and block other effects, return `no_mod=true` alongside ranks=[only your ranks])
+---@field money_altered? true Check if `true` for effects when the amount of money the player has changes.
+---@field from_shop? true Check if `true` if money changed during the shop.
+---@field from_consumeable? true Check if `true` if money changed by a consumable.
+---@field from_scoring? true Check if `true` if money changed during scoring.
 
 --- Util Functions
 
@@ -673,7 +677,7 @@ function SMODS.is_eternal(card, trigger) end
 function SMODS.get_rank_from_id(id) end
 
 ---@param card Card|table
----@param args? table
+---@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: string?}
 ---@return table? results
 --- Tells Jokers that this card is scaling allowing for scaling detection
 --- Can return scaling_value and scalar_value in results to change the scaling cards values
