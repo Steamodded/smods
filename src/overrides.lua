@@ -2292,8 +2292,8 @@ function Card:set_edition(edition, immediate, silent, delay)
 							G.hand.config.real_card_limit = G.hand.config.real_card_limit + self.edition.card_limit
 						end
 						G.hand.config.card_limit = G.hand.config.card_limit + self.edition.card_limit
-						if not is_in_pack and G.GAME.blind.in_blind then
-							G.FUNCS.draw_from_deck_to_hand(self.edition.card_limit)
+						if not is_in_pack and G.GAME.blind.in_blind and G.hand.config.card_limit > #G.hand.cards then
+							G.FUNCS.draw_from_deck_to_hand(math.min(self.edition.card_limit, G.hand.config.card_limit - #G.hand.cards))
 						end
 						return true
 					end
@@ -2789,6 +2789,7 @@ function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips, scoring_h
 end
 
 local card_set_base = Card.set_base
+
 function Card:set_base(card, initial)
 	if self.playing_card and self.base then
 		local new_rank = card and card.value and SMODS.Ranks[card.value] and SMODS.Ranks[card.value].id
@@ -2816,6 +2817,26 @@ function Card:set_base(card, initial)
 	end
 
 	card_set_base(self, card, initial)
+
+function Card:set_base(card, initial, manual_sprites)
+    if self.playing_card and self.base then
+        local new_rank = card and card.value and SMODS.Ranks[card.value] and SMODS.Ranks[card.value].id
+        local contexts = {}
+        if new_rank then
+            if self.base.id and self.base.id ~= new_rank then
+                SMODS.merge_defaults(contexts, {change_rank = true, other_card = self, new_rank = new_rank, old_rank = self.base.id, rank_increase = ((self.base.id < new_rank) and true) or false})
+            end
+        end
+        if card and card.suit and self.base.suit ~= card.suit then 
+            SMODS.merge_defaults(contexts, {change_suit = true, other_card = self, new_suit = card.suit, old_suit = self.base.suit})
+        end
+        if next(contexts) then
+            SMODS.calculate_context(contexts)
+        end
+    end
+
+    card_set_base(self, card, initial, manual_sprites)
+
 end
 
 local use_consumeable = Card.use_consumeable
