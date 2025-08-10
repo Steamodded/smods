@@ -1846,10 +1846,17 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
     return flags
 end
 
+-- The context stack list, allows some advanced effects, like:
+-- Individual playing cards modifying probabilities checked during individual scoring, only when they're the context.other_card 
+-- (-> By checking the context in the stack PRIOR to the mod_probability context for the .individual / .other_card flags)
+SMODS.context_stack = {}
+
 -- Used to calculate contexts across G.jokers, scoring_hand (if present), G.play and G.GAME.selected_back
 -- Hook this function to add different areas to MOST calculations
 function SMODS.calculate_context(context, return_table, no_resolve)
     if G.STAGE ~= G.STAGES.RUN then return end
+
+    SMODS.context_stack[#SMODS.context_stack+1] = context
 
     local has_area = context.cardarea and true or nil
     if no_resolve then SMODS.no_resolve = true end
@@ -1864,6 +1871,8 @@ function SMODS.calculate_context(context, return_table, no_resolve)
     context.main_eval = nil
     
     if SMODS.no_resolve then SMODS.no_resolve = nil end
+    
+    table.remove(SMODS.context_stack, #SMODS.context_stack)
     
     if not return_table then
         local ret = {}
