@@ -573,13 +573,12 @@ function get_straight(hand, min_length, skip, wrap)
 				end
 			end
 		end
-		local function next_ranks(key, start)
+		local function next_ranks(key)
 			local rank = SMODS.Ranks[key]
 			local ret = {}
-			if not start and not wrap and next(rank.straight_edges) then return ret end
 			for _,v in ipairs(rank.next) do
 				ret[#ret+1] = v
-				if skip and (wrap or not next(SMODS.Ranks[v].straight_edges)) then
+				if skip and (wrap or not next(SMODS.Ranks[v].straight_edges) or not SMODS.Ranks[v].straight_edges[key]) then
 					for _,w in ipairs(SMODS.Ranks[v].next) do
 						ret[#ret+1] = w
 					end
@@ -599,13 +598,15 @@ function get_straight(hand, min_length, skip, wrap)
 			for _, tuple in ipairs(tuples) do
 				local any_tuple
 				if i ~= #hand+1 then
-					for _,l in ipairs(next_ranks(tuple[i-1], i == 2)) do
-						if next(ranks[l]) then
-							local new_tuple = {}
-							for _,v in ipairs(tuple) do new_tuple[#new_tuple+1] = v end
-							new_tuple[#new_tuple+1] = l
-							new_tuples[#new_tuples+1] = new_tuple
-							any_tuple = true
+					if (i == 2 or wrap or not next(SMODS.Ranks[tuple[i-1]].straight_edges) or not SMODS.Ranks[tuple[i-1]].straight_edges[tuple[i-2]]) then
+						for _,l in ipairs(next_ranks(tuple[i-1])) do
+							if next(ranks[l]) then
+								local new_tuple = {}
+								for _,v in ipairs(tuple) do new_tuple[#new_tuple+1] = v end
+								new_tuple[#new_tuple+1] = l
+								new_tuples[#new_tuples+1] = new_tuple
+								any_tuple = true
+							end
 						end
 					end
 				end
