@@ -2869,3 +2869,34 @@ function ease_dollars(mod, instant)
         from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
     })
 end
+
+function SMODS.get_interest()
+    local add_interest_cap = 0
+    local add_per_interest = 0
+    for _, area in ipairs(SMODS.get_card_areas('jokers')) do
+        for _, _card in ipairs(area.cards) do
+            local ret = _card:calculate_interest()
+    
+            -- TARGET: calc_interest per card
+            if ret then
+                if ret then
+                    if ret.add_cap then
+                        add_interest_cap = add_interest_cap + ret.add_cap
+                    end
+                    if ret.add_per_interest then
+                        add_per_interest = add_per_interest + ret.add_per_interest
+                    end
+                end
+            end
+        end
+    end
+    return {interest_cap = add_interest_cap + (G.GAME.extra_interest_cap or 0) + G.GAME.interest_cap/5, per_interest = add_per_interest + (G.GAME.extra_per_interest or 0) + 5}
+end
+
+function Card:calculate_interest()
+    if not self:can_calculate() then return end
+    local obj = self.config.center
+    if obj.calc_interest and type(obj.calc_interest) == 'function' then
+        return obj:calc_interest(self)
+    end
+end
