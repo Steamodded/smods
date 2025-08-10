@@ -634,4 +634,4 @@ function SMODS.is_eternal(card, trigger) end
 ---@return boolean?, table?
 --- Checks whether an object is in the pool.
 --- i.e. the in_pool method doesn't exist or it returns `true`
-function SMODS.is_in_pool(prototype_obj, args) end
+function SMODS.add_to_pool(prototype_obj, args) end
