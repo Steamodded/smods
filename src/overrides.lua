@@ -576,10 +576,10 @@ function get_straight(hand, min_length, skip, wrap)
 		local function next_ranks(key, start)
 			local rank = SMODS.Ranks[key]
 			local ret = {}
-			if not start and not wrap and rank.straight_edge then return ret end
+			if not start and not wrap and next(rank.straight_edges) then return ret end
 			for _,v in ipairs(rank.next) do
 				ret[#ret+1] = v
-				if skip and (wrap or not SMODS.Ranks[v].straight_edge) then
+				if skip and (wrap or not next(SMODS.Ranks[v].straight_edges)) then
 					for _,w in ipairs(SMODS.Ranks[v].next) do
 						ret[#ret+1] = w
 					end
@@ -660,13 +660,15 @@ function get_straight(hand, min_length, skip, wrap)
 		-- Recursive function to get all .nexts/.prevs of a rank and its .next/.prev ranks down to a [depth] (which should be the shortcut level), merged into one table
 		-- [depth] = 0 is base, 1 is shortcut
 		local get_next_ranks
-		get_next_ranks = function (rank, depth, do_wrap, previous)
+		get_next_ranks = function (rank, depth, do_wrap, direction, previous_rank)
+			direction = direction or "next"
+			previous_rank = previous_rank or {}
 			local rec_ret = {}
-			if rank.straight_edge and not do_wrap then return {} end -- If it's an ace (or custom straight_edge rank), return an empty table. -> This causes an edge case that is later taken care of
-			for _, r in ipairs(rank[previous and "prev" or "next"]) do
+			if rank.straight_edges[previous_rank.key] and not do_wrap then return {} end -- If the [previous_rank] is in the [rank]'s straight_edges table, return an empty table. -> This causes an edge case that is later taken care of
+			for _, r in ipairs(rank[direction]) do
 				rec_ret[#rec_ret+1] = SMODS.Ranks[r]
 				if depth > 0 then
-					for _, v in ipairs(get_next_ranks(SMODS.Ranks[r], depth - 1, do_wrap, previous)) do
+					for _, v in ipairs(get_next_ranks(SMODS.Ranks[r], depth - 1, do_wrap, direction, rank)) do
 						rec_ret[#rec_ret+1] = v
 					end
 				end
@@ -679,11 +681,11 @@ function get_straight(hand, min_length, skip, wrap)
 		-- When called with [direction] = nil, the function first sets the [current_straight] to the best straight from a [direction] = "prev_base" call to itself
 		-- and then uses that as a base recursively with [direction] = "next_base"
 		local recursive_get_straight
-		recursive_get_straight = function (rank, current_straight, max_skips, do_wrap, direction, used_c_reps)
+		recursive_get_straight = function (rank, current_straight, max_skips, do_wrap, direction, used_c_reps, previous_rank)
 			if direction == nil then
 				direction = "next_base"
 				current_straight = recursive_get_straight(rank, current_straight, max_skips, do_wrap, "prev_base", used_c_reps) -- Get best descending straight
-				if rank.straight_edge then -- If starting c_rep is a straight_edge, return and manually re-call the function with [current_straight] reset and [direction] = "next_base"
+				if next(rank.straight_edges) then -- If starting c_rep has straight_edges defined, return and manually re-call the function with [current_straight] reset and [direction] = "next_base"
 					return current_straight
 				end
 			end
@@ -697,9 +699,9 @@ function get_straight(hand, min_length, skip, wrap)
 
 			local rank_nexts
 			if direction == "prev" or direction == "prev_base" then
-				rank_nexts = get_next_ranks(rank, max_skips, do_wrap or direction == "prev_base", true)
+				rank_nexts = get_next_ranks(rank, max_skips, do_wrap or direction == "prev_base", "prev", previous_rank)
 			elseif direction == "next" or direction == "next_base" then
-				rank_nexts = get_next_ranks(rank, max_skips, do_wrap or direction == "next_base", false)
+				rank_nexts = get_next_ranks(rank, max_skips, do_wrap or direction == "next_base", "next", previous_rank)
 			else
 				return {}
 			end
@@ -709,7 +711,7 @@ function get_straight(hand, min_length, skip, wrap)
 			if direction == "prev_base" or direction == "next_base" then -- These are required to avoid including the starting card_rep again / to avoid looping over the starting rank's card_reps, because the evaluation loop below does that already
 				direction = (direction == "prev_base" and "prev" or direction == "next_base" and "next") -- Strip the "_base" from the direction to continue in the 'else' part of the if statement (once the function calls itself)
 				for _, n_rank in pairs(rank_nexts) do
-					local rec_ret_straight = recursive_get_straight(n_rank, best_straight, max_skips, do_wrap, direction, used_c_reps)
+					local rec_ret_straight = recursive_get_straight(n_rank, best_straight, max_skips, do_wrap, direction, used_c_reps, rank)
 					if #rec_ret_straight > #ret_straight then
 						ret_straight = rec_ret_straight
 						--if #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
@@ -722,7 +724,7 @@ function get_straight(hand, min_length, skip, wrap)
 						best_straight[#best_straight+1] = c_rep
 						if #best_straight > #ret_straight then ret_straight = best_straight end
 						for _, n_rank in pairs(rank_nexts) do
-							local rec_ret_straight = recursive_get_straight(n_rank, best_straight, max_skips, do_wrap, direction, used_c_reps)
+							local rec_ret_straight = recursive_get_straight(n_rank, best_straight, max_skips, do_wrap, direction, used_c_reps, rank)
 							if #rec_ret_straight > #ret_straight then
 								ret_straight = rec_ret_straight
 							end
@@ -757,7 +759,7 @@ function get_straight(hand, min_length, skip, wrap)
 				for _, rank in ipairs(c_rep.ranks) do
 					local ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, nil, used_c_reps)
 
-					if rank.straight_edge then 	-- Handle the (straight)edge case where the starting c_rep is a straight_edge
+					if next(rank.straight_edges) then 	-- Handle the (straight)edge case where the starting c_rep has straight_edges defined
 						for k, _ in ipairs(used_c_reps) do used_c_reps[k] = k ~= c_rep end -- Make sure all of the other c_reps used during the .prev evaluation are free to be used again during the .next evaluation
 						local next_ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, "next_base", used_c_reps)
 						ret_straight = #next_ret_straight > #ret_straight and next_ret_straight or ret_straight

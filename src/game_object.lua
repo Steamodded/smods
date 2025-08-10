@@ -1962,7 +1962,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         },
         next = {},
         prev = nil,
-        straight_edge = false,
+        straight_edges = {},
         -- TODO we need a better system for what this is doing.
         -- We should allow setting a playing card's atlas and position to any values,
         -- and we should also ensure that it's easy to create an atlas with a standard
@@ -2090,7 +2090,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         nominal = 11,
         face_nominal = 0.4,
         shorthand = 'A',
-        straight_edge = true,
+        straight_edges = {['King'] = true, ['2'] = true},
         next = { '2' },
     }
     -- make consumable effects compatible with added suits
