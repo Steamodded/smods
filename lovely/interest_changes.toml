@@ -13,7 +13,7 @@ payload = '(G.GAME.interest_cap/(5 + (G.GAME.add_per_interest or 0)) + (G.GAME.a
 [[patches]]
 [patches.regex]
 target = 'functions/common_events.lua'
-pattern = 'G\.GAME\.interest_cap/5'
+pattern = 'vars = \{G\.GAME\.interest_amount, 5'
 position = 'at'
 payload = 'vars = {G.GAME.interest_amount, (5 + (G.GAME.add_per_interest or 0))'
 
