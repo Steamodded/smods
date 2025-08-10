@@ -8,8 +8,9 @@
 ---@field cardarea? CardArea|"unscored" The CardArea currently being checked. 
 ---@field full_hand? Card[]|table[] All played or selected cards. 
 ---@field scoring_hand? Card[]|table[] All scoring cards in played hand. 
----@field scoring_name? string Key to the scoring poker hand. 
----@field poker_hands? table<string, Card[]|table[]> All poker hand parts the played hand can form. 
+---@field scoring_name? PokerHands|string Key to the scoring poker hand. 
+---@field poker_hands? table<PokerHands|string, Card[]|table[]> All poker hand parts the played hand can form. 
+---@field main_eval? true `true` when no secondary card is evaluated.
 ---@field other_card? Card|table The individual card being checked during scoring. 
 ---@field other_joker? Card|table The individual Joker being checked during scoring. 
 ---@field card_effects? table Table of effects that have been calculated. 
@@ -17,6 +18,7 @@
 ---@field destroying_card? Card|table The individual card being checked for destruction. Only present when calculating G.play. 
 ---@field removed? Card[]|table[] Table of destroyed playing cards. 
 ---@field game_over? boolean Whether the run is lost or not. 
+---@field beat_boss? boolean Whether a boss was defeated.
 ---@field blind? Blind|table Current blind being selected. 
 ---@field hook? boolean `true` when "The Hook" discards cards. 
 ---@field card? Card|table The individual card being checked outside of scoring. 
@@ -52,7 +54,8 @@
 ---@field hand_drawn? true Check if `true` for effects after drawing a hand. 
 ---@field using_consumeable? true Check if `true` for effects after using a Consumable. 
 ---@field skip_blind? true Check if `true` for effects after skipping a blind. 
----@field playing_card_added? true Check if `true` for effects after a playing card was added into the deck. 
+---@field playing_card_added? true Check if `true` for effects after a playing card was added into the deck.
+---@field card_added? true Check if `true` for effects after a non-playing card was added into the deck.
 ---@field check_enhancement? true Check if `true` for applying quantum enhancements. 
 ---@field post_trigger? true Check if `true` for effects after another Joker is triggered. 
 ---@field modify_scoring_hand? true Check if `true` for modifying the scoring hand. 
@@ -70,9 +73,37 @@
 ---@field from_area? CardArea|table CardArea the card is being drawn from. 
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand. 
 ---@field drawing_cards? true `true` when cards are being drawn
----@field amount? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
+---@field amount? number Used for in some contexts to specify a numerical amount. 
 ---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
----@field display_name? integer Display name of the scoring poker hand
+---@field display_name? PokerHands|'Royal Flush'|string Display name of the scoring poker hand.
+---@field mod_probability? true Check if `true` for effects that make additive or multiplicative modifications to probabilities.
+---@field fix_probability? true Check if `true` for effects that set probabilities.
+---@field pseudorandom_result? true Check if `true` for effects when a probability is rolled.
+---@field numerator? number Current numerator for probabilty.
+---@field denominator? number Current denominator for probabilty.
+---@field trigger_obj? table Current object for probability. Not guaranteed to be a Card object.
+---@field identifier? string Identifies the source of the probability roll.
+---@field from_roll? true `true` when a roll is made (as opposed to getting the values to display).
+---@field result? boolean Result of the probability roll.
+---@field initial_scoring_step? true Check if `true` for scoring effects before cards are scored.
+---@field joker_type_destroyed? true Check if `true` for effects when a non-playing card is destroyed.
+---@field check_eternal? true Check if `true` for applying the eternal effect without the sticker being applied.
+---@field trigger? table Source for the check. Not guaranteed to be a Card object.
+---@field tag_added? Tag|table Check for effects when a Tag is added.
+---@field tag_triggered? Tag|table Check for effects when a Tag is triggered.
+---@field prevent_tag_trigger? Tag|table Check to prevent a Tag for being triggered.
+---@field change_rank? true Check for effects when a card's rank changes.
+---@field change_suit? true Check for effects when a card's suit changes.
+---@field new_rank? number ID of the new rank the card changed to.
+---@field old_rank? number ID of the old rank the card changed from.
+---@field rank_increase? boolean `true` if rank increased.
+---@field new_suit? Suits|string New suit the card changed to.
+---@field old_suit? Suits|string Old suit the card changed from.
+---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
+---@field money_altered? true Check if `true` for effects when the amount of money the player has changes.
+---@field from_shop? true Check if `true` if money changed during the shop.
+---@field from_consumeable? true Check if `true` if money changed by a consumable.
+---@field from_scoring? true Check if `true` if money changed during scoring.
 
 --- Util Functions
 
@@ -105,7 +136,12 @@ function SMODS.get_optional_features() end
 --- Hook this function to add different areas to MOST calculations
 function SMODS.calculate_context(context, return_table) end
 
----@param _type string Type of CardAreas to check
+---@alias CardAreaTypes
+---| 'joker'
+---| 'playing_cards'
+---| 'individual'
+
+---@param _type CardAreaTypes|string Type of CardAreas to check
 ---@param context CalcContext
 ---@param return_table? table
 ---@param args? table
@@ -194,15 +230,15 @@ SMODS.displayed_hand = nil
 --- True if scoring is ongoing (chips/mult/etc. are being displayed on the left)
 SMODS.displaying_scoring = nil
 
----@param card? Card
----@param hand string
+---@param card? Card|table
+---@param hand PokerHands|string
 ---@param instant boolean
 ---@param amount? number
 -- Like level_up_hand(), but takes care of calling update_hand_text().
 -- Tries to avoid calling update_hand_text() if unnecessary.
 function SMODS.smart_level_up_hand(card, hand, instant, amount) end
 
----@param _type string
+---@param _type CardAreaTypes|string
 ---@param _context string
 ---@return CardArea[]|table[]
 --- Returns table of CardAreas. 
@@ -210,12 +246,12 @@ function SMODS.get_card_areas(_type, _context) end
 
 ---@param card Card|table
 ---@param extra_only? boolean Return table will not have the card's actual enhancement. 
----@return table<string, true> enhancements
+---@return table<Enhancements|string, true> enhancements
 --- Returns table of enhancements the provided `card` has. 
 function SMODS.get_enhancements(card, extra_only) end
 
 ---@param card Card|table
----@param key string
+---@param key Enhancements|string
 ---@return boolean 
 --- Checks if this card a specific enhancement. 
 function SMODS.has_enhancement(card, key) end
@@ -319,8 +355,8 @@ function SMODS.juice_up_blind() end
 --- It is recommended to wrap this function in `assert` to prevent unnoticed errors.
 ---@nodiscard
 ---@param card Card|table
----@param suit? string Key to the suit. 
----@param rank? string Key to the rank. 
+---@param suit? Suits|string Key to the suit. 
+---@param rank? Ranks|string Key to the rank. 
 ---@return Card|table? cardOrErr If successful the card. If it failed `nil`.
 ---@return string? msg If it failed, a message describing what went wrong. 
 function SMODS.change_base(card, suit, rank) end
@@ -345,7 +381,7 @@ function SMODS.find_card(key, count_debuffed) end
 ---@field set? string Set of the card. 
 ---@field area? CardArea|table CardArea to emplace this card to. 
 ---@field legendary? boolean Pools legendary cards, if applicable. 
----@field rarity? number|string Only spawns cards with provided rarity, if applicable. 
+---@field rarity? Rarities|number|string Only spawns cards with provided rarity, if applicable. 
 ---@field skip_materialize? boolean Skips materialization animations. 
 ---@field soulable? boolean Card could be replace by a legendary version, if applicable. 
 ---@field key? string Created card is forced to have a center matching this key. 
@@ -353,10 +389,10 @@ function SMODS.find_card(key, count_debuffed) end
 ---@field discover? boolean Discovers the card when created.
 ---@field bypass_discovery_center? boolean Creates the card's proper sprites and UI even if it hasn't been discovered.
 ---@field no_edition? boolean Ignore natural edition application. 
----@field edition? string Apply this edition. 
----@field enhancement? string Apply this enhancement. 
----@field seal? string Apply this seal. 
----@field stickers? string[] Apply all stickers in this array. 
+---@field edition? Editions|string Apply this edition. 
+---@field enhancement? Enhancements|string Apply this enhancement. 
+---@field seal? Seals|string Apply this seal. 
+---@field stickers? Stickers[]|string[] Apply all stickers in this array. 
 
 ---@param t CreateCard|table
 ---@return Card|table
@@ -369,7 +405,7 @@ function SMODS.create_card(t) end
 function SMODS.add_card(t) end
 
 ---@param card Card|table
----@param debuff boolean|"reset"?
+---@param debuff boolean|"reset"|'prevent_debuff'?
 ---@param source string?
 --- Debuffs provided `card`. 
 function SMODS.debuff_card(card, debuff, source) end
@@ -552,14 +588,14 @@ function SMODS.signed_dollars(val) end
 --- Reproduces weird vanilla behavior of using 0 for no/negative x_mult.
 function SMODS.multiplicative_stacking(base, perma) end
 
----@param card Card
----@param suit string
+---@param card Card|table
+---@param suit Suits|string
 ---@return boolean
 --- Checks if the suit can be smeared (e.x. Smeared Joker).
 function SMODS.smeared_check(card, suit) end
 
----@param hand Card[]
----@param suit string
+---@param hand Card[]|table[]
+---@param suit Suits|string
 ---@return boolean
 --- Checks if the provided `hand` meets the conditions to trigger Seeing Double.
 function SMODS.seeing_double_check(hand, suit) end
@@ -591,32 +627,34 @@ function SMODS.draw_cards(hand_space) end
 function SMODS.merge_effects(...) end
 
 
----@param trigger_obj Card|table
+---@param trigger_obj? Card|table
 ---@param base_numerator number
 ---@param base_denominator number
----@param key string|nil optional seed key for associating results in loc_vars with in-game probability rolls
----@param from_roll boolean|nil
+---@param identifier? string optional seed key for associating results in loc_vars with in-game probability rolls
+---@param from_roll? boolean
 ---@return number numerator
 ---@return number denominator
+---@param no_mod boolean|nil optional boolean to bypass other probability modifying effects
 --- Returns a *`numerator` in `denominator`* listed probability opportunely modified by in-game effects
 --- starting from a *`base_numerator` in `base_denominator`* probability. 
 --- 
 --- Can be hooked for more complex probability behaviour. `trigger_obj` is optionally the object that queues the probability.
-function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, key, from_roll) end
+function SMODS.get_probability_vars(trigger_obj, base_numerator, base_denominator, identifier, from_roll, no_mod) end
 
----@param trigger_obj Card|table
+---@param trigger_obj? Card|table
 ---@param seed string|number
 ---@param base_numerator number
 ---@param base_denominator number
----@param key string
+---@param identifier? string
+---@param no_mod boolean|nil optional boolean to bypass other probability modifying effects
 ---@return boolean
 --- Sets the seed to `seed` and runs a *`base_numerator` in `base_denominator`* listed probability check. 
 --- Returns `true` if the probability succeeds. You do not need to multiply `base_numerator` by `G.GAME.probabilities.normal`. 
 --- 
 --- Can be hooked to run code when a listed probability succeeds and/or fails. `trigger_obj` is optionally the object that queues the probability.
-function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator, key) end
+function SMODS.pseudorandom_probability(trigger_obj, seed, base_numerator, base_denominator, identifier, no_mod) end
 
----@param handname string
+---@param handname PokerHands|string
 ---@return boolean
 ---Checks if handname is visible in the poker hands menu.
 function SMODS.is_poker_hand_visible(handname) end
@@ -628,10 +666,18 @@ function SMODS.is_poker_hand_visible(handname) end
 --- `trigger` is the card or effect that runs the check
 function SMODS.is_eternal(card, trigger) end
 
+---@param card Card|table
+---@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: string?}
+---@return table? results
+--- Tells Jokers that this card is scaling allowing for scaling detection
+--- Can return scaling_value and scalar_value in results to change the scaling cards values
+--- Args must contain `ref_table`, `ref_value`, and `scalar_value`. It may optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
+function SMODS.scale_card(card, args) end
+
 
 ---@param prototype_obj SMODS.GameObject|table
 ---@param args table?
 ---@return boolean?, table?
---- Checks whether an object is in the pool.
+--- Checks whether an object should be added to the pool.
 --- i.e. the in_pool method doesn't exist or it returns `true`
 function SMODS.add_to_pool(prototype_obj, args) end
