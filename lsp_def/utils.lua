@@ -196,6 +196,7 @@ function SMODS.calculate_effect_table_key(effect_table, key, card, ret) end
 
 ---@param effects table
 ---@param card Card|table
+---@return table
 --- Used to calculate a table of effects generated in evaluate_play
 function SMODS.trigger_effects(effects, card) end
 
