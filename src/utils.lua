@@ -2813,3 +2813,12 @@ function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
         localize{type = 'other', key = 'card_extra_repetitions', nodes = desc_nodes, vars = {specific_vars.bonus_repetitions, localize(specific_vars.bonus_repetitions > 1 and 'b_retrigger_plural' or 'b_retrigger_single')}}
     end
 end
+
+
+function Card:is_rarity(rarity)
+    if self.ability.set ~= "Joker" then return false end
+    local rarities = {"Common", "Uncommon", "Rare", "Legendary"}
+    rarity = rarities[rarity] or rarity
+    local own_rarity = rarities[self.config.center.rarity] or self.config.center.rarity
+    return own_rarity == rarity or SMODS.Rarities[own_rarity] == rarity
+end
