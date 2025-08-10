@@ -130,7 +130,13 @@ pattern = 'function generate_card_ui(_c, full_UI_table, specific_vars, card_type
 position = 'at'
 match_indent = true
 payload = '''function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end, card)
-    if _c.specific_vars then specific_vars = _c.specific_vars end'''
+    if _c.specific_vars then specific_vars = _c.specific_vars end
+    local is_info_queue = false
+    if specific_vars and specific_vars.is_info_queue then
+        is_info_queue = true
+        specific_vars = nil
+    end
+'''
 
 [[patches]]
 [patches.pattern]
@@ -386,7 +392,7 @@ target = "functions/misc_functions.lua"
 pattern = '''if win_ante and (win_ante >= 8) then'''
 match_indent = true
 position = "at"
-payload = '''if win_ante and (win_ante >= 8) or (v.in_pool and type(v.in_pool) == 'function' and not v:in_pool()) then'''
+payload = '''if win_ante and (win_ante >= 8) or not SMODS.add_to_pool(v) then'''
 
 #
 # Fix G.GAME.blind:set_blind(nil, true, nil)

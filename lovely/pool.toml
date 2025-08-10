@@ -41,8 +41,8 @@ local in_pool_func =
             local initial_deck = args and args.starting_deck or false
 
             return not (
-                type(SMODS.Ranks[c.value].in_pool) == 'function' and not SMODS.Ranks[c.value]:in_pool({initial_deck = initial_deck, suit = c.suit})
-                or type(SMODS.Suits[c.suit].in_pool) == 'function' and not SMODS.Suits[c.suit]:in_pool({initial_deck = initial_deck, rank = c.value})
+                not SMODS.add_to_pool(SMODS.Ranks[c.value], {initial_deck = initial_deck, suit = c.suit})
+                or not SMODS.add_to_pool(SMODS.Suits[c.suit], {initial_deck = initial_deck, rank = c.value})
             )
         end
 if in_pool_func then
@@ -110,10 +110,7 @@ pattern = "if _type == 'Enhanced' then"
 match_indent = true
 position = 'before'
 payload = '''
-local in_pool, pool_opts
-if v.in_pool and type(v.in_pool) == 'function' then
-    in_pool, pool_opts = v:in_pool({ source = _append })
-end
+local in_pool, pool_opts = SMODS.add_to_pool(v, { source = _append })
 pool_opts = pool_opts or {}
 '''
 
