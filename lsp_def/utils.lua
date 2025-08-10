@@ -73,7 +73,7 @@
 ---@field from_area? CardArea|table CardArea the card is being drawn from. 
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand. 
 ---@field drawing_cards? true `true` when cards are being drawn
----@field amount? integer Amount of cards about to be drawn from deck to hand. Check for modifying amount of cards drawn.
+---@field amount? number Used for in some contexts to specify a numerical amount. 
 ---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
 ---@field display_name? PokerHands|'Royal Flush'|string Display name of the scoring poker hand.
 ---@field mod_probability? true Check if `true` for effects that make additive or multiplicative modifications to probabilities.
@@ -100,6 +100,10 @@
 ---@field new_suit? Suits|string New suit the card changed to.
 ---@field old_suit? Suits|string Old suit the card changed from.
 ---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
+---@field money_altered? true Check if `true` for effects when the amount of money the player has changes.
+---@field from_shop? true Check if `true` if money changed during the shop.
+---@field from_consumeable? true Check if `true` if money changed by a consumable.
+---@field from_scoring? true Check if `true` if money changed during scoring.
 
 --- Util Functions
 
@@ -663,7 +667,7 @@ function SMODS.is_poker_hand_visible(handname) end
 function SMODS.is_eternal(card, trigger) end
 
 ---@param card Card|table
----@param args? table
+---@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: string?}
 ---@return table? results
 --- Tells Jokers that this card is scaling allowing for scaling detection
 --- Can return scaling_value and scalar_value in results to change the scaling cards values
