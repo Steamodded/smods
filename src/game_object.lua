@@ -2248,7 +2248,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             func = function()
                 for i = #destroyed_cards, 1, -1 do
                     local card = destroyed_cards[i]
-                    if card.ability.name == 'Glass Card' then
+                    if SMODS.shatters(card) then
                         card:shatter()
                     else
                         card:start_dissolve(nil, i ~= #destroyed_cards)
