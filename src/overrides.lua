@@ -2345,3 +2345,11 @@ function Card:use_consumeable(area, copier)
     end
 	return ret
 end
+
+local ease_ante_ref = ease_ante
+function ease_ante(mod)
+	local flags = SMODS.calculate_context({modify_ante = true})
+	local new_mod = mod + flags.mod
+	ease_ante_ref(new_mod)
+	SMODS.calculate_context({ante_change = new_mod})
+end
