@@ -58,7 +58,7 @@ function Card:set_ability(center, initial, delay_sprites) end
 function Card:set_cost() end
 
 ---@param self Card|table
----@param edition string|{[string]: true}? Both `string` values are the key of the edition to apply. 
+---@param edition? Editions|string|{[string]: true} Both `string` values are the key of the edition to apply. 
 ---@param immediate? boolean
 ---@param silent? boolean 
 ---@param delay? boolean
@@ -297,21 +297,21 @@ function Card:calculate_rental() end
 function Card:calculate_perishable() end
 
 ---@param self Card|table
----@param sticker string Key to the sticker to apply. 
+---@param sticker Stickers|string Key to the sticker to apply. 
 ---@param bypass_check? boolean Whether the sticker's `should_apply` function is called. 
 --- Adds the sticker onto the card. 
 function Card:add_sticker(sticker, bypass_check) end
 
 ---@param self Card|table
----@param sticker string Key to the sticker to remove. 
+---@param sticker Stickers|string Key to the sticker to apply. 
 --- Removes the sticker from the card, if it has the sticker. 
 function Card:remove_sticker(sticker) end
 
 ---@param self Card|table
----@param key string Key of the sticker
+---@param sticker Stickers|string Key to the sticker to apply. 
 ---@return table?
 --- Calculates the sticker on the Card. 
-function Card:calculate_sticker(context, key) end
+function Card:calculate_sticker(context, sticker) end
 
 ---@param self Card|table
 ---@param context CalcContext|table
