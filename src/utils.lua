@@ -308,7 +308,7 @@ function SMODS.modify_rank(card, amount, manual_sprites)
                 rank_key = pseudorandom_element(
                     rank_data.next,
                     pseudoseed('strength'),
-                    { in_pool = function(key) return SMODS.Ranks[key]:in_pool({ suit = card.base.suit}) end }
+                    { in_pool = function(key) return SMODS.add_to_pool(SMODS.Ranks[key], { suit = card.base.suit }) end }
                 )
             else
                 local i = (behavior.fixed and rank_data.next[behavior.fixed]) and behavior.fixed or 1
@@ -325,7 +325,7 @@ function SMODS.modify_rank(card, amount, manual_sprites)
                 rank_key = pseudorandom_element(
                     rank_data.prev,
                     pseudoseed('weakness'),
-                    { in_pool = function(key) return SMODS.Ranks[key]:in_pool({ suit = card.base.suit}) end }
+                    { in_pool = function(key) return SMODS.add_to_pool(SMODS.Ranks[key], { suit = card.base.suit }) end }
                 )
             else
                 local i = (behavior.fixed and rank_data.prev[behavior.fixed]) and behavior.fixed or 1
@@ -379,11 +379,13 @@ function SMODS.create_card(t)
     SMODS.bypass_create_card_discover = t.discover
     SMODS.bypass_create_card_discovery_center = t.bypass_discovery_center
     SMODS.set_create_card_front = G.P_CARDS[t.front]
+    SMODS.create_card_allow_duplicates = t.allow_duplicates
     local _card = create_card(t.set, t.area, t.legendary, t.rarity, t.skip_materialize, t.soulable, t.key, t.key_append)
     SMODS.bypass_create_card_edition = nil
     SMODS.bypass_create_card_discover = nil
     SMODS.bypass_create_card_discovery_center = nil
     SMODS.set_create_card_front = nil
+    SMODS.create_card_allow_duplicates = nil
 
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
@@ -2064,6 +2066,26 @@ function SMODS.blueprint_effect(copier, copied_card, context)
     end
 end
 
+function SMODS.get_mods_scoring_targets()
+    local ret = {}
+    for _, mod in ipairs(SMODS.mod_list) do
+        if mod.can_load and mod.calculate and type(mod.calculate) == "function" then
+            table.insert(ret, mod)
+        end
+    end
+    return ret
+end
+
+function SMODS.get_stake_scoring_targets()
+    local ret = {}
+    for _, stake in ipairs(G.GAME.applied_stakes or {}) do
+        if G.P_CENTER_POOLS.Stake[stake].calculate and type(G.P_CENTER_POOLS.Stake[stake].calculate) == "function" then
+            table.insert(ret, G.P_CENTER_POOLS.Stake[stake])
+        end
+    end
+    return ret
+end
+
 function SMODS.get_card_areas(_type, _context)
     if _type == 'playing_cards' then
         local t = {}
@@ -2083,7 +2105,14 @@ function SMODS.get_card_areas(_type, _context)
         local t = {
             { object = G.GAME.selected_back, scored_card = G.deck.cards[1] or G.deck },
         }
-        if G.GAME.blind then t[#t+1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite } end
+        if G.GAME.blind then t[#t + 1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite } end
+        if G.GAME.challenge then t[#t + 1] = { object = SMODS.Challenges[G.GAME.challenge], scored_card = G.deck.cards[1] or G.deck } end 
+        for _, stake in ipairs(SMODS.get_stake_scoring_targets()) do
+            t[#t + 1] = { object = stake, scored_card = G.deck.cards[1] or G.deck }
+        end
+        for _, mod in ipairs(SMODS.get_mods_scoring_targets()) do
+            t[#t + 1] = { object = mod, scored_card = G.deck.cards[1] or G.deck }
+        end
         -- TARGET: add your own individual scoring targets
         return t
     end
@@ -2582,13 +2611,13 @@ function SMODS.draw_cards(hand_space)
 end
 
 function SMODS.showman(card_key)
-    if next(SMODS.find_card('j_ring_master')) then
+    if SMODS.create_card_allow_duplicates or next(SMODS.find_card('j_ring_master')) then
         return true
     end
     return false
 end
 
-function SMODS.four_fingers()
+function SMODS.four_fingers(hand_type)
     if next(SMODS.find_card('j_four_fingers')) then
         return 4
     end
@@ -2968,4 +2997,10 @@ function ease_dollars(mod, instant)
         from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
         from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
     })
+end
+function SMODS.add_to_pool(prototype_obj, args)
+    if type(prototype_obj.in_pool) == "function" then
+        return prototype_obj:in_pool(args)
+    end
+    return true
 end
