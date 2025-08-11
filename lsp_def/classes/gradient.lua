@@ -1,7 +1,11 @@
 ---@meta
 
----@class SMODS.Gradient: SMODS.GameObject
----@field interpolation? 'trig'|'linear'|string Interpolation type of the gradient. Currently supported: `'trig'`, `'linear'`.
+---@class SMODS.Gradient: SMODS.GameObject, Color
+---@field [1]? number Red component of the current color
+---@field [2]? number Green component of the current colour
+---@field [3]? number Blue component of the current colour
+---@field [4]? number Opacity component of the current colour
+---@field interpolation? 'trig'|'linear'|string Interpolation type of the gradient. Currently supported: `'trig'`, '`linear'`.
 ---@field colours? table<number, table<number, number>> List of colours to interpolate between.
 ---@field cycle? number Amount of time (in seconds) for the gradient to cycle through all colours.
 ---@field __call? fun(self: SMODS.Gradient|table, o: SMODS.Gradient|table): nil|table|SMODS.Gradient
@@ -25,15 +29,6 @@ SMODS.Gradient = setmetatable({}, {
         return self
     end
 })
-
----@type number? Red component of the current colour
-SMODS.Gradient[1] = 0
----@type number? Green component of the current colour
-SMODS.Gradient[2] = 0
----@type number? Blue component of the current colour
-SMODS.Gradient[3] = 0
----@type number? Opacity component of the current colour
-SMODS.Gradient[4] = 1
 
 ---@type table<string, SMODS.Gradient|table>
 SMODS.Gradients = {}
