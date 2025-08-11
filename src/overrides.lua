@@ -691,9 +691,9 @@ function get_straight(hand, min_length, skip, wrap)
 				end
 			end
 
-			local best_straight = {}
-			for k, v in pairs(current_straight) do best_straight[k] = v end
-			local ret_straight = best_straight
+			local next_straight = {}
+			for k, v in pairs(current_straight) do next_straight[k] = v end
+			local ret_straight = next_straight
 
 			local c_reps = ranks[rank.key]
 			if not c_reps or not next(c_reps) then return ret_straight end -- If no card_representers are present for the given [rank], return whatever [current_straight] was passed to the function
@@ -712,7 +712,7 @@ function get_straight(hand, min_length, skip, wrap)
 			if direction == "prev_base" or direction == "next_base" then -- These are required to avoid including the starting card_rep again / to avoid looping over the starting rank's card_reps, because the evaluation loop below does that already
 				direction = (direction == "prev_base" and "prev" or direction == "next_base" and "next") -- Strip the "_base" from the direction to continue in the 'else' part of the if statement (once the function calls itself)
 				for _, n_rank in pairs(rank_nexts) do
-					local rec_ret_straight = recursive_get_straight(n_rank, best_straight, max_skips, do_wrap, direction, used_c_reps, rank)
+					local rec_ret_straight = recursive_get_straight(n_rank, next_straight, max_skips, do_wrap, direction, used_c_reps, rank)
 					if #rec_ret_straight > #ret_straight then
 						ret_straight = rec_ret_straight
 						--if #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
@@ -722,17 +722,20 @@ function get_straight(hand, min_length, skip, wrap)
 				for c_rep, exists in pairs(c_reps) do
 					if exists and not used_c_reps[c_rep] then -- If the encountered card_rep hasn't assumed a rank yet
 						used_c_reps[c_rep] = true
-						best_straight[#best_straight+1] = c_rep
-						if #best_straight > #ret_straight then ret_straight = best_straight end
+						next_straight[#next_straight+1] = c_rep
+						if #next_straight > #ret_straight then ret_straight = next_straight end
 						for _, n_rank in pairs(rank_nexts) do
-							local rec_ret_straight = recursive_get_straight(n_rank, best_straight, max_skips, do_wrap, direction, used_c_reps, rank)
+							local rec_ret_straight = recursive_get_straight(n_rank, next_straight, max_skips, do_wrap, direction, used_c_reps, rank)
 							if #rec_ret_straight > #ret_straight then
 								ret_straight = rec_ret_straight
 							end
+							if #ret_straight >= #hand then
+								return ret_straight
+							end
 						end
 						--if #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
-						best_straight = {}
-						for k, v in pairs(current_straight) do best_straight[k] = v end
+						next_straight = {}
+						for k, v in pairs(current_straight) do next_straight[k] = v end
 						used_c_reps[c_rep] = false
 					end
 				end
@@ -776,7 +779,7 @@ function get_straight(hand, min_length, skip, wrap)
 					-- Optimization: If the size of the played hand minus the minimum straight length (5=default, 4=Four Fingers)
 					-- minus the amount of card_reps (cards) checked is less than zero, there cannot be a straight in the hand.
 					-- (Equally, if the length of the best_straight is more or equal the length of the hand minus one, the remaining card cannot result in a longer straight (it must be a fork in .next/.prev))
-					if #hand - min_length - card_reps_checked < 0 or #best_straight >= #hand - 1 then
+					if #hand - min_length - card_reps_checked < 0 or #best_straight >= #hand then
 						if #best_straight >= min_length then
 							for k, v in ipairs(best_straight) do best_straight[k] = v.card end
 							return {best_straight}

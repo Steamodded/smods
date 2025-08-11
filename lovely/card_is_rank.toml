@@ -20,6 +20,9 @@ priority = -10
 # payload = ''':is_rank(SMODS.get_rank_from_id($1)) $2'''
 
 
+# TODO: If SMODS.context_stack gets merged, remove context argument in all function calls here.
+
+
 # Sixth Sense
 [[patches]]
 [patches.pattern]
