@@ -17,6 +17,7 @@
 ---@field take_ownership? fun(self: SMODS.Joker|table, key: string, obj: SMODS.Joker|table, silent?: boolean): nil|table|SMODS.Joker Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.Joker|table, key: string): SMODS.Joker|table? Returns an object if one matches the `key`. 
 ---@field calc_dollar_bonus? fun(self: SMODS.Joker|table, card: Card|table): nil|number Calculates reward money. 
+---@field calc_scaling? fun(self: SMODS.Joker|table, card: Card|table, other_card: Card|table, scaling_value: number, scalar_value: number, args: table): table? Called by `SMODS.scale_card`. Allows detection and modification of cards when scaling values. The return may include a `scaling_value` or `scalar_value` field to modify those values or any standard calculation return.
 ---@field new? fun(self, name, slug, config, spritePos, loc_txt, rarity, cost, unlocked, discovered,blueprint_compat, eternal_compat, effect, atlas, soul_pos): any DEPRECATED. DO NOT USE
 ---@overload fun(self: SMODS.Joker): SMODS.Joker
 SMODS.Joker = setmetatable({}, {

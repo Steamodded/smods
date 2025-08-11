@@ -5,7 +5,7 @@
 ---@field [2]? number Green component of the current colour
 ---@field [3]? number Blue component of the current colour
 ---@field [4]? number Opacity component of the current colour
----@field interpolation? string Interpolation type of the gradient. Currently supported: `'trig'`, '`linear'`.
+---@field interpolation? 'trig'|'linear'|string Interpolation type of the gradient. Currently supported: `'trig'`, '`linear'`.
 ---@field colours? table<number, table<number, number>> List of colours to interpolate between.
 ---@field cycle? number Amount of time (in seconds) for the gradient to cycle through all colours.
 ---@field __call? fun(self: SMODS.Gradient|table, o: SMODS.Gradient|table): nil|table|SMODS.Gradient
@@ -22,6 +22,7 @@
 ---@field inject? fun(self: SMODS.Gradient|table, i?: number) Called during `inject_class`. Injects the object into the game. 
 ---@field take_ownership? fun(self: SMODS.Gradient|table, key: string, obj: SMODS.Gradient|table, silent?: boolean): nil|table|SMODS.Gradient Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.Gradient|table, key: string): SMODS.Gradient|table? Returns an object if one matches the `key`.
+---@field update? fun(self: SMODS.Gradient|table, dt: number) Allows finer per-frame control over the implementation.
 ---@overload fun(self: SMODS.Gradient): SMODS.Gradient
 SMODS.Gradient = setmetatable({}, {
     __call = function(self)

@@ -1,7 +1,8 @@
 ---@meta
 
 ---@class SMODS.Sticker: SMODS.GameObject
----@field obj_table? table<string, SMODS.Sticker|table> Table of objects registered to this class. 
+---@field obj_buffer? Stickers|string[] Array of keys to all objects registered to this class. 
+---@field obj_table? table<Stickers|string, SMODS.Sticker|table> Table of objects registered to this class. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field atlas? string Key to the center's atlas. 
 ---@field pos? table|{x: integer, y: integer} Position of the center's sprite. 
@@ -40,5 +41,5 @@ SMODS.Sticker = setmetatable({}, {
     end
 })
 
----@type table<string, SMODS.Sticker|table>
+---@type table<Stickers|string, SMODS.Sticker|table>
 SMODS.Stickers = {}

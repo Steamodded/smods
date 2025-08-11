@@ -130,7 +130,13 @@ pattern = 'function generate_card_ui(_c, full_UI_table, specific_vars, card_type
 position = 'at'
 match_indent = true
 payload = '''function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end, card)
-    if _c.specific_vars then specific_vars = _c.specific_vars end'''
+    if _c.specific_vars then specific_vars = _c.specific_vars end
+    local is_info_queue = false
+    if specific_vars and specific_vars.is_info_queue then
+        is_info_queue = true
+        specific_vars = nil
+    end
+'''
 
 [[patches]]
 [patches.pattern]
@@ -386,7 +392,7 @@ target = "functions/misc_functions.lua"
 pattern = '''if win_ante and (win_ante >= 8) then'''
 match_indent = true
 position = "at"
-payload = '''if win_ante and (win_ante >= 8) or (v.in_pool and type(v.in_pool) == 'function' and not v:in_pool()) then'''
+payload = '''if win_ante and (win_ante >= 8) or not SMODS.add_to_pool(v) then'''
 
 #
 # Fix G.GAME.blind:set_blind(nil, true, nil)
@@ -646,7 +652,7 @@ end'''
 target = "card.lua"
 pattern = "if next(find_joker('Smeared Joker')) and (self.base.suit == 'Hearts' or self.base.suit == 'Diamonds') == (suit == 'Hearts' or suit == 'Diamonds') then"
 position = "at"
-payload = "if next(find_joker('Smeared Joker')) and SMODS.smeared_check(self, suit) then"
+payload = "if SMODS.smeared_check(self, suit) then"
 overwrite = true
 match_indent = true
 
@@ -703,4 +709,49 @@ target = "card.lua"
 pattern = """local card = create_card(card_type,G.consumeables, nil, nil, nil, nil, _planet, 'blusl')"""
 position = 'before'
 payload = """if _planet == 0 then _planet = nil end"""
+match_indent = true
+
+## Fix remove_from_deck being called and unlocking stuff when exiting a run and
+## clearing screen
+# Game:delete_run()
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = 'function Game:delete_run()'
+position = 'after'
+payload = '    G.in_delete_run = true'
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = 'G.STATE = -1'
+position = 'after'
+payload = 'G.in_delete_run = false'
+match_indent = true
+# Card:remove()
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'if self.area then self.area:remove_card(self) end'
+position = 'after'
+payload = 'if G.in_delete_run then goto skip_game_actions_during_remove end'
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'if G.playing_cards then'
+position = 'before'
+payload = '::skip_game_actions_during_remove::'
+match_indent = true
+# CardArea:remove_card()
+[[patches]]
+[patches.pattern]
+target = "cardarea.lua"
+pattern = '''
+self:set_ranks()
+if self == G.deck then check_for_unlock({type = 'modify_deck', deck = self}) end'''
+position = 'at'
+payload = '''
+self:set_ranks()
+if not G.in_delete_run and self == G.deck then check_for_unlock({type = 'modify_deck', deck = self}) end'''
 match_indent = true

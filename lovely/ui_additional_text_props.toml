@@ -1,0 +1,361 @@
+[manifest]
+version = "1.2"
+dump_lua = true
+priority = -10
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """spacing = math.max(0, 0.32*(17 - #assembled_string)),"""
+position = "after"
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """spacing = _spacing,"""
+position = "after"
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """text = assembled_string,"""
+position = "after"
+payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
+match_indent = true
+
+# descsacle
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+local desc_scale = G.LANG.font.DESCSCALE
+'''
+payload = '''
+local desc_scale = (SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)] or G.LANG.font).DESCSCALE
+'''
+
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """loc_target = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key]"""
+position = "at"
+payload = """
+loc_target = loc_target or {}
+if pcall(function() loc_target.name_parsed = {loc_parse_string(G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name)} end) then
+else loc_target.name_parsed = {} end"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """if ret_string then return ret_string end"""
+position = "before"
+payload = """if ret_string and type(ret_string) == 'string' then ret_string = string.gsub(ret_string, "{.-}", "") end"""
+match_indent = true
+
+# Replace all instances of the language font
+[[patches]]
+[patches.regex]
+target = "engine/ui.lua"
+pattern = '''
+self.config.lang.font'''
+position = "at"
+payload = '''(self.config.font or self.config.lang.font)'''
+line_prepend = "$indent"
+
+[[patches]]
+[patches.regex]
+target = "engine/ui.lua"
+pattern = '''
+node.config.lang.font'''
+position = "at"
+payload = '''(node.config.font or node.config.lang.font)'''
+line_prepend = "$indent"
+
+# Fix name scale when using formatting
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = '''
+local final_line = {}
+'''
+position = 'after'
+match_indent = true
+payload = '''
+local final_name_assembled_string = ''
+if args.type == 'name' and loc_target.name_parsed then
+    for _, part in ipairs(lines) do
+        local assembled_string_part = ''
+        for _, subpart in ipairs(part.strings) do
+            assembled_string_part = assembled_string_part..(type(subpart) == 'string' and subpart or format_ui_value(args.vars[tonumber(subpart[1])]) or 'ERROR')
+        end
+        final_name_assembled_string = final_name_assembled_string..assembled_string_part
+    end
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = '''
+spacing = math.max(0, 0.32*(17 - #assembled_string)),
+'''
+position = 'at'
+match_indent = true
+payload = '''
+spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+position = 'at'
+match_indent = true
+pattern = 'scale =  (0.55 - 0.004*#assembled_string)*(part.control.s and tonumber(part.control.s) or 1)'
+payload = 'scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*(part.control.s and tonumber(part.control.s) or 1)*(args.fixed_scale or 1)'
+
+# Add support for multi line name
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = '''
+if pcall(function() loc_target.name_parsed = {loc_parse_string(G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name)} end) then
+'''
+position = 'at'
+match_indent = true
+payload = '''
+if pcall(function()
+local name = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key]
+loc_target.name_parsed = name.name_parsed or {loc_parse_string(name.name)}
+end) then
+'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = '''
+if pcall(function() ret_string = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name end) then
+'''
+position = 'at'
+match_indent = true
+payload = '''
+if pcall(function()
+    local name_text = G.localization.descriptions[(args.set or args.node.config.center.set)][args.key or args.node.config.center.key].name
+    if type(name_text) == "table" then
+        ret_string = ""
+        for i, line in ipairs(name_text) do
+            ret_string = ret_string.. (i ~= 1 and " " or "")..line
+        end
+    else
+        ret_string = name_text
+    end
+end) then
+'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = '''
+    if args.type == 'name' or args.type == 'text' then return final_line end
+    args.nodes[#args.nodes+1] = final_line
+end
+'''
+position = 'at'
+match_indent = true
+payload = '''
+    if args.type == 'text' then return final_line end
+    if not args.nodes and args.type == 'name' then args.nodes = {} end
+    args.nodes[#args.nodes+1] = final_line
+end
+if args.type == 'name' then
+    local final_name = {}
+
+    for _, line in ipairs(args.nodes or {}) do
+        final_name[#final_name+1] = {n=G.UIT.R, config={align = "m"}, nodes=line}
+    end
+
+    return final_name
+end
+'''
+
+# Marquee text in DynaText
+# Adjust width when marquee is enabled
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if self.strings[k].W > self.config.W then self.config.W = self.strings[k].W; self.strings[k].W_offset = 0 end
+'''
+payload = '''
+if self.strings[k].W > self.config.W then
+    self.config.W = self.strings[k].W
+    self.strings[k].W_offset = 0
+    if self.config.marquee and self.config.maxw then
+        if self.config.W > self.config.maxw then
+            self.config.marquee_width = self.config.W/self.config.maxw
+            self.config.W = self.config.maxw
+        else
+            self.config.marquee = 'no'
+        end
+    end
+end
+'''
+# Adjust width when marquee is enabled
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if self.config.maxw and self.config.W > self.config.maxw then
+'''
+payload = '''
+if self.config.maxw and self.config.W > self.config.maxw and not self.config.marquee then
+'''
+# Adjust width when marquee is enabled
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+v.W_offset = 0.5*(self.config.W - v.W)
+'''
+payload = '''
+v.W_offset = 0.5*(self.config.W - (self.config.marquee and self.config.maxw and self.config.maxw < v.W and self.config.maxw or v.W))
+'''
+
+# Add start/end index calculation
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if self.children.particle_effect then self.children.particle_effect:draw() end
+'''
+payload = '''
+local start_index = 1
+local end_index = #self.strings[self.focused_string].letters
+if self.config.marquee and self.config.marquee ~= 'no' then
+    local padding = math.floor(#self.strings[self.focused_string].letters / (self.config.marquee_width or 1)) - 1
+    if self.dt and (self.dt - self.config.hold) / self.config.scroll_speed > (#self.strings[self.focused_string].letters + math.ceil(padding/4)) then self.dt = 0 end
+    if self.dt and self.dt > self.config.hold then
+        start_index = 1 + (math.floor((self.dt - self.config.hold) / self.config.scroll_speed) % (#self.strings[self.focused_string].letters + math.ceil(padding/4)))
+    end
+    end_index = math.min(start_index + padding, #self.strings[self.focused_string].letters)
+end
+'''
+
+# Use start/end index
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+for k, letter in ipairs(self.strings[self.focused_string].letters) do
+    local real_pop_in = self.config.min_cycle_time == 0 and 1 or letter.pop_in
+'''
+payload = '''
+for k=start_index, end_index do
+    local letter = self.strings[self.focused_string].letters[k]
+    local real_pop_in = self.config.min_cycle_time == 0 and 1 or letter.pop_in
+'''
+
+# Update dt
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+function DynaText:update(dt)
+'''
+payload = '''
+function DynaText:update(dt, real_dt)
+if self.config.marquee then
+    self.dt = (self.dt or 0) + real_dt
+end
+'''
+
+# Ensure hold is present
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+self.silent = (config.silent)
+'''
+payload = '''
+self.config.marquee = self.config.marquee and not G.SETTINGS.reduced_motion
+self.config.hold = self.config.hold or self.config.marquee and 1.5 or nil
+self.config.scroll_speed = self.config.scroll_speed or self.config.marquee and 0.1 or nil
+'''
+
+# Pass real_dt to update function
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+v:update(dt*self.SPEEDFACTOR)
+'''
+payload = '''
+v:update(dt*self.SPEEDFACTOR, self.real_dt)
+'''
+
+
+# Add underline property for text
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+--Draw the 'chosen triangle'
+'''
+payload = '''
+if self.config.underline and self.config.underline[4] > 0.01 then 
+    prep_draw(self, 1)
+    love.graphics.scale(1/(G.TILESIZE))
+    love.graphics.setLineWidth(1)
+    love.graphics.setColor(self.config.underline)
+    self:draw_pixellated_under('line', parallax_dist)
+    love.graphics.pop()
+end
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
+'''
+payload = '''
+underline = part.control.u and loc_colour(part.control.u),
+'''
+# DynaText compat
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
+'''
+payload = '''
+underline = part.control.u and loc_colour(part.control.u),
+'''

@@ -128,3 +128,24 @@ pattern = "if self.highlighted[1] then"
 position = "at"
 payload = "if #self.highlighted >= self.config.highlighted_limit then"
 match_indent = true
+
+# Deck unlock popup shows custom unlock descriptions
+# create_UIBox_deck_unlock()
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = "if deck_center.unlock_condition.type == 'win_deck' then"
+position = "before"
+payload = """
+if deck_center.check_for_unlock and type(deck_center.check_for_unlock) == "function" then
+    local loc_args = {}
+    local key_override
+    if deck_center.locked_loc_vars and type(deck_center.locked_loc_vars) == 'function' then
+        local res = deck_center:locked_loc_vars() or {}
+        loc_args = res.vars or {}
+        key_override = res.key
+    end
+    localize{type = 'unlocks', key = key_override or deck_center.key, set = "Back", nodes = deck_criteria, vars = loc_args, default_col = G.C.WHITE, shadow = true}
+end
+"""
+match_indent = true

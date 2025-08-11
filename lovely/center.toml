@@ -102,7 +102,23 @@ position = 'before'
 match_indent = true
 payload = '''
 elseif _c.generate_ui and type(_c.generate_ui) == 'function' then
+    local specific_vars = specific_vars or {}
+    if is_info_queue then specific_vars.is_info_queue = true end
     _c:generate_ui(info_queue, card, desc_nodes, specific_vars, full_UI_table)
+    if is_info_queue then
+        desc_nodes.loc_name = {}
+        local set = name_override and "Other" or _c.set
+        local key = name_override or _c.key
+        if set == "Seal" then
+            if G.localization.descriptions["Other"][_c.key.."_seal"] then set = "Other"; key = key.."_seal" end
+        else
+            if not G.localization.descriptions[set] or not G.localization.descriptions[set][_c.key] then set = "Other" end
+        end
+
+        localize{type = 'name', key = key, set = set, nodes = desc_nodes.loc_name, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars(info_queue, _c:create_fake_card()) or {}).vars) or {colours = {}}} 
+        desc_nodes.loc_name = SMODS.info_queue_desc_from_rows(desc_nodes.loc_name, true)
+        desc_nodes.loc_name.config.align = "cm"
+    end
     if specific_vars and specific_vars.pinned then info_queue[#info_queue+1] = {key = 'pinned_left', set = 'Other'} end
     if specific_vars and specific_vars.sticker then info_queue[#info_queue+1] = {key = string.lower(specific_vars.sticker)..'_sticker', set = 'Other'} end'''
 
@@ -147,7 +163,6 @@ position = 'at'
 match_indent = true
 pattern = 'elseif desc_nodes ~= full_UI_table.main then'
 payload = 'elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then'
-
 
 
 # check_for_unlock()
@@ -367,12 +382,21 @@ match_indent = true
 position = 'after'
 payload = '''
     for _, v in ipairs(SMODS.Consumable.legendaries) do
-        if (_type == v.type.key or _type == v.soul_set) and not (G.GAME.used_jokers[v.key] and not next(find_joker("Showman")) and not v.can_repeat_soul) and (not v.in_pool or (type(v.in_pool) ~= "function") or v:in_pool()) then
+        if (_type == v.type.key or _type == v.soul_set) and not (G.GAME.used_jokers[v.key] and not SMODS.showman(v.key) and not v.can_repeat_soul) and SMODS.add_to_pool(v) then
             if pseudorandom('soul_'..v.key.._type..G.GAME.round_resets.ante) > (1 - v.soul_rate) then
                 forced_key = v.key
             end
         end
     end'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = "local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, front, center,"
+match_indent = true
+position = 'at'
+payload = '''
+local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, SMODS.set_create_card_front or front, center,'''
 
 [[patches]]
 [patches.pattern]
@@ -400,6 +424,38 @@ match_indent = true
 position = 'at'
 payload = '''
 discover = SMODS.bypass_create_card_discover or area==G.jokers or area==G.consumeables, '''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''not (G.GAME.used_jokers['c_soul'] and not next(find_joker("Showman")))  then'''
+match_indent = true
+position = 'at'
+payload = '''
+not (G.GAME.used_jokers['c_soul'] and not SMODS.showman('c_soul')) then'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''not (G.GAME.used_jokers['c_black_hole'] and not next(find_joker("Showman")))  then'''
+match_indent = true
+position = 'at'
+payload = '''
+not (G.GAME.used_jokers['c_black_hole'] and not SMODS.showman('c_black_hole')) then'''
+
+# Fix vanilla copy_card back bug
+# copy_card()
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+local new_card = new_card or Card(other.T.x, other.T.y, G.CARD_W*(card_scale or 1), G.CARD_H*(card_scale or 1), G.P_CARDS.empty, G.P_CENTERS.c_base, {playing_card = playing_card})
+'''
+position = "at"
+payload = '''
+local new_card = new_card or Card(other.T.x, other.T.y, G.CARD_W*(card_scale or 1), G.CARD_H*(card_scale or 1), G.P_CARDS.empty, G.P_CENTERS.c_base, {playing_card = playing_card, bypass_back = G.GAME.selected_back.pos})
+'''
+match_indent = true
 
 # Card:add_to_deck()
 [[patches]]
@@ -451,7 +507,7 @@ target = 'functions/button_callbacks.lua'
 match_indent = true
 position = 'before'
 pattern = '''
-if area and area.cards[1] then 
+if area and area.cards[1] then
 '''
 payload = '''
 if nc and not area then G.consumeables:emplace(card) end
@@ -500,7 +556,7 @@ target = 'card.lua'
 match_indent = true
 position = 'at'
 pattern = 'if other_joker and other_joker ~= self then'
-payload = 'if other_joker and other_joker ~= self and not context.no_blueprint then'
+payload = 'if other_joker and other_joker ~= self and not other_joker.debuff and not context.no_blueprint then'
 
 # extract joker loc_vars
 [[patches]]
@@ -530,6 +586,11 @@ payload = '''
         local ability = copy_table(_c.config)
         ability.set = 'Joker'
         ability.name = _c.name
+        -- temporary stopgap. fake cards should be implemented better
+        ability.x_mult = _c['config'].Xmult or _c['config'].x_mult
+        if ability.name == 'To Do List' then
+            ability.to_do_poker_hand = "High Card" -- fallback
+        end
         local ret = {Card.generate_UIBox_ability_table({ ability = ability, config = { center = _c }, bypass_lock = true}, true)}
         specific_vars = ret[1]
         if ret[2] then desc_nodes[#desc_nodes+1] = ret[2] end

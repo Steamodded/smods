@@ -136,6 +136,23 @@ return {
                     "{C:money}#1#{} if held at end of round",
                 },
             },
+            card_extra_repetitions = {
+                text = {
+                    "Retrigger this",
+                    "card {C:attention}#1#{} #2#",
+                },
+            },
+            artist = {
+                text = {
+                    "{C:inactive}Artist",
+                },
+            },
+            artist_credit = {
+                name = "Artist",
+                text = {
+                    "{E:1}#1#{}"
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {
@@ -167,6 +184,15 @@ return {
                     "{C:mult}#1#{} Mult",
                 },
             },
+            m_lucky={
+                name="Lucky Card",
+                text={
+                    "{C:green}#1# in #3#{} chance",
+                    "for {C:mult}+#2#{} Mult",
+                    "{C:green}#6# in #5#{} chance",
+                    "to win {C:money}$#4#",
+                },
+            },
         }
     },
     misc = {
@@ -196,7 +222,7 @@ return {
             b_authors = 'Authors',
             b_unknown = 'Unknown',
             b_lovely_mod = '(Lovely Mod) ',
-            b_by = ' By: ',
+            b_by = 'By: ',
             b_priority = 'Priority: ',
 			b_config = "Config",
 			b_additions = 'Additions',
@@ -215,9 +241,12 @@ return {
                 'Enabled',
                 'Bypass Restrictions'
             },
-            b_deckskins_lc = 'Low Contrast Colors',
-            b_deckskins_hc = 'High Contrast Colors',
-            b_deckskins_def = 'Default Colors',
+            b_deckskins_lc = 'Low Contrast Colours',
+            b_deckskins_hc = 'High Contrast Colours',
+            b_deckskins_def = 'Default Colours',
+            b_limit = 'Up to ',
+            b_retrigger_single = 'time',
+            b_retrigger_plural = 'times'
 		},
 		v_dictionary = {
 			c_types = '#1# Types',

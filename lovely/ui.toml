@@ -35,7 +35,25 @@ line_prepend = '$indent'
 target = "functions/UI_definitions.lua"
 pattern = '''local t = create_UIBox_generic_options({ back_func = 'your_collection', contents = {'''
 position = "at"
-payload = '''local t = create_UIBox_generic_options({ back_func = G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', contents = {'''
+payload = '''local t = create_UIBox_generic_options({ 
+colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).colour),
+bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour),
+back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).back_colour),
+outline_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
+back_func = G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', contents = {'''
+match_indent = true
+
+# create_UIBox_your_collection_decks()
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''create_option_cycle({options = ordered_names, opt_callback = 'change_viewed_back', current_option = 1, colour = G.C.RED, w = 4.5, focus_args = {snap_to = true}, mid = '''
+position = "at"
+payload = '''create_option_cycle({options = ordered_names, opt_callback = 'change_viewed_back', current_option = 1, colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED, w = 4.5, focus_args = {snap_to = true}, mid = '''
 match_indent = true
 
 # G.FUNCS.your_collection_deck_page
@@ -83,7 +101,7 @@ target = 'engine/controller.lua'
 pattern = "function Controller:key_press_update(key, dt)"
 position = "after"
 payload = '''
-    if key == "escape" and G.ACTIVE_MOD_UI then
+    if key == "escape" and (G.ACTIVE_MOD_UI or SMODS.IN_MODS_TAB) then
         G.FUNCS.exit_mods()
     end
 '''
@@ -162,7 +180,7 @@ payload = "if not v.omit and not v.no_collection then"
 target = "functions/misc_functions.lua"
 pattern = "if v.set == 'Joker' then"
 position = "at"
-payload = "if v.set == 'Joker' and not v.no_collection then "
+payload = "if v.set == 'Joker' and not v.no_collection and not v.omit then "
 match_indent = true
 times = 1
 
@@ -223,4 +241,165 @@ target = 'functions/misc_functions.lua'
 match_indent = true
 position = 'at'
 pattern = 'colour = loc_colour(part.control.C or nil),'
-payload = 'colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil),' 
+payload = 'colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil),'
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+G.E_MANAGER:add_event(Event({ --Add bonus chips from this card
+                    trigger = 'before',
+                    delay = delay,
+'''
+position = "at"
+payload = '''
+G.E_MANAGER:add_event(Event({ --Add bonus chips from this card
+                    trigger = trigger,
+                    delay = delay,
+                    blocking = blocking,
+                    blockable = blockable,
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''   if args.info then 
+     t = {n=args.col and G.UIT.C or G.UIT.R, config={align = "cm"}, nodes={'''
+position = "before"
+payload = """if args.hide_label then 
+    local t2 = {}
+    for i = 1, #t.nodes do
+        if i ~= 1 then table.insert(t2, t.nodes[i]) end
+    end
+    t.nodes = t2
+end"""
+match_indent = true
+
+# UIBox_button():
+# the counters on collection buttons use text_colour instead of being hardcoded to white
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = "{n=G.UIT.T, config={scale = 0.35,text = args.count.tally..' / '..args.count.of, colour = {1,1,1,0.9}}}"
+position = "at"
+match_indent = true
+payload = "{n=G.UIT.T, config={scale = 0.35,text = args.count.tally..' / '..args.count.of, colour = args.text_colour}}"
+
+# G.UIDEF.card_h_popup():
+# add a "card_type_text_colour" variable
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = 'local card_type_colour = get_type_colour(card.config.center or card.config, card)'
+position = 'after'
+match_indent = true
+payload = 'local card_type_text_colour = (AUT.card_type and SMODS.ConsumableTypes[AUT.card_type] and SMODS.ConsumableTypes[AUT.card_type].text_colour) or G.C.UI.TEXT_LIGHT'
+
+# G.UIDEF.card_h_popup():
+# pass "card_type_text_colour" variable to create_badge() when creating the badge for a card type
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = "badges[#badges + 1] = create_badge(((card.ability.name == 'Pluto' or card.ability.name == 'Ceres' or card.ability.name == 'Eris') and localize('k_dwarf_planet')) or (card.ability.name == 'Planet X' and localize('k_planet_q') or card_type),card_type_colour, nil, 1.2)"
+position = 'at'
+match_indent = true
+payload = "badges[#badges + 1] = create_badge(((card.ability.name == 'Pluto' or card.ability.name == 'Ceres' or card.ability.name == 'Eris') and localize('k_dwarf_planet')) or (card.ability.name == 'Planet X' and localize('k_planet_q') or card_type), card_type_colour, card_type_text_colour, 1.2)"
+
+# Fixing description error when info_queue has multi-box descriptions.
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''
+generate_card_ui(v, full_UI_table)
+'''
+position = "at"
+payload = '''
+generate_card_ui(v, full_UI_table, {is_info_queue = true})
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = '''
+bump = true,
+silent = true,
+pop_in = 0,
+pop_in_rate = 4,
+maxw = 5,
+shadow = true,
+y_offset = -0.6,
+'''
+position = "at"
+payload = '''
+bump = not args.no_bump,
+silent = not args.no_silent,
+pop_in = (not args.no_pop_in and (args.pop_in or 0)) or nil,
+pop_in_rate = (not args.no_pop_in and (args.pop_in_rate or 4)) or nil,
+maxw = args.maxw or 5,
+shadow = not args.no_shadow,
+y_offset = args.y_offset or -0.6,'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''
+desc_nodes.name = localize{type = 'name_text', key = name_override or _c.key, set = name_override and 'Other' or _c.set} 
+'''
+position = "after"
+payload = '''
+local set = name_override and "Other" or _c.set
+local key = name_override or _c.key
+if set == "Seal" then
+	if G.localization.descriptions["Other"][_c.key.."_seal"] then set = "Other"; key = key.."_seal" end
+else
+	if not G.localization.descriptions[set][_c.key] then set = "Other" end
+end
+desc_nodes.loc_name = {}
+localize{type = 'name', key = key, set = set, nodes = desc_nodes.loc_name, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars(info_queue, _c:create_fake_card()) or {}).vars) or {colours = {}}} 
+desc_nodes.loc_name = SMODS.info_queue_desc_from_rows(desc_nodes.loc_name, true)
+desc_nodes.loc_name.config.align = "cm"
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+function info_tip_from_rows(desc_nodes, name)
+'''
+position = "after"
+payload = '''
+  local name_nodes = {}
+  local function deep_find(t, index)
+    if t[index] then return true end
+    for i,v in pairs(t) do
+      if i == index then return true end
+      if type(v) == "table" then
+        return deep_find(v, index)
+      end
+    end
+    return false
+  end
+  if not desc_nodes.loc_name or not deep_find(desc_nodes.loc_name, "object") then
+    name_nodes = {{n=G.UIT.T, config={text = name, scale = 0.32, colour = G.C.UI.TEXT_LIGHT}}}
+  else
+    name_nodes = {desc_nodes.loc_name}
+  end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+{n=G.UIT.R, config={align = "tm", minh = 0.36, padding = 0.03}, nodes={{n=G.UIT.T, config={text = name, scale = 0.32, colour = G.C.UI.TEXT_LIGHT}}}},
+'''
+position = "at"
+payload = '''
+{n=G.UIT.R, config={align = "tm", minh = 0.36, padding = 0.03}, nodes=name_nodes},
+'''
+match_indent = true
