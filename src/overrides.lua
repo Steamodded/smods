@@ -2364,10 +2364,6 @@ end
 
 local emplace_ref = CardArea.emplace
 function CardArea:emplace(card, location, stay_flipped)
-    if self == G.consumeables and card.ability.set == 'domain' then
-        G.domain:emplace(card, location, stay_flipped)
-        return
-    end
     if card and card.edition and card.edition.card_limit then
         self.config.card_limit = self.config.card_limit + card.edition.card_limit
     end
