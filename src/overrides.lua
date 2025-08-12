@@ -2353,3 +2353,23 @@ function ease_ante(mod, ante_end)
 	ease_ante_ref(mod)
 	SMODS.calculate_context({ante_change = mod, ante_end = ante_end})
 end
+
+local carc = CardArea.remove_card
+function CardArea:remove_card(card, discarded_only)
+    if card and card.edition and card.edition.card_limit then
+        self.config.card_limit = self.config.card_limit - card.edition.card_limit
+    end
+    return carc(self, card, discarded_only)
+end
+
+local emplace_ref = CardArea.emplace
+function CardArea:emplace(card, location, stay_flipped)
+    if self == G.consumeables and card.ability.set == 'domain' then
+        G.domain:emplace(card, location, stay_flipped)
+        return
+    end
+    if card and card.edition and card.edition.card_limit then
+        self.config.card_limit = self.config.card_limit + card.edition.card_limit
+    end
+    return emplace_ref(self, card, location, stay_flipped)
+end
