@@ -32,7 +32,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-            if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:is_rank(6, false, context) and G.GAME.current_round.hands_played == 0 then'''
+            if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:is_rank(6, false) and G.GAME.current_round.hands_played == 0 then'''
 
 
 # Mail-In Rebate
@@ -44,7 +44,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-            context.other_card:is_rank(G.GAME.current_round.mail_card.id, false, context) then'''
+            context.other_card:is_rank(G.GAME.current_round.mail_card.id, false) then'''
 
 
 # Hit the Road
@@ -54,7 +54,7 @@ target = "card.lua"
 pattern = '''context.other_card:get_id() == 11 and not context.blueprint then'''
 position = "at"
 match_indent = true
-payload = '''context.other_card:is_rank(11, false, context) and not context.blueprint then'''
+payload = '''context.other_card:is_rank(11, false) and not context.blueprint then'''
 
 
 # Wee Joker
@@ -64,7 +64,7 @@ target = "card.lua"
 pattern = '''context.other_card:get_id() == 2 and not context.blueprint then'''
 position = "at"
 match_indent = true
-payload = '''context.other_card:is_rank(2, false, context) and not context.blueprint then'''
+payload = '''context.other_card:is_rank(2, false) and not context.blueprint then'''
 
 
 # 8 Ball
@@ -76,7 +76,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                    if (context.other_card:is_rank(8, false, context)) and (pseudorandom('8ball') < G.GAME.probabilities.normal/self.ability.extra) then''' 
+                    if (context.other_card:is_rank(8, false)) and (pseudorandom('8ball') < G.GAME.probabilities.normal/self.ability.extra) then''' 
 
 
 # The Idol
@@ -88,7 +88,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                    context.other_card:is_rank(G.GAME.current_round.idol_card.id, false, context) and '''
+                    context.other_card:is_rank(G.GAME.current_round.idol_card.id, false) and '''
 
 
 # Scholar
@@ -100,7 +100,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                    context.other_card:is_rank(14, false, context) then'''
+                    context.other_card:is_rank(14, false) then'''
 
 
 # Walkie Talkie
@@ -112,7 +112,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                (context.other_card:is_any_rank({10, 4}, false, context)) then'''
+                (context.other_card:is_any_rank({10, 4}, false)) then'''
 
 
 # Fibonacci
@@ -136,7 +136,7 @@ position = "at"
 match_indent = true
 payload = '''
 if self.ability.name == 'Fibonacci' and (
-    context.other_card:is_any_rank({2, 3, 5, 8, 14}, false, context)) then
+    context.other_card:is_any_rank({2, 3, 5, 8, 14}, false)) then
         return {
             mult = self.ability.extra,
             card = self
@@ -153,7 +153,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                    (context.other_card:is_any_rank({12, 13}, false, context)) then'''
+                    (context.other_card:is_any_rank({12, 13}, false)) then'''
 
 
 # Shoot the Moon
@@ -165,7 +165,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                        context.other_card:is_rank(12, false, context) then'''
+                        context.other_card:is_rank(12, false) then'''
 
 
 # Baron
@@ -177,7 +177,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                        context.other_card:is_rank(13, false, context) then'''
+                        context.other_card:is_rank(13, false) then'''
 
 
 
@@ -202,7 +202,7 @@ position = "at"
 match_indent = true
 payload = '''
 if self.ability.name == 'Hack' and (
-    context.other_card:is_any_rank({2, 3, 4, 5}, false, context)) then
+    context.other_card:is_any_rank({2, 3, 4, 5}, false)) then
         return {
             message = localize('k_again_ex'),
             repetitions = self.ability.extra,
@@ -221,4 +221,4 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                                if context.scoring_hand[i]:is_rank(14, false, context) then aces = aces + 1 end'''
+                                if context.scoring_hand[i]:is_rank(14, false) then aces = aces + 1 end'''

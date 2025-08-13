@@ -2731,7 +2731,7 @@ function SMODS.get_rank_from_id(id)
     return nil
 end
 
-function Card:is_rank(rank, bypass_debuff, source_context) -- Accepts SMODS.Rank, a rank key or a rank id
+function Card:is_rank(rank, bypass_debuff, flags) -- Accepts SMODS.Rank, a rank key or a rank id
     if not rank then return false end
     
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
@@ -2741,7 +2741,7 @@ function Card:is_rank(rank, bypass_debuff, source_context) -- Accepts SMODS.Rank
         return SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank
     end
 
-    for _, r in ipairs(self:get_ranks(source_context)) do
+    for _, r in ipairs(self:get_ranks(flags)) do
         if r == rank or r.key == rank or r.id == rank then
             return true
         end
@@ -2749,7 +2749,7 @@ function Card:is_rank(rank, bypass_debuff, source_context) -- Accepts SMODS.Rank
     return false
 end
 
-function Card:is_any_rank(ranks, bypass_debuff, source_context)
+function Card:is_any_rank(ranks, bypass_debuff, flags)
     if not ranks then return false end
 
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
@@ -2773,7 +2773,7 @@ function Card:is_any_rank(ranks, bypass_debuff, source_context)
 
     if not next(rank_dict) then return false end
 
-    for _, r in ipairs(self:get_ranks(source_context)) do
+    for _, r in ipairs(self:get_ranks(flags)) do
         if rank_dict[r] or rank_dict[r.key] or rank_dict[r.id] then
             return true
         end
@@ -2785,12 +2785,9 @@ function Card:get_ranks(flags) -- Returns a table of "SMODS.Rank"s, sanitized to
     local default_ranks = (not self.vampired and SMODS.has_enhancement(self, "m_stone") and {}) or {SMODS.Ranks[self.base.value]}
     if not SMODS.optional_features.quantum_ranks then return default_ranks end
 
-    local get_ranks_context = {get_ranks = true, card = self, ranks = default_ranks, no_mod = false}
-    for k, v in pairs(flags) do
-        get_ranks_context[k] = v
-    end
+    flags = flags or {}
 
-    local eval = SMODS.calculate_context(get_ranks_context) or {}
+    local eval = SMODS.calculate_context({get_ranks = true, card = self, ranks = default_ranks, no_mod = false, eval_getting_ranks = flags.eval_getting_ranks}) or {}
 
     if not eval.ranks then return default_ranks end
 
