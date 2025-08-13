@@ -715,7 +715,7 @@ function get_straight(hand, min_length, skip, wrap)
 					local rec_ret_straight = recursive_get_straight(n_rank, next_straight, max_skips, do_wrap, direction, used_c_reps, rank)
 					if #rec_ret_straight > #ret_straight then
 						ret_straight = rec_ret_straight
-						--if #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
+						if SMODS.optional_features.quantum_straight_min_return and #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
 					end
 				end
 			else
@@ -733,7 +733,7 @@ function get_straight(hand, min_length, skip, wrap)
 								return ret_straight
 							end
 						end
-						--if #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
+						if SMODS.optional_features.quantum_straight_min_return and #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
 						next_straight = {}
 						for k, v in pairs(current_straight) do next_straight[k] = v end
 						used_c_reps[c_rep] = false
