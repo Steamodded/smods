@@ -100,6 +100,10 @@
 ---@field new_suit? Suits|string New suit the card changed to.
 ---@field old_suit? Suits|string Old suit the card changed from.
 ---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
+---@field get_ranks? true Check if `true` for modifying the rank(s) of the context.other_card. 
+---@field eval_getting_ranks? table Passed as [source_context] param by hand type evaluation when calling get_ranks(). (Allows quantum ranks exclusively during / outside hand type evaluation)
+---@field is_face_getting_ranks? table Passed as [source_context] param by Card:is_face() when calling get_ranks(). (Allows quantum ranks exclusively during / outside is_face() evaluation)
+---@field no_mod? boolean Check if `true` to decide whether an effect should modify context.get_ranks' ranks field. (If you want to override and block other effects, return `no_mod=true` alongside ranks=[only your ranks])
 ---@field money_altered? true Check if `true` for effects when the amount of money the player has changes.
 ---@field from_shop? true Check if `true` if money changed during the shop.
 ---@field from_consumeable? true Check if `true` if money changed by a consumable.
@@ -115,6 +119,7 @@ function SMODS.merge_lists(...) end
 --- A table of SMODS feature that mods can choose to enable.
 ---@class SMODS.optional_features: table
 ---@field quantum_enhancements? boolean Enables "Quantum Enhancement" contexts. Cards can count as having multiple enhancements at once.
+---@field quantum_ranks? boolean Enables "Quantum Ranks", allowing playing cards to have more than one rank.
 ---@field retrigger_joker? boolean Enables "Joker Retrigger" contexts. Jokers can be retriggered by other jokers or effects.
 ---@field post_trigger? boolean Enables "Post Trigger" contexts. Allows calculating effects after a Joker has been calculated.
 ---@field cardareas? SMODS.optional_features.cardareas Enables additional CardArea calculation.
@@ -682,6 +687,11 @@ function SMODS.is_poker_hand_visible(handname) end
 --- Checks whether the card is eternal.
 --- `trigger` is the card or effect that runs the check
 function SMODS.is_eternal(card, trigger) end
+
+---@param id number
+---@return SMODS.Rank rank
+--- Returns the first rank from SMODS.Ranks whose .id == [id].
+function SMODS.get_rank_from_id(id) end
 
 ---@param card Card|table
 ---@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: string?}
