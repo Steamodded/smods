@@ -2361,3 +2361,19 @@ function eval_card(card, context)
 	SMODS.pop_from_context_stack()
 	return eff, post
 end
+
+local calculate_seal_ref = Card.calculate_seal
+function Card:calculate_seal(context)
+	SMODS.push_to_context_stack(context)
+	local eff, post = calculate_seal_ref(context)
+	SMODS.pop_from_context_stack()
+	return eff, post
+end
+
+local calculate_joker_ref = Card.calculate_joker
+function Card:calculate_joker(context)
+	SMODS.push_to_context_stack(context)
+	local eff, post = calculate_joker_ref(context)
+	SMODS.pop_from_context_stack()
+	return eff, post
+end
