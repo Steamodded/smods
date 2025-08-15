@@ -2766,6 +2766,7 @@ end
 
 local calculate_jokerref = Card.calculate_joker
 function Card:calculate_joker(context, ...)
+    SMODS.push_to_context_stack(context)
     local ret, ret2 = calculate_jokerref(self, context, ...)
     if self.ability.name == "Caino" or self.ability.name == "Glass Joker" then
         if context.remove_playing_cards then
@@ -2800,6 +2801,7 @@ function Card:calculate_joker(context, ...)
             end
         end
     end
+    SMODS.pop_from_context_stack()
     return ret, ret2
 end
 
