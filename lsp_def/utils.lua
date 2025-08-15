@@ -101,8 +101,8 @@
 ---@field old_suit? Suits|string Old suit the card changed from.
 ---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
 ---@field get_ranks? true Check if `true` for modifying the rank(s) of the context.other_card. 
----@field eval_getting_ranks? table Passed as [source_context] param by hand type evaluation when calling get_ranks(). (Allows quantum ranks exclusively during / outside hand type evaluation)
----@field is_face_getting_ranks? table Passed as [source_context] param by Card:is_face() when calling get_ranks(). (Allows quantum ranks exclusively during / outside is_face() evaluation)
+---@field eval_getting_ranks? table Passed as flag in context.get_ranks by hand type evaluation when calling get_ranks(). (Allows quantum ranks exclusively during / outside hand type evaluation)
+---@field is_face_getting_ranks? table Passed as flag in context.get_ranks by Card:is_face() when calling get_ranks(). (Allows quantum ranks exclusively during / outside is_face() evaluation)
 ---@field no_mod? boolean Check if `true` to decide whether an effect should modify context.get_ranks' ranks field. (If you want to override and block other effects, return `no_mod=true` alongside ranks=[only your ranks])
 ---@field money_altered? true Check if `true` for effects when the amount of money the player has changes.
 ---@field from_shop? true Check if `true` if money changed during the shop.
