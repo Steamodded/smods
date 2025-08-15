@@ -1864,3 +1864,16 @@ if self.ability.name == 'Campfire' and not context.blueprint then
 payload = '''
 if self.ability.name == 'Campfire' and not context.blueprint and self ~= context.card then
 '''
+
+# Support for ante contexts
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+pattern = '''
+delay(0.4); ease_ante(1); delay(0.4); check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
+'''
+position = 'at'
+payload = '''
+delay(0.4); ease_ante(1, true); delay(0.4); check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
+'''

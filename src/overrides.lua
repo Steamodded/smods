@@ -694,13 +694,13 @@ function G.UIDEF.deck_preview(args)
 		for _, suit in ipairs(suit_map) do
 			count = count + #SUITS[suit][rank]
 		end
-		if count == 0 and SMODS.Ranks[rank].in_pool and not SMODS.Ranks[rank]:in_pool({suit=''}) then
+		if count == 0 and SMODS.Ranks[rank].in_pool and not SMODS.add_to_pool(SMODS.Ranks[rank], {suit=''}) then
 			hidden_ranks[rank] = true
 		end
 	end
 	local hidden_suits = {}
 	for _, suit in ipairs(suit_map) do
-		if suit_counts[suit] == 0 and SMODS.Suits[suit].in_pool and not SMODS.Suits[suit]:in_pool({rank=''}) then
+		if suit_counts[suit] == 0 and SMODS.Suits[suit].in_pool and not SMODS.add_to_pool(SMODS.Suits[suit],{rank=''}) then
 			hidden_suits[suit] = true
 		end
 	end
@@ -972,7 +972,7 @@ function G.UIDEF.view_deck(unplayed_only)
 
 	local rank_cols = {}
 	for i = #rank_name_mapping, 1, -1 do
-		if rank_tallies[rank_name_mapping[i]] ~= 0 or not SMODS.Ranks[rank_name_mapping[i]].in_pool or SMODS.Ranks[rank_name_mapping[i]]:in_pool({suit=''}) then
+		if rank_tallies[rank_name_mapping[i]] ~= 0 or SMODS.add_to_pool(SMODS.Ranks[rank_name_mapping[i]], {suit=''}) then
 			local mod_delta = mod_rank_tallies[rank_name_mapping[i]] ~= rank_tallies[rank_name_mapping[i]]
 			rank_cols[#rank_cols + 1] = {n = G.UIT.R, config = {align = "cm", padding = 0.07}, nodes = {
 				{n = G.UIT.C, config = {align = "cm", r = 0.1, padding = 0.04, emboss = 0.04, minw = 0.5, colour = G.C.L_BLACK}, nodes = {
@@ -1021,7 +1021,7 @@ function G.UIDEF.view_deck(unplayed_only)
 	-- add suit tallies
 	local hidden_suits = {}
 	for _, suit in ipairs(suit_map) do
-		if suit_tallies[suit] == 0 and SMODS.Suits[suit].in_pool and not SMODS.Suits[suit]:in_pool({rank=''}) then
+		if suit_tallies[suit] == 0 and SMODS.Suits[suit].in_pool and not SMODS.add_to_pool(SMODS.Suits[suit], {rank=''}) then
 			hidden_suits[suit] = true
 		end
 	end
@@ -1276,7 +1276,7 @@ G.FUNCS.your_suits_page = function(args)
 
 	local rank_cols = {}
 	for i = #rank_name_mapping, 1, -1 do
-		if rank_tallies[rank_name_mapping[i]] ~= 0 or not SMODS.Ranks[rank_name_mapping[i]].in_pool or SMODS.Ranks[rank_name_mapping[i]]:in_pool({suit=''}) then
+		if rank_tallies[rank_name_mapping[i]] ~= 0 or SMODS.add_to_pool(SMODS.Ranks[rank_name_mapping[i]], {suit=''}) then
 			local mod_delta = mod_rank_tallies[rank_name_mapping[i]] ~= rank_tallies[rank_name_mapping[i]]
 			rank_cols[#rank_cols + 1] = {n = G.UIT.R, config = {align = "cm", padding = 0.07}, nodes = {
 				{n = G.UIT.C, config = {align = "cm", r = 0.1, padding = 0.04, emboss = 0.04, minw = 0.5, colour = G.C.L_BLACK}, nodes = {
@@ -1325,7 +1325,7 @@ G.FUNCS.your_suits_page = function(args)
 	-- add suit tallies
 	local hidden_suits = {}
 	for _, suit in ipairs(suit_map) do
-		if suit_tallies[suit] == 0 and SMODS.Suits[suit].in_pool and not SMODS.Suits[suit]:in_pool({rank=''}) then
+		if suit_tallies[suit] == 0 and SMODS.Suits[suit].in_pool and not SMODS.add_to_pool(SMODS.Suits[suit], {rank=''}) then
 			hidden_suits[suit] = true
 		end
 	end
@@ -2163,7 +2163,7 @@ function get_pack(_key, _type)
 		v.current_weight = v.get_weight and v:get_weight() or v.weight or 1
         if (not _type or _type == v.kind) then add = true end
 		if v.in_pool and type(v.in_pool) == 'function' then
-			local res, pool_opts = v:in_pool()
+			local res, pool_opts = SMODS.add_to_pool(v)
 			pool_opts = pool_opts or {}
 			add = res and (add or pool_opts.override_base_checks)
 		end
@@ -2344,4 +2344,12 @@ function Card:use_consumeable(area, copier)
         end
     end
 	return ret
+end
+
+local ease_ante_ref = ease_ante
+function ease_ante(mod, ante_end)
+	local flags = SMODS.calculate_context({modify_ante = mod, ante_end = ante_end})
+	if flags.modify then mod = mod + flags.modify end
+	ease_ante_ref(mod)
+	SMODS.calculate_context({ante_change = mod, ante_end = ante_end})
 end

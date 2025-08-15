@@ -677,11 +677,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     function SMODS.setup_stake(i)
         local applied_stakes = SMODS.build_stake_chain(G.P_CENTER_POOLS.Stake[i])
+        G.GAME.applied_stakes = {}
         for stake, _ in pairs(applied_stakes) do
             if G.P_CENTER_POOLS['Stake'][stake].modifiers then
                 G.P_CENTER_POOLS['Stake'][stake].modifiers()
             end
+            table.insert(G.GAME.applied_stakes, stake)
         end
+        table.sort(G.GAME.applied_stakes)
     end
 
     --Register vanilla stakes
@@ -2245,7 +2248,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             func = function()
                 for i = #destroyed_cards, 1, -1 do
                     local card = destroyed_cards[i]
-                    if card.ability.name == 'Glass Card' then
+                    if SMODS.shatters(card) then
                         card:shatter()
                     else
                         card:start_dissolve(nil, i ~= #destroyed_cards)
@@ -2714,7 +2717,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
     SMODS.PokerHandPart {
         key = '_straight',
-        func = function(hand) return get_straight(hand, SMODS.four_fingers(), SMODS.shortcut(), SMODS.wrap_around_straight()) end
+        func = function(hand) return get_straight(hand, SMODS.four_fingers('straight'), SMODS.shortcut(), SMODS.wrap_around_straight()) end
     }
     SMODS.PokerHandPart {
         key = '_flush',
@@ -2796,6 +2799,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         vouchers = {},
         restrictions = { banned_cards = {}, banned_tags = {}, banned_other = {} },
         unlocked = function(self) return true end,
+        calculate = function (self, context) end,
         class_prefix = 'c',
         process_loc_text = function(self)
             SMODS.process_loc_text(G.localization.misc.challenge_names, self.key, self.loc_txt, 'name')
