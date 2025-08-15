@@ -2353,3 +2353,11 @@ function ease_ante(mod, ante_end)
 	ease_ante_ref(mod)
 	SMODS.calculate_context({ante_change = mod, ante_end = ante_end})
 end
+
+local eval_card_ref = eval_card
+function eval_card(card, context)
+	SMODS.push_to_context_stack(context)
+	local eff, post = eval_card_ref(card, context)
+	SMODS.pop_from_context_stack()
+	return eff, post
+end
