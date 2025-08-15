@@ -1849,7 +1849,10 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
     return flags
 end
 
--- The context stack list, allows some advanced effects, like:
+-- The context stack list, structured like so;
+-- SMODS.context_stack = {1: {context = [unique context 1], count = [number of times it was added consecutively]}, ...}
+-- (Contexts may repeat non-consecutively, though I don't think they ever should..)
+-- Allows some advanced effects, like:
 -- Individual playing cards modifying probabilities checked during individual scoring, only when they're the context.other_card 
 -- (-> By checking the context in the stack PRIOR to the mod_probability context for the .individual / .other_card flags)
 SMODS.context_stack = {}
@@ -1857,16 +1860,21 @@ SMODS.context_stack = {}
 function SMODS.push_to_context_stack(context)
     if not context or type(context) ~= "table" then
         sendWarnMessage(('Called SMODS.push_to_context_stack with invalid context \'%s\''):format(context), 'Util')
+    elseif SMODS.context_stack[#SMODS.context_stack] ~= context then
+        SMODS.context_stack[#SMODS.context_stack+1] = {context = context, count = 1}
     else
-        SMODS.context_stack[#SMODS.context_stack+1] = context
+        SMODS.context_stack[#SMODS.context_stack].count = SMODS.context_stack[#SMODS.context_stack].count + 1
     end
 end
 
 function SMODS.pop_from_context_stack(context)
-    if not SMODS.context_stack[#SMODS.context_stack] == context then
+    if SMODS.context_stack[#SMODS.context_stack] ~= context then
         sendWarnMessage(('Called SMODS.pop_from_context_stack with invalid context \'%s\''):format(context), 'Util')
     else
-        table.remove(SMODS.context_stack, #SMODS.context_stack)
+        SMODS.context_stack[#SMODS.context_stack].count = SMODS.context_stack[#SMODS.context_stack].count - 1
+        if SMODS.context_stack[#SMODS.context_stack].count <= 0 then
+            table.remove(SMODS.context_stack, #SMODS.context_stack)
+        end
     end
 end
 
