@@ -1857,13 +1857,17 @@ SMODS.context_stack = {}
 function SMODS.push_to_context_stack(context)
     if not context or type(context) ~= "table" then
         sendWarnMessage(('Called SMODS.push_to_context_stack with invalid context \'%s\''):format(context), 'Util')
+    else
+        SMODS.context_stack[#SMODS.context_stack+1] = context
     end
-    context = context or {}
-    SMODS.context_stack[#SMODS.context_stack+1] = context
 end
 
-function SMODS.pop_from_context_stack()
-    table.remove(SMODS.context_stack, #SMODS.context_stack)
+function SMODS.pop_from_context_stack(context)
+    if not SMODS.context_stack[#SMODS.context_stack] == context then
+        sendWarnMessage(('Called SMODS.pop_from_context_stack with invalid context \'%s\''):format(context), 'Util')
+    else
+        table.remove(SMODS.context_stack, #SMODS.context_stack)
+    end
 end
 
 -- Used to calculate contexts across G.jokers, scoring_hand (if present), G.play and G.GAME.selected_back
@@ -1887,7 +1891,7 @@ function SMODS.calculate_context(context, return_table, no_resolve)
     
     if SMODS.no_resolve then SMODS.no_resolve = nil end
     
-    SMODS.pop_from_context_stack()
+    SMODS.pop_from_context_stack(context)
     
     if not return_table then
         local ret = {}
@@ -2163,7 +2167,7 @@ function SMODS.eval_individual(individual, context)
             SMODS.calculate_context({blueprint_card = context.blueprint_card, post_trigger = true, other_card = individual.object, other_context = context, other_ret = ret}, post_trig)
         end
     end
-    SMODS.pop_from_context_stack()
+    SMODS.pop_from_context_stack(context)
     return ret, post_trig
 end
 
@@ -2801,7 +2805,7 @@ function Card:calculate_joker(context, ...)
             end
         end
     end
-    SMODS.pop_from_context_stack()
+    SMODS.pop_from_context_stack(context)
     return ret, ret2
 end
 
