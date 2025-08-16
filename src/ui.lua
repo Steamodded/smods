@@ -2072,3 +2072,159 @@ function G.UIDEF.run_setup_option(_type)
     end
     return ret
 end
+
+-- Hand Score UI Utils
+
+function SMODS.GUI.hand_score_display_ui(scale)
+    return
+    -- Outer shell container
+    {n=G.UIT.R, config={align = "cm", id = 'hand_text_area', func = 'SMODS_scoring_calculation_function', colour = darken(G.C.BLACK, 0.1), r = 0.1, emboss = 0.05, padding = 0.03}, nodes={
+        -- Inner shell container
+        {n=G.UIT.C, config={align = "cm"}, nodes={
+            -- Hand type display container
+            SMODS.GUI.current_hand_ui(scale),
+            -- Chips X Mult container
+            SMODS.GUI.hand_chips_container(scale),
+        }}
+    }}
+end
+
+function SMODS.GUI.current_hand_ui(scale)
+    return
+    {n=G.UIT.R, config={align = "cm", minh = 1.1}, nodes={
+        {n=G.UIT.O, config={id = 'hand_name', func = 'hand_text_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "handname_text"}}, colours = {G.C.UI.TEXT_LIGHT}, shadow = true, float = true, scale = scale*1.4})}},
+        {n=G.UIT.O, config={id = 'hand_chip_total', func = 'hand_chip_total_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "chip_total_text"}}, colours = {G.C.UI.TEXT_LIGHT}, shadow = true, float = true, scale = scale*1.4})}},
+        {n=G.UIT.T, config={ref_table = G.GAME.current_round.current_hand, ref_value='hand_level', scale = scale, colour = G.C.UI.TEXT_LIGHT, id = 'hand_level', shadow = true}},
+    }}
+end
+
+function SMODS.GUI.hand_chips_container(scale)
+    return
+    {n=G.UIT.R, config={align = "cm", minh = 1, padding = 0.1}, nodes={
+        -- Chips container
+        SMODS.GUI.chips_container(scale),
+        -- Operator
+        SMODS.GUI.operator(scale),
+        -- Mult container
+        SMODS.GUI.mult_container(scale)
+    }}
+end
+
+function SMODS.GUI.chips_container(scale)
+    return
+    {n=G.UIT.C, config={align = 'cm', id = 'hand_chips'}, nodes = {
+        SMODS.GUI.score_container({
+            type = 'chips',
+            text = 'chip_text',
+            align = 'cr',
+        })
+    }}
+end
+
+function SMODS.GUI.operator(scale)
+    return
+    {n=G.UIT.C, config={align = "cm", id = 'hand_operator'}, nodes={
+        {n=G.UIT.T, config={text = "X", lang = G.LANGUAGES['en-us'], scale = scale*2, colour = G.C.UI_MULT, shadow = true}},
+    }}
+end
+
+function SMODS.GUI.mult_container(scale)
+    return 
+    {n=G.UIT.C, config={align = 'cm', id = 'hand_mult'}, nodes = {
+        SMODS.GUI.score_container({
+            type = 'mult'
+        })
+    }}
+end
+
+function SMODS.GUI.score_container(args)
+    local scale = args.scale or 0.4
+    local type = args.type or 'mult'
+    local colour = args.colour or SMODS.Scoring_Parameters[type].colour
+    local align = args.align or 'cl'
+    local func = args.func or 'hand_type_UI_set'
+    local text = args.text or type..'_text'
+    local w = args.w or 2
+    local h = args.h or 1
+    return
+    {n=G.UIT.R, config={align = align, minw = w, minh = h, r = 0.1, colour = colour, id = 'hand_'..type..'_area', emboss = 0.05}, nodes={
+        {n=G.UIT.O, config={func = 'flame_handler', no_role = true, id = 'flame_'..type, object = Moveable(0,0,0,0), w = 0, h = 0, _w = w * 1.25, _h = h * 2.5}},
+        align == 'cl' and {n=G.UIT.B, config={w = 0.1, h = 0.1}} or nil,
+        {n=G.UIT.O, config={id = 'hand_'..type, func = func, text = text, type = type, scale = scale*2.3, object = DynaText({
+            string = {{ref_table = G.GAME.current_round.current_hand, ref_value = text}},
+            colours = {G.C.UI.TEXT_LIGHT}, font = G.LANGUAGES['en-us'].font, shadow = true, float = true, scale = scale*2.3
+        })}},
+        align ~= 'cl' and {n=G.UIT.B, config={w = 0.1, h = 0.1}} or nil,
+    }}
+end
+
+-- Internal function to automatically update UI boxes for new scoring parameters
+G.FUNCS.hand_type_UI_set = function(e)
+  local new_mult_text = number_format(G.GAME.current_round.current_hand[e.config.type] or SMODS.Scoring_Parameters[e.config.type].default_value)
+  if new_mult_text ~= G.GAME.current_round.current_hand[e.config.text] then 
+    G.GAME.current_round.current_hand[e.config.text] = new_mult_text
+    e.config.object.scale = scale_number(G.GAME.current_round.current_hand[e.config.type], e.config.scale, 1000)
+    e.config.object:update_text()
+    if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and G.GAME.current_round.current_hand[e.config.type] or 1)))) end
+  end
+end
+
+G.FUNCS.flame_handler = function(e)
+    G.ARGS.flame_handler = G.ARGS.flame_handler or {}
+
+    for key, parameter in pairs(SMODS.Scoring_Parameters) do
+        for i=1, 3 do
+            parameter.lick[i] = math.min(math.max(((parameter.colour[i]*0.5+G.C.YELLOW[i]*0.5) + 0.1)^2, 0.1), 1)
+        end
+        G.ARGS.flame_handler[key] = G.ARGS.flame_handler[key] or parameter:flame_handler()
+    end
+  for k, v in pairs(G.ARGS.flame_handler) do
+    if e.config.id == v.id then 
+      if not e.config.object:is(Sprite) or e.config.object.ID ~= v.ID then 
+        e.config.object:remove()
+        e.config.object = Sprite(0, 0, e.config._w, e.config._h, G.ASSET_ATLAS["ui_1"], {x = 2, y = 0})
+        v.ID = e.config.object.ID
+        G.ARGS[v.arg_tab] = {
+            intensity = 0,
+            real_intensity = 0,
+            intensity_vel = 0,
+            colour_1 = v.colour,
+            colour_2 = v.accent,
+            timer = G.TIMERS.REAL
+        }      
+        e.config.object:set_alignment({
+            major = e.parent,
+            type = 'bmi',
+            offset = {x=0,y=0},
+            xy_bond = 'Weak'
+        })
+        e.config.object:define_draw_steps({{
+          shader = 'flame',
+          send = {
+              {name = 'time', ref_table = G.ARGS[v.arg_tab], ref_value = 'timer'},
+              {name = 'amount', ref_table = G.ARGS[v.arg_tab], ref_value = 'real_intensity'},
+              {name = 'image_details', ref_table = e.config.object, ref_value = 'image_dims'},
+              {name = 'texture_details', ref_table = e.config.object.RETS, ref_value = 'get_pos_pixel'},
+              {name = 'colour_1', ref_table =  G.ARGS[v.arg_tab], ref_value = 'colour_1'},
+              {name = 'colour_2', ref_table =  G.ARGS[v.arg_tab], ref_value = 'colour_2'},
+              {name = 'id', val =  e.config.object.ID},
+          }}})
+          e.config.object:get_pos_pixel()
+      end
+      local _F = G.ARGS[v.arg_tab]
+      local exptime = math.exp(-0.4*G.real_dt)
+      
+      if G.ARGS.score_intensity.earned_score >= G.ARGS.score_intensity.required_score and G.ARGS.score_intensity.required_score > 0 then
+        _F.intensity = ((G.pack_cards and not G.pack_cards.REMOVED) or (G.TAROT_INTERRUPT)) and 0 or math.max(0., math.log(G.ARGS.score_intensity.earned_score, 5)-2)
+      else
+        _F.intensity = 0
+      end
+
+      _F.timer = _F.timer + G.real_dt*(1 + _F.intensity*0.2)
+      if _F.intensity_vel < 0 then _F.intensity_vel = _F.intensity_vel*(1 - 10*G.real_dt) end
+      _F.intensity_vel = (1-exptime)*(_F.intensity - _F.real_intensity)*G.real_dt*25 + exptime*_F.intensity_vel
+      _F.real_intensity = math.max(0, _F.real_intensity + _F.intensity_vel)
+      _F.change = (_F.change or 0)*(1 - 4.*G.real_dt) + ( 4.*G.real_dt)*(_F.real_intensity < _F.intensity - 0.0 and 1 or 0)*_F.real_intensity
+    end
+  end
+end

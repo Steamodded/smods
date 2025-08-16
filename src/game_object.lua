@@ -3528,6 +3528,243 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         cycle = 1,
     }
 
+    -------------------------------------------------------------------------------------------------
+    ------- API CODE GameObject.Scoring_Calculation
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.Scoring_Parameters = {}
+    SMODS.Scoring_Parameter_Calculation = {}
+    SMODS.Scoring_Parameter = SMODS.GameObject:extend{
+        set = 'Scoring_Parameters',
+        obj_table = SMODS.Scoring_Parameters,
+        obj_buffer = {},
+        required_parameters = {
+            'key',
+            'default_value',
+        },
+        inject = function(self)
+            self.colour = self.colour or G.C.UI_MULT
+            self.lick = {1, 1, 1, 1}
+            self.current = self.default_value
+            if self.calculation_keys then
+                SMODS.scoring_parameter_keys = SMODS.merge_lists({SMODS.scoring_parameter_keys, self.calculation_keys})
+                SMODS.calculation_keys = SMODS.merge_lists({SMODS.scoring_parameter_keys, SMODS.other_calculation_keys})
+                for _, calc_key in ipairs(self.calculation_keys) do
+                    SMODS.Scoring_Parameter_Calculation[calc_key] = self.key
+                end
+            end
+            SMODS.Calculation_Controls[self.key] = false
+        end,
+        flame_handler = function(self)
+            return {
+                id = 'flame_'..self.key, 
+                arg_tab = self.key..'_flames',
+                colour = self.colour,
+                accent = self.lick
+            }
+        end,
+        modify = function(self, amount)
+            self.current = self.current + amount
+            update_hand_text({delay = 0}, {[self.key] = self.current})
+        end,
+        level_up_hand = function(self, amount, hand)
+            hand[self.key] = math.max(hand['s_'..self.key] + hand['l_'..self.key]*(hand.level - 1), 0)
+        end,
+        calc_effect = function(self, effect, scored_card, key, amount, from_edition)
+            if not SMODS.Calculation_Controls[self.key] then return end
+            if amount then
+                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                self:modify(amount)
+                card_eval_status_text(scored_card, 'extra', nil, percent, nil, 
+                    {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, colour = self.colour})
+                return true
+            end
+        end
+    }
+
+    SMODS.Scoring_Parameter({
+        key = 'chips',
+        default_value = 0,
+        colour = G.C.UI_CHIPS,
+        calculation_keys = {'chips', 'h_chips', 'chip_mod', 'x_chips', 'xchips', 'Xchip_mod',},
+        calc_effect = function(self, effect, scored_card, key, amount, from_edition)
+            if not SMODS.Calculation_Controls.chips then return end
+            if (key == 'chips' or key == 'h_chips' or key == 'chip_mod') and amount then
+                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                self:modify(amount)
+                if not effect.remove_default_message then
+                    if from_edition then
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, chip_mod = amount, colour = G.C.EDITION, edition = true})
+                    else
+                        if key ~= 'chip_mod' then
+                            if effect.chip_message then
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.chip_message)
+                            else
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'chips', amount, percent)
+                            end
+                        end
+                    end
+                end
+                return true
+            end
+            if (key == 'x_chips' or key == 'xchips' or key == 'Xchip_mod') and amount ~= 1 then
+                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                self:modify(hand_chips * (amount - 1))
+                if not effect.remove_default_message then
+                    if from_edition then
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xchips' or 'a_xchips_minus',vars={amount}}, Xchips_mod =  amount, colour =  G.C.EDITION, edition = true})
+                    else
+                        if key ~= 'Xchip_mod' then
+                            if effect.xchip_message then
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.xchip_message)
+                            else
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'x_chips', amount, percent)
+                            end
+                        end
+                    end
+                end
+                return true
+            end
+        end,
+        modify = function(self, amount)
+            hand_chips = mod_chips(self.current + amount)
+            self.current = hand_chips
+            update_hand_text({delay = 0}, {chips = self.current})
+        end
+    })
+
+    SMODS.Scoring_Parameter({
+        key = 'mult',
+        default_value = 0,
+        colour = G.C.UI_MULT,
+        calculation_keys = {'mult', 'h_mult', 'mult_mod','x_mult', 'Xmult', 'xmult', 'x_mult_mod', 'Xmult_mod'},
+        calc_effect = function(self, effect, scored_card, key, amount, from_edition)
+            if not SMODS.Calculation_Controls.mult then return end
+            if (key == 'mult' or key == 'h_mult' or key == 'mult_mod') and amount then
+                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                self:modify(amount)
+                if not effect.remove_default_message then
+                    if from_edition then
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_mult' or 'a_mult_minus', vars = {amount}}, mult_mod = amount, colour = G.C.DARK_EDITION, edition = true})
+                    else
+                        if key ~= 'mult_mod' then
+                            if effect.mult_message then
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.mult_message)
+                            else
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'mult', amount, percent)
+                            end
+                        end
+                    end
+                end
+                return true
+            end
+            if (key == 'x_mult' or key == 'xmult' or key == 'Xmult' or key == 'x_mult_mod' or key == 'Xmult_mod') and amount ~= 1 then
+                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                self:modify(mult * (amount - 1))
+                if not effect.remove_default_message then
+                    if from_edition then
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xmult' or 'a_xmult_minus',vars={amount}}, Xmult_mod =  amount, colour =  G.C.EDITION, edition = true})
+                    else
+                        if key ~= 'Xmult_mod' then
+                            if effect.xmult_message then
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.xmult_message)
+                            else
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'x_mult', amount, percent)
+                            end
+                        end
+                    end
+                end
+                return true
+            end
+        end,
+        modify = function(self, amount)
+            mult = mod_mult(self.current + amount)
+            self.current = mult
+            update_hand_text({delay = 0}, {mult = self.current})
+        end
+    })
+
+    SMODS.Calculation_Controls = {
+        chips = true,
+        mult = true
+    }
+    SMODS.Scoring_Calculations = {}
+    SMODS.Scoring_Calculation = SMODS.GameObject:extend {
+        set = 'Scoring_Calculations',
+        obj_table = SMODS.Scoring_Calculations,
+        obj_buffer = {},
+        required_params = {
+            'key',
+            'func',
+        },
+        parameters = {'chips', 'mult'},
+        inject = function() end,
+        new = function(self, def)
+            def = def or {}
+            if self.init then def.config = def.config or self.init(def) end
+            for key, _ in pairs(SMODS.Calculation_Controls) do
+                SMODS.Calculation_Controls[key] = false
+            end
+            for _, key in ipairs(self.parameters) do
+                SMODS.Calculation_Controls[key] = true
+                G.GAME.current_round.current_hand[key] = SMODS.Scoring_Parameters[key].default_value
+            end
+            return setmetatable(def, {__index = self})
+        end,
+        load = function(self, def)
+            def = def or {}
+            def.config = def.config or {}
+            for key, _ in pairs(SMODS.Calculation_Controls) do
+                SMODS.Calculation_Controls[key] = false
+            end
+            for _, key in ipairs(self.parameters) do
+                SMODS.Calculation_Controls[key] = true
+            end
+            return setmetatable(def, {__index = self})
+        end,
+        save = function(self)
+            local backTable = {
+                config = self.config,
+                key = self.key or 'multiply'
+            }
+
+            return backTable
+        end
+    }
+
+    local init_game_object_ref = Game.init_game_object
+    function Game:init_game_object()
+        local ret = init_game_object_ref(self)
+        for _, parameter in pairs(SMODS.Scoring_Parameters) do
+            if parameter.hands then
+                for hand, values in pairs(parameter.hands) do
+                    for k, v in pairs(values) do
+                        ret.hands[hand][k] = v
+                    end
+                end
+            end
+        end
+        return ret
+    end
+
+    SMODS.Scoring_Calculation {
+        key = "multiply",
+        func = function(self, chips, mult, flames) return chips * mult end,
+        text = 'X'
+    } 
+
+    SMODS.Scoring_Calculation {
+        key = "add",
+        func = function(self, chips, mult, flames) return chips + mult end,
+        text = '+'
+    }
+
+    SMODS.Scoring_Calculation {
+        key = "exponent",
+        func = function(self, chips, mult, flames) return chips ^ mult end,
+        text = '^'
+    }
+
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep

@@ -1233,44 +1233,8 @@ end
 -- This function handles the calculation of each effect returned to evaluate play.
 -- Can easily be hooked to add more calculation effects ala Talisman
 SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, from_edition)
-    if (key == 'chips' or key == 'h_chips' or key == 'chip_mod') and amount then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        hand_chips = mod_chips(hand_chips + amount)
-        update_hand_text({delay = 0}, {chips = hand_chips, mult = mult})
-        if not effect.remove_default_message then
-            if from_edition then
-                card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, chip_mod = amount, colour = G.C.EDITION, edition = true})
-            else
-                if key ~= 'chip_mod' then
-                    if effect.chip_message then
-                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.chip_message)
-                    else
-                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'chips', amount, percent)
-                    end
-                end
-            end
-        end
-        return true
-    end
-
-    if (key == 'mult' or key == 'h_mult' or key == 'mult_mod') and amount then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        mult = mod_mult(mult + amount)
-        update_hand_text({delay = 0}, {chips = hand_chips, mult = mult})
-        if not effect.remove_default_message then
-            if from_edition then
-                card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_mult' or 'a_mult_minus', vars = {amount}}, mult_mod = amount, colour = G.C.DARK_EDITION, edition = true})
-            else
-                if key ~= 'mult_mod' then
-                    if effect.mult_message then
-                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.mult_message)
-                    else
-                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'mult', amount, percent)
-                    end
-                end
-            end
-        end
-        return true
+    if SMODS.Scoring_Parameter_Calculation[key] then
+        return SMODS.Scoring_Parameters[SMODS.Scoring_Parameter_Calculation[key]]:calc_effect(effect, scored_card, key, amount, from_edition)
     end
 
     if (key == 'p_dollars' or key == 'dollars' or key == 'h_dollars') and amount then
@@ -1283,46 +1247,6 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
             end
         end
         ease_dollars(amount)
-        return true
-    end
-
-    if (key == 'x_chips' or key == 'xchips' or key == 'Xchip_mod') and amount ~= 1 then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        hand_chips = mod_chips(hand_chips * amount)
-        update_hand_text({delay = 0}, {chips = hand_chips, mult = mult})
-        if not effect.remove_default_message then
-            if from_edition then
-                card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xchips' or 'a_xchips_minus',vars={amount}}, Xchips_mod =  amount, colour =  G.C.EDITION, edition = true})
-            else
-                if key ~= 'Xchip_mod' then
-                    if effect.xchip_message then
-                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.xchip_message)
-                    else
-                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'x_chips', amount, percent)
-                    end
-                end
-            end
-        end
-        return true
-    end
-
-    if (key == 'x_mult' or key == 'xmult' or key == 'Xmult' or key == 'x_mult_mod' or key == 'Xmult_mod') and amount ~= 1 then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        mult = mod_mult(mult * amount)
-        update_hand_text({delay = 0}, {chips = hand_chips, mult = mult})
-        if not effect.remove_default_message then
-            if from_edition then
-                card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xmult' or 'a_xmult_minus',vars={amount}}, Xmult_mod =  amount, colour =  G.C.EDITION, edition = true})
-            else
-                if key ~= 'Xmult_mod' then
-                    if effect.xmult_message then
-                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.xmult_message)
-                    else
-                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'x_mult', amount, percent)
-                    end
-                end
-            end
-        end
         return true
     end
 
@@ -1505,11 +1429,14 @@ SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
     return ret
 end
 
-SMODS.calculation_keys = {
+SMODS.calculation_keys = {}
+SMODS.scoring_parameter_keys = {
     'chips', 'h_chips', 'chip_mod',
     'mult', 'h_mult', 'mult_mod',
     'x_chips', 'xchips', 'Xchip_mod',
     'x_mult', 'Xmult', 'xmult', 'x_mult_mod', 'Xmult_mod',
+}
+SMODS.other_calculation_keys = {
     'p_dollars', 'dollars', 'h_dollars',
     'swap', 'balance',
     'saved', 'effect', 'remove',
@@ -2722,6 +2649,7 @@ function SMODS.is_eternal(card, trigger)
     return ret
 end
 
+-- Card rank functions
 function SMODS.get_rank_from_id(id)
     for _, rank in pairs(SMODS.Ranks) do
         if rank.id == id then
@@ -2808,6 +2736,55 @@ function Card:get_ranks(flags) -- Returns a table of "SMODS.Rank"s, sanitized to
 
     return ret
 end
+
+-- Scoring Calculation API
+function SMODS.set_scoring_calculation(key)
+    G.GAME.current_scoring_calculation = SMODS.Scoring_Calculations[key]:new()
+end
+
+G.FUNCS.SMODS_scoring_calculation_function = function(e)
+    local first = false
+    if not (e.config.current_scoring_calculation and e.config.current_scoring_calculation == G.GAME.current_scoring_calculation.key) then
+        first = true
+        local scale = 0.4
+        e.children[1].children[2]:remove()
+        e.children[1].children[2] = nil
+        if G.GAME.current_scoring_calculation.replace_ui then
+            e.children[1].UIBox:add_child(G.GAME.current_scoring_calculation:replace_ui(), e.children[1])
+        else
+            e.children[1].UIBox:add_child(SMODS.GUI.hand_chips_container(scale), e.children[1])
+        end
+        e.config.current_scoring_calculation = G.GAME.current_scoring_calculation.key 
+    end
+
+    local container = e.children[1].children[2]
+    local chip_display = container.UIBox:get_UIE_by_ID('hand_chips')
+    local operator = container.UIBox:get_UIE_by_ID('hand_operator')
+    local mult_display = container.UIBox:get_UIE_by_ID('hand_mult')
+    
+    if G.GAME.current_scoring_calculation.update_ui then
+        G.GAME.current_scoring_calculation:update_ui(container, chip_display, mult_display, operator)
+    else
+        if G.GAME.current_scoring_calculation.text and operator then
+            operator.children[1].config.text = type(G.GAME.current_scoring_calculation.text) == 'function' and G.GAME.current_scoring_calculation:text() or G.GAME.current_scoring_calculation.text
+        end
+        if G.GAME.current_scoring_calculation.colour and operator then
+            operator.children[1].config.colour = type(G.GAME.current_scoring_calculation.colour) == 'function' and G.GAME.current_scoring_calculation:colour() or G.GAME.current_scoring_calculation.colour
+        end
+        if operator then operator.UIBox:recalculate() end
+    end
+end
+
+SMODS.calculate_round_score = function(flames)
+    if not G.GAME.current_scoring_calculation then return 0 end
+    return G.GAME.current_scoring_calculation:func(SMODS.get_scoring_parameter('chips', flames), SMODS.get_scoring_parameter('mult', flames), flames)
+end
+
+function SMODS.get_scoring_parameter(key, flames)
+    if flames then return G.GAME.current_round.current_hand[key] end
+    return SMODS.Scoring_Parameters[key].current or SMODS.Scoring_Parameters[key].default_value
+end
+
 
 -- Adds tag_triggered context
 local tag_apply = Tag.apply_to_run
