@@ -1496,11 +1496,20 @@ function G.FUNCS.get_poker_hand_info(_cards)
 	return text, loc_disp_text, poker_hands, scoring_hand, disp_text
 end
 
-function create_UIBox_current_hands(simple)
-	G.current_hands = {}
-	local index = 0
-	for _, v in ipairs(G.handlist) do
-		local ui_element = create_UIBox_current_hand_row(v, simple)
+function create_UIBox_current_hands(simple, in_collection)
+    G.current_hands = {}
+	
+	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
+    local handlist = in_collection and {} or nil
+	if _pool then
+		for _, v in ipairs(_pool) do
+			table.insert(handlist, v.key)
+		end
+	end
+
+    local index = 0
+	for _, v in ipairs(handlist or G.handlist) do
+		local ui_element = create_UIBox_current_hand_row(v, simple, in_collection)
 		G.current_hands[index + 1] = ui_element
 		if ui_element then
 			index = index + 1
@@ -1511,11 +1520,15 @@ function create_UIBox_current_hands(simple)
 	end
 
 	local visible_hands = {}
-	for _, v in ipairs(G.handlist) do
-		if SMODS.is_poker_hand_visible(v) then
-			table.insert(visible_hands, v)
-		end
-	end
+    if not handlist then
+        for _, v in ipairs(G.handlist) do
+            if SMODS.is_poker_hand_visible(v) then
+                table.insert(visible_hands, v)
+            end
+        end
+    else
+        visible_hands = handlist
+    end
 
 	local hand_options = {}
 	for i = 1, math.ceil(#visible_hands / 10) do
@@ -1534,28 +1547,35 @@ function create_UIBox_current_hands(simple)
 				opt_callback = 'your_hands_page',
 				focus_args = { snap_to = true, nav = 'wide' },
 				current_option = 1,
-				colour = G.C.RED,
-				no_pips = true
+				colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED,
+                no_pips = true,
+				in_collection = in_collection
 			})}}}}
 
-	local t = {n = G.UIT.ROOT, config = {align = "cm", minw = 3, padding = 0.1, r = 0.1, colour = G.C.CLEAR}, nodes = {
-		{n = G.UIT.O, config = {
+	local t = {n = G.UIT.O, config = {
 				id = 'hand_list',
 				object = UIBox {
 					definition = object, config = {offset = { x = 0, y = 0 }, align = 'cm'}
 				}
-			}}}}
-	return t
+			}}
+	return not in_collection and {n = G.UIT.ROOT, config = {align = "cm", minw = 3, padding = 0.1, r = 0.1, colour = G.C.CLEAR}, nodes = {t}} or t
 end
 
 G.FUNCS.your_hands_page = function(args)
-	if not args or not args.cycle_config then return end
+    if not args or not args.cycle_config then return end
 	G.current_hands = {}
-
+	local in_collection = args.cycle_config.in_collection
+    local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
+    local handlist = in_collection and {} or nil
+	if _pool then
+		for _, v in ipairs(_pool) do
+			table.insert(handlist, v.key)
+		end
+	end
 
 	local index = 0
-	for _, v in ipairs(G.handlist) do
-		local ui_element = create_UIBox_current_hand_row(v, simple)
+	for _, v in ipairs(handlist or G.handlist) do
+		local ui_element = create_UIBox_current_hand_row(v, simple, in_collection)
 		if index >= (0 + 10 * (args.cycle_config.current_option - 1)) and index < 10 * args.cycle_config.current_option then
 			G.current_hands[index - (10 * (args.cycle_config.current_option - 1)) + 1] = ui_element
 		end
@@ -1570,10 +1590,14 @@ G.FUNCS.your_hands_page = function(args)
 	end
 
 	local visible_hands = {}
-	for _, v in ipairs(G.handlist) do
-		if SMODS.is_poker_hand_visible(v) then
-			table.insert(visible_hands, v)
-		end
+	if not handlist then
+        for _, v in ipairs(G.handlist) do
+            if SMODS.is_poker_hand_visible(v) then
+                table.insert(visible_hands, v)
+            end
+        end
+    else
+		visible_hands = handlist
 	end
 
 	local hand_options = {}
@@ -1594,9 +1618,9 @@ G.FUNCS.your_hands_page = function(args)
 						'your_hands_page',
 						focus_args = { snap_to = true, nav = 'wide' },
 						current_option = args.cycle_config.current_option,
-						colour = G
-							.C.RED,
-						no_pips = true
+						colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED,
+                        no_pips = true,
+						in_collection = in_collection
 					})
 				}
 			}
