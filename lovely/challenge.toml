@@ -65,3 +65,18 @@ payload = '''
     end'''
 match_indent = true
 times = 1
+
+# apply
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''
+local _ch = args.challenge
+'''
+position = "after"
+payload = '''
+if _ch.apply and type(_ch.apply) == "function" then
+    _ch:apply()
+end
+'''
+match_indent = true

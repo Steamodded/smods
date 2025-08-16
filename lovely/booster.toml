@@ -36,8 +36,23 @@ if booster_obj and SMODS.Centers[booster_obj.key] then
     G.STATE = G.STATES.SMODS_BOOSTER_OPENED
     SMODS.OPENED_BOOSTER = self
 end
-G.GAME.pack_choices = self.ability.choose or self.config.center.config.choose or 1
+G.GAME.pack_choices = math.min((self.ability.choose or self.config.center.config.choose or 1) + (G.GAME.modifiers.booster_choice_mod or 0), self.ability.extra and math.max(1, self.ability.extra + (G.GAME.modifiers.booster_size_mod or 0)) or self.config.center.extra and math.max(1, self.config.center.extra + (G.GAME.modifiers.booster_size_mod or 0)) or 1)
 """
+
+# Card:open
+# Adds modifier for size of booster
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+local _size = self.ability.extra
+'''
+payload = '''
+local _size = math.max(1, self.ability.extra + (G.GAME.modifiers.booster_size_mod or 0))
+'''
+
 
 # Card:open
 [[patches]]

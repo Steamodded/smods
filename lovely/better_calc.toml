@@ -1852,32 +1852,28 @@ payload = '''
 self.from_load = true
 '''
 
-# context.money_altered
+# Fix Campfire 'upgrading' when it is sold
 [[patches]]
 [patches.pattern]
-target = 'functions/common_events.lua'
+target = 'card.lua'
 match_indent = true
-position = 'after'
+position = 'at'
 pattern = '''
-if instant then
-    _mod(mod)
-else
-    G.E_MANAGER:add_event(Event({
-    trigger = 'immediate',
-    func = function()
-        _mod(mod)
-        return true
-    end
-    }))
-end
+if self.ability.name == 'Campfire' and not context.blueprint then
 '''
 payload = '''
-if not instant then delay(0.4) end
-SMODS.calculate_context({
-    money_altered = true,
-    amount = mod,
-    from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
-    from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
-    from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
-})
+if self.ability.name == 'Campfire' and not context.blueprint and self ~= context.card then
+'''
+
+# Support for ante contexts
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+pattern = '''
+delay(0.4); ease_ante(1); delay(0.4); check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
+'''
+position = 'at'
+payload = '''
+delay(0.4); ease_ante(1, true); delay(0.4); check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
 '''
