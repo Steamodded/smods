@@ -403,3 +403,18 @@ payload = '''
 {n=G.UIT.R, config={align = "tm", minh = 0.36, padding = 0.03}, nodes=name_nodes},
 '''
 match_indent = true
+
+# create_UIBox_current_hand_row()
+# respect current operator
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+{n=G.UIT.T, config={text = "X", scale = 0.45, colour = G.C.MULT}},
+'''
+position = "at"
+payload = '''
+{n=G.UIT.T, config={text = G.GAME.current_scoring_calculation.text and (type(G.GAME.current_scoring_calculation.text) == 'function' and G.GAME.current_scoring_calculation:text() or G.GAME.current_scoring_calculation.text) or "X",
+scale = 0.45, colour = G.GAME.current_scoring_calculation.colour and (type(G.GAME.current_scoring_calculation.colour) == 'function' and G.GAME.current_scoring_calculation:colour() or G.GAME.current_scoring_calculation.colour) or G.C.MULT}},
+'''
+match_indent = true
