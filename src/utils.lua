@@ -2944,8 +2944,8 @@ end
 
 function SMODS.get_select_key(card, pack)
     local select_key
-    if type(pack.select_button) == "function" then select_key = pack:select_card(card) else select_key = pack.select_button end
-    if type(card.config.center.select_button) == "function" then select_key = card.config.center:select_card(card) else select_key = card.config.center.select_button end
-    if type(SMODS.ConsumableTypes[card.ability.set].select_button) == "function" then select_key = SMODS.ConsumableTypes[card.ability.set]:select_card(card) else select_key = SMODS.ConsumableTypes[card.ability.set].select_button end
+    if type(pack.select_button) == "function" then select_key = pack:select_button(card) else select_key = pack.select_button end
+    if type(card.config.center.select_button) == "function" then select_key = card.config.center:select_button(card) else select_key = card.config.center.select_button end
+    if type(SMODS.ConsumableTypes[card.ability.set].select_button) == "function" then select_key = SMODS.ConsumableTypes[card.ability.set]:select_button(card) else select_key = SMODS.ConsumableTypes[card.ability.set].select_button end
     return select_key
 end
