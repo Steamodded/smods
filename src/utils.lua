@@ -2694,9 +2694,7 @@ function Card:is_any_rank(ranks, bypass_debuff, flags)
 
     local rank_dict = {}
     for _, v in pairs(ranks) do
-        if v then
-            rank_dict[v] = true
-        end
+        rank_dict[v] = true
     end
 
     if not next(rank_dict) then return false end
@@ -2714,18 +2712,29 @@ function Card:get_ranks(flags) -- Returns a table of "SMODS.Rank"s, sanitized to
     if not SMODS.optional_features.quantum_ranks then return default_ranks end
 
     flags = flags or {}
+    local context = {get_ranks = true, card = self, ranks = default_ranks, no_mod = false}
+    for key, flag in pairs(flags) do
+        context[key] = flag
+    end
 
-    local eval = SMODS.calculate_context({get_ranks = true, card = self, ranks = default_ranks, no_mod = false, eval_getting_ranks = flags.eval_getting_ranks}) or {}
+    local eval = SMODS.calculate_context(context) or {}
 
     if not eval.ranks then return default_ranks end
 
+    -- Convert returned ranks to SMODS.Rank and deduplicate
+    local rank_map = {}
     for i, r in ipairs(eval.ranks) do
+        local rank = nil
         if type(r) == "string" then
-            eval.ranks[i] = SMODS.Ranks[r]
+            rank = SMODS.Ranks[r]
         elseif type(r) == "table" and r.key then
-            eval.ranks[i] = SMODS.Ranks[r.key]
+            rank = SMODS.Ranks[r.key]
         elseif type(r) == "number" then
-            eval.ranks[i] = SMODS.get_rank_from_id(r)
+            rank = SMODS.get_rank_from_id(r)
+        end
+        if rank and not rank_map[rank] then
+            eval.ranks[i] = rank
+            rank_map[rank] = true
         end
     end
 
