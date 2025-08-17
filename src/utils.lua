@@ -2238,7 +2238,7 @@ function Card.selectable_from_pack(card, pack)
             if key == card.config.center_key then return false end
         end
     end
-    local select_area = pack.select_card or card.config.center.select_card or SMODS.ConsumableTypes[card.ability.set].select_card
+    local select_area = SMODS.card_select_area(card, pack)
     if select_area then
         if type(select_area) == 'table' then
             if select_area[card.ability.set] then return select_area[card.ability.set] else return false end
@@ -2932,4 +2932,12 @@ function Card:is_rarity(rarity)
     rarity = rarities[rarity] or rarity
     local own_rarity = rarities[self.config.center.rarity] or self.config.center.rarity
     return own_rarity == rarity or SMODS.Rarities[own_rarity] == rarity
+end
+
+function SMODS.card_select_area(card, pack)
+    local select_area
+    if type(pack.select_card) == "function" then select_area = pack:select_card(card) else select_area = pack.select_card end
+    if type(card.config.center.select_card) == "function" then select_area = card.config.center:select_card(card) else select_area = card.config.center.select_card end
+    if type(SMODS.ConsumableTypes[card.ability.set].select_card) == "function" then select_area = SMODS.ConsumableTypes[card.ability.set]:select_card(card) else select_area = SMODS.ConsumableTypes[card.ability.set].select_card end
+    return select_area
 end
