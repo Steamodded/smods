@@ -2238,11 +2238,12 @@ function Card.selectable_from_pack(card, pack)
             if key == card.config.center_key then return false end
         end
     end
-    if pack.select_card then
-        if type(pack.select_card) == 'table' then
-            if pack.select_card[card.ability.set] then return pack.select_card[card.ability.set] else return false end
+    local select_area = pack.select_card or card.config.center.select_card or SMODS.ConsumableTypes[card.ability.set].select_card
+    if select_area then
+        if type(select_area) == 'table' then
+            if select_area[card.ability.set] then return select_area[card.ability.set] else return false end
         end
-        return pack.select_card
+        return select_area
     end
 end
 
