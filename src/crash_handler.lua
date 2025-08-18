@@ -673,6 +673,10 @@ function injectStackTrace()
             table.insert(err, "Invalid UTF-8 string in error message.")
         end
 
+        if MODDED_VERSION ~= RELEASE_VERSION then
+            table.insert(err, '\n\n\nDevelopment version of Steamodded detected! Please try using the latest release instead to fix your problems.\n\n')
+        end
+
         local success, msg = pcall(getDebugInfoForCrash)
         if success and msg then
             table.insert(err, '\n' .. msg)

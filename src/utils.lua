@@ -2934,6 +2934,65 @@ function Card:is_rarity(rarity)
     return own_rarity == rarity or SMODS.Rarities[own_rarity] == rarity
 end
 
+
+function UIElement:draw_pixellated_under(_type, _parallax, _emboss, _progress)
+    if not self.pixellated_rect or
+        #self.pixellated_rect[_type].vertices < 1 or
+        _parallax ~= self.pixellated_rect.parallax or
+        self.pixellated_rect.w ~= self.VT.w or
+        self.pixellated_rect.h ~= self.VT.h or
+        self.pixellated_rect.sw ~= self.shadow_parrallax.x or
+        self.pixellated_rect.sh ~= self.shadow_parrallax.y or
+        self.pixellated_rect.progress ~= (_progress or 1)
+    then 
+        self.pixellated_rect = {
+            w = self.VT.w,
+            h = self.VT.h,
+            sw = self.shadow_parrallax.x,
+            sh = self.shadow_parrallax.y,
+            progress = (_progress or 1),
+            fill = {vertices = {}},
+            shadow = {vertices = {}},
+            line = {vertices = {}},
+            emboss = {vertices = {}},
+            line_emboss = {vertices = {}},
+            parallax = _parallax
+        }
+        local ext_up = self.config.ext_up and self.config.ext_up*G.TILESIZE or 0
+        local totw, toth = self.VT.w*G.TILESIZE, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE
+
+        local vertices = {
+            totw,toth+ext_up,
+            0, toth+ext_up,
+            0, toth+ext_up+0.5,
+            totw,toth+ext_up+0.5
+        }
+        for k, v in ipairs(vertices) do
+            if k%2 == 1 and v > totw*self.pixellated_rect.progress then v = totw*self.pixellated_rect.progress end
+            self.pixellated_rect.fill.vertices[k] = v
+            if k > 4 then
+                self.pixellated_rect.line.vertices[k-4] = v
+                if _emboss then
+                    self.pixellated_rect.line_emboss.vertices[k-4] = v + (k%2 == 0 and -_emboss*self.shadow_parrallax.y or -0.7*_emboss*self.shadow_parrallax.x)
+                end
+            end
+            if k%2 == 0 then
+                self.pixellated_rect.shadow.vertices[k] = v -self.shadow_parrallax.y*_parallax
+                if _emboss then
+                    self.pixellated_rect.emboss.vertices[k] = v + _emboss*G.TILESIZE
+                end
+            else
+                self.pixellated_rect.shadow.vertices[k] = v -self.shadow_parrallax.x*_parallax
+                if _emboss then
+                    self.pixellated_rect.emboss.vertices[k] = v
+                end
+            end
+        end
+    end
+    love.graphics.polygon("fill", self.pixellated_rect.fill.vertices)
+end
+
+
 function SMODS.card_select_area(card, pack)
     local select_area
     if type(pack.select_card) == "function" then select_area = pack:select_card(card, pack) else select_area = pack.select_card end
