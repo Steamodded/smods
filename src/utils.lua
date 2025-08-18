@@ -2238,11 +2238,12 @@ function Card.selectable_from_pack(card, pack)
             if key == card.config.center_key then return false end
         end
     end
-    if pack.select_card then
-        if type(pack.select_card) == 'table' then
-            if pack.select_card[card.ability.set] then return pack.select_card[card.ability.set] else return false end
+    local select_area = SMODS.card_select_area(card, pack)
+    if select_area then
+        if type(select_area) == 'table' then
+            if select_area[card.ability.set] then return select_area[card.ability.set] else return false end
         end
-        return pack.select_card
+        return select_area
     end
 end
 
@@ -2933,6 +2934,7 @@ function Card:is_rarity(rarity)
     return own_rarity == rarity or SMODS.Rarities[own_rarity] == rarity
 end
 
+
 function UIElement:draw_pixellated_under(_type, _parallax, _emboss, _progress)
     if not self.pixellated_rect or
         #self.pixellated_rect[_type].vertices < 1 or
@@ -2988,5 +2990,21 @@ function UIElement:draw_pixellated_under(_type, _parallax, _emboss, _progress)
         end
     end
     love.graphics.polygon("fill", self.pixellated_rect.fill.vertices)
+end
 
+
+function SMODS.card_select_area(card, pack)
+    local select_area
+    if type(pack.select_card) == "function" then select_area = pack:select_card(card, pack) else select_area = pack.select_card end
+    if type(card.config.center.select_card) == "function" then select_area = card.config.center:select_card(card, pack) else select_area = card.config.center.select_card end
+    if type(SMODS.ConsumableTypes[card.ability.set].select_card) == "function" then select_area = SMODS.ConsumableTypes[card.ability.set]:select_card(card, pack) else select_area = SMODS.ConsumableTypes[card.ability.set].select_card end
+    return select_area
+end
+
+function SMODS.get_select_key(card, pack)
+    local select_key
+    if type(pack.select_button) == "function" then select_key = pack:select_button(card, pack) else select_key = pack.select_button end
+    if type(card.config.center.select_button) == "function" then select_key = card.config.center:select_button(card, pack) else select_key = card.config.center.select_button end
+    if type(SMODS.ConsumableTypes[card.ability.set].select_button) == "function" then select_key = SMODS.ConsumableTypes[card.ability.set]:select_button(card, pack) else select_key = SMODS.ConsumableTypes[card.ability.set].select_button end
+    return select_key
 end
