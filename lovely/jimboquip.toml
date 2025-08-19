@@ -139,3 +139,32 @@ local sound_key = extra and extra.sound or 'voice'..math.random(1, 11)
 play_sound(sound_key, G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
 '''
 match_indent = true
+
+
+# Allow custom delay between talking sounds
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+pattern = '''
+delay = 0.13,
+'''
+position = 'at'
+payload = '''
+delay = extra and extra.delay or 0.13,
+'''
+match_indent = true
+
+
+# Allow custom juice parameters
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+pattern = '''
+self.children.card:juice_up()
+'''
+position = 'at'
+payload = '''
+local juice_params = extra and extra.juice or {nil, nil}
+self.children.card:juice_up(juice_params[1], juice_params[2])
+'''
+match_indent = true
