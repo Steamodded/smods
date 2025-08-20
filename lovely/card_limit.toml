@@ -180,10 +180,10 @@ pattern = '''
 if first_pass and not (_c.set == 'Edition') and badges then
 '''
 payload = '''
-if card and card.ability and card.ability.extra_slots_used ~= 0 then
+if card and card.ability and card.ability.extra_slots_used and card.ability.extra_slots_used ~= 0 then
     info_queue[#info_queue + 1] = {set = 'Other', key = 'generic_extra_slots', vars = {card.ability.extra_slots_used + 1}}
 end
-if card and card.ability and card.ability.card_limit ~= 0 then
+if card and card.ability and card.ability.card_limit and card.ability.card_limit ~= 0 then
     if not (card.edition and card.edition.card_limit == card.ability.card_limit) then
         local amount = card.ability.card_limit - (card.edition and card.edition.card_limit or 0)
         info_queue[#info_queue + 1] = {set = 'Other', key = amount == 1 and 'generic_card_limit' or 'generic_card_limit_plural', vars = {localize({type='variable', key= amount > 0 and 'a_chips' or 'a_chips_minus', vars ={math.abs(amount)}})}}
