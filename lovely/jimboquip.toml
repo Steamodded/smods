@@ -135,8 +135,20 @@ play_sound('voice'..math.random(1, 11), G.SPEEDFACTOR*(math.random()*0.2+1), 0.5
 '''
 position = 'at'
 payload = '''
-local sound_key = extra and extra.sound or 'voice'..math.random(1, 11)
-play_sound(sound_key, G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+local custom_pitch = extra and extra.pitch
+if extra and extra.sound then
+    if type(extra.sound) == 'table' then
+        for k, v in pairs(extra.sound) do
+            play_sound(v, custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+        end
+    elseif type(extra.sound) == 'string' then
+        play_sound(extra.sound, custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+    else
+        play_sound('voice'..math.random(1, 11), custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+    end
+else
+    play_sound('voice'..math.random(1, 11), custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+end
 '''
 match_indent = true
 
