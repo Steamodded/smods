@@ -2663,7 +2663,7 @@ function Card:is_rank(rank, bypass_debuff, flags) -- Accepts SMODS.Rank, a rank 
     if not rank then return false end
     
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
-        if not self.vampired and SMODS.has_enhancement(self, "m_stone") then
+        if not self.vampired and SMODS.has_no_rank(self) then
             return false
         end
         return SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank
@@ -2681,7 +2681,7 @@ function Card:is_any_rank(ranks, bypass_debuff, flags)
     if not ranks then return false end
 
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
-        if not self.vampired and SMODS.has_enhancement(self, "m_stone") then
+        if not self.vampired and SMODS.has_no_rank(self) then
             return false
         end
         for _, rank in pairs(ranks) do
@@ -2708,7 +2708,7 @@ function Card:is_any_rank(ranks, bypass_debuff, flags)
 end
 
 function Card:get_ranks(flags) -- Returns a table of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
-    local default_ranks = (not self.vampired and SMODS.has_enhancement(self, "m_stone") and {}) or {SMODS.Ranks[self.base.value]}
+    local default_ranks = (not self.vampired and SMODS.has_no_rank(self) and {}) or {SMODS.Ranks[self.base.value]}
     if not SMODS.optional_features.quantum_ranks then return default_ranks end
 
     flags = flags or {}
