@@ -1792,12 +1792,12 @@ function Card:set_edition(edition, immediate, silent, delay)
 	-- 	self.ability.card_limit = self.ability.card_limit - self.edition.card_limit
 	-- end
 
-	local old_edition = self.edition and self.edition.key
-	if old_edition then
-		self.ignore_base_shader[old_edition] = nil
-		self.ignore_shadow[old_edition] = nil
+	local old_edition = self.edition
+	if old_edition and old_edition.key then
+		self.ignore_base_shader[old_edition.key] = nil
+		self.ignore_shadow[old_edition.key] = nil
 
-		local on_old_edition_removed = G.P_CENTERS[old_edition] and G.P_CENTERS[old_edition].on_remove
+		local on_old_edition_removed = G.P_CENTERS[old_edition.key] and G.P_CENTERS[old_edition.key].on_remove
 		if type(on_old_edition_removed) == "function" then
 			on_old_edition_removed(self)
 		end
@@ -1834,6 +1834,16 @@ function Card:set_edition(edition, immediate, silent, delay)
 				func = function()
 					self:juice_up(1, 0.5)
 					play_sound('whoosh2', 1.2, 0.6)
+					return true
+				end
+			}))
+		end
+		if delay then
+			self.delay_edition = old_edition
+			G.E_MANAGER:add_event(Event({
+				trigger = 'immediate',
+				func = function()
+					self.delay_edition = nil
 					return true
 				end
 			}))
@@ -1939,7 +1949,7 @@ function Card:set_edition(edition, immediate, silent, delay)
 	end
 
 	if delay then
-		self.delay_edition = true
+		self.delay_edition = old_edition
 		G.E_MANAGER:add_event(Event({
 			trigger = 'immediate',
 			func = function()
