@@ -1872,7 +1872,7 @@ function Card:set_edition(edition, immediate, silent, delay)
 	self.ability.card_limit = self.ability.card_limit + (self.edition.card_limit or 0)
 	self.ability.extra_slots_used = self.ability.extra_slots_used + (self.edition.extra_slots_used or 0)
 	if self.area then self.area:handle_card_limit(self.edition.card_limit, self.edition.extra_slots_used) end
-	if self.area == G.hand then 
+	if G.hand and self.area == G.hand then 
 		G.FUNCS.draw_from_deck_to_hand(math.min((self.edition.card_limit or 0), G.hand.config.card_limit - #G.hand.cards))
 	end
 
