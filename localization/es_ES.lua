@@ -151,6 +151,24 @@ return {
                     "{E:1}#1#{}"
                 },
             },
+            generic_card_limit = {
+                name = "Límite de Cartas",
+                text = {
+                    '{C:dark_edition}#1#{} ranura del área'
+                }
+            },
+            generic_card_limit_plural = {
+                name = "Límite de Cartas",
+                text = {
+                    '{C:dark_edition}#1#{} ranuras del área'
+                }
+            },
+            generic_extra_slots = {
+                name = "Ranuras Usadas",
+                text = {
+                    'Ocupa {C:dark_edition}#1#{} ranuras'
+                }
+            }
         },
         Edition = {
             e_negative_playing_card = {
@@ -159,6 +177,12 @@ return {
                     "{C:dark_edition}+#1#{} de tamaño de mano"
                 },
             },
+            e_negative_generic = {
+                name = "Negativa",
+                text = {
+                    "{C:dark_edition}+#1#{} ranura del área"
+                },
+            }
         },
         Enhanced = {
             m_gold = {
