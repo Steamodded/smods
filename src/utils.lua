@@ -1066,6 +1066,17 @@ function SMODS.has_no_rank(card)
         if k == 'm_stone' or G.P_CENTERS[k].no_rank then return true end
     end
 end
+-- Hook this to add other Wild Rank effects. [flags] param is the same as Card:get_ranks()'s
+function SMODS.has_any_rank(card, flags)
+    for k, _ in pairs(SMODS.get_enhancements(card)) do
+        if G.P_CENTERS[k].any_rank then return true end
+    end
+    if (G.P_CENTERS[(card.edition or {}).key] or {}).any_rank then return true end
+    if (G.P_SEALS[card.seal or {}] or {}).any_rank then return true end
+    for k, v in pairs(SMODS.Stickers) do
+        if v.any_rank and card.ability[k] then return true end
+    end
+end
 function SMODS.always_scores(card)
     for k, _ in pairs(SMODS.get_enhancements(card)) do
         if k == 'm_stone' or G.P_CENTERS[k].always_scores then return true end
@@ -2712,6 +2723,8 @@ function Card:is_rank(rank, bypass_debuff, flags) -- Accepts SMODS.Rank, a rank 
         return SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank
     end
 
+    if SMODS.has_any_rank(self) then return true end
+
     for _, r in ipairs(self:get_ranks(flags)) do
         if r == rank or r.key == rank or r.id == rank then
             return true
@@ -2734,6 +2747,8 @@ function Card:is_any_rank(ranks, bypass_debuff, flags)
         end
         return false
     end
+
+    if SMODS.has_any_rank(self) then return true end
 
     local rank_dict = {}
     for _, v in pairs(ranks) do

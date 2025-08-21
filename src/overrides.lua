@@ -641,15 +641,26 @@ function get_straight(hand, min_length, skip, wrap)
 		-- All card_rep instances
 		local card_reps = {}
 
+		local wild_reps = {}
+		local wild_rank_count = 0
+		local wild_ranks_used = 0
+
 		for _, pcard in ipairs(hand) do
-			local pcard_ranks = pcard:get_ranks({eval_getting_ranks = {type = "straight"}})
+			if SMODS.has_any_rank(pcard, {eval_getting_ranks = {type = "straight"}}) then
+				local card_rep = CardRep.new(pcard, "WILD")
+				card_reps[#card_reps+1] = card_rep
+				wild_reps[#wild_reps+1] = card_rep
+				wild_rank_count = wild_rank_count + 1
+			else
+				local pcard_ranks = pcard:get_ranks({eval_getting_ranks = {type = "straight"}})
 
-			if next(pcard_ranks) then
-				local card_rep = CardRep.new(pcard, pcard_ranks)
-				card_reps[#card_reps+1] = card_rep						-- Add card_rep to card_reps_holder
+				if next(pcard_ranks) then
+					local card_rep = CardRep.new(pcard, pcard_ranks)
+					card_reps[#card_reps+1] = card_rep						-- Add card_rep to card_reps_holder
 
-				for _, p_rank in ipairs(pcard_ranks) do
-					ranks[p_rank.key][card_rep] = true 					-- Add card_rep to rank
+					for _, p_rank in ipairs(pcard_ranks) do
+						ranks[p_rank.key][card_rep] = true 					-- Add card_rep to rank
+					end
 				end
 			end
 		end
@@ -661,16 +672,29 @@ function get_straight(hand, min_length, skip, wrap)
 		-- Recursive function to get all .nexts/.prevs of a rank and its .next/.prev ranks down to a [depth] (which should be the shortcut level), merged into one table
 		-- [depth] = 0 is base, 1 is shortcut
 		local get_next_ranks
+		local dirs = { -- Lookup table for direction
+			prev_base = "prev",
+			prev = "prev",
+			next_base = "next",
+			next = "next"
+		}
 		get_next_ranks = function (rank, depth, do_wrap, direction, previous_rank)
 			direction = direction or "next"
-			previous_rank = previous_rank or {}
+			local keyed_dir = dirs[direction]
+			local p_r_key = previous_rank and previous_rank.key
 			local rec_ret = {}
-			if rank.straight_edges[previous_rank.key] and not do_wrap then return {} end -- If the [previous_rank] is in the [rank]'s straight_edges table, return an empty table. -> This causes an edge case that is later taken care of
-			for _, r in ipairs(rank[direction]) do
-				rec_ret[#rec_ret+1] = SMODS.Ranks[r]
-				if depth > 0 then
-					for _, v in ipairs(get_next_ranks(SMODS.Ranks[r], depth - 1, do_wrap, direction, rank)) do
-						rec_ret[#rec_ret+1] = v
+			if rank.straight_edges[p_r_key] and not do_wrap and direction:sub(-4) ~= "base" then return {} end -- If the [previous_rank] is in the [rank]'s straight_edges table, return an empty table. -> This causes an edge case that is later taken care of
+			for _, r in ipairs(rank[keyed_dir]) do
+				if not previous_rank and next(rank.straight_edges) and not rank.straight_edges[r] then
+					-- Super unlikely edgecase; If starting rank of straight has straight_edges, only consider those straight-edge paths for eval. 
+					-- This means any NON-straight-edge paths will NOT be evaled, thus any c_reps in those branches WILL be used as starting points, avoiding splitting a valid straight into two invalid ones.
+					-- This is only relevant if a chain of custom ranks passes through a cyclical straight-edge rank (like the Ace), but doesn't define it as a straight edge (imagine a tangent on a circle <- lmao?)
+				else
+					rec_ret[#rec_ret+1] = SMODS.Ranks[r]
+					if depth > 0 then
+						for _, v in ipairs(get_next_ranks(SMODS.Ranks[r], depth - 1, do_wrap, keyed_dir, rank)) do
+							rec_ret[#rec_ret+1] = v
+						end
 					end
 				end
 			end
@@ -696,13 +720,20 @@ function get_straight(hand, min_length, skip, wrap)
 			local ret_straight = next_straight
 
 			local c_reps = ranks[rank.key]
-			if not c_reps or not next(c_reps) then return ret_straight end -- If no card_representers are present for the given [rank], return whatever [current_straight] was passed to the function
+			if not c_reps or not next(c_reps) then
+				if wild_ranks_used < wild_rank_count then
+					wild_ranks_used = wild_ranks_used + 1
+					c_reps = {"WILD"}
+				else
+					return ret_straight -- If no card_representers are present for the given [rank] and no Wild Ranks remain, return whatever [current_straight] was passed to the function
+				end
+			end
 
 			local rank_nexts
 			if direction == "prev" or direction == "prev_base" then
-				rank_nexts = get_next_ranks(rank, max_skips, do_wrap or direction == "prev_base", "prev", previous_rank)
+				rank_nexts = get_next_ranks(rank, max_skips, do_wrap, direction, previous_rank)
 			elseif direction == "next" or direction == "next_base" then
-				rank_nexts = get_next_ranks(rank, max_skips, do_wrap or direction == "next_base", "next", previous_rank)
+				rank_nexts = get_next_ranks(rank, max_skips, do_wrap, direction, previous_rank)
 			else
 				return {}
 			end
@@ -719,24 +750,39 @@ function get_straight(hand, min_length, skip, wrap)
 					end
 				end
 			else
-				for c_rep, exists in pairs(c_reps) do
-					if exists and not used_c_reps[c_rep] then -- If the encountered card_rep hasn't assumed a rank yet
-						used_c_reps[c_rep] = true
-						next_straight[#next_straight+1] = c_rep
-						if #next_straight > #ret_straight then ret_straight = next_straight end
-						for _, n_rank in pairs(rank_nexts) do
-							local rec_ret_straight = recursive_get_straight(n_rank, next_straight, max_skips, do_wrap, direction, used_c_reps, rank)
-							if #rec_ret_straight > #ret_straight then
-								ret_straight = rec_ret_straight
-							end
-							if #ret_straight >= #hand then
-								return ret_straight
-							end
+				if c_reps[1] == "WILD" then
+					next_straight[#next_straight+1] = wild_reps[wild_ranks_used]
+					if #next_straight > #ret_straight then ret_straight = next_straight end
+					for _, n_rank in pairs(rank_nexts) do
+						local rec_ret_straight = recursive_get_straight(n_rank, next_straight, max_skips, do_wrap, direction, used_c_reps, rank)
+						if #rec_ret_straight > #ret_straight then
+							ret_straight = rec_ret_straight
 						end
-						if SMODS.optional_features.quantum_straight_min_return and #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
-						next_straight = {}
-						for k, v in pairs(current_straight) do next_straight[k] = v end
-						used_c_reps[c_rep] = false
+						if #ret_straight >= #hand then
+							return ret_straight
+						end
+					end
+					return ret_straight -- Wild Rank'd ranks only need one pass
+				else
+					for c_rep, exists in pairs(c_reps) do
+						if exists and not used_c_reps[c_rep] then -- If the encountered card_rep hasn't assumed a rank yet
+							used_c_reps[c_rep] = true
+							next_straight[#next_straight+1] = c_rep
+							if #next_straight > #ret_straight then ret_straight = next_straight end
+							for _, n_rank in pairs(rank_nexts) do
+								local rec_ret_straight = recursive_get_straight(n_rank, next_straight, max_skips, do_wrap, direction, used_c_reps, rank)
+								if #rec_ret_straight > #ret_straight then
+									ret_straight = rec_ret_straight
+								end
+								if #ret_straight >= #hand then
+									return ret_straight
+								end
+							end
+							if SMODS.optional_features.quantum_straight_min_return and #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
+							next_straight = {}
+							for k, v in pairs(current_straight) do next_straight[k] = v end
+							used_c_reps[c_rep] = false
+						end
 					end
 				end
 			end
@@ -757,14 +803,16 @@ function get_straight(hand, min_length, skip, wrap)
 		-- card_reps that have appeared in a returned straight are no longer used as starting points, because they cannot yield a new straight.
 		-- (Even if their .next/.prev forks, because then the fork's card_reps will yield the fork's straight later on)
 		for _, c_rep in ipairs(card_reps) do
-			if not appeared_in_ret_straight[c_rep] then
+			if c_rep.ranks ~= "WILD" and not appeared_in_ret_straight[c_rep] then
 				local current_straight = {c_rep}
 				local used_c_reps = {[c_rep] = true} -- This is a set of all card_reps used during this eval. They are set in recursive_get_straight()
 				for _, rank in ipairs(c_rep.ranks) do
+					wild_ranks_used = 0 -- Reset used Wild ranks count for each starting c_rep.rank
 					local ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, nil, used_c_reps)
 
 					if next(rank.straight_edges) then 	-- Handle the (straight)edge case where the starting c_rep has straight_edges defined
 						for k, _ in ipairs(used_c_reps) do used_c_reps[k] = k ~= c_rep end -- Make sure all of the other c_reps used during the .prev evaluation are free to be used again during the .next evaluation
+						wild_ranks_used = 0
 						local next_ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, "next_base", used_c_reps)
 						ret_straight = #next_ret_straight > #ret_straight and next_ret_straight or ret_straight
 					end
@@ -828,7 +876,14 @@ function get_X_same(num, hand, or_more)
 		local rank_cards = {} -- {rank: {_: card}}
 
 		for _, pcard in ipairs(hand) do
-			local pcard_ranks = pcard:get_ranks({eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}})
+			local pcard_ranks = {}
+			if SMODS.has_any_rank(pcard, {eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}}) then
+				for _, v in pairs(SMODS.Ranks) do
+					pcard_ranks[#pcard_ranks+1] = v
+				end
+			else
+				pcard_ranks = pcard:get_ranks({eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}})
+			end
 			for _, r in ipairs(pcard_ranks) do
 				rank_tally[r] = rank_tally[r] and rank_tally[r] + 1 or 1
 				rank_cards[r] = rank_cards[r] or {}
@@ -2666,6 +2721,9 @@ function Card:is_face(from_boss)
 		end
 	else
 		if next(find_joker("Pareidolia")) then return true end
+		if SMODS.has_any_rank(self, {is_face_getting_ranks = true}) then
+			return true
+		end
 		local ranks = self:get_ranks({is_face_getting_ranks = true})
 
 		for _, rank in ipairs(ranks) do
