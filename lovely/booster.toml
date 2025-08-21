@@ -337,7 +337,7 @@ match_indent = true
 position = 'at'
 pattern = "if e.config.ref_table.ability.set ~= 'Joker' or (e.config.ref_table.edition and e.config.ref_table.edition.negative) or #G.jokers.cards < G.jokers.config.card_limit then"
 payload = '''local card = e.config.ref_table
-local card_limit = card.edition and card.edition.card_limit or 0
+local card_limit = card.ability.card_limit
 if card.ability.set ~= 'Joker' or #G.jokers.cards < G.jokers.config.card_limit + card_limit then'''
 
 # Card:redeem()
