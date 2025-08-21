@@ -708,3 +708,20 @@ function SMODS.scale_card(card, args) end
 --- Checks whether an object should be added to the pool.
 --- i.e. the in_pool method doesn't exist or it returns `true`
 function SMODS.add_to_pool(prototype_obj, args) end
+
+
+---@param context CalcContext|table The context being pushed
+---@param func string|nil The function/file from which the call originates
+--- Pushes a context to the SMODS.context_stack. (Form: {context=context, count=[number of consecutive pushes]})
+function SMODS.push_to_context_stack(context, func) end
+
+---@param context CalcContext|table The context being popped
+---@param func string|nil The function/file from which the call originates
+--- Pop a context from the SMODS.context_stack. (Removes 1 from .count)
+function SMODS.pop_from_context_stack(context, func) end
+
+---@return CalcContext|table|nil
+--- Returns the second to last context from the SMODS.context_stack. 
+--- Useful for Seals/Enhancements determining whether a playing card was being individually evaluated,
+--- when a Joker called (e.g.) SMODS.pseudorandom_probability().
+function SMODS.get_previous_context() end

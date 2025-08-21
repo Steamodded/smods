@@ -1436,7 +1436,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 G.ROOM.T.x + 9 + G.hand.T.x, G.hand.T.y,
                 math.max(1,math.min(_size,5))*G.CARD_W*1.1,
                 1.05*G.CARD_H,
-                {card_limit = _size, type = 'consumeable', highlight_limit = 1})
+                {card_limit = _size, type = 'consumeable', highlight_limit = 1, negative_info = true})
 
             local t = {n=G.UIT.ROOT, config = {align = 'tm', r = 0.15, colour = G.C.CLEAR, padding = 0.15}, nodes={
                 {n=G.UIT.R, config={align = "cl", colour = G.C.CLEAR,r=0.15, padding = 0.1, minh = 2, shadow = true}, nodes={
@@ -1673,6 +1673,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         class_prefix = 'bl',
         debuff = {},
         vars = {},
+        config = {},
         dollars = 5,
         mult = 2,
         atlas = 'blind_chips',
@@ -3249,6 +3250,15 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         on_load = nil,   -- function (card) - modify card when it is loaded from the save file
         register = function(self)
             self.config = self.config or {}
+            if self.config.card_limit then
+                print(self.key)
+                self.card_limit_keys = self.card_limit_keys or {
+                    joker = string.sub(self.key, 3) .. '_SMODS_INTERNAL',
+                    consumable = string.sub(self.key, 3) .. '_consumable' .. '_SMODS_INTERNAL',
+                    playing_card = string.sub(self.key, 3) .. '_playing_card' .. '_SMODS_INTERNAL',
+                    generic = string.sub(self.key, 3) .. '_generic' .. '_SMODS_INTERNAL'
+                }
+            end
             SMODS.Edition.super.register(self)
         end,
         process_loc_text = function(self)
@@ -3262,6 +3272,22 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         create_fake_card = function(self)
 	        return { edition = copy_table(self.config), fake_card = true }
         end,
+        card_limit_key = function(self, card)
+            local area = (card.area or {}).config or {}
+            if area.negative_info then
+                if type(area.negative_info) == 'string' then
+                    return self.card_limit_keys[area.negative_info]
+                end
+                if card.ability.set == 'Joker' then
+                    return self.card_limit_keys['joker']
+                elseif card.ability.consumeable then
+                    return self.card_limit_keys['consumable']
+                elseif card.ability.set == 'Default' or card.ability.set == 'Enhanced' then
+                    return self.card_limit_keys['playing_card']
+                end
+            end
+            return self.card_limit_keys['generic']
+        end
     }
 
     -- TODO also, this should probably be a utility method in core
@@ -3484,6 +3510,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function(self)
             SMODS.process_loc_text(G.localization.misc.achievement_names, self.key, self.loc_txt, "name")
             SMODS.process_loc_text(G.localization.misc.achievement_descriptions, self.key, self.loc_txt, "description")
+            SMODS.process_loc_text(G.localization.misc.achievement_names, self.key.."_hidden", self.loc_txt, "hidden_name")
+            SMODS.process_loc_text(G.localization.misc.achievement_descriptions, self.key.."_hidden", self.loc_txt, "hidden_description")
         end,
     }
 
@@ -3626,9 +3654,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 return true
             end
         end,
-        modify = function(self, amount)
-            hand_chips = mod_chips(self.current + amount)
-            self.current = hand_chips
+        modify = function(self, amount, skip)
+            if not skip then hand_chips = mod_chips(self.current + amount) end
+            self.current = (hand_chips or 0) + (skip or 0)
             update_hand_text({delay = 0}, {chips = self.current})
         end
     })
@@ -3677,9 +3705,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 return true
             end
         end,
-        modify = function(self, amount)
-            mult = mod_mult(self.current + amount)
-            self.current = mult
+        modify = function(self, amount, skip)
+            if not skip then mult = mod_mult(self.current + amount) end
+            self.current = (mult or 0) + (skip or 0)
             update_hand_text({delay = 0}, {mult = self.current})
         end
     })
@@ -3784,7 +3812,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         register = function() error('INTERNAL CLASS, DO NOT CALL') end,
         pre_inject_class = function()
             for _, mod in ipairs(SMODS.mod_list) do
-                if mod.can_load then
+                if mod.can_load and not mod.lovely_only then
                     SMODS.handle_loc_file(mod.path, mod.id)
                 end
             end

@@ -230,3 +230,79 @@ for name, parameter in pairs(SMODS.Scoring_Parameters) do
     update_hand_text({immediate = true, nopulse = nil, delay = 0}, {[name] = '?'})
 end
 '''
+
+# Handle flame_handler
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.C.UI_CHIPLICK = G.C.UI_CHIPLICK or {1, 1, 1, 1}
+  G.C.UI_MULTLICK = G.C.UI_MULTLICK or {1, 1, 1, 1}
+  for i=1, 3 do
+    G.C.UI_CHIPLICK[i] = math.min(math.max(((G.C.UI_CHIPS[i]*0.5+G.C.YELLOW[i]*0.5) + 0.1)^2, 0.1), 1)
+    G.C.UI_MULTLICK[i] = math.min(math.max(((G.C.UI_MULT[i]*0.5+G.C.YELLOW[i]*0.5) + 0.1)^2, 0.1), 1)
+  end
+
+  G.ARGS.flame_handler = G.ARGS.flame_handler or {
+    chips = {
+      id = 'flame_chips', 
+      arg_tab = 'chip_flames',
+      colour = G.C.UI_CHIPS,
+      accent = G.C.UI_CHIPLICK
+    },
+    mult = {
+      id = 'flame_mult', 
+      arg_tab = 'mult_flames',
+      colour = G.C.UI_MULT,
+      accent = G.C.UI_MULTLICK
+    }
+  }
+'''
+payload = '''
+G.ARGS.flame_handler = G.ARGS.flame_handler or {}
+
+for key, parameter in pairs(SMODS.Scoring_Parameters) do
+    for i=1, 3 do
+        parameter.lick[i] = math.min(math.max(((parameter.colour[i]*0.5+G.C.YELLOW[i]*0.5) + 0.1)^2, 0.1), 1)
+    end
+    G.ARGS.flame_handler[key] = G.ARGS.flame_handler[key] or parameter:flame_handler()
+end
+'''
+# pt2
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+e.config.object = Sprite(0, 0, 2.5, 2.5, G.ASSET_ATLAS["ui_1"], {x = 2, y = 0})
+'''
+payload = '''
+e.config.object = Sprite(0, 0, e.config._w, e.config._h, G.ASSET_ATLAS["ui_1"], {x = 2, y = 0})
+'''
+
+# Patch mod_chips/mod_mult
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+return _mult
+'''
+payload = '''
+SMODS.Scoring_Parameters.mult:modify(nil, _mult - (mult or 0))
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+return _chips
+'''
+payload = '''
+SMODS.Scoring_Parameters.chips:modify(nil, _chips - (hand_chips or 0))
+'''

@@ -1050,6 +1050,18 @@ G.E_MANAGER:add_event(Event({
     end
 }))
 '''
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+draw_card(G.deck,G.hand, i*100/hand_space,'up', true)
+'''
+payload = '''
+draw_card(G.deck,G.hand, i*100/hand_space,'up', true, cards_to_draw[i])
+'''
+
 
 # context.hand_space
 [[patches]]

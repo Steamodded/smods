@@ -1196,7 +1196,8 @@ function G.UIDEF.view_deck(unplayed_only)
 						highlight_limit = 0,
 						card_w = G
 							.CARD_W * 0.7,
-						draw_layers = { 'card' }
+						draw_layers = { 'card' },
+						negative_info = 'playing_card'
 					})
 				table.insert(deck_tables,
 					{n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
@@ -1226,7 +1227,7 @@ function G.UIDEF.view_deck(unplayed_only)
 			G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h,
 			6.5*G.CARD_W,
 			0.6*G.CARD_H,
-			{card_limit = 1, type = 'title', view_deck = true, highlight_limit = 0, card_w = G.CARD_W*0.7, draw_layers = {'card'}})
+			{card_limit = 1, type = 'title', view_deck = true, highlight_limit = 0, card_w = G.CARD_W*0.7, draw_layers = {'card'}, negative_info = 'playing_card'})
 		table.insert(
 			deck_tables,
 			{n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
@@ -1502,7 +1503,8 @@ G.FUNCS.your_suits_page = function(args)
 					highlight_limit = 0,
 					card_w = G
 						.CARD_W * 0.7,
-					draw_layers = { 'card' }
+					draw_layers = { 'card' },
+					negative_info = 'playing_card'
 				})
 			table.insert(deck_tables,
 				{n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
@@ -1531,7 +1533,7 @@ G.FUNCS.your_suits_page = function(args)
 			G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h,
 			6.5*G.CARD_W,
 			0.6*G.CARD_H,
-			{card_limit = 1, type = 'title', view_deck = true, highlight_limit = 0, card_w = G.CARD_W*0.7, draw_layers = {'card'}})
+			{card_limit = 1, type = 'title', view_deck = true, highlight_limit = 0, card_w = G.CARD_W*0.7, draw_layers = {'card'}, negative_info = 'playing_card'})
 		table.insert(
 			deck_tables,
 			{n=G.UIT.R, config={align = "cm", padding = 0}, nodes={
@@ -2087,26 +2089,19 @@ end
 -- silent = boolean value
 function Card:set_edition(edition, immediate, silent, delay)
 	SMODS.enh_cache:write(self, nil)
-	-- Check to see if negative is being removed and reduce card_limit accordingly
-	if (self.added_to_deck or self.joker_added_to_deck_but_debuffed or (self.area == G.hand and not self.debuff)) and self.edition and self.edition.card_limit then
-		if self.ability.consumeable and self.area == G.consumeables then
-			G.consumeables.config.card_limit = G.consumeables.config.card_limit - self.edition.card_limit
-		elseif self.ability.set == 'Joker' and self.area == G.jokers then
-			G.jokers.config.card_limit = G.jokers.config.card_limit - self.edition.card_limit
-		elseif self.area == G.hand then
-			if G.hand.config.real_card_limit then
-				G.hand.config.real_card_limit = G.hand.config.real_card_limit - self.edition.card_limit
-			end
-			G.hand.config.card_limit = G.hand.config.card_limit - self.edition.card_limit
-		end
+	
+	if self.edition then
+		self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
+		self.ability.extra_slots_used = self.ability.extra_slots_used - (self.edition.extra_slots_used or 0)
+		self.area:handle_card_limit(-1 * (self.edition.card_limit or 0), -1 * (self.edition.extra_slots_used or 0))
 	end
 
-	local old_edition = self.edition and self.edition.key
-	if old_edition then
-		self.ignore_base_shader[old_edition] = nil
-		self.ignore_shadow[old_edition] = nil
+	local old_edition = self.edition
+	if old_edition and old_edition.key then
+		self.ignore_base_shader[old_edition.key] = nil
+		self.ignore_shadow[old_edition.key] = nil
 
-		local on_old_edition_removed = G.P_CENTERS[old_edition] and G.P_CENTERS[old_edition].on_remove
+		local on_old_edition_removed = G.P_CENTERS[old_edition.key] and G.P_CENTERS[old_edition.key].on_remove
 		if type(on_old_edition_removed) == "function" then
 			on_old_edition_removed(self)
 		end
@@ -2147,6 +2142,16 @@ function Card:set_edition(edition, immediate, silent, delay)
 				end
 			}))
 		end
+		if delay then
+			self.delay_edition = old_edition
+			G.E_MANAGER:add_event(Event({
+				trigger = 'immediate',
+				func = function()
+					self.delay_edition = nil
+					return true
+				end
+			}))
+		end
 		return
 	end
 
@@ -2175,32 +2180,6 @@ function Card:set_edition(edition, immediate, silent, delay)
 	local on_edition_applied = p_edition.on_apply
 	if type(on_edition_applied) == "function" then
 		on_edition_applied(self)
-	end
-
-
-	if self.edition.card_limit then
-		if (self.added_to_deck or self.joker_added_to_deck_but_debuffed or (self.area == G.hand and not self.debuff)) and G.jokers and G.consumeables then
-			if self.ability.consumeable then
-				G.consumeables.config.card_limit = G.consumeables.config.card_limit + self.edition.card_limit
-			elseif self.ability.set == 'Joker' then
-				G.jokers.config.card_limit = G.jokers.config.card_limit + self.edition.card_limit
-			elseif self.area == G.hand then
-				local is_in_pack = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or (G.STATE == G.STATES.SMODS_BOOSTER_OPENED and SMODS.OPENED_BOOSTER.config.center.draw_hand))
-				G.E_MANAGER:add_event(Event({
-					trigger = 'immediate',
-					func = function()
-						if G.hand.config.real_card_limit then
-							G.hand.config.real_card_limit = G.hand.config.real_card_limit + self.edition.card_limit
-						end
-						G.hand.config.card_limit = G.hand.config.card_limit + self.edition.card_limit
-						if not is_in_pack and G.GAME.blind.in_blind and G.hand.config.card_limit > #G.hand.cards then
-							G.FUNCS.draw_from_deck_to_hand(math.min(self.edition.card_limit, G.hand.config.card_limit - #G.hand.cards))
-						end
-						return true
-					end
-				}))
-			end
-		end
 	end
 
 	if self.area and self.area == G.jokers then
@@ -2241,7 +2220,7 @@ function Card:set_edition(edition, immediate, silent, delay)
 	end
 
 	if delay then
-		self.delay_edition = true
+		self.delay_edition = old_edition or {base = true}
 		G.E_MANAGER:add_event(Event({
 			trigger = 'immediate',
 			func = function()
@@ -2250,6 +2229,11 @@ function Card:set_edition(edition, immediate, silent, delay)
 			end
 		}))
 	end
+
+	self.ability.card_limit = self.ability.card_limit + (self.edition.card_limit or 0)
+	self.ability.extra_slots_used = self.ability.extra_slots_used + (self.edition.extra_slots_used or 0)
+	if self.area then self.area:handle_card_limit(self.edition.card_limit, self.edition.extra_slots_used) end
+
 
 	if G.jokers and self.area == G.jokers then
 		check_for_unlock({ type = 'modify_jokers' })
@@ -2649,6 +2633,7 @@ function Card:set_base(card, initial, manual_sprites)
             SMODS.merge_defaults(contexts, {change_suit = true, other_card = self, new_suit = card.suit, old_suit = self.base.suit})
         end
         if next(contexts) then
+			contexts.ignore_other_debuff = true
             SMODS.calculate_context(contexts)
         end
     end
@@ -2696,4 +2681,29 @@ function ease_ante(mod, ante_end)
 	if flags.modify then mod = mod + flags.modify end
 	ease_ante_ref(mod)
 	SMODS.calculate_context({ante_change = mod, ante_end = ante_end})
+end
+
+local eval_card_ref = eval_card
+function eval_card(card, context)
+	SMODS.push_to_context_stack(context, "overrides.lua : eval_card")
+	local eff, post = eval_card_ref(card, context)
+	SMODS.pop_from_context_stack(context, "overrides.lua : eval_card")
+	return eff, post
+end
+
+local calculate_seal_ref = Card.calculate_seal
+function Card:calculate_seal(context, ...)
+	SMODS.push_to_context_stack(context, "overrides.lua : Card.calculate_seal")
+	local eff, post = calculate_seal_ref(self, context, ...)
+	SMODS.pop_from_context_stack(context, "overrides.lua : Card.calculate_seal")
+	return eff, post
+end
+
+local set_ability = Card.set_ability
+function Card:set_ability(center, initial, delay_sprites)
+	local old_center = self.config.center
+	set_ability(self, center, initial, delay_sprites)
+	if not initial and G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT then
+		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
+	end
 end
