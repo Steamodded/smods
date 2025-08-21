@@ -26,7 +26,7 @@ spot.config.object:remove()
 spot.config.object = Jimbo
 Jimbo.ui_object_updated = true
 Jimbo:add_speech_bubble(quip, nil, {quip = true})
-Jimbo:say_stuff((extra and extra.times) or 5, false, extra)
+Jimbo:say_stuff((extra and extra.times) or 5, false, quip)
 '''
 match_indent = true
 
@@ -53,7 +53,7 @@ spot.config.object:remove()
 spot.config.object = Jimbo
 Jimbo.ui_object_updated = true
 Jimbo:add_speech_bubble(quip, nil, {quip = true})
-Jimbo:say_stuff((extra and extra.times) or 5, false, extra)
+Jimbo:say_stuff((extra and extra.times) or 5, false, quip)
 '''
 match_indent = true
 
@@ -97,7 +97,8 @@ function Card_Character:say_stuff(n, not_first)
 '''
 position = 'at'
 payload = '''
-function Card_Character:say_stuff(n, not_first, extra)
+function Card_Character:say_stuff(n, not_first, quip_key)
+    local quip = SMODS.JimboQuips[quip_key]
 '''
 match_indent = true
 
@@ -109,7 +110,7 @@ self:say_stuff(n, true)
 '''
 position = 'at'
 payload = '''
-self:say_stuff(n, true, extra)
+self:say_stuff(n, true, quip_key)
 '''
 match_indent = true
 
@@ -121,7 +122,7 @@ self:say_stuff(n-1, true)
 '''
 position = 'at'
 payload = '''
-self:say_stuff(n-1, true, extra)
+self:say_stuff(n-1, true, quip_key)
 '''
 match_indent = true
 
@@ -135,19 +136,21 @@ play_sound('voice'..math.random(1, 11), G.SPEEDFACTOR*(math.random()*0.2+1), 0.5
 '''
 position = 'at'
 payload = '''
-local custom_pitch = extra and extra.pitch
-if extra and extra.sound then
-    if type(extra.sound) == 'table' then
-        for k, v in pairs(extra.sound) do
+if quip.play_sounds and type(quip.play_sounds) == 'function' then
+    quip:play_sounds(n)
+elseif quip.extra and quip.extra.sound then
+    local custom_pitch = quip.extra.pitch
+    if type(quip.extra.sound) == 'table' then
+        for k, v in pairs(quip.extra.sound) do
             play_sound(v, custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
         end
-    elseif type(extra.sound) == 'string' then
-        play_sound(extra.sound, custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+    elseif type(quip.extra.sound) == 'string' then
+        play_sound(quip.extra.sound, custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
     else
         play_sound('voice'..math.random(1, 11), custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
     end
 else
-    play_sound('voice'..math.random(1, 11), custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+    play_sound('voice'..math.random(1, 11), quip.extra and quip.extra.pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
 end
 '''
 match_indent = true
@@ -162,7 +165,7 @@ delay = 0.13,
 '''
 position = 'at'
 payload = '''
-delay = extra and extra.delay or 0.13,
+delay = quip.extra and quip.extra.delay or 0.13,
 '''
 match_indent = true
 
@@ -176,7 +179,7 @@ self.children.card:juice_up()
 '''
 position = 'at'
 payload = '''
-local juice_params = extra and extra.juice or {nil, nil}
+local juice_params = quip.extra and quip.extra.juice or {nil, nil}
 self.children.card:juice_up(juice_params[1], juice_params[2])
 '''
 match_indent = true
