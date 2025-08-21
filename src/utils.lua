@@ -2222,7 +2222,7 @@ end
 G.FUNCS.can_select_from_booster = function(e)
     local card = e.config.ref_table
     local area = booster_obj and card:selectable_from_pack(booster_obj)
-    local edition_card_limit = card.edition and card.edition.card_limit or 0
+    local edition_card_limit = card.ability.card_limit
     if area and #G[area].cards < G[area].config.card_limit + edition_card_limit then
         e.config.colour = G.C.GREEN
         e.config.button = 'use_card'
@@ -2464,7 +2464,7 @@ function SMODS.info_queue_desc_from_rows(desc_nodes, empty, maxw)
   }}
 end
 
-function SMODS.destroy_cards(cards, bypass_eternal, immediate)
+function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
     if not cards[1] then
         cards = {cards}
     end
@@ -2482,6 +2482,7 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate)
             if card.base.name then
                 playing_cards[#playing_cards + 1] = card
             end
+            card.skip_destroy_animation = skip_anim
         end
     end
     
@@ -2715,7 +2716,7 @@ G.FUNCS.SMODS_scoring_calculation_function = function(e)
         if G.GAME.current_scoring_calculation.colour and operator then
             operator.children[1].config.colour = type(G.GAME.current_scoring_calculation.colour) == 'function' and G.GAME.current_scoring_calculation:colour() or G.GAME.current_scoring_calculation.colour
         end
-        if operator then operator.UIBox:recalculate() end
+        if operator and (type(G.GAME.current_scoring_calculation.colour) == 'function' or type(G.GAME.current_scoring_calculation.text) == 'function') then operator.UIBox:recalculate() end
     end
 end
 
@@ -2989,4 +2990,44 @@ function UIElement:draw_pixellated_under(_type, _parallax, _emboss, _progress)
     end
     love.graphics.polygon("fill", self.pixellated_rect.fill.vertices)
 
+end
+
+function CardArea:count_extra_slots_used(cards)
+    local slots = #cards
+    if (self.config.type == 'joker' or self.config.type == 'hand') and not self.config.fixed_limit then
+        for _, card in ipairs(cards) do
+            slots = slots + card.ability.extra_slots_used
+        end
+    end
+    return slots
+end
+
+function CardArea:handle_card_limit(card_limit, card_slots)
+    if (self.config.type == 'joker' or self.config.type == 'hand') and not self.config.fixed_limit then
+        card_limit = card_limit or 0
+        card_slots = card_slots or 0
+        if card_limit ~= 0 then
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()
+                    self.config.card_limit = self.config.card_limit + card_limit
+                    self.config.true_card_limit = math.max(0, self.config.true_card_limit + card_limit)
+                    return true
+                end
+            }))
+        end
+        if card_slots ~= 0 then
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()
+                    self.config.card_limit = self.config.card_limit - card_slots
+                    return true
+                end
+            }))
+            
+        end
+        if G.hand and self == G.hand and card_limit - card_slots > 0 then 
+            G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards))
+        end
+    end
 end
