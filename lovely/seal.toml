@@ -183,7 +183,9 @@ target = 'card.lua'
 pattern = '''play_sound('gold_seal', 1.2, 0.4)'''
 position = 'at'
 match_indent = true
-payload = '''play_sound(sound.sound, sound.per, sound.vol)'''
+payload = '''
+self.ability.delay_seal = false
+play_sound(sound.sound, sound.per, sound.vol)'''
 ## Populate Seal Ability Table
 [[patches]]
 [patches.pattern]
@@ -200,7 +202,26 @@ for k, v in pairs(G.P_SEALS[_seal].config or {}) do
         self.ability.seal[k] = v
     end
 end
+
+self.ability.delay_seal = not silent
 '''
+
+# card_limit support
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+end
+    if self.ability.name == 'Gold Card' and self.seal == 'Gold' and self.playing_card then 
+'''
+payload = '''
+    self.ability.card_limit = self.ability.card_limit + (self.ability.seal.card_limit or 0)
+    self.ability.extra_slots_used = self.ability.extra_slots_used + (self.ability.seal.extra_slots_used or 0)
+    if self.area then self.area:handle_card_limit(self.ability.seal.card_limit, self.ability.seal.extra_slots_used) end
+'''
+
 
 [[patches]]
 [patches.pattern]

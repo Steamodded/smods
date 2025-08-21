@@ -3,6 +3,7 @@
 
 SMODS = {}
 MODDED_VERSION = require'SMODS.version'
+RELEASE_VERSION = require'SMODS.release'
 SMODS.id = 'Steamodded'
 SMODS.version = MODDED_VERSION:gsub('%-STEAMODDED', '')
 SMODS.can_load = true

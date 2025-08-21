@@ -138,6 +138,8 @@ perma_h_x_mult = self.ability and self.ability.perma_h_x_mult or 0,
 perma_p_dollars = self.ability and self.ability.perma_p_dollars or 0,
 perma_h_dollars = self.ability and self.ability.perma_h_dollars or 0,
 perma_repetitions = self.ability and self.ability.perma_repetitions or 0,
+card_limit = self.ability and self.ability.card_limit or 0,
+extra_slots_used = self.ability and self.ability.extra_slots_used or 0,
 '''
 match_indent = true
 overwrite = false

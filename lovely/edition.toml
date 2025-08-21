@@ -55,17 +55,22 @@ pattern = '''
 position = 'at'
 payload = '''
 v = (v == 'holographic' and 'holo' or v)
-if v:sub(1,9) == 'negative_' then
-    info_queue[#info_queue+1] = {key = 'e_'..v, set = 'Edition', config = {extra = G.P_CENTERS['e_negative'].config.card_limit}}
+local ed_key = v
+if v:sub(v:len()-14) == '_SMODS_INTERNAL' then
+    if v:sub(1, 9) == 'negative_' then ed_key = 'negative' else ed_key = v:sub(1, v:find('_', v:find('_')+1)-1) end
+    v = v:sub(1, v:len()-15)
+    --info_queue[#info_queue+1] = {key = 'e_'..v, set = 'Edition', config = {extra = G.P_CENTERS['e_'..v].config.card_limit}}
 end
-if G.P_CENTERS[v] and G.P_CENTERS[v].set == 'Edition' then
-    info_queue[#info_queue + 1] = G.P_CENTERS[v]
+
+if G.P_CENTERS[ed_key] and G.P_CENTERS[ed_key].set == 'Edition' then
+    info_queue[#info_queue + 1] = G.P_CENTERS[ed_key]
 end
-if G.P_CENTERS['e_'..v] and G.P_CENTERS['e_'..v].set == 'Edition' then
+if G.P_CENTERS['e_'..ed_key] and G.P_CENTERS['e_'..ed_key].set == 'Edition' then
     local t = {key = 'e_'..v, set = 'Edition', config = {}}
+    if localize(SMODS.merge_defaults(t, {type = 'name_text'})) == 'ERROR' then t.key = 'e_'..ed_key end
     info_queue[#info_queue + 1] = t
-    if G.P_CENTERS['e_'..v].loc_vars and type(G.P_CENTERS['e_'..v].loc_vars) == 'function' then
-        local res = G.P_CENTERS['e_'..v]:loc_vars(info_queue, card) or {}
+    if G.P_CENTERS['e_'..ed_key].loc_vars and type(G.P_CENTERS['e_'..ed_key].loc_vars) == 'function' then
+        local res = G.P_CENTERS['e_'..ed_key]:loc_vars(info_queue, card) or {}
         t.vars = res.vars
         t.key = res.key or t.key
         t.set = res.set or t.set
@@ -121,58 +126,6 @@ for k, v in pairs(G.P_CENTER_POOLS.Edition) do
 end'''
 line_prepend = "$indent"
 
-## Fix card_limit logic
-# Card:add_to_deck()
-[[patches]]
-[patches.regex]
-target = "card.lua"
-pattern = '''(?<indent>[\t ]*)if self\.edition[A-z\.\:\n\t _(',)~=+\-0-9]*limit \+ 1'''
-position = "at"
-payload = '''
-if true then
-    if from_debuff then
-        self.joker_added_to_deck_but_debuffed = nil
-    else
-        if self.edition and self.edition.card_limit then
-            if self.ability.consumeable then
-                G.consumeables.config.card_limit = G.consumeables.config.card_limit + self.edition.card_limit
-            else
-                G.jokers.config.card_limit = G.jokers.config.card_limit + self.edition.card_limit
-            end'''
-line_prepend = "$indent"
-# Card:remove_from_deck()
-[[patches]]
-[patches.regex]
-target = "card.lua"
-pattern = '''(?<indent>[\t ]*)if self\.edition[A-z\.\:\n\t _(',)~=+\-0-9]*limit \- 1'''
-position = "at"
-payload = '''
-if G.jokers then
-    if from_debuff then
-        self.joker_added_to_deck_but_debuffed = true
-    else
-        if self.edition and self.edition.card_limit then
-            if self.ability.consumeable then
-                G.consumeables.config.card_limit = G.consumeables.config.card_limit - self.edition.card_limit
-            elseif self.ability.set == 'Joker' then
-                G.jokers.config.card_limit = G.jokers.config.card_limit - self.edition.card_limit
-            end'''
-line_prepend = "$indent"
-# Card:remove()
-[[patches]]
-[patches.regex]
-target = "card.lua"
-pattern = '''(?<indent>[\t ]*)if self\.ability\.queue_neg[A-z\.\:\n\t _(',)~=+\-0-9]*limit \- 1'''
-position = "at"
-payload = '''
-if self.joker_added_to_deck_but_debuffed then
-    if self.edition and self.edition.card_limit then
-        if self.ability.consumeable then
-            G.consumeables.config.card_limit = G.consumeables.config.card_limit - self.edition.card_limit
-        elseif self.ability.set == 'Joker' then
-            G.jokers.config.card_limit = G.jokers.config.card_limit - self.edition.card_limit
-        end'''
-line_prepend = "$indent"
 # Card:save()
 [[patches]]
 [patches.pattern]
@@ -191,7 +144,7 @@ pattern = "    not (card.ability.consumeable and #G.consumeables.cards < G.consu
 position = "at"
 match_indent = true
 payload = '''
-    not (card.ability.consumeable and #G.consumeables.cards < G.consumeables.config.card_limit + (card.edition and card.edition.card_limit or 0)) then
+    not (card.ability.consumeable and #G.consumeables.cards < G.consumeables.config.card_limit + card.ability.card_limit - card.ability.extra_slots_used) then
 '''
 times = 1
 
@@ -203,64 +156,22 @@ pattern = "not (card.ability.set == 'Joker' and #G.jokers.cards < G.jokers.confi
 position = "at"
 match_indent = true
 payload = '''
-    not (card.ability.set == 'Joker' and #G.jokers.cards < G.jokers.config.card_limit + (card.edition and card.edition.card_limit or 0)) and
+    not (card.ability.set == 'Joker' and #G.jokers.cards < G.jokers.config.card_limit + card.ability.card_limit - card.ability.extra_slots_used) and
 '''
 times = 1
-
-## Negative playing card logic
-# CardArea:emplace()
-[[patches]]
-[patches.pattern]
-target = "cardarea.lua"
-pattern = "function CardArea:emplace(*"
-position = "after"
-payload = '''
-    if not card.debuff and card.edition and card.edition.card_limit and (self == G.hand) then
-        self.config.real_card_limit = (self.config.real_card_limit or self.config.card_limit) + card.edition.card_limit
-        self.config.card_limit = math.max(0, self.config.real_card_limit)
-    end'''
-match_indent = true
-# CardArea:remove_card()
-[[patches]]
-[patches.pattern]
-target = "cardarea.lua"
-pattern = "card:remove_from_area()"
-position = "before"
-payload = '''
-if not card.debuff and card.edition and card.edition.card_limit and (self == G.hand) then
-    self.config.real_card_limit = (self.config.real_card_limit or self.config.card_limit) - card.edition.card_limit
-    self.config.card_limit = math.max(0, self.config.real_card_limit)
-end'''
-match_indent = true
-
-# G.FUNCS.draw_from_deck_to_hand()
-[[patches]]
-[patches.pattern]
-target = "functions/state_events.lua"
-pattern = "local hand_space = e or*"
-position = "at"
-payload = """local hand_space = e
-if not hand_space then
-    local limit = G.hand.config.card_limit - #G.hand.cards
-    local n = 0
-    while n < #G.deck.cards do
-        local card = G.deck.cards[#G.deck.cards-n]
-        limit = limit - 1 + (not card.debuff and card.edition and card.edition.card_limit or 0)
-        if limit < 0 then break end
-        n = n + 1
-    end
-    hand_space = n
-end"""
-match_indent = true
 
 [[patches]]
 [patches.pattern]
 target = "card.lua"
-pattern = "badges[#badges + 1] = 'negative_consumable'"
-position = "after"
+pattern = '''
+if self.edition.type == 'negative' and self.ability.consumeable then
+    badges[#badges + 1] = 'negative_consumable'
+'''
+position = "at"
 payload = """
-elseif self.edition.type == 'negative' and (self.ability.set == 'Enhanced' or self.ability.set == 'Default') then
-    badges[#badges + 1] = 'negative_playing_card'"""
+if self.edition.card_limit then
+    badges[#badges + 1] = G.P_CENTERS[self.edition.key]:card_limit_key(self)
+"""
 match_indent = true
 
 [[patches]]
@@ -289,7 +200,11 @@ match_indent = true
 target = "functions/UI_definitions.lua"
 pattern = "if v == 'negative_consumable' then v = 'negative' end"
 position = "at"
-payload = '''if v == 'negative_consumable' or v == 'negative_playing_card' then v = 'negative' end'''
+payload = '''
+if v:sub(v:len()-14) == '_SMODS_INTERNAL' then
+    if v:sub(1, 9) == 'negative_' then v = 'negative' else v = v:sub(1, v:find('_', v:find('_')+1)-1) end
+end
+'''
 match_indent = true
 
 #
