@@ -2355,6 +2355,14 @@ function Card:calculate_seal(context, ...)
 	return eff, post
 end
 
+local calculate_joker_ref = Card.calculate_joker
+function Card:calculate_joker(context, ...)
+	SMODS.push_to_context_stack(context, "overrides.lua : Card.calculate_joker")
+	local eff, post = calculate_joker_ref(self, context, ...)
+	SMODS.pop_from_context_stack(context, "overrides.lua : Card.calculate_joker")
+	return eff, post
+end
+
 local set_ability = Card.set_ability
 function Card:set_ability(center, initial, delay_sprites)
 	local old_center = self.config.center
