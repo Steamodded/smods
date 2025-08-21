@@ -249,12 +249,15 @@ if obj and obj.set_badges and type(obj.set_badges) == 'function' then
     obj:set_badges(card, badges)
 end'''
 
+# mod badges
 [[patches]]
-[patches.regex]
+[patches.pattern]
 target = 'functions/UI_definitions.lua'
-pattern = "(?<indent>[\t ]*)if AUT.badges then\n([\t ]*.*\n){4}[\t ]*end"
-line_prepend = '$indent'
-position = 'after'
+match_indent = true
+position = 'before'
+pattern = '''
+if AUT.info then
+'''
 payload = '''
 if AUT.card_type ~= 'Locked' and AUT.card_type ~= 'Undiscovered' then
     SMODS.create_mod_badges(card.config.center, badges)
@@ -266,7 +269,8 @@ if AUT.card_type ~= 'Locked' and AUT.card_type ~= 'Undiscovered' then
         SMODS.create_mod_badges(SMODS.Tags[card.config.tag.key], badges)
     end
     badges.mod_set = nil
-end'''
+end
+'''
 
 # set_discover_tallies()
 [[patches]]
