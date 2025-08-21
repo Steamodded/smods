@@ -1812,7 +1812,7 @@ if not v.ability.eternal then deletable_jokers[#deletable_jokers + 1] = v end
 payload = '''
 if not SMODS.is_eternal(v, self) then deletable_jokers[#deletable_jokers + 1] = v end
 '''
-# Hex
+# Hex SMODS.is_eternal and card.getting_sliced
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -1822,7 +1822,7 @@ pattern = '''
 if v ~= eligible_card and (not v.ability.eternal) then v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
 '''
 payload = '''
-if v ~= eligible_card and (not SMODS.is_eternal(v, self)) then v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
+if v ~= eligible_card and (not SMODS.is_eternal(v, self)) then v.getting_sliced = true; v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
 '''
 # Card:can_sell()
 [[patches]]
