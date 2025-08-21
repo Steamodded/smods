@@ -1759,6 +1759,34 @@ pattern = '''
 delay(0.3)'''
 payload = '''    SMODS.displaying_scoring = nil'''
 
+# Adjust food jokers
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.E_MANAGER:add_event(Event({
+    func = function()
+        play_sound('tarot1')
+        self.T.r = -0.2
+        self:juice_up(0.3, 0.4)
+        self.states.drag.is = true
+        self.children.center.pinch.x = true
+        G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
+            func = function()
+                    G.jokers:remove_card(self)
+                    self:remove()
+                    self = nil
+                return true; end})) 
+        return true
+    end
+})) 
+'''
+payload = '''
+SMODS.destroy_cards(self, nil, nil, true)
+'''
+
 # Joker-type removed context added
 [[patches]]
 [patches.pattern]
@@ -1773,7 +1801,60 @@ payload = '''
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self})
         if flags.no_destroy then self.getting_sliced = nil; return end
     end
+    if self.skip_destroy_animation then
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                play_sound('tarot1')
+                self.T.r = -0.2
+                self:juice_up(0.3, 0.4)
+                self.states.drag.is = true
+                self.children.center.pinch.x = true
+                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
+                    func = function()
+                            G.jokers:remove_card(self)
+                            self:remove()
+                            self = nil
+                        return true; end})) 
+                return true
+            end
+        })) 
+        return
+    end
 '''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function Card:shatter()
+'''
+payload = '''
+    if self.getting_sliced and not (self.ability.set == 'Default' or self.ability.set == 'Enhanced') then
+        local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self, shatters = true})
+        if flags.no_destroy then self.getting_sliced = nil; return end
+    end
+    if self.skip_destroy_animation then
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                play_sound('tarot1')
+                self.T.r = -0.2
+                self:juice_up(0.3, 0.4)
+                self.states.drag.is = true
+                self.children.center.pinch.x = true
+                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
+                    func = function()
+                            G.jokers:remove_card(self)
+                            self:remove()
+                            self = nil
+                        return true; end})) 
+                return true
+            end
+        })) 
+        return
+    end
+'''
+
 
 ## Change eternal checks
 # Ceremonial Dagger
@@ -1812,7 +1893,7 @@ if not v.ability.eternal then deletable_jokers[#deletable_jokers + 1] = v end
 payload = '''
 if not SMODS.is_eternal(v, self) then deletable_jokers[#deletable_jokers + 1] = v end
 '''
-# Hex
+# Hex SMODS.is_eternal and card.getting_sliced
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -1822,7 +1903,7 @@ pattern = '''
 if v ~= eligible_card and (not v.ability.eternal) then v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
 '''
 payload = '''
-if v ~= eligible_card and (not SMODS.is_eternal(v, self)) then v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
+if v ~= eligible_card and (not SMODS.is_eternal(v, self)) then v.getting_sliced = true; v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
 '''
 # Card:can_sell()
 [[patches]]

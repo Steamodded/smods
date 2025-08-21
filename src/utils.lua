@@ -2474,7 +2474,7 @@ function SMODS.info_queue_desc_from_rows(desc_nodes, empty, maxw)
   }}
 end
 
-function SMODS.destroy_cards(cards, bypass_eternal, immediate)
+function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
     if not cards[1] then
         cards = {cards}
     end
@@ -2492,6 +2492,7 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate)
             if card.base.name then
                 playing_cards[#playing_cards + 1] = card
             end
+            card.skip_destroy_animation = skip_anim
         end
     end
     
@@ -2822,7 +2823,7 @@ G.FUNCS.SMODS_scoring_calculation_function = function(e)
         if G.GAME.current_scoring_calculation.colour and operator then
             operator.children[1].config.colour = type(G.GAME.current_scoring_calculation.colour) == 'function' and G.GAME.current_scoring_calculation:colour() or G.GAME.current_scoring_calculation.colour
         end
-        if operator then operator.UIBox:recalculate() end
+        if operator and (type(G.GAME.current_scoring_calculation.colour) == 'function' or type(G.GAME.current_scoring_calculation.text) == 'function') then operator.UIBox:recalculate() end
     end
 end
 
@@ -3112,19 +3113,26 @@ function CardArea:handle_card_limit(card_limit, card_slots)
     if (self.config.type == 'joker' or self.config.type == 'hand') and not self.config.fixed_limit then
         card_limit = card_limit or 0
         card_slots = card_slots or 0
-        G.E_MANAGER:add_event(Event({
-            trigger = 'immediate',
-            func = function()
-                if card_limit then
+        if card_limit ~= 0 then
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()
                     self.config.card_limit = self.config.card_limit + card_limit
                     self.config.true_card_limit = math.max(0, self.config.true_card_limit + card_limit)
+                    return true
                 end
-                if card_slots then
+            }))
+        end
+        if card_slots ~= 0 then
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()
                     self.config.card_limit = self.config.card_limit - card_slots
+                    return true
                 end
-                return true
-            end
-        }))
+            }))
+            
+        end
         if G.hand and self == G.hand and card_limit - card_slots > 0 then 
             G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards))
         end
