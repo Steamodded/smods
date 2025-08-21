@@ -1062,9 +1062,13 @@ function SMODS.has_any_suit(card)
     end
 end
 function SMODS.has_no_rank(card)
+    local is_stone = false
+    local is_wild = false
     for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].no_rank then return true end
+        if k == 'm_stone' or G.P_CENTERS[k].no_rank then is_stone = true end
+        if G.P_CENTERS[k].any_rank then is_wild = true end
     end
+    return is_stone and not is_wild
 end
 -- Hook this to add other Wild Rank effects. [flags] param is the same as Card:get_ranks()'s
 function SMODS.has_any_rank(card, flags)

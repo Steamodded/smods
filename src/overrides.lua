@@ -828,19 +828,21 @@ function get_straight(hand, min_length, skip, wrap)
 					-- minus the amount of card_reps (cards) checked is less than zero, there cannot be a straight in the hand.
 					-- (Equally, if the length of the best_straight is more or equal the length of the hand minus one, the remaining card cannot result in a longer straight (it must be a fork in .next/.prev))
 					if #hand - min_length - card_reps_checked < 0 or #best_straight >= #hand then
-						if #best_straight >= min_length then
-							for k, v in ipairs(best_straight) do best_straight[k] = v.card end
-							return {best_straight}
-						else return {} end
+						goto continue
 					end
 				end
+				card_reps_checked = card_reps_checked + 1
 			end
-			card_reps_checked = card_reps_checked + 1
 		end
+
+		::continue::
 
 		if #best_straight >= min_length then
 			for k, v in ipairs(best_straight) do best_straight[k] = v.card end
 			return {best_straight} -- Only return best found straight. Feasible to return all found straights, but I need sleep :)
+		elseif #wild_reps >= min_length then
+			for i, c_rep in ipairs(wild_reps) do best_straight[i] = c_rep.card end
+			return {best_straight}
 		end
 
 		return {}
