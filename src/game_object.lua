@@ -3230,7 +3230,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         register = function(self)
             self.config = self.config or {}
             if self.config.card_limit then
-                print(self.key)
                 self.card_limit_keys = self.card_limit_keys or {
                     joker = string.sub(self.key, 3) .. '_SMODS_INTERNAL',
                     consumable = string.sub(self.key, 3) .. '_consumable' .. '_SMODS_INTERNAL',
