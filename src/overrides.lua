@@ -2371,3 +2371,29 @@ function Card:set_ability(center, initial, delay_sprites)
 		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
 	end
 end
+
+local hex_ref = HEX
+function HEX(hex)
+    local hex = (hex and type(hex) == "table" and copy_table(hex)) or hex
+    if hex then
+        if type(hex) == "table" then
+            local concat = table.concat(hex,",")
+            local new_hex = {}
+            for rgb in concat:gmatch('%d+') do
+                table.insert(new_hex, ('%02X'):format(tonumber(rgb)))
+            end
+            hex = table.concat(new_hex)
+        elseif type(hex) == "string" and string.find(hex,",") then
+            local new_hex = {}
+            for rgb in hex:gmatch('%d+') do
+                table.insert(new_hex, ('%02X'):format(tonumber(rgb)))
+            end
+            hex = table.concat(new_hex)
+        end
+        if type(hex) == "string" and string.sub(hex,1,1) == "#" then
+            hex = string.sub(hex,2,#hex)
+        end
+    end
+    local ret = hex_ref(hex)
+    return ret
+end
