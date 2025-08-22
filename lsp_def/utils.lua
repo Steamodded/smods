@@ -529,7 +529,8 @@ function SMODS.get_next_vouchers(vouchers) end
 ---@param key string
 ---@return Card|table voucher
 --- Adds a Voucher with matching `key` to the shop.
-function SMODS.add_voucher_to_shop(key) end
+--- If dont_save is true the Voucher will not return in the next shop
+function SMODS.add_voucher_to_shop(key, dont_save) end
 
 ---@param mod number
 --- Modifies the Voucher shop limit by `mod`.
