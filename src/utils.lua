@@ -2272,11 +2272,13 @@ function SMODS.get_next_vouchers(vouchers)
     return vouchers
 end
 
-function SMODS.add_voucher_to_shop(key)
+function SMODS.add_voucher_to_shop(key, dont_save)
     if key then assert(G.P_CENTERS[key], "Invalid voucher key: "..key) else
         key = get_next_voucher_key()
-        G.GAME.current_round.voucher.spawn[key] = true
-        G.GAME.current_round.voucher[#G.GAME.current_round.voucher + 1] = key
+        if not dont_save then
+            G.GAME.current_round.voucher.spawn[key] = true
+            G.GAME.current_round.voucher[#G.GAME.current_round.voucher + 1] = key
+        end
     end
     local card = Card(G.shop_vouchers.T.x + G.shop_vouchers.T.w/2,
         G.shop_vouchers.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS[key],{bypass_discovery_center = true, bypass_discovery_ui = true})
