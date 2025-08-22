@@ -401,6 +401,10 @@ function SMODS.create_card(t)
         end
     end
 
+	if _card.config.center.create_card and type(_card.config.center.create_card) == 'function' then
+		_card.config.center.create_card(_card)
+	end
+	
     return _card
 end
 
