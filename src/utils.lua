@@ -1337,6 +1337,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
 
     if key == 'saved' then
         SMODS.saved = amount
+        G.GAME.saved_text = amount
         return true
     end
 
