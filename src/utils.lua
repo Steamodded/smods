@@ -1268,7 +1268,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         mult = mod_mult(hand_chips)
         hand_chips = mod_chips(old_mult)
         update_hand_text({delay = 0}, {chips = hand_chips, mult = mult})
-        scored_card:juice_up()
+        juice_card(scored_card)
         return true
     end
 
@@ -1337,6 +1337,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
 
     if key == 'saved' then
         SMODS.saved = amount
+        G.GAME.saved_text = amount
         return true
     end
 
@@ -3013,7 +3014,6 @@ function CardArea:handle_card_limit(card_limit, card_slots)
                 trigger = 'immediate',
                 func = function()
                     self.config.card_limit = self.config.card_limit + card_limit
-                    self.config.true_card_limit = math.max(0, self.config.true_card_limit + card_limit)
                     return true
                 end
             }))
@@ -3022,14 +3022,17 @@ function CardArea:handle_card_limit(card_limit, card_slots)
             G.E_MANAGER:add_event(Event({
                 trigger = 'immediate',
                 func = function()
+                    self.config.no_true_limit = true
                     self.config.card_limit = self.config.card_limit - card_slots
+                    self.config.no_true_limit = false
                     return true
                 end
             }))
             
         end
         if G.hand and self == G.hand and card_limit - card_slots > 0 then 
-            G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards))
+            G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards)) 
+            check_for_unlock({type = 'min_hand_size'})
         end
     end
 end

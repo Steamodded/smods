@@ -25,7 +25,7 @@ local spot = G.OVERLAY_MENU:get_UIE_by_ID('jimbo_spot')
 spot.config.object:remove()
 spot.config.object = Jimbo
 Jimbo.ui_object_updated = true
-Jimbo:add_speech_bubble(quip, nil, {quip = true})
+Jimbo:add_speech_bubble(quip, nil, {quip = true}, extra)
 Jimbo:say_stuff((extra and extra.times) or 5, false, quip)
 '''
 match_indent = true
@@ -52,7 +52,7 @@ local spot = G.OVERLAY_MENU:get_UIE_by_ID('jimbo_spot')
 spot.config.object:remove()
 spot.config.object = Jimbo
 Jimbo.ui_object_updated = true
-Jimbo:add_speech_bubble(quip, nil, {quip = true})
+Jimbo:add_speech_bubble(quip, nil, {quip = true}, extra)
 Jimbo:say_stuff((extra and extra.times) or 5, false, quip)
 '''
 match_indent = true
@@ -87,6 +87,23 @@ self.children.card = Card(self.T.x, self.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empt
 payload = '''
 self.children.card = Card(self.T.x, self.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, args.center and G.P_CENTERS[args.center] or G.P_CENTERS.j_joker, {bypass_discovery_center = true})
 '''
+
+# Pass args into add_speech_bubble
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+function Card_Character:add_speech_bubble(text_key, align, loc_vars)
+'''
+payload = '''
+function Card_Character:add_speech_bubble(text_key, align, loc_vars, quip_args)
+    if quip_args and quip_args.text_key then text_key = quip_args.text_key end
+'''
+
+
+
 
 # Pass extra table into say_stuff
 [[patches]]
