@@ -797,5 +797,5 @@ pattern = '''
 function pseudoshuffle(list, seed)
 '''
 payload = '''
-if seed and type(seed) == "string" then seed = pseudoseed(seed) end
+    if seed and type(seed) == "string" then seed = pseudoseed(seed) end
 '''
