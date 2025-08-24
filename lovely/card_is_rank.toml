@@ -7,8 +7,7 @@ priority = -10
 # Oh boy.
 
 # Excluded Jokers: 
-# Even Steven, Odd Todd and Cloud Nine
-# Steven and Todd are a little messy to implement and Cloud Nine requires some kind of caching of ranks which I am NOT going to tackle :)
+# Cloud Nine requires some kind of caching of ranks which I am NOT going to tackle :)
 
 
 # Help
@@ -219,3 +218,52 @@ position = "at"
 match_indent = false
 payload = '''
                                 if context.scoring_hand[i]:is_rank(14, false) then aces = aces + 1 end'''
+
+
+# Even Steven and Odd Todd
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Even Steven' and
+context.other_card:get_id() <= 10 and 
+context.other_card:get_id() >= 0 and
+context.other_card:get_id()%2 == 0
+then
+    return {
+        mult = self.ability.extra,
+        card = self
+    }
+end
+if self.ability.name == 'Odd Todd' and
+((context.other_card:get_id() <= 10 and 
+context.other_card:get_id() >= 0 and
+context.other_card:get_id()%2 == 1) or
+(context.other_card:get_id() == 14))
+then
+    return {
+        chips = self.ability.extra,
+        card = self
+    }
+end
+'''
+position = "at"
+match_indent = true
+payload = '''
+if self.ability.name == 'Even Steven' and
+context.other_card:is_parity(0, true)
+then
+    return {
+        mult = self.ability.extra,
+        card = self
+    }
+end
+if self.ability.name == 'Odd Todd' and
+context.other_card:is_parity(1, true)
+then
+    return {
+        chips = self.ability.extra,
+        card = self
+    }
+end
+'''

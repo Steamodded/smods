@@ -2808,6 +2808,15 @@ function Card:get_ranks(flags) -- Returns a table of "SMODS.Rank"s, sanitized to
     return ret
 end
 
+function Card:is_parity(parity, exclude_faces)
+    for _, rank in ipairs(self:get_ranks()) do
+        if rank.parity == parity and (not exclude_faces or not rank.face) then
+            return true
+        end
+    end
+    return false
+end
+
 -- Scoring Calculation API
 function SMODS.set_scoring_calculation(key)
     G.GAME.current_scoring_calculation = SMODS.Scoring_Calculations[key]:new()

@@ -1967,6 +1967,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         next = {},
         prev = nil,
         straight_edges = {},
+        parity = nil,
         -- TODO we need a better system for what this is doing.
         -- We should allow setting a playing card's atlas and position to any values,
         -- and we should also ensure that it's easy to create an atlas with a standard
@@ -2048,6 +2049,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             pos = { x = v - 2 },
             nominal = v,
             next = { (v + 1) .. '' },
+            parity = math.fmod(v, 2),
         }
     end
     SMODS.Rank {
@@ -2056,6 +2058,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         pos = { x = 8 },
         nominal = 10,
         next = { 'Jack' },
+        parity = 0,
     }
     SMODS.Rank {
         key = 'Jack',
@@ -2066,6 +2069,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face = true,
         shorthand = 'J',
         next = { 'Queen' },
+        parity = 2,
     }
     SMODS.Rank {
         key = 'Queen',
@@ -2076,6 +2080,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face = true,
         shorthand = 'Q',
         next = { 'King' },
+        parity = 2,
     }
     SMODS.Rank {
         key = 'King',
@@ -2086,6 +2091,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face = true,
         shorthand = 'K',
         next = { 'Ace' },
+        parity = 2,
     }
     SMODS.Rank {
         key = 'Ace',
@@ -2096,6 +2102,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         shorthand = 'A',
         straight_edges = {['King'] = true, ['2'] = true},
         next = { '2' },
+        parity = 1,
     }
     -- make consumable effects compatible with added suits
     -- TODO put this in utils.lua
