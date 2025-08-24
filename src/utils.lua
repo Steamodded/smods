@@ -1686,6 +1686,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     for k,v in pairs(f) do flags[k] = v end
                     if flags.numerator then context.numerator = flags.numerator end
                     if flags.denominator then context.denominator = flags.denominator end
+                    if flags.cards_to_draw then context.amount = flags.cards_to_draw end
                 end
             end
         end
@@ -1708,6 +1709,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                         for k,v in pairs(f) do flags[k] = v end
                         if flags.numerator then flags.numerator = flags.numerator end
                         if flags.denominator then flags.denominator = flags.denominator end
+                        if flags.cards_to_draw then context.amount = flags.cards_to_draw end
                     end
                 end
                 goto continue
@@ -1734,6 +1736,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     for k,v in pairs(f) do flags[k] = v end
                     if flags.numerator then context.numerator = flags.numerator end
                     if flags.denominator then context.denominator = flags.denominator end
+                    if flags.cards_to_draw then context.amount = flags.cards_to_draw end
                 end
             end
             ::continue::
