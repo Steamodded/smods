@@ -3,6 +3,67 @@ version = "1.0.0"
 dump_lua = true
 priority = -10
 
+# Set metatable
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.config = config or {}
+'''
+payload = '''
+self.config = setmetatable({card_limits = {card_limit}}, {
+    __index = function(t, key)
+        if key == "card_limit" then
+            return t.card_limits.card_limit        
+        end
+    end,
+    __newindex = function(t, key, value)
+        if key == 'card_limit' then
+            t.true_card_limit = t.true_card_limit or 0
+            if not t.no_true_limit then rawset(t, 'true_card_limit', math.max(0, t.true_card_limit + value - (t.card_limits.card_limit or 0))) end
+            rawset(t.card_limits, key, value)
+        else
+            rawset(t, key, value)
+        end
+    end
+})
+
+SMODS.merge_defaults(self.config, config)
+'''
+
+# Load metatable
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.config = cardAreaTable.config
+'''
+payload = '''
+self.config = setmetatable(cardAreaTable.config, {
+    __index = function(t, key)
+        if key == "card_limit" then
+            return t.card_limits.card_limit        
+        end
+    end,
+    __newindex = function(t, key, value)
+        if key == 'card_limit' then
+            t.true_card_limit = t.true_card_limit or 0
+            if not t.no_true_limit then rawset(t, 'true_card_limit', math.max(0, t.true_card_limit + value - (t.card_limits.card_limit or 0))) end
+            rawset(t.card_limits, key, value)
+        else
+            rawset(t, key, value)
+        end
+    end
+})
+
+'''
+
+
+
 # CardArea:init()
 # Add real_card_limit parameter
 [[patches]]
