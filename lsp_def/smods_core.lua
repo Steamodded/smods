@@ -13,22 +13,22 @@ MODDED_VERSION = ""
 SMODS.path = ""
 
 ---@class Mod
----@field id? string Unique ID.
----@field name? string Name of the mod.
----@field display_name? string Display name of the mod.
----@field description? string Mod description.
----@field priority? number Loaded mods are sorted via priority.
----@field badge_colour? table HEX color of the mod badge.
----@field badge_text_colour? table HEX color of the text inside the mod badge.
----@field prefix? string Unique string. All objects created by this mod have this string appended to their key.
----@field version? string Mod version.
----@field dump_loc? true Dumps G.localization table into this mod's directory.
----@field dependencies? string[] All mods in this array must be installed and loaded for this mod to load.
----@field conflicts? table[] No mods in this array can be installed for this mod to load.
----@field provides? table[] If any of the mods in this array are not installed or loaded, this mod will act as a stand in.
----@field main_file? string Path to the main .lua file of this mod.
----@field config_file? string Path to the config file of this mod. Defaults to "config.lua" if not provided.
----@field config? table Config values for this mod.
+---@field id? string Unique ID. 
+---@field name? string Name of the mod. 
+---@field display_name? string Display name of the mod. 
+---@field description? string Mod description. 
+---@field priority? number Loaded mods are sorted via priority. 
+---@field badge_colour? Color HEX color of the mod badge. 
+---@field badge_text_colour? Color HEX color of the text inside the mod badge. 
+---@field prefix? string Unique string. All objects created by this mod have this string appended to their key. 
+---@field version? string Mod version. 
+---@field dump_loc? true Dumps G.localization table into this mod's directory. 
+---@field dependencies? string[] All mods in this array must be installed and loaded for this mod to load. 
+---@field conflicts? table[] No mods in this array can be installed for this mod to load. 
+---@field provides? table[] If any of the mods in this array are not installed or loaded, this mod will act as a stand in. 
+---@field main_file? string Path to the main .lua file of this mod. 
+---@field config_file? string Path to the config file of this mod. Defaults to "config.lua" if not provided. 
+---@field config? table Config values for this mod. 
 ---@field can_load? boolean `true` if the mod is able to load.
 ---@field calculate? fun(self: Mod|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
 ---@field config_tab? fun(): table Creates this mod's config tab UI.
