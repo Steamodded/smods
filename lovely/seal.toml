@@ -22,7 +22,7 @@ pattern = '''
 position = 'at'
 line_prepend = '$indent'
 payload = '''
-card:set_seal(SMODS.poll_seal({mod = 10}))'''
+card:set_seal(SMODS.poll_seal({mod = 10}), true, true)'''
 
 # get_badge_colour()
 [[patches]]

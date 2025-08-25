@@ -1599,7 +1599,7 @@ G.E_MANAGER:add_event(Event({
         local _card = create_playing_card({
             front = pseudorandom_element(G.P_CARDS, pseudoseed('cert_fr')),
             center = G.P_CENTERS.c_base}, G.hand, nil, nil, {G.C.SECONDARY_SET.Enhanced})
-        _card:set_seal(SMODS.poll_seal({type_key = 'certsl', guaranteed = true}))
+        _card:set_seal(SMODS.poll_seal({type_key = 'certsl', guaranteed = true}), nil, true)
         G.GAME.blind:debuff_card(_card)
         G.hand:sort()
         if context.blueprint_card then context.blueprint_card:juice_up() else self:juice_up() end

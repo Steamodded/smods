@@ -62,6 +62,21 @@ self.config = setmetatable(cardAreaTable.config, {
 
 '''
 
+# Bypass CardArea:change_size()
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function CardArea:change_size(delta)
+'''
+payload = '''
+    if true then
+        self:handle_card_limit(delta)
+        return
+    end
+'''
 
 
 # CardArea:init()

@@ -3296,6 +3296,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     }
 
+    function SMODS.Edition:get_card_limit_key()
+        return G.P_CENTERS[self.edition.key]:card_limit_key(self)
+    end
+
     -- TODO also, this should probably be a utility method in core
     -- card_area = pass the card area
     -- edition = boolean value

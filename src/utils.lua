@@ -391,7 +391,7 @@ function SMODS.create_card(t)
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
     if t.edition then _card:set_edition(t.edition) end
     if t.enhancement then _card:set_ability(G.P_CENTERS[t.enhancement]) end
-    if t.seal then _card:set_seal(t.seal) end
+    if t.seal then _card:set_seal(t.seal, nil, true) end
     if t.stickers then
         for i, v in ipairs(t.stickers) do
             local s = SMODS.Stickers[v]
@@ -1705,6 +1705,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     if flags.ranks and not context.no_mod then context.ranks = flags.ranks
                     elseif context.no_mod then flags.ranks = context.ranks end -- If the context has [no_mod] = true, reset flags.ranks to context.ranks, because [flags] gets returned
                     if flags.no_mod then context.no_mod = flags.no_mod end
+                    if flags.cards_to_draw then context.amount = flags.cards_to_draw end
                 end
             end
         end
@@ -1725,8 +1726,9 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                         local effects = {eval_card(card, context)}
                         local f = SMODS.trigger_effects(effects, card)
                         for k,v in pairs(f) do flags[k] = v end
-                        if flags.numerator then flags.numerator = flags.numerator end
-                        if flags.denominator then flags.denominator = flags.denominator end
+                        if flags.numerator then context.numerator = flags.numerator end
+                        if flags.denominator then context.denominator = flags.denominator end
+                        if flags.cards_to_draw then context.amount = flags.cards_to_draw end
                     end
                 end
                 goto continue
@@ -1756,6 +1758,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     if flags.ranks and not context.no_mod then context.ranks = flags.ranks
                     elseif context.no_mod then flags.ranks = context.ranks end -- If the context has [no_mod] = true, reset flags.ranks to context.ranks, because [flags] gets returned 
                     if flags.no_mod then context.no_mod = flags.no_mod end
+                    if flags.cards_to_draw then context.amount = flags.cards_to_draw end
                 end
             end
             ::continue::
@@ -1871,6 +1874,7 @@ function SMODS.calculate_context(context, return_table, no_resolve)
 end
 
 function SMODS.in_scoring(card, scoring_hand)
+    if SMODS.always_scores(card) then return true end
     for _, _card in pairs(scoring_hand) do
         if card == _card then return true end
     end
@@ -2227,7 +2231,7 @@ local function insert(t, res)
         if type(v) == 'table' and type(t[k]) == 'table' then
             insert(t[k], v)
         else
-            t[k] = v
+            t[k] = true
         end
     end
 end
@@ -2298,11 +2302,13 @@ function SMODS.get_next_vouchers(vouchers)
     return vouchers
 end
 
-function SMODS.add_voucher_to_shop(key)
+function SMODS.add_voucher_to_shop(key, dont_save)
     if key then assert(G.P_CENTERS[key], "Invalid voucher key: "..key) else
         key = get_next_voucher_key()
-        G.GAME.current_round.voucher.spawn[key] = true
-        G.GAME.current_round.voucher[#G.GAME.current_round.voucher + 1] = key
+        if not dont_save then
+            G.GAME.current_round.voucher.spawn[key] = true
+            G.GAME.current_round.voucher[#G.GAME.current_round.voucher + 1] = key
+        end
     end
     local card = Card(G.shop_vouchers.T.x + G.shop_vouchers.T.w/2,
         G.shop_vouchers.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS[key],{bypass_discovery_center = true, bypass_discovery_ui = true})
@@ -2401,15 +2407,13 @@ function SMODS.seeing_double_check(hand, suit)
             for k, v in pairs(suit_tally) do
                 if hand[i]:is_suit(k) then suit_tally[k] = suit_tally[k] + 1 end
             end
-        elseif SMODS.has_any_suit(hand[i]) then
-            if hand[i]:is_suit('Clubs') and suit_tally["Clubs"] == 0 then suit_tally["Clubs"] = suit_tally["Clubs"] + 1
-            elseif hand[i]:is_suit('Diamonds') and suit_tally["Diamonds"] == 0  then suit_tally["Diamonds"] = suit_tally["Diamonds"] + 1
-            elseif hand[i]:is_suit('Spades') and suit_tally["Spades"] == 0  then suit_tally["Spades"] = suit_tally["Spades"] + 1
-            elseif hand[i]:is_suit('Hearts') and suit_tally["Hearts"] == 0  then suit_tally["Hearts"] = suit_tally["Hearts"] + 1 end
+        end
+    end
+    for i = 1, #hand do
+        if SMODS.has_any_suit(hand[i]) then
+            if hand[i]:is_suit(suit) and suit_tally[suit] == 0 then suit_tally[suit] = suit_tally[suit] + 1 end
             for k, v in pairs(suit_tally) do
-                if k ~= "Clubs" and k ~= "Diamonds" and k ~= "Hearts" and k ~= "Spades" then
-                    if hand[i]:is_suit(k) and suit_tally[k] == 0  then suit_tally[k] = suit_tally[k] + 1 end
-                end
+                if hand[i]:is_suit(k) and suit_tally[k] == 0  then suit_tally[k] = suit_tally[k] + 1 end
             end
         end
     end
@@ -3138,8 +3142,14 @@ function CardArea:count_extra_slots_used(cards)
     return slots
 end
 
+function SMODS.should_handle_limit(area)
+    if (area.config.type == 'joker' or area.config.type == 'hand') and not area.config.fixed_limit then
+        return true
+    end
+end
+
 function CardArea:handle_card_limit(card_limit, card_slots)
-    if (self.config.type == 'joker' or self.config.type == 'hand') and not self.config.fixed_limit then
+    if SMODS.should_handle_limit(self) then
         card_limit = card_limit or 0
         card_slots = card_slots or 0
         if card_limit ~= 0 then
@@ -3164,7 +3174,7 @@ function CardArea:handle_card_limit(card_limit, card_slots)
             
         end
         if G.hand and self == G.hand and card_limit - card_slots > 0 then 
-            G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards)) 
+            if G.STATE == G.STATES.SELECTING_HAND then G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards)) end
             check_for_unlock({type = 'min_hand_size'})
         end
     end
