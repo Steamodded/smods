@@ -330,7 +330,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             'key',
             'func',
         },
-        func = function(index, letter)
+        func = function(dynatext, index, letter)
         end,
         register = function(self)
             if self.registered then
