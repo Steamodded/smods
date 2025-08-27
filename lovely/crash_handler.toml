@@ -18,3 +18,15 @@ position = "prepend"
 sources = [
     "src/crash_handler.lua",
 ]
+
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+local saveTable = args.savetext or nil
+'''
+payload = '''
+if G.SAVED_GAME then SMODS.save_game = G.SAVED_GAME.GAME.smods_version else SMODS.save_game = nil end
+'''

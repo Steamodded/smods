@@ -557,7 +557,7 @@ end
 function SMODS.check_applied_stakes(stake, deck)
 	if next(stake.applied_stakes) then
 		for _, applied_stake in ipairs(stake.applied_stakes) do
-			if not deck.wins[G.P_STAKES[applied_stake]] then return false end
+			if not deck.wins_by_key[applied_stake] then return false end
 		end
 	end
 	return true
@@ -574,7 +574,7 @@ function G.UIDEF.stake_option(_type)
 	local curr_options = {}
 	local deck_usage = G.PROFILES[G.SETTINGS.profile].deck_usage[G.GAME.viewed_back.effect.center.key]
 	for i=1, #G.P_CENTER_POOLS.Stake do
-		if G.PROFILES[G.SETTINGS.profile].all_unlocked or SMODS.check_applied_stakes(G.P_CENTER_POOLS.Stake[i], deck_usage or {wins = {}}) then
+		if G.PROFILES[G.SETTINGS.profile].all_unlocked or SMODS.check_applied_stakes(G.P_CENTER_POOLS.Stake[i], deck_usage or {wins_by_key = {}}) then
 			stake_options[#stake_options + 1] = i
 			curr_options[i] = #stake_options
 		end
