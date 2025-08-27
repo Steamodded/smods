@@ -2403,10 +2403,13 @@ function SMODS.localize_box(lines, args)
         if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
         if part.control.E then
             local _float, _silent, _pop_in, _bump, _spacing = nil, true, nil, nil, nil
+            local text_effects
             if part.control.E == '1' then
                 _float = true; _silent = true; _pop_in = 0
             elseif part.control.E == '2' then
                 _bump = true; _spacing = 1
+            elseif SMODS.DynaTextEffects[part.control.E] then
+                text_effects = part.control.E
             end
             final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = part.control.B and args.vars.colours[tonumber(part.control.B)] or part.control.X and loc_colour(part.control.X) or nil, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
             final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
@@ -2416,6 +2419,7 @@ function SMODS.localize_box(lines, args)
                     silent = _silent,
                     pop_in = _pop_in,
                     bump = _bump,
+                    text_effect = text_effects,
                     spacing = _spacing,
                     font = SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
                     scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale})
