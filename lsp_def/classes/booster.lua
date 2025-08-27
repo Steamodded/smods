@@ -2,7 +2,7 @@
 
 ---@class SMODS.Booster: SMODS.Center
 ---@field super? SMODS.Center|table Parent class. 
----@field loc_txt? table|{name: string, text: string[], group_name: string} Contains strings used to display text relating to this object. 
+---@field loc_txt? table|{name: string|string[], text: string[]|string[][], group_name: string} Contains strings used to display text relating to this object. 
 ---@field group_key? string Key to the group name. Grabs from `G.localization.misc.dictionary[group_key]`. 
 ---@field draw_hand? boolean Sets if playing cards are drawn when booster pack is opened. 
 ---@field kind? string Groups pack types together. For example, this can be used in `get_pack()` to generate a booster pack of a specific type. 

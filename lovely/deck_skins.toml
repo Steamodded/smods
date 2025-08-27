@@ -240,3 +240,28 @@ else
 end
 '''
 match_indent = true
+
+#=======================#
+# DeckSkin Crediting UI #
+#=======================#
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''
+label = "Production",
+chosen = true,
+'''
+position = "at"
+payload = '''
+label = "Production",
+chosen = not SMODS.init_collab_credits,
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''label = "Collabs",'''
+position = "after"
+payload = '''chosen = SMODS.init_collab_credits,'''
+match_indent = true

@@ -1,0 +1,308 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+[[patches]]
+[patches.regex]
+target = "functions/state_events.lua"
+pattern = "^(.*)hand_chips\\s*\\*\\s*mult(.*)$"
+position = "at"
+payload = '''$1 SMODS.calculate_round_score() $2'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "G.ARGS.score_intensity.earned_score = G.GAME.current_round.current_hand.chips*G.GAME.current_round.current_hand.mult"
+position = "at"
+payload = '''G.ARGS.score_intensity.earned_score = SMODS.calculate_round_score(true)'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''contents.hand ='''
+position = "before"
+payload = '''--[['''
+match_indent = false
+
+# Replace contexts.hand
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+contents.dollars_chips = {n=G.UIT.R, config={align = "cm",r=0.1, padding = 0,colour = G.C.DYN_UI.BOSS_MAIN, emboss = 0.05, id = 'row_dollars_chips'}, nodes={
+'''
+payload = '''
+--]]
+contents.hand = SMODS.GUI.hand_score_display_ui(scale)
+'''
+
+# Add operator set up/loading
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+self.GAME.selected_back_key = selected_back
+'''
+payload = '''
+
+if saveTable then
+    self.GAME.current_scoring_calculation = SMODS.Scoring_Calculations[saveTable.SCORING_CALC.key]:load({
+        config = saveTable.SCORING_CALC.config
+    })
+else
+    self.GAME.current_scoring_calculation = SMODS.Scoring_Calculations['multiply']:new()
+end
+'''
+
+# Operator saving
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+BLIND = G.GAME.blind:save(),
+'''
+payload = '''
+SCORING_CALC = G.GAME.current_scoring_calculation:save(),
+'''
+
+# UIElement remove functions
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if self == G.CONTROLLER.text_input_hook then 
+'''
+payload = '''
+if self.config and self.config.func then
+    self.config.func = nil
+end
+
+'''
+
+# Add Scoring_Parameters to update_hand_text
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if vals.handname and G.GAME.current_round.current_hand.handname ~= vals.handname then
+'''
+payload = '''
+for name, parameter in pairs(SMODS.Scoring_Parameters) do
+    if vals[name] and G.GAME.current_round.current_hand[name] ~= vals[name] then
+        local delta = (type(vals[name]) == 'number' and type(G.GAME.current_round.current_hand[name]) == 'number') and (vals[name] - G.GAME.current_round.current_hand[name]) or 0
+        if delta < 0 then delta = ''..delta; col = G.C.RED
+        elseif delta > 0 then delta = '+'..delta
+        else delta = ''..delta
+        end
+        if type(vals[name]) == 'string' then delta = vals[name] end
+        G.GAME.current_round.current_hand[name] = vals[name]
+        G.hand_text_area[name] = G.hand_text_area[name] or G.HUD:get_UIE_by_ID('hand_'..name..'_area') or nil
+        if G.hand_text_area[name] then
+            G.hand_text_area[name]:update(0)
+            if vals.StatusText then 
+                attention_text({
+                    text =delta,
+                    scale = 0.8, 
+                    hold = 1,
+                    cover = G.hand_text_area[name].parent,
+                    cover_colour = mix_colours(parameter.colour, col, 0.1),
+                    emboss = 0.05,
+                    align = 'cm',
+                    cover_align = 'cm'
+                })
+            end
+        end
+    end
+end
+'''
+
+# Reset other values
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+update_hand_text({immediate = true, nopulse = true, delay = 0}, {mult = 0, chips = 0, level = '', handname = ''})
+'''
+payload = '''
+for name, parameter in pairs(SMODS.Scoring_Parameters) do
+    update_hand_text({immediate = true, nopulse = true, delay = 0}, {[name] = parameter.default_value})
+end
+'''
+
+# Reset display after hand played
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+check_and_set_high_score('hand', hand_chips*mult)
+'''
+payload = '''
+for name, parameter in pairs(SMODS.Scoring_Parameters) do
+    update_hand_text({delay = 0}, {[name] = parameter.default_value})
+end
+'''
+
+# Set based on hand selected
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+update_hand_text({immediate = true, nopulse = nil, delay = 0}, {handname=disp_text, level=G.GAME.hands[text].level, mult = G.GAME.hands[text].mult, chips = G.GAME.hands[text].chips})
+'''
+payload = '''
+for name, parameter in pairs(SMODS.Scoring_Parameters) do
+    parameter.current = G.GAME.hands[text][name] or parameter.default_value
+    update_hand_text({immediate = true, nopulse = nil, delay = 0}, {[name] = parameter.current})
+end
+'''
+
+# Reset values after hand played
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = false
+position = 'after'
+pattern = '''
+  func = (function() G.GAME.current_round.current_hand.handname = '';return true end)
+}))
+delay(0.3)
+'''
+payload = '''
+    SMODS.last_hand_oneshot = SMODS.calculate_round_score() > G.GAME.blind.chips
+    G.E_MANAGER:add_event(Event({
+      trigger = 'immediate',
+      func = (function() 
+        for name, parameter in pairs(SMODS.Scoring_Parameters) do
+            parameter.current = parameter.default_value
+        end
+        return true 
+      end)
+    }))
+    
+'''
+
+# Level Up Hand uses scoring parameters
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.GAME.hands[hand].mult = math.max(G.GAME.hands[hand].s_mult + G.GAME.hands[hand].l_mult*(G.GAME.hands[hand].level - 1), 1)
+G.GAME.hands[hand].chips = math.max(G.GAME.hands[hand].s_chips + G.GAME.hands[hand].l_chips*(G.GAME.hands[hand].level - 1), 0)
+'''
+payload = '''
+for name, parameter in pairs(SMODS.Scoring_Parameters) do
+    if G.GAME.hands[hand][name] then parameter:level_up_hand(amount, G.GAME.hands[hand]) end
+end
+'''
+
+# Face down hands
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+update_hand_text({immediate = true, nopulse = nil, delay = 0}, {handname='????', level='?', mult = '?', chips = '?'})
+'''
+payload = '''
+for name, parameter in pairs(SMODS.Scoring_Parameters) do
+    update_hand_text({immediate = true, nopulse = nil, delay = 0}, {[name] = '?'})
+end
+'''
+
+# Handle flame_handler
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.C.UI_CHIPLICK = G.C.UI_CHIPLICK or {1, 1, 1, 1}
+  G.C.UI_MULTLICK = G.C.UI_MULTLICK or {1, 1, 1, 1}
+  for i=1, 3 do
+    G.C.UI_CHIPLICK[i] = math.min(math.max(((G.C.UI_CHIPS[i]*0.5+G.C.YELLOW[i]*0.5) + 0.1)^2, 0.1), 1)
+    G.C.UI_MULTLICK[i] = math.min(math.max(((G.C.UI_MULT[i]*0.5+G.C.YELLOW[i]*0.5) + 0.1)^2, 0.1), 1)
+  end
+
+  G.ARGS.flame_handler = G.ARGS.flame_handler or {
+    chips = {
+      id = 'flame_chips', 
+      arg_tab = 'chip_flames',
+      colour = G.C.UI_CHIPS,
+      accent = G.C.UI_CHIPLICK
+    },
+    mult = {
+      id = 'flame_mult', 
+      arg_tab = 'mult_flames',
+      colour = G.C.UI_MULT,
+      accent = G.C.UI_MULTLICK
+    }
+  }
+'''
+payload = '''
+G.ARGS.flame_handler = G.ARGS.flame_handler or {}
+
+for key, parameter in pairs(SMODS.Scoring_Parameters) do
+    for i=1, 3 do
+        parameter.lick[i] = math.min(math.max(((parameter.colour[i]*0.5+G.C.YELLOW[i]*0.5) + 0.1)^2, 0.1), 1)
+    end
+    G.ARGS.flame_handler[key] = G.ARGS.flame_handler[key] or parameter:flame_handler()
+end
+'''
+# pt2
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+e.config.object = Sprite(0, 0, 2.5, 2.5, G.ASSET_ATLAS["ui_1"], {x = 2, y = 0})
+'''
+payload = '''
+e.config.object = Sprite(0, 0, e.config._w, e.config._h, G.ASSET_ATLAS["ui_1"], {x = 2, y = 0})
+'''
+
+# Patch mod_chips/mod_mult
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+return _mult
+'''
+payload = '''
+SMODS.Scoring_Parameters.mult:modify(nil, _mult - (mult or 0))
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+return _chips
+'''
+payload = '''
+SMODS.Scoring_Parameters.chips:modify(nil, _chips - (hand_chips or 0))
+'''

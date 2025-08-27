@@ -22,22 +22,7 @@ pattern = '''
 position = 'at'
 line_prepend = '$indent'
 payload = '''
-card:set_seal(SMODS.poll_seal({mod = 10}))'''
-
-# Card:calculate_joker()
-[[patches]]
-[patches.regex]
-target = 'card.lua'
-pattern = '''
-(?<indent>[\t ]*)local seal_type = pseudorandom\(pseudoseed\('certsl'\)\)
-[\n\t ]*if seal_type > 0.75 then _card:set_seal\('Red', true\)
-[\n\t ]*elseif seal_type > 0.5 then _card:set_seal\('Blue', true\)
-[\n\t ]*elseif seal_type > 0.25 then _card:set_seal\('Gold', true\)
-[\n\t ]*else _card:set_seal\('Purple', true\)
-[\n\t ]*end'''
-position = 'at'
-line_prepend = '$indent'
-payload = '''_card:set_seal(SMODS.poll_seal({guaranteed = true, type_key = 'certsl'}))'''
+card:set_seal(SMODS.poll_seal({mod = 10}), true, true)'''
 
 # get_badge_colour()
 [[patches]]
@@ -198,7 +183,9 @@ target = 'card.lua'
 pattern = '''play_sound('gold_seal', 1.2, 0.4)'''
 position = 'at'
 match_indent = true
-payload = '''play_sound(sound.sound, sound.per, sound.vol)'''
+payload = '''
+self.ability.delay_seal = false
+play_sound(sound.sound, sound.per, sound.vol)'''
 ## Populate Seal Ability Table
 [[patches]]
 [patches.pattern]
@@ -215,7 +202,26 @@ for k, v in pairs(G.P_SEALS[_seal].config or {}) do
         self.ability.seal[k] = v
     end
 end
+
+self.ability.delay_seal = not silent
 '''
+
+# card_limit support
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+end
+    if self.ability.name == 'Gold Card' and self.seal == 'Gold' and self.playing_card then 
+'''
+payload = '''
+    self.ability.card_limit = self.ability.card_limit + (self.ability.seal.card_limit or 0)
+    self.ability.extra_slots_used = self.ability.extra_slots_used + (self.ability.seal.extra_slots_used or 0)
+    if self.area then self.area:handle_card_limit(self.ability.seal.card_limit, self.ability.seal.extra_slots_used) end
+'''
+
 
 [[patches]]
 [patches.pattern]

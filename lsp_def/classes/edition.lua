@@ -1,7 +1,9 @@
 ---@meta
 
 ---@class SMODS.Edition: SMODS.Center
----@field loc_txt? table|{name: string, text: string[], label: string} Contains strings used for displaying text related to this object. 
+---@field obj_buffer? Editions|string[] Array of keys to all objects registered to this class. 
+---@field obj_table? table<Editions|string, SMODS.Edition|table> Table of objects registered to this class. 
+---@field loc_txt? table|{name: string|string[], text: string[]|string[][], label: string} Contains strings used for displaying text related to this object. 
 ---@field shader? string|false Key to the shader drawn on cards with this Edition. If set to `false`, a shader will not be drawn. 
 ---@field atlas? string Defines the atlas for the card this Edition is drawn on in the collection. 
 ---@field pos? table|{x: integer, y: integer} Defined the position of the card's sprite this Edition is drawn on in the collection.
@@ -49,7 +51,7 @@ SMODS.Edition = setmetatable({}, {
 function Card:calculate_edition(context) end
 
 ---@param self Card|table
----@param edition? string|{[string]: true} Both `string` values are the key of the edition to apply. 
+---@param edition? Editions|string|{[string]: true} Both `string` values are the key of the edition to apply. 
 ---@param immediate? boolean
 ---@param silent? boolean 
 ---@param delay? boolean
@@ -61,6 +63,6 @@ function Card:set_edition(edition, immediate, silent, delay) end
 ---@param _no_neg? boolean Exclude negative from edition polling. 
 ---@param _guaranteed? boolean Function will always return an Edition. 
 ---@param _options? string[]|{name: string, weight: number}[] Allows defining options for what editions should be polled. 
----@return string?
+---@return Editions|string?
 --- Polls editions. Returns the key of the edition if successful. 
 function poll_edition(_key, _mod, _no_neg, _guaranteed, _options) end

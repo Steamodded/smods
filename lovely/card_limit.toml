@@ -1,0 +1,311 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Set metatable
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.config = config or {}
+'''
+payload = '''
+self.config = setmetatable({card_limits = {card_limit}}, {
+    __index = function(t, key)
+        if key == "card_limit" then
+            return t.card_limits.card_limit        
+        end
+    end,
+    __newindex = function(t, key, value)
+        if key == 'card_limit' then
+            t.true_card_limit = t.true_card_limit or 0
+            if not t.no_true_limit then rawset(t, 'true_card_limit', math.max(0, t.true_card_limit + value - (t.card_limits.card_limit or 0))) end
+            rawset(t.card_limits, key, value)
+        else
+            rawset(t, key, value)
+        end
+    end
+})
+
+SMODS.merge_defaults(self.config, config)
+'''
+
+# Load metatable
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.config = cardAreaTable.config
+'''
+payload = '''
+self.config = setmetatable(cardAreaTable.config, {
+    __index = function(t, key)
+        if key == "card_limit" then
+            return t.card_limits.card_limit        
+        end
+    end,
+    __newindex = function(t, key, value)
+        if key == 'card_limit' then
+            t.true_card_limit = t.true_card_limit or 0
+            if not t.no_true_limit then rawset(t, 'true_card_limit', math.max(0, t.true_card_limit + value - (t.card_limits.card_limit or 0))) end
+            rawset(t.card_limits, key, value)
+        else
+            rawset(t, key, value)
+        end
+    end
+})
+
+'''
+
+# Bypass CardArea:change_size()
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function CardArea:change_size(delta)
+'''
+payload = '''
+    if true then
+        self:handle_card_limit(delta)
+        return
+    end
+'''
+
+
+# CardArea:init()
+# Add real_card_limit parameter
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+self.config.card_limit = config.card_limit or 52
+'''
+payload = '''
+self.config.true_card_limit = self.config.card_limit
+'''
+
+
+
+# CardArea:emplace()
+# Modifies card_limit 
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function CardArea:emplace(card, location, stay_flipped)
+'''
+payload = '''
+    self:handle_card_limit(card.ability.card_limit, card.ability.extra_slots_used)
+'''
+# CardArea:update()
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if self == G.deck and self.config.card_limit > #G.playing_cards then self.config.card_limit = #G.playing_cards end
+'''
+payload = '''
+if self == G.deck and (self.config.card_limit ~= #G.playing_cards or self.config.true_card_limit ~= #G.playing_cards) then self.config.card_limit = #G.playing_cards; self.config.true_card_limit = #G.playing_cards end
+'''
+
+
+
+# CardArea:remove_card()
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+card:remove_from_area()
+'''
+payload = '''
+self:handle_card_limit(-1 * (card.ability.card_limit or 0), -1 * (card.ability.extra_slots_used or 0))
+'''
+
+# Card:add_to_deck()
+# remove vanilla functionality
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if self.edition and self.edition.negative then 
+            if from_debuff then 
+                self.ability.queue_negative_removal = nil
+            else
+                if self.ability.consumeable then
+                    G.consumeables.config.card_limit = G.consumeables.config.card_limit + 1
+                else
+                    G.jokers.config.card_limit = G.jokers.config.card_limit + 1
+                end
+            end
+        end
+'''
+payload = '''
+-- removed by SMODS
+'''
+
+# Card:remove_from_deck()
+# remove vanilla functionality
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if self.edition and self.edition.negative and G.jokers then
+            if from_debuff then
+                self.ability.queue_negative_removal = true 
+            else
+                if self.ability.consumeable then
+                    G.consumeables.config.card_limit = G.consumeables.config.card_limit - 1
+                else
+                    G.jokers.config.card_limit = G.jokers.config.card_limit - 1
+                end 
+            end
+        end
+'''
+payload = '''
+-- removed by SMODS
+'''
+
+# CardArea:update()
+# Add support for extra_slots_used parameter
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.config.card_count = #self.cards
+'''
+payload = '''
+self.config.card_count = self:count_extra_slots_used(self.cards)
+'''
+
+# CardArea:draw()
+# Change count display to use true_card_limit
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{n=G.UIT.T, config={ref_table = self.config, ref_value = 'card_limit', scale = 0.3, colour = G.C.WHITE}},
+'''
+payload = '''
+{n=G.UIT.T, config={ref_table = self.config, ref_value = 'true_card_limit', scale = 0.3, colour = G.C.WHITE}},
+'''
+
+# Add negative info_queue support
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{card_limit = self.GAME.starting_params.consumable_slots, type = 'joker', highlight_limit = 1})
+'''
+payload = '''
+{card_limit = self.GAME.starting_params.consumable_slots, type = 'joker', highlight_limit = 1, negative_info = 'consumable'})
+'''
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{card_limit = self.GAME.starting_params.joker_slots, type = 'joker', highlight_limit = 1})
+'''
+payload = '''
+{card_limit = self.GAME.starting_params.joker_slots, type = 'joker', highlight_limit = 1, negative_info = 'joker'})
+'''
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{card_limit = self.GAME.starting_params.hand_size, type = 'hand'})
+'''
+payload = '''
+{card_limit = self.GAME.starting_params.hand_size, type = 'hand', negative_info = 'playing_card'})
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{card_limit = G.GAME.shop.joker_max, type = 'shop', highlight_limit = 1})
+'''
+payload = '''
+{card_limit = G.GAME.shop.joker_max, type = 'shop', highlight_limit = 1, negative_info = true})
+'''
+
+
+# generate_card_ui()
+# Adds info queue tooltips for generic card limit and slots used
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if first_pass and not (_c.set == 'Edition') and badges then
+'''
+payload = '''
+if card and card.ability and (card.ability.extra_slots_used or 0) ~= 0 then
+    info_queue[#info_queue + 1] = {set = 'Other', key = 'generic_extra_slots', vars = {card.ability.extra_slots_used + 1}}
+end
+if card and card.ability and (card.ability.card_limit or 0) ~= 0 then
+    if not (card.edition and card.edition.card_limit == card.ability.card_limit) then
+        local amount = card.ability.card_limit - (card.edition and card.edition.card_limit or 0)
+        info_queue[#info_queue + 1] = {set = 'Other', key = amount == 1 and 'generic_card_limit' or 'generic_card_limit_plural', vars = {localize({type='variable', key= amount > 0 and 'a_chips' or 'a_chips_minus', vars ={math.abs(amount)}})}}
+    end
+end
+'''
+
+
+
+# G.FUNCS.draw_from_deck_to_hand()
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "local hand_space = e or*"
+position = "at"
+payload = """local hand_space = e
+local cards_to_draw = {}
+if not hand_space then
+    local limit = G.hand.config.card_limit - #G.hand.cards
+    local unfixed = not G.hand.config.fixed_limit
+    local n = 0
+    while n < #G.deck.cards do
+        local card = G.deck.cards[#G.deck.cards-n]
+        local mod = unfixed and (card.ability.card_limit - card.ability.extra_slots_used) or 0
+        if limit - 1 + mod < 0 then
+        else    
+            limit = limit - 1 + mod
+            table.insert(cards_to_draw, card)
+            if limit <= 0 then break end
+        end
+        n = n + 1
+    end
+    hand_space = #cards_to_draw
+end"""
+match_indent = true

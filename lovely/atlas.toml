@@ -53,6 +53,13 @@ target = 'card.lua'
 pattern = '''self.T.scale = 0.95'''
 position = 'after'
 match_indent = true
+payload = '''self.original_T.scale = 0.95'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''self:set_ability(center, true)'''
+position = 'before'
+match_indent = true
 payload = '''self.original_T = copy_table(self.T)'''
 [[patches]]
 [patches.pattern]

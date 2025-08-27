@@ -18,6 +18,46 @@ function STR_UNPACK(str)
     end
 end
 
+-- used for icons for correct scaling
+SMODS.pixels_to_unit = function(value) return value/(G.TILESCALE*G.TILESIZE) end
+SMODS.trim_string = function (s)
+    local l = 1
+    while string.sub(s,l,l) == ' ' do
+        l = l+1
+    end
+    local r = string.len(s)
+    while string.sub(s,r,r) == ' ' do
+        r = r-1
+    end
+    return string.sub(s,l,r)
+end
+SMODS.smart_line_splitter = function(phrase, length, always_new_line) 
+    local words = {} 
+    local current_line = ""
+    for word in phrase:gmatch("%S+") do 
+        -- concat string if it is not at the limit
+        if string.len(current_line .. word) <= length then
+            current_line = current_line .. word .. " "
+        -- this will only happen if word is longer than specified length
+        else
+            -- if it's longer than half length then put it in new line
+            if string.len(current_line) >= length/2 or always_new_line then
+                SMODS.trim_string(current_line)
+                table.insert(words,current_line)
+                current_line = word .. " "
+                
+            else
+                current_line = current_line .. word
+                table.insert(words,current_line)
+                current_line = ""
+            end
+        end
+    end
+    if current_line ~= "" and current_line ~= " " then
+        table.insert(words,current_line)
+    end
+    return words
+end
 
 local gameMainMenuRef = Game.main_menu
 function Game:main_menu(change_context)
@@ -338,7 +378,7 @@ function buildAdditionsTab(mod)
         local id = 'your_collection_'..key:lower()..'s'
         local tally = modsCollectionTally(G.P_CENTER_POOLS[key])
         if tally.of > 0 then
-            consumable_nodes[#consumable_nodes+1] = UIBox_button({button = id, label = {localize('b_'..key:lower()..'_cards')}, count = tally, minw = 4, id = id, colour = G.C.SECONDARY_SET[key]})
+            consumable_nodes[#consumable_nodes+1] = UIBox_button({button = id, label = {localize('b_'..key:lower()..'_cards')}, count = tally, minw = 4, id = id, colour = G.C.SECONDARY_SET[key], text_colour = G.C.UI[key]})
         end
     end
     if #consumable_nodes > 3 then
@@ -583,7 +623,7 @@ G.UIDEF.consumable_collection_page = function(page)
                 t[#t+1] = { n = G.UIT.R, config = { align ='cm', minh = 0.81 }, nodes = {}}
             else 
                 local id = 'your_collection_'..key:lower()..'s'
-                t[#t+1] = UIBox_button({button = id, label = {localize('b_'..key:lower()..'_cards')}, count = G.ACTIVE_MOD_UI and modsCollectionTally(G.P_CENTER_POOLS[key]) or G.DISCOVER_TALLIES[key:lower()..'s'], minw = 4, id = id, colour = G.C.SECONDARY_SET[key]})
+                t[#t+1] = UIBox_button({button = id, label = {localize('b_'..key:lower()..'_cards')}, count = G.ACTIVE_MOD_UI and modsCollectionTally(G.P_CENTER_POOLS[key]) or G.DISCOVER_TALLIES[key:lower()..'s'], minw = 4, id = id, colour = G.C.SECONDARY_SET[key], text_colour = G.C.UI[key]})
             end
         end
         return t
@@ -621,7 +661,7 @@ function buildAchievementsTab(mod, current_page)
     for i = 1, achievements_per_row*2 do
         local v = achievement_tab[i+((achievements_per_row*2)*(current_page-1))]
         if not v then break end
-        local temp_achievement = Sprite(0,0,1.1,1.1,G.ASSET_ATLAS[v.atlas or "achievements"], v.earned and v.pos or {x=0, y=0})
+        local temp_achievement = Sprite(0,0,1.1,1.1,G.ASSET_ATLAS[v.atlas or "achievements"], v.earned and v.pos or v.hidden_pos)
         temp_achievement:define_draw_steps({
             {shader = 'dissolve', shadow_height = 0.05},
             {shader = 'dissolve'}
@@ -684,9 +724,15 @@ function buildAchievementsTab(mod, current_page)
             return wrappedText
         end
     
-        local loc_target = (v.hidden_text and not v.earned) and {localize("hidden_achievement", 'achievement_descriptions')} or localize(v.key, 'achievement_descriptions')
+        local loc_target
+        if (v.hidden_text and not v.earned) then
+            loc_target = (localize(v.key.."_hidden", 'achievement_descriptions') ~= 'ERROR') and localize(v.key.."_hidden", 'achievement_descriptions') or {localize("hidden_achievement", 'achievement_descriptions')}
+        else loc_target = localize(v.key, 'achievement_descriptions') end
         if type(loc_target) == 'string' then loc_target = wrapText(loc_target, maxCharsPerLine) end
-        local loc_name = (v.hidden_name and not v.earned) and localize("hidden_achievement", 'achievement_names') or localize(v.key, 'achievement_names')
+        local loc_name
+        if (v.hidden_name and not v.earned) then
+            loc_name = (localize(v.key.."_hidden", 'achievement_names') ~= 'ERROR') and localize(v.key.."_hidden", 'achievement_names') or localize("hidden_achievement", 'achievement_names')
+        else loc_name = localize(v.key, 'achievement_names') end
 
         local ability_text = {}
         if loc_target then 
@@ -848,11 +894,17 @@ function buildModtag(mod)
     local tag_atlas, tag_pos, tag_message, specific_vars = getModtagInfo(mod)
 
     local tag_sprite_tab = nil
-    
-    local tag_sprite = Sprite(0, 0, 0.8*1, 0.8*1, G.ASSET_ATLAS[tag_atlas] or G.ASSET_ATLAS['tags'], tag_pos)
+    local units = SMODS.pixels_to_unit(34) * 2
+    local animated = G.ANIMATION_ATLAS[tag_atlas] or nil
+    local tag_sprite
+    if animated then
+      tag_sprite = AnimatedSprite(0, 0, 0.8*1, 0.8*1, animated or G.ASSET_ATLAS[tag_atlas] or G.ASSET_ATLAS['tags'], tag_pos)
+    else
+      tag_sprite = Sprite(0, 0, 0.8*1, 0.8*1, G.ASSET_ATLAS[tag_atlas] or G.ASSET_ATLAS['tags'], tag_pos)
+    end
     tag_sprite.T.scale = 1
     tag_sprite_tab = {n= G.UIT.C, config={align = "cm", padding = 0}, nodes={
-        {n=G.UIT.O, config={w=0.8*1, h=0.8*1, colour = G.C.BLUE, object = tag_sprite, focus_with_object = true}},
+        {n=G.UIT.O, config={w=units, h=units, colour = G.C.BLUE, object = tag_sprite, focus_with_object = true}},
     }}
     tag_sprite:define_draw_steps({
         {shader = 'dissolve', shadow_height = 0.05},
@@ -860,6 +912,7 @@ function buildModtag(mod)
     })
     tag_sprite.float = true
     tag_sprite.states.hover.can = true
+    tag_sprite.states.click.can = true
     tag_sprite.states.drag.can = false
     tag_sprite.states.collide.can = true
 
@@ -875,7 +928,7 @@ function buildModtag(mod)
                 end
                 tag_sprite.ability_UIBox_table = generate_card_ui({set = "Other", discovered = false, key = tag_message}, nil, specific_vars, 'Other', nil, false)
                 _self.config.h_popup =  G.UIDEF.card_h_popup(_self)
-                _self.config.h_popup_config ={align = 'cl', offset = {x=-0.1,y=0},parent = _self}
+                _self.config.h_popup_config ={align = 'tm', offset = {x= 0,y=-0.1},parent = _self}
                 Node.hover(_self)
                 if _self.children.alert then 
                     _self.children.alert:remove()
@@ -885,6 +938,11 @@ function buildModtag(mod)
             end
         end
     end
+    tag_sprite.click = function(self)
+        play_sound('button', 1, 0.3)
+        G.ROOM.jiggle = G.ROOM.jiggle + 0.5
+        G.FUNCS["openModUI_" .. mod.id](self)
+    end
     tag_sprite.stop_hover = function(_self) _self.hovering = false; Node.stop_hover(_self); _self.hover_tilt = 0 end
 
     tag_sprite:juice_up()
@@ -892,122 +950,181 @@ function buildModtag(mod)
     return tag_sprite_tab
 end
 
+local function createTextColNode(text, scale, colour, node)
+    return { n = node or G.UIT.R, config = { padding = 0, align = "lc", maxw = 2.8, maxh = 1.5, }, nodes = { 
+                { n = G.UIT.T, config = { text = text, colour = colour or G.C.UI.TEXT_LIGHT, scale = scale * 0.7 } },
+        }
+    }
+end
+
+
 -- Helper function to create a clickable mod box
 local function createClickableModBox(modInfo, scale)
     local function invert(c)
             return {1-c[1], 1-c[2], 1-c[3], c[4]}
         end
-    local col, text_col
+    local col, text_col, bg_col
     if modInfo.should_enable == nil then
         modInfo.should_enable = not modInfo.disabled
     end
     if SMODS.full_restart == nil then
         SMODS.full_restart = 0
     end
+    
     if modInfo.can_load then
-        col = G.C.BOOSTER
+        col = mix_colours(G.C.UI.TEXT_DARK, {0.7,0.8,0.9,1}, 0.8)
     elseif modInfo.disabled then
-        col = G.C.UI.BACKGROUND_INACTIVE
-    elseif G.SETTINGS.reduced_motion then
-        col = mix_colours(G.C.RED, G.C.UI.BACKGROUND_INACTIVE, 0.7)
+        col = mix_colours(G.C.UI.BACKGROUND_INACTIVE, {0,0,0,1}, 0.6)
+    else
+        col = G.C.RED
         text_col = G.C.TEXT_DARK
-    else
-        col = SMODS.Gradients.warning_bg
-        text_col = SMODS.Gradients.warning_text
     end
-    local label =  { " " .. modInfo.name .. " " }
-    if modInfo.lovely_only then
-        label[2] = localize('b_lovely_mod')
-    else
-        label[2] = localize('b_by') .. concatAuthors(modInfo.author) .. " "
+    bg_col = mix_colours({0.5,0.5,0.5,0.2},col,0.5)
+    local label_nodes = {}
+    local modname_split = SMODS.smart_line_splitter(modInfo.name,18,true)
+    for _,v in ipairs(modname_split) do
+        table.insert(label_nodes,createTextColNode(v, scale * 1.2, text_col))
     end
-    local but = UIBox_button {
-        label = label,
-        shadow = true,
-        scale = scale,
-        colour = col,
-        text_colour = text_col,
-        button = "openModUI_" .. modInfo.id,
-        minh = 0.8,
-        minw = 7
-    }
     local version_col = copy_table(G.C.WHITE)
     version_col[4] = 0.6
     if modInfo.lovely_only then
-        local config = but.nodes[1].nodes[2].nodes[1].config
-        config.colour = version_col
-        config.scale = scale * .8
+        table.insert(label_nodes,createTextColNode(localize('b_lovely_mod'), scale, version_col))
     end
+    local sub_node_1 = {}
+    local under_checkbox_nodes = {}
     if modInfo.version and modInfo.version ~= '0.0.0' then
-        table.insert(but.nodes[1].nodes[1].nodes, {
-            n = G.UIT.T,
-            config = {
-                text = ('(%s) '):format(modInfo.version),
-                scale = scale*0.8,
-                colour = version_col,
-                shadow = true,
-            },
-        })
+        table.insert(sub_node_1, createTextColNode(('%s'):format(modInfo.version), scale, version_col, G.UIT.C))
     end
     if modInfo.config_tab then
-        table.insert(but.nodes[1].nodes[1].nodes, {
-            n = G.UIT.O,
+        local is_config_func = type(modInfo.config_tab) == "function"
+        table.insert(under_checkbox_nodes, {
+            n = G.UIT.R,
+            config = { 
+                page = is_config_func and "config",
+                padding = 0.1, 
+                align = "cm", 
+                colour = is_config_func and G.C.BLUE, 
+                button = is_config_func and ("openModUI_" .. modInfo.id), shadow = is_config_func, shadow_height = 0.5, r = 0.1, hover = is_config_func },
+            nodes = {
+                {
+                    n = G.UIT.O,
+                    config = {
+                        object = Sprite(0,0,0.3,0.3, G.ASSET_ATLAS['mod_tags'], {x=2,y=0})
+                    }
+                }
+            }
+        })
+    end
+    if #sub_node_1 > 0 then
+        table.insert(label_nodes, {
+            n = G.UIT.R,
             config = {
-                object = Sprite(0,0,0.4,0.4, G.ASSET_ATLAS['mod_tags'], {x=2,y=0})
+
+            },
+            nodes = sub_node_1
+        })
+    end
+    if not modInfo.lovely_only then
+        local tx = concatAuthors(modInfo.author, 12)
+        local the_colour = mix_colours(G.C.BLACK, G.C.WHITE, 0.2)
+        the_colour[4] = 0.8
+        local authorDynatext = DynaText{
+            string = tx,
+            scale = scale * 0.7,
+            colours = {the_colour},
+            shadow = true,
+            maxw = 2.4,
+            marquee = true,
+        }
+        table.insert(label_nodes,
+            { n = G.UIT.R, config = { padding = 0, align = "lc", maxw = 4.5, maxh = 1.5, }, nodes = { 
+                { n = G.UIT.T, config = {text= localize('b_by'), scale = scale*0.7, colour = the_colour}},
+                {
+                    n = G.UIT.O, config = {object = authorDynatext}
+                }
             }
         })
     end
     if not _RELEASE_MODE and modInfo.priority then
-        table.insert(but.nodes[1].nodes[2].nodes, {
-            n = G.UIT.T,
-            config = {
-                text = ('(%s%s) '):format(localize('b_priority'), number_format(modInfo.priority)),
-                scale = scale*0.8,
-                colour = version_col,
-                shadow = true,
-            },
-        })
+        table.insert(label_nodes, createTextColNode(('%s%s'):format(localize('b_priority'), number_format(modInfo.priority)), scale, version_col))
     end
+    
     return {
-        n = G.UIT.R,
-        config = { padding = 0, align = "cm" },
+        n = G.UIT.C,
+        config = { align = "cm", padding = 0.05 },
         nodes = {
-            {
-                n = G.UIT.C,
-                config = { align = "cm" },
+            { n = G.UIT.C, config = { padding = 0.05, align = "cm", colour = bg_col, r = 0.1, minw = 1.5, minh = 1},
                 nodes = {
-                    buildModtag(modInfo)
+                    {
+                        n = G.UIT.C,
+                        config = { 
+                            padding = 0.1, 
+                            align = "lc", 
+                            button = "openModUI_" .. modInfo.id, 
+                            minw = 4.25, 
+                            minh = 1.4, 
+                            maxh = 1.4, 
+                            r = 0.1, 
+                            colour = col,
+                            shadow = true, 
+                            shadow_height = 0.5,
+                            hover = true,
+                        },
+                        nodes = {
+                            {
+                                n = G.UIT.C,
+                                config = { align = "cm" },
+                                nodes = {
+                                    buildModtag(modInfo),
+                                }
+                            },
+                            {
+                                n = G.UIT.C,
+                                config = { align = "lc",},
+                                nodes = label_nodes
+                            },
+                        }
+                    },
+                    {
+                        n = G.UIT.C,
+                        config = { padding = 0.05, align = "cm"},
+                        nodes = {
+                            {
+                                n = G.UIT.R,
+                                config = { align = "cm"},
+                                nodes = {
+                                    create_toggle({
+                                    label = '',
+                                    ref_table = modInfo,
+                                    ref_value = 'should_enable',
+                                    col = true,
+                                    hide_label = true,
+                                    w = 0,
+                                    h = 0.2,
+                                    scale = 1,
+                                    callback = (
+                                        function(_set_toggle)
+                                            if not modInfo.should_enable then
+                                                NFS.write(modInfo.path .. '.lovelyignore', '')
+                                            else
+                                                NFS.remove(modInfo.path .. '.lovelyignore')
+                                            end
+                                            local toChange = 1
+                                            if modInfo.should_enable == not modInfo.disabled then
+                                                toChange = -1
+                                            end
+                                            SMODS.full_restart = SMODS.full_restart + toChange
+                                        end)
+                                    })
+                                }
+                            },
+                            unpack(under_checkbox_nodes)
+                        }
+                    }
                 }
-            },
-            {
-                n = G.UIT.C,
-                config = { align = "cm", padding = 0.1 },
-                nodes = {},
-            },
-            { n = G.UIT.C, config = { padding = 0, align = "cm" }, nodes = { but } },
-            create_toggle({
-                label = '',
-                ref_table = modInfo,
-                ref_value = 'should_enable',
-                col = true,
-                w = 0,
-                h = 0.5,
-                callback = (
-                    function(_set_toggle)
-                        if not modInfo.should_enable then
-                            NFS.write(modInfo.path .. '.lovelyignore', '')
-                        else
-                            NFS.remove(modInfo.path .. '.lovelyignore')
-                        end
-                        local toChange = 1
-                        if modInfo.should_enable == not modInfo.disabled then
-                            toChange = -1
-                        end
-                        SMODS.full_restart = SMODS.full_restart + toChange
-                    end
-                )
-            }),
-    }}
+            }
+        }
+    }
     
 end
 
@@ -1527,7 +1644,6 @@ local function generateBaseNode(staticPageDefinition)
             r = 0.1,
             minw = 8,
             align = "cm",
-            padding = 0.2,
             colour = G.C.BLACK
         },
         nodes = {
@@ -1558,7 +1674,7 @@ function SMODS.GUI.DynamicUIManager.updateDynamicAreas(uiDefinitions)
             dynamicArea.config.object:remove()
             dynamicArea.config.object = UIBox{
                 definition = uiDefinition,
-                config = {offset = {x=0, y=0}, align = 'cm', parent = dynamicArea}
+                config = {offset = {x=0, y=0.5}, align = 'cm', parent = dynamicArea}
             }
         end
     end
@@ -1567,10 +1683,11 @@ end
 local function recalculateModsList(page)
     page = page or SMODS.LAST_VIEWED_MODS_PAGE or 1
     SMODS.LAST_VIEWED_MODS_PAGE = page
-    local modsPerPage = 4
-    local startIndex = (page - 1) * modsPerPage + 1
-    local endIndex = startIndex + modsPerPage - 1
-    local totalPages = math.ceil(#SMODS.mod_list / modsPerPage)
+    local modsRowPerPage = 4
+    local modsColPerRow = 3
+    local startIndex = (page - 1) * modsRowPerPage * modsColPerRow + 1
+    local endIndex = startIndex + modsRowPerPage * modsColPerRow - 1
+    local totalPages = math.ceil(#SMODS.mod_list / (modsRowPerPage * modsColPerRow))
     local currentPage = localize('k_page') .. ' ' .. page .. "/" .. totalPages
     local pageOptions = {}
     for i = 1, totalPages do
@@ -1578,7 +1695,7 @@ local function recalculateModsList(page)
     end
     local showingList = #SMODS.mod_list > 0
 
-    return currentPage, pageOptions, showingList, startIndex, endIndex, modsPerPage
+    return currentPage, pageOptions, showingList, startIndex, endIndex, modsRowPerPage, modsColPerRow
 end
 
 -- Define the content in the pane that does not need to update
@@ -1588,25 +1705,25 @@ function SMODS.GUI.staticModListContent()
     local scale = 0.75
     local currentPage, pageOptions, showingList = recalculateModsList()
     return {
-        n = G.UIT.ROOT,
+        n = G.UIT.R,
         config = {
-            minh = 6,
+            minh = 8.5,
             r = 0.1,
-            minw = 10,
-            align = "tm",
-            padding = 0.2,
+            minw = 17,
+            align = "cm",
+            padding = 0.05,
             colour = G.C.BLACK
         },
         nodes = {
             -- row container
             {
-                n = G.UIT.R,
+                n = G.UIT.C,
                 config = { align = "cm", padding = 0.05 },
                 nodes = {
                     -- column container
                     {
                         n = G.UIT.C,
-                        config = { align = "cm", minw = 3, padding = 0.2, r = 0.1, colour = G.C.CLEAR },
+                        config = { align = "cm", minw = 5, padding = 0.05, r = 0.1, colour = G.C.CLEAR },
                         nodes = {
                             -- title row
                             {
@@ -1651,27 +1768,26 @@ function SMODS.GUI.staticModListContent()
                             },
 
                             -- dynamic content rendered in this row container
-                            -- list of 4 mods on the current page
+                            -- list of 4 x 4 mods on the current page
                             {
                                 n = G.UIT.R,
                                 config = {
                                     padding = 0.05,
                                     align = "cm",
-                                    minh = 2,
-                                    minw = 4
+                                    minh = 5,
+                                    minw = 5
                                 },
                                 nodes = {
-                                    {n=G.UIT.O, config={id = 'modsList', object = Moveable()}},
+                                    {n=G.UIT.O, config={align = "cm", id = 'modsList', object = Moveable()}},
                                 }
                             },
 
                             -- another empty row for spacing
                             {
                                 n = G.UIT.R,
-                                config = { align = "cm", padding = 0.3 },
+                                config = { align = "cm", padding = 0.8 },
                                 nodes = {}
                             },
-
                             -- page selector
                             -- does not appear when list of mods is empty
                             showingList and SMODS.GUI.createOptionSelector({label = "", scale = 0.8, options = pageOptions, opt_callback = 'update_mod_list', no_pips = true, current_option = (
@@ -1687,7 +1803,7 @@ end
 
 function SMODS.GUI.dynamicModListContent(page)
     local scale = 0.75
-    local _, __, showingList, startIndex, endIndex, modsPerPage = recalculateModsList(page)
+    local _, __, showingList, startIndex, endIndex, modsRowPerPage, modsColPerRow = recalculateModsList(page)
 
     local modNodes = {}
 
@@ -1714,6 +1830,7 @@ function SMODS.GUI.dynamicModListContent(page)
     else
         local modCount = 0
         local id = 0
+        local current_row = {}
         
         for _, condition in ipairs({
             function(m) return not m.can_load and not m.disabled end,
@@ -1722,15 +1839,30 @@ function SMODS.GUI.dynamicModListContent(page)
             function(m) return m.disabled end,
         }) do
             for _, modInfo in ipairs(SMODS.mod_list) do
-                if modCount >= modsPerPage then break end
+                if modCount >= modsRowPerPage * modsColPerRow then break end
                 if condition(modInfo) then
                     id = id + 1
                     if id >= startIndex and id <= endIndex then
-                        table.insert(modNodes, createClickableModBox(modInfo, scale * 0.5))
+                        table.insert(current_row, createClickableModBox(modInfo, scale * 0.5))
                         modCount = modCount + 1
+                        if math.fmod(modCount, modsColPerRow) == 0 then
+                            table.insert(modNodes, {
+                                n = G.UIT.R, 
+                                config = { padding = 0, align = "lc"},
+                                nodes = current_row
+                            })
+                            current_row = {}
+                        end
                     end
                 end
             end
+        end
+        if #current_row > 0 then
+            table.insert(modNodes, {
+                n = G.UIT.R, 
+                config = { padding = 0, align = "lc"},
+                nodes = current_row
+            })
         end
     end
 
@@ -1739,7 +1871,7 @@ function SMODS.GUI.dynamicModListContent(page)
         config = {
             r = 0.1,
             align = "cm",
-            padding = 0.2,
+            padding = 0,
         },
         nodes = modNodes
     }
@@ -1945,4 +2077,100 @@ function G.UIDEF.run_setup_option(_type)
         })
     end
     return ret
+end
+
+-- Hand Score UI Utils
+
+function SMODS.GUI.hand_score_display_ui(scale)
+    return
+    -- Outer shell container
+    {n=G.UIT.R, config={align = "cm", id = 'hand_text_area', func = 'SMODS_scoring_calculation_function', colour = darken(G.C.BLACK, 0.1), r = 0.1, emboss = 0.05, padding = 0.03}, nodes={
+        -- Inner shell container
+        {n=G.UIT.C, config={align = "cm"}, nodes={
+            -- Hand type display container
+            SMODS.GUI.current_hand_ui(scale),
+            -- Chips X Mult container
+            SMODS.GUI.hand_chips_container(scale),
+        }}
+    }}
+end
+
+function SMODS.GUI.current_hand_ui(scale)
+    return
+    {n=G.UIT.R, config={align = "cm", minh = 1.1}, nodes={
+        {n=G.UIT.O, config={id = 'hand_name', func = 'hand_text_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "handname_text"}}, colours = {G.C.UI.TEXT_LIGHT}, shadow = true, float = true, scale = scale*1.4})}},
+        {n=G.UIT.O, config={id = 'hand_chip_total', func = 'hand_chip_total_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "chip_total_text"}}, colours = {G.C.UI.TEXT_LIGHT}, shadow = true, float = true, scale = scale*1.4})}},
+        {n=G.UIT.T, config={ref_table = G.GAME.current_round.current_hand, ref_value='hand_level', scale = scale, colour = G.C.UI.TEXT_LIGHT, id = 'hand_level', shadow = true}},
+    }}
+end
+
+function SMODS.GUI.hand_chips_container(scale)
+    return
+    {n=G.UIT.R, config={align = "cm", minh = 1, padding = 0.1}, nodes={
+        -- Chips container
+        SMODS.GUI.chips_container(scale),
+        -- Operator
+        SMODS.GUI.operator(scale),
+        -- Mult container
+        SMODS.GUI.mult_container(scale)
+    }}
+end
+
+function SMODS.GUI.chips_container(scale)
+    return
+    {n=G.UIT.C, config={align = 'cm', id = 'hand_chips_container'}, nodes = {
+        SMODS.GUI.score_container({
+            type = 'chips',
+            text = 'chip_text',
+            align = 'cr',
+        })
+    }}
+end
+
+function SMODS.GUI.operator(scale)
+    return
+    {n=G.UIT.C, config={align = "cm", id = 'hand_operator_container'}, nodes={
+        {n=G.UIT.T, config={text = "X", lang = G.LANGUAGES['en-us'], scale = scale*2, colour = G.C.UI_MULT, shadow = true}},
+    }}
+end
+
+function SMODS.GUI.mult_container(scale)
+    return 
+    {n=G.UIT.C, config={align = 'cm', id = 'hand_mult_container'}, nodes = {
+        SMODS.GUI.score_container({
+            type = 'mult'
+        })
+    }}
+end
+
+function SMODS.GUI.score_container(args)
+    local scale = args.scale or 0.4
+    local type = args.type or 'mult'
+    local colour = args.colour or SMODS.Scoring_Parameters[type].colour
+    local align = args.align or 'cl'
+    local func = args.func or 'hand_type_UI_set'
+    local text = args.text or type..'_text'
+    local w = args.w or 2
+    local h = args.h or 1
+    return
+    {n=G.UIT.R, config={align = align, minw = w, minh = h, r = 0.1, colour = colour, id = 'hand_'..type..'_area', emboss = 0.05}, nodes={
+        {n=G.UIT.O, config={func = 'flame_handler', no_role = true, id = 'flame_'..type, object = Moveable(0,0,0,0), w = 0, h = 0, _w = w * 1.25, _h = h * 2.5}},
+        align == 'cl' and {n=G.UIT.B, config={w = 0.1, h = 0.1}} or nil,
+        {n=G.UIT.O, config={id = 'hand_'..type, func = func, text = text, type = type, scale = scale*2.3, object = DynaText({
+            string = {{ref_table = G.GAME.current_round.current_hand, ref_value = text}},
+            colours = {G.C.UI.TEXT_LIGHT}, font = G.LANGUAGES['en-us'].font, shadow = true, float = true, scale = scale*2.3
+        })}},
+        align ~= 'cl' and {n=G.UIT.B, config={w = 0.1, h = 0.1}} or nil,
+    }}
+end
+
+-- Internal function to automatically update UI boxes for new scoring parameters
+G.FUNCS.hand_type_UI_set = function(e)
+  local new_mult_text = number_format(G.GAME.current_round.current_hand[e.config.type] or SMODS.Scoring_Parameters[e.config.type].default_value)
+  if new_mult_text ~= G.GAME.current_round.current_hand[e.config.text] then 
+    G.GAME.current_round.current_hand[e.config.text] = new_mult_text
+    e.config.object.scale = scale_number(G.GAME.current_round.current_hand[e.config.type], e.config.scale, 1000)
+    e.config.object:update_text()
+    if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and G.GAME.current_round.current_hand[e.config.type] or 1)))) end
+  end
 end

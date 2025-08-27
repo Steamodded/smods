@@ -159,7 +159,7 @@ if delay_sprites then
     })) 
 '''
 payload = '''
-if delay_sprites == 'quantum' then
+if delay_sprites == 'quantum' or delay_sprites == 'manual' then
 elseif delay_sprites then 
     self.ability.delayed = true
     G.E_MANAGER:add_event(Event({
@@ -291,15 +291,48 @@ position = "after"
 payload = "SMODS.enh_cache:clear()"
 match_indent = true
 
-# Invalidate enhancement cache when card changes
+# Invalidate enhancement cache when card changes / replace_base_card fix pt1
 [[patches]]
 [patches.pattern]
 target = "card.lua"
 pattern = "function Card:set_ability(center, initial, delay_sprites)"
 position = "after"
-payload = "SMODS.enh_cache:write(self, nil)"
+payload = '''
+    SMODS.enh_cache:write(self, nil)
+
+    if self.ability and not initial then
+        self.ability.card_limit = self.ability.card_limit - (self.config.center.card_limit or 0)
+        self.ability.extra_slots_used = self.ability.extra_slots_used - (self.config.center.extra_slots_used or 0)
+        if self.area then self.area:handle_card_limit(-1 * (self.config.center.card_limit or 0), -1 * (self.config.center.extra_slots_used or 0)) end
+    end
+  
+    if self.ability and not initial then
+        self.front_hidden = self:should_hide_front()
+    end
+'''
 match_indent = true
 
+# replace_base_card Fix Part 2
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "self:set_sprites(center)"
+position = "after"
+payload = '''if self.ability and not initial then
+  self.front_hidden = self:should_hide_front()
+end'''
+match_indent = true
+
+# replace_base_card Fix Part 3
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if not G.OVERLAY_MENU then "
+position = "before"
+payload = '''if self.ability and not initial then
+  self.front_hidden = self:should_hide_front()
+end'''
+match_indent = true
 [[patches]]
 [patches.pattern]
 target = "card.lua"
@@ -313,7 +346,14 @@ match_indent = true
 target = "card.lua"
 pattern = "function Card:set_seal(_seal, silent, immediate)"
 position = "after"
-payload = "SMODS.enh_cache:write(self, nil)"
+payload = '''
+    SMODS.enh_cache:write(self, nil)
+    if self.seal then
+        self.ability.card_limit = self.ability.card_limit - (self.ability.seal.card_limit or 0)
+        self.ability.extra_slots_used = self.ability.extra_slots_used - (self.ability.seal.extra_slots_used or 0)
+        if self.area then self.area:handle_card_limit(-1 * (self.ability.seal.card_limit or 0), -1 * (self.ability.seal.extra_slots_used or 0)) end
+    end
+'''
 match_indent = true
 
 # safeguards an infloop with debuff context

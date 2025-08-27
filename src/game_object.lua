@@ -677,11 +677,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     function SMODS.setup_stake(i)
         local applied_stakes = SMODS.build_stake_chain(G.P_CENTER_POOLS.Stake[i])
+        G.GAME.applied_stakes = {}
         for stake, _ in pairs(applied_stakes) do
             if G.P_CENTER_POOLS['Stake'][stake].modifiers then
                 G.P_CENTER_POOLS['Stake'][stake].modifiers()
             end
+            table.insert(G.GAME.applied_stakes, stake)
         end
+        table.sort(G.GAME.applied_stakes)
     end
 
     --Register vanilla stakes
@@ -935,6 +938,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         inject_card = function(self, center)
             if center.set ~= self.key then SMODS.insert_pool(G.P_CENTER_POOLS[self.key], center) end
+            if not center.pools then center.pools = {} end
+            center.pools[self.key] = true
             local default_rarity_check = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
             if self.rarities and center.rarity and self.rarity_pools[default_rarity_check[center.rarity] or center.rarity] then
                 SMODS.insert_pool(self.rarity_pools[default_rarity_check[center.rarity] or center.rarity], center)
@@ -942,6 +947,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         delete_card = function(self, center)
             if center.set ~= self.key then SMODS.remove_pool(G.P_CENTER_POOLS[self.key], center.key) end
+            if center.pools then center.pools[self.key] = nil end
             local default_rarity_check = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
             if self.rarities and center.rarity and self.rarity_pools[default_rarity_check[center.rarity] or center.rarity] then
                 SMODS.remove_pool(self.rarity_pools[default_rarity_check[center.rarity] or center.rarity], center.key)
@@ -994,6 +1000,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.localization.descriptions[self.key] = G.localization.descriptions[self.key] or {}
             G.C.SET[self.key] = self.primary_colour
             G.C.SECONDARY_SET[self.key] = self.secondary_colour
+            G.C.UI[self.key] = self.text_colour or G.C.UI.TEXT_LIGHT
             G.FUNCS['your_collection_' .. string.lower(self.key) .. 's'] = function(e)
                 G.SETTINGS.paused = true
                 G.FUNCS.overlay_menu {
@@ -1117,6 +1124,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 vars =
                     specific_vars or {}
             }
+            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 res = self:loc_vars(info_queue, card) or {}
@@ -1126,6 +1134,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 target.scale = res.scale
                 target.text_colour = res.text_colour
             end
+
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = self.set == 'Enhanced' and 'temp_value' or localize { type = 'name', set = target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {} }
             elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name and self.set ~= 'Enhanced' then
@@ -1138,7 +1147,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if res.main_start then
                 desc_nodes[#desc_nodes + 1] = res.main_start
             end
+
             localize(target)
+            
             if res.main_end then
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
@@ -1341,7 +1352,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             SMODS.process_loc_text(G.localization.misc.dictionary, 'k_booster_group_'..self.key, self.loc_txt, 'group_name')
         end,
         loc_vars = function(self, info_queue, card)
-            return { vars = {card.ability.choose, card.ability.extra} }
+            return { vars = {math.min(card.ability.choose + (G.GAME.modifiers.booster_choice_mod or 0), math.max(1, card.ability.extra + (G.GAME.modifiers.booster_size_mod or 0))), math.max(1, card.ability.extra + (G.GAME.modifiers.booster_size_mod or 0))} }
         end,
         generate_ui = function(self, info_queue, card, desc_nodes, specific_vars, full_UI_table)
             if not card then
@@ -1354,6 +1365,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 AUT = full_UI_table,
                 vars = {}
             }
+            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 res = self:loc_vars(info_queue, card) or {}
@@ -1419,12 +1431,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             ease_background_colour{new_colour = G.C.FILTER, special_colour = G.C.BLACK, contrast = 2}
         end,
         create_UIBox = function(self)
-            local _size = SMODS.OPENED_BOOSTER.ability.extra
+            local _size = math.max(1, SMODS.OPENED_BOOSTER.ability.extra + (G.GAME.modifiers.booster_size_mod or 0))
             G.pack_cards = CardArea(
                 G.ROOM.T.x + 9 + G.hand.T.x, G.hand.T.y,
                 math.max(1,math.min(_size,5))*G.CARD_W*1.1,
                 1.05*G.CARD_H,
-                {card_limit = _size, type = 'consumeable', highlight_limit = 1})
+                {card_limit = _size, type = 'consumeable', highlight_limit = 1, negative_info = true})
 
             local t = {n=G.UIT.ROOT, config = {align = 'tm', r = 0.15, colour = G.C.CLEAR, padding = 0.15}, nodes={
                 {n=G.UIT.R, config={align = "cl", colour = G.C.CLEAR,r=0.15, padding = 0.1, minh = 2, shadow = true}, nodes={
@@ -1462,7 +1474,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     local pack_loc_vars = function(self, info_queue, card)
         local cfg = (card and card.ability) or self.config
         return {
-            vars = { cfg.choose, cfg.extra },
+            vars = { math.min(cfg.choose + (G.GAME.modifiers.booster_choice_mod or 0), math.max(1, cfg.extra + (G.GAME.modifiers.booster_size_mod or 0))), math.max(1, cfg.extra + (G.GAME.modifiers.booster_size_mod or 0)) },
             key = self.key:sub(1, -3),
         }
     end
@@ -1531,7 +1543,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if G.GAME.used_vouchers.v_telescope and i == 1 then
                 local _planet, _hand, _tally = nil, nil, 0
                 for k, v in ipairs(G.handlist) do
-                    if G.GAME.hands[v].visible and G.GAME.hands[v].played > _tally then
+                    if SMODS.is_poker_hand_visible(v) and G.GAME.hands[v].played > _tally then
                         _hand = v
                         _tally = G.GAME.hands[v].played
                     end
@@ -1661,6 +1673,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         class_prefix = 'bl',
         debuff = {},
         vars = {},
+        config = {},
         dollars = 5,
         mult = 2,
         atlas = 'blind_chips',
@@ -1695,16 +1708,18 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     })
     SMODS.Blind:take_ownership('wheel', {
         loc_vars = function(self)
-            return { vars = { G.GAME.probabilities.normal } }
+            return { vars = { SMODS.get_probability_vars(self, 1, 7, 'wheel') } }
         end,
         collection_loc_vars = function(self)
-            return { vars = { '1' }}
+            return { vars = { '1', '7' }}
         end,
         process_loc_text = function(self)
             local text = G.localization.descriptions.Blind[self.key].text[1]
             if string.sub(text, 1, 3) ~= '#1#' then
                 G.localization.descriptions.Blind[self.key].text[1] = "#1#"..text
             end
+            -- Is this too much hacky?
+            G.localization.descriptions.Blind[self.key].text[1] = string.gsub(G.localization.descriptions.Blind[self.key].text[1], "7", "#2#")
             SMODS.Blind.process_loc_text(self)
         end,
         get_loc_debuff_text = function() return G.GAME.blind.loc_debuff_text end,
@@ -1752,6 +1767,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 AUT = full_UI_table,
                 vars = specific_vars or {},
             }
+            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 res = self:loc_vars(info_queue, card) or {}
@@ -2233,7 +2249,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             func = function()
                 for i = #destroyed_cards, 1, -1 do
                     local card = destroyed_cards[i]
-                    if card.ability.name == 'Glass Card' then
+                    if SMODS.shatters(card) then
                         card:shatter()
                     else
                         card:start_dissolve(nil, i ~= #destroyed_cards)
@@ -2501,32 +2517,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     -- weird hook to artificially initialize G.collab_credits early
+    -- this previously used a local recursive function, which broke modded languages
+    SMODS.init_collab_credits = true
     local ps_ref = Game.prep_stage
     function Game:prep_stage(new_stage, new_state, new_game_obj)
         ps_ref(self, new_stage, new_state, new_game_obj)
         if not G.collab_credits then
-            local visited = {}
-            local function recursive_search(t)
-                if visited[t] then return false end
-                visited[t] = true
-                if type(t) == "table" and t.label == "Collabs" and type(t.tab_definition_function) == "function" then
-                    t.tab_definition_function()
-                    return true
-                end
-                for _, v in ipairs(t) do
-                    if type(v) == "table" and recursive_search(v) then
-                        return true
-                    end
-                end
-                for k, v in pairs(t) do
-                    if type(v) == "table" and recursive_search(v) then
-                        return true
-                    end
-                end
-                return false
-            end
             G.FUNCS.show_credits()
-            local result = recursive_search(G.OVERLAY_MENU)
+            SMODS.init_collab_credits = nil
             G.FUNCS:exit_overlay_menu()
         end
     end
@@ -2605,6 +2603,50 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.JimboQuip
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.JimboQuips = {}
+    SMODS.JimboQuip = SMODS.GameObject:extend {
+        obj_table = SMODS.JimboQuips,
+        obj_buffer = {},
+        required_params = {
+            'key'
+        },
+        set = 'JimboQuip',
+        process_loc_text = function(self)
+            SMODS.process_loc_text(G.localization.misc.quips, self.key:lower(), self.loc_txt)
+        end,
+        register = function(self)
+            if self.registered then
+                sendWarnMessage(('Detected duplicate register call on JimboQuip %s'):format(self.key:lower()), self.set)
+                return
+            end
+            if self:check_dependencies() then
+                self.obj_buffer[#self.obj_buffer + 1] = self.key:lower()
+                self.obj_table[self.key:lower()] = self
+                self.registered = true
+            end
+        end,
+        inject = function(self)
+            self.extra = self.extra or {center = 'j_joker'}
+        end
+    }
+
+    for i=1,10 do
+        SMODS.JimboQuip{
+            key = "lq_"..tostring(i),
+            type = 'loss',
+        }
+    end
+    for i=1,7 do
+        SMODS.JimboQuip{
+            key = "wq_"..tostring(i),
+            type = 'win',
+        }
+    end
+
+    -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.PokerHand
     -------------------------------------------------------------------------------------------------
 
@@ -2676,7 +2718,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
     SMODS.PokerHandPart {
         key = '_straight',
-        func = function(hand) return get_straight(hand, SMODS.four_fingers(), SMODS.shortcut(), SMODS.wrap_around_straight()) end
+        func = function(hand) return get_straight(hand, SMODS.four_fingers('straight'), SMODS.shortcut(), SMODS.wrap_around_straight()) end
     }
     SMODS.PokerHandPart {
         key = '_flush',
@@ -2758,6 +2800,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         vouchers = {},
         restrictions = { banned_cards = {}, banned_tags = {}, banned_other = {} },
         unlocked = function(self) return true end,
+        calculate = function (self, context) end,
         class_prefix = 'c',
         process_loc_text = function(self)
             SMODS.process_loc_text(G.localization.misc.challenge_names, self.key, self.loc_txt, 'name')
@@ -2842,6 +2885,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 AUT = full_UI_table,
                 vars = specific_vars
             }
+            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 -- card is actually a `Tag` here
@@ -2927,6 +2971,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         apply = function(self, card, val)
             card.ability[self.key] = val
+            if val and self.config and next(self.config) then
+                card.ability[self.key] = {}
+                for k, v in pairs(self.config) do
+                    if type(v) == 'table' then
+                        card.ability[self.key][k] = copy_table(v)
+                    else
+                        card.ability[self.key][k] = v
+                    end
+                end
+            end
         end
     }
 
@@ -3062,33 +3116,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     localize { type = 'other', key = 'card_extra_chips', nodes = desc_nodes, vars = { SMODS.signed(remaining_bonus_chips) } }
                 end
             end
-            if specific_vars and specific_vars.bonus_x_chips then
-                localize{type = 'other', key = 'card_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_x_chips}}
-            end
-            if specific_vars and specific_vars.bonus_mult then
-                localize{type = 'other', key = 'card_extra_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_mult)}}
-            end
-            if specific_vars and specific_vars.bonus_x_mult then
-                localize{type = 'other', key = 'card_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_x_mult}}
-            end
-            if specific_vars and specific_vars.bonus_h_chips then
-                localize{type = 'other', key = 'card_extra_h_chips', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_chips)}}
-            end
-            if specific_vars and specific_vars.bonus_x_chips then
-                localize{type = 'other', key = 'card_h_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_chips}}
-            end
-            if specific_vars and specific_vars.bonus_h_mult then
-                localize{type = 'other', key = 'card_extra_h_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_mult)}}
-            end
-            if specific_vars and specific_vars.bonus_h_x_mult then
-                localize{type = 'other', key = 'card_h_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_mult}}
-            end
-            if specific_vars and specific_vars.bonus_p_dollars then
-                localize{type = 'other', key = 'card_extra_p_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_p_dollars)}}
-            end
-            if specific_vars and specific_vars.bonus_h_dollars then
-                localize{type = 'other', key = 'card_extra_h_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_h_dollars)}}
-            end
+            SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
         end,
         -- other methods:
         -- calculate(self, context, effect)
@@ -3127,10 +3155,18 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.Enhancement:take_ownership('glass', {
         calculate = function(self, card, context)
-            if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and pseudorandom('glass') < G.GAME.probabilities.normal/card.ability.extra then
+            if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and SMODS.pseudorandom_probability(card, 'glass', 1, card.ability.extra) then
                 card.glass_trigger = true
                 return { remove = true }
             end
+        end,
+    })
+
+    SMODS.Enhancement:take_ownership('lucky', {
+        loc_vars = function (self, info_queue, card)
+            local numerator_mult, denominator_mult = SMODS.get_probability_vars(card, 1, 5, 'lucky_mult')
+            local numerator_dollars, denominator_dollars = SMODS.get_probability_vars(card, 1, 15, 'lucky_money')
+            return {vars = {numerator_mult, card.ability.mult, denominator_mult, card.ability.p_dollars, denominator_dollars, numerator_dollars}}
         end,
     })
 
@@ -3193,6 +3229,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         on_load = nil,   -- function (card) - modify card when it is loaded from the save file
         register = function(self)
             self.config = self.config or {}
+            if self.config.card_limit then
+                self.card_limit_keys = self.card_limit_keys or {
+                    joker = string.sub(self.key, 3) .. '_SMODS_INTERNAL',
+                    consumable = string.sub(self.key, 3) .. '_consumable' .. '_SMODS_INTERNAL',
+                    playing_card = string.sub(self.key, 3) .. '_playing_card' .. '_SMODS_INTERNAL',
+                    generic = string.sub(self.key, 3) .. '_generic' .. '_SMODS_INTERNAL'
+                }
+            end
             SMODS.Edition.super.register(self)
         end,
         process_loc_text = function(self)
@@ -3206,7 +3250,27 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         create_fake_card = function(self)
 	        return { edition = copy_table(self.config), fake_card = true }
         end,
+        card_limit_key = function(self, card)
+            local area = (card.area or {}).config or {}
+            if area.negative_info then
+                if type(area.negative_info) == 'string' then
+                    return self.card_limit_keys[area.negative_info]
+                end
+                if card.ability.set == 'Joker' then
+                    return self.card_limit_keys['joker']
+                elseif card.ability.consumeable then
+                    return self.card_limit_keys['consumable']
+                elseif card.ability.set == 'Default' or card.ability.set == 'Enhanced' then
+                    return self.card_limit_keys['playing_card']
+                end
+            end
+            return self.card_limit_keys['generic']
+        end
     }
+
+    function SMODS.Edition:get_card_limit_key()
+        return G.P_CENTERS[self.edition.key]:card_limit_key(self)
+    end
 
     -- TODO also, this should probably be a utility method in core
     -- card_area = pass the card area
@@ -3238,6 +3302,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "foil1", per = 1.2, vol = 0.4 },
         weight = 20,
         extra_cost = 2,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return G.GAME.edition_rate * self.weight
         end,
@@ -3269,6 +3335,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "holo1", per = 1.2 * 1.58, vol = 0.4 },
         weight = 14,
         extra_cost = 3,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return G.GAME.edition_rate * self.weight
         end,
@@ -3300,6 +3368,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "polychrome1", per = 1.2, vol = 0.7 },
         weight = 3,
         extra_cost = 5,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return (G.GAME.edition_rate - 1) * G.P_CENTERS["e_negative"].weight + G.GAME.edition_rate * self.weight
         end,
@@ -3331,6 +3401,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sound = { sound = "negative", per = 1.5, vol = 0.4 },
         weight = 3,
         extra_cost = 5,
+        in_shop = true,
+        vanilla = true,
         get_weight = function(self)
             return self.weight
         end,
@@ -3420,6 +3492,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function(self)
             SMODS.process_loc_text(G.localization.misc.achievement_names, self.key, self.loc_txt, "name")
             SMODS.process_loc_text(G.localization.misc.achievement_descriptions, self.key, self.loc_txt, "description")
+            SMODS.process_loc_text(G.localization.misc.achievement_names, self.key.."_hidden", self.loc_txt, "hidden_name")
+            SMODS.process_loc_text(G.localization.misc.achievement_descriptions, self.key.."_hidden", self.loc_txt, "hidden_description")
         end,
     }
 
@@ -3464,6 +3538,243 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         cycle = 1,
     }
 
+    -------------------------------------------------------------------------------------------------
+    ------- API CODE GameObject.Scoring_Calculation
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.Scoring_Parameters = {}
+    SMODS.Scoring_Parameter_Calculation = {}
+    SMODS.Scoring_Parameter = SMODS.GameObject:extend{
+        set = 'Scoring_Parameters',
+        obj_table = SMODS.Scoring_Parameters,
+        obj_buffer = {},
+        required_parameters = {
+            'key',
+            'default_value',
+        },
+        inject = function(self)
+            self.colour = self.colour or G.C.UI_MULT
+            self.lick = {1, 1, 1, 1}
+            self.current = self.default_value
+            if self.calculation_keys then
+                SMODS.scoring_parameter_keys = SMODS.merge_lists({SMODS.scoring_parameter_keys, self.calculation_keys})
+                SMODS.calculation_keys = SMODS.merge_lists({SMODS.scoring_parameter_keys, SMODS.other_calculation_keys})
+                for _, calc_key in ipairs(self.calculation_keys) do
+                    SMODS.Scoring_Parameter_Calculation[calc_key] = self.key
+                end
+            end
+            SMODS.Calculation_Controls[self.key] = false
+        end,
+        flame_handler = function(self)
+            return {
+                id = 'flame_'..self.key, 
+                arg_tab = self.key..'_flames',
+                colour = self.colour,
+                accent = self.lick
+            }
+        end,
+        modify = function(self, amount)
+            self.current = self.current + amount
+            update_hand_text({delay = 0}, {[self.key] = self.current})
+        end,
+        level_up_hand = function(self, amount, hand)
+            hand[self.key] = math.max(hand['s_'..self.key] + hand['l_'..self.key]*(hand.level - 1), 0)
+        end,
+        calc_effect = function(self, effect, scored_card, key, amount, from_edition)
+            if not SMODS.Calculation_Controls[self.key] then return end
+            if amount then
+                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                self:modify(amount)
+                card_eval_status_text(scored_card, 'extra', nil, percent, nil, 
+                    {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, colour = self.colour})
+                return true
+            end
+        end
+    }
+
+    SMODS.Scoring_Parameter({
+        key = 'chips',
+        default_value = 0,
+        colour = G.C.UI_CHIPS,
+        calculation_keys = {'chips', 'h_chips', 'chip_mod', 'x_chips', 'xchips', 'Xchip_mod',},
+        calc_effect = function(self, effect, scored_card, key, amount, from_edition)
+            if not SMODS.Calculation_Controls.chips then return end
+            if (key == 'chips' or key == 'h_chips' or key == 'chip_mod') and amount then
+                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                self:modify(amount)
+                if not effect.remove_default_message then
+                    if from_edition then
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, chip_mod = amount, colour = G.C.EDITION, edition = true})
+                    else
+                        if key ~= 'chip_mod' then
+                            if effect.chip_message then
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.chip_message)
+                            else
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'chips', amount, percent)
+                            end
+                        end
+                    end
+                end
+                return true
+            end
+            if (key == 'x_chips' or key == 'xchips' or key == 'Xchip_mod') and amount ~= 1 then
+                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                self:modify(hand_chips * (amount - 1))
+                if not effect.remove_default_message then
+                    if from_edition then
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xchips' or 'a_xchips_minus',vars={amount}}, Xchips_mod =  amount, colour =  G.C.EDITION, edition = true})
+                    else
+                        if key ~= 'Xchip_mod' then
+                            if effect.xchip_message then
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.xchip_message)
+                            else
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'x_chips', amount, percent)
+                            end
+                        end
+                    end
+                end
+                return true
+            end
+        end,
+        modify = function(self, amount, skip)
+            if not skip then hand_chips = mod_chips(self.current + amount) end
+            self.current = (hand_chips or 0) + (skip or 0)
+            update_hand_text({delay = 0}, {chips = self.current})
+        end
+    })
+
+    SMODS.Scoring_Parameter({
+        key = 'mult',
+        default_value = 0,
+        colour = G.C.UI_MULT,
+        calculation_keys = {'mult', 'h_mult', 'mult_mod','x_mult', 'Xmult', 'xmult', 'x_mult_mod', 'Xmult_mod'},
+        calc_effect = function(self, effect, scored_card, key, amount, from_edition)
+            if not SMODS.Calculation_Controls.mult then return end
+            if (key == 'mult' or key == 'h_mult' or key == 'mult_mod') and amount then
+                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                self:modify(amount)
+                if not effect.remove_default_message then
+                    if from_edition then
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_mult' or 'a_mult_minus', vars = {amount}}, mult_mod = amount, colour = G.C.DARK_EDITION, edition = true})
+                    else
+                        if key ~= 'mult_mod' then
+                            if effect.mult_message then
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.mult_message)
+                            else
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'mult', amount, percent)
+                            end
+                        end
+                    end
+                end
+                return true
+            end
+            if (key == 'x_mult' or key == 'xmult' or key == 'Xmult' or key == 'x_mult_mod' or key == 'Xmult_mod') and amount ~= 1 then
+                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                self:modify(mult * (amount - 1))
+                if not effect.remove_default_message then
+                    if from_edition then
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xmult' or 'a_xmult_minus',vars={amount}}, Xmult_mod =  amount, colour =  G.C.EDITION, edition = true})
+                    else
+                        if key ~= 'Xmult_mod' then
+                            if effect.xmult_message then
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.xmult_message)
+                            else
+                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'x_mult', amount, percent)
+                            end
+                        end
+                    end
+                end
+                return true
+            end
+        end,
+        modify = function(self, amount, skip)
+            if not skip then mult = mod_mult(self.current + amount) end
+            self.current = (mult or 0) + (skip or 0)
+            update_hand_text({delay = 0}, {mult = self.current})
+        end
+    })
+
+    SMODS.Calculation_Controls = {
+        chips = true,
+        mult = true
+    }
+    SMODS.Scoring_Calculations = {}
+    SMODS.Scoring_Calculation = SMODS.GameObject:extend {
+        set = 'Scoring_Calculations',
+        obj_table = SMODS.Scoring_Calculations,
+        obj_buffer = {},
+        required_params = {
+            'key',
+            'func',
+        },
+        parameters = {'chips', 'mult'},
+        inject = function() end,
+        new = function(self, def)
+            def = def or {}
+            if self.init then def.config = def.config or self.init(def) end
+            for key, _ in pairs(SMODS.Calculation_Controls) do
+                SMODS.Calculation_Controls[key] = false
+            end
+            for _, key in ipairs(self.parameters) do
+                SMODS.Calculation_Controls[key] = true
+                G.GAME.current_round.current_hand[key] = SMODS.Scoring_Parameters[key].default_value
+            end
+            return setmetatable(def, {__index = self})
+        end,
+        load = function(self, def)
+            def = def or {}
+            def.config = def.config or {}
+            for key, _ in pairs(SMODS.Calculation_Controls) do
+                SMODS.Calculation_Controls[key] = false
+            end
+            for _, key in ipairs(self.parameters) do
+                SMODS.Calculation_Controls[key] = true
+            end
+            return setmetatable(def, {__index = self})
+        end,
+        save = function(self)
+            local backTable = {
+                config = self.config,
+                key = self.key or 'multiply'
+            }
+
+            return backTable
+        end
+    }
+
+    local init_game_object_ref = Game.init_game_object
+    function Game:init_game_object()
+        local ret = init_game_object_ref(self)
+        for _, parameter in pairs(SMODS.Scoring_Parameters) do
+            if parameter.hands then
+                for hand, values in pairs(parameter.hands) do
+                    for k, v in pairs(values) do
+                        ret.hands[hand][k] = v
+                    end
+                end
+            end
+        end
+        return ret
+    end
+
+    SMODS.Scoring_Calculation {
+        key = "multiply",
+        func = function(self, chips, mult, flames) return chips * mult end,
+        text = 'X'
+    } 
+
+    SMODS.Scoring_Calculation {
+        key = "add",
+        func = function(self, chips, mult, flames) return chips + mult end,
+        text = '+'
+    }
+
+    SMODS.Scoring_Calculation {
+        key = "exponent",
+        func = function(self, chips, mult, flames) return chips ^ mult end,
+        text = '^'
+    }
+
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
@@ -3483,7 +3794,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         register = function() error('INTERNAL CLASS, DO NOT CALL') end,
         pre_inject_class = function()
             for _, mod in ipairs(SMODS.mod_list) do
-                if mod.can_load then
+                if mod.can_load and not mod.lovely_only then
                     SMODS.handle_loc_file(mod.path, mod.id)
                 end
             end
