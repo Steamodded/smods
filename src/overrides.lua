@@ -1807,7 +1807,7 @@ function Card:set_edition(edition, immediate, silent, delay)
 	if self.edition then
 		self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
 		self.ability.extra_slots_used = self.ability.extra_slots_used - (self.edition.extra_slots_used or 0)
-		self.area:handle_card_limit(-1 * (self.edition.card_limit or 0), -1 * (self.edition.extra_slots_used or 0))
+		if self.area then self.area:handle_card_limit(-1 * (self.edition.card_limit or 0), -1 * (self.edition.extra_slots_used or 0)) end
 	end
 
 	local old_edition = self.edition

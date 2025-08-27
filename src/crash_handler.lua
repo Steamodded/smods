@@ -673,12 +673,16 @@ function injectStackTrace()
             table.insert(err, "Invalid UTF-8 string in error message.")
         end
 
-        if SMODS.save_game and V(SMODS.save_game or '0.0.0') ~= V(SMODS.version) then
+        if V and SMODS and SMODS.save_game and V(SMODS.save_game or '0.0.0') ~= V(SMODS.version or '0.0.0') then
             table.insert(err, 'This crash may be caused by continuing a run that was started on a previous version of Steamodded. Try creating a new run.')
         end
 
-        if V(MODDED_VERSION) ~= V(RELEASE_VERSION) then
-            table.insert(err, '\n\n\nDevelopment version of Steamodded detected! If you are not actively developing a mod, please try using the latest release instead.\n\n')
+        if V and V(MODDED_VERSION or '0.0.0') ~= V(RELEASE_VERSION or '0.0.0') then
+            table.insert(err, '\n\nDevelopment version of Steamodded detected! If you are not actively developing a mod, please try using the latest release instead.\n\n')
+        end
+
+        if not V then
+            table.insert(err, '\nA bad lovely patch has resulted in this crash.\n')
         end
 
         local success, msg = pcall(getDebugInfoForCrash)

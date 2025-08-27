@@ -308,6 +308,7 @@ payload = "badges[#badges + 1] = create_badge(((card.ability.name == 'Pluto' or 
 
 # Fixing description error when info_queue has multi-box descriptions.
 
+
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
