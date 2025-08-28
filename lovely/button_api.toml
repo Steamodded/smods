@@ -1,0 +1,31 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 0
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''
+self.children.use_button:remove()
+self.children.use_button = nil
+'''
+position = 'after'
+payload = '''
+self:remove_all_buttons()
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = '''
+if card.children.use_button then card.children.use_button:remove(); card.children.use_button = nil end
+'''
+position = 'before'
+payload = '''
+if card.remove_all_buttons then
+    card:remove_all_buttons()
+end
+'''
+match_indent = true
