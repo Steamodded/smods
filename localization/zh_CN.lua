@@ -240,7 +240,7 @@ return {
             b_rewrite_by = '重写者：',
             b_github_project = 'Github项目',
             b_github_bugs_1 = '你可以在此汇报漏洞',
-            b_github_bugs_2 = '和提交贡献'，
+            b_github_bugs_2 = '和提交贡献',
             b_disable_mod_badges = '禁用模组横标',
             b_author = '作者',
             b_authors = '作者',
