@@ -542,16 +542,54 @@ end
 function G.UIDEF.deck_stake_column(_deck_key)
 	local deck_usage = G.PROFILES[G.SETTINGS.profile].deck_usage[_deck_key]
 	local stake_col = {}
-	local valid_option = nil
 	local num_stakes = #G.P_CENTER_POOLS['Stake']
 	for i = #G.P_CENTER_POOLS['Stake'], 1, -1 do
 		local _wins = deck_usage and deck_usage.wins[i] or 0
-		if (deck_usage and deck_usage.wins[i - 1]) or i == 1 or G.PROFILES[G.SETTINGS.profile].all_unlocked then valid_option = true end
+		local valid_option = nil
+		if (deck_usage and deck_usage.wins[i - 1]) or (not next(G.P_CENTER_POOLS.Stake[i].applied_stakes or {})) or G.PROFILES[G.SETTINGS.profile].all_unlocked then valid_option = true end
 		stake_col[#stake_col + 1] = {n = G.UIT.R, config = {id = i, align = "cm", colour = _wins > 0 and G.C.GREY or G.C.CLEAR, outline = 0, outline_colour = G.C.WHITE, r = 0.1, minh = 2 / num_stakes, minw = valid_option and 0.45 or 0.25, func = 'RUN_SETUP_check_back_stake_highlight'}, nodes = {
 			{n = G.UIT.R, config = {align = "cm", minh = valid_option and 1.36 / num_stakes or 1.04 / num_stakes, minw = valid_option and 0.37 or 0.13, colour = _wins > 0 and get_stake_col(i) or G.C.UI.TRANSPARENT_LIGHT, r = 0.1}, nodes = {}}}}
 		if i > 1 then stake_col[#stake_col + 1] = {n = G.UIT.R, config = {align = "cm", minh = 0.8 / num_stakes, minw = 0.04 }, nodes = {} } end
 	end
 	return {n = G.UIT.ROOT, config = {align = 'cm', colour = G.C.CLEAR}, nodes = stake_col}
+end
+
+function SMODS.check_applied_stakes(stake, deck)
+	if next(stake.applied_stakes) then
+		for _, applied_stake in ipairs(stake.applied_stakes) do
+			if not deck.wins_by_key[applied_stake] then return false end
+		end
+	end
+	return true
+end
+
+function G.UIDEF.stake_option(_type)
+	G.viewed_stake = G.viewed_stake or 1
+
+	local middle = {n=G.UIT.R, config={align = "cm", minh = 1.7, minw = 7.3}, nodes={
+		{n=G.UIT.O, config={id = nil, func = 'RUN_SETUP_check_stake2', object = Moveable()}},
+	}}
+	
+	local stake_options = {}
+	local curr_options = {}
+	local deck_usage = G.PROFILES[G.SETTINGS.profile].deck_usage[G.GAME.viewed_back.effect.center.key]
+	for i=1, #G.P_CENTER_POOLS.Stake do
+		if G.PROFILES[G.SETTINGS.profile].all_unlocked or SMODS.check_applied_stakes(G.P_CENTER_POOLS.Stake[i], deck_usage or {wins_by_key = {}}) then
+			stake_options[#stake_options + 1] = i
+			curr_options[i] = #stake_options
+		end
+	end
+	
+	return {n=G.UIT.ROOT, config={align = "tm", colour = G.C.CLEAR, minh = 2.03, minw = 8.3}, nodes={
+		_type == 'Continue' and middle
+		or create_option_cycle({options = stake_options, opt_callback = 'change_stake', current_option = curr_options[G.viewed_stake] or 1,
+			colour = G.C.RED, w = 6, mid = middle})
+	}}
+end
+
+G.FUNCS.change_stake = function(args)
+	G.viewed_stake = args.to_val
+	G.PROFILES[G.SETTINGS.profile].MEMORY.stake = args.to_val
 end
 
 --#endregion
@@ -2150,7 +2188,7 @@ function Card:set_edition(edition, immediate, silent, delay)
 	if self.edition then
 		self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
 		self.ability.extra_slots_used = self.ability.extra_slots_used - (self.edition.extra_slots_used or 0)
-		self.area:handle_card_limit(-1 * (self.edition.card_limit or 0), -1 * (self.edition.extra_slots_used or 0))
+		if self.area then self.area:handle_card_limit(-1 * (self.edition.card_limit or 0), -1 * (self.edition.extra_slots_used or 0)) end
 	end
 
 	local old_edition = self.edition
