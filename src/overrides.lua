@@ -1003,36 +1003,38 @@ function get_quantum_two_pair(_2)
 			used_cards[card] = true
 		end
 		for _, pair_2 in ipairs(_2) do
-			local _pair_2_over_by = #pair_2 - 2
-			local _pair_1_decrease = 0
-			local valid = true
-			for _, card in ipairs(pair_2) do
-				if used_cards[card] then
-					if _pair_2_over_by + (_pair_1_over_by - _pair_1_decrease) <= 0 then
-						valid = false
-						break
-					else
-						if _pair_2_over_by > 0 then
-							_pair_2_over_by = _pair_2_over_by - 1
+			if pair_1 ~= pair_2 then
+				local _pair_2_over_by = #pair_2 - 2
+				local _pair_1_decrease = 0
+				local valid = true
+				for _, card in ipairs(pair_2) do
+					if used_cards[card] then
+						if _pair_2_over_by + (_pair_1_over_by - _pair_1_decrease) <= 0 then
+							valid = false
+							break
 						else
-							_pair_1_decrease = _pair_1_decrease + 1
+							if _pair_2_over_by > 0 then
+								_pair_2_over_by = _pair_2_over_by - 1
+							else
+								_pair_1_decrease = _pair_1_decrease + 1
+							end
 						end
 					end
 				end
-			end
-			if valid then
-				local pair_1_cards_map = {}
-				local merged = {}
-				for _, v in pairs(pair_1) do
-					pair_1_cards_map[v] = true
-					merged[#merged+1] = v
-				end
-				for _, v in pairs(pair_2) do
-					if not pair_1_cards_map[v] then
+				if valid then
+					local pair_1_cards_map = {}
+					local merged = {}
+					for _, v in pairs(pair_1) do
+						pair_1_cards_map[v] = true
 						merged[#merged+1] = v
 					end
+					for _, v in pairs(pair_2) do
+						if not pair_1_cards_map[v] then
+							merged[#merged+1] = v
+						end
+					end
+					return { merged }
 				end
-				return { merged }
 			end
 		end
 	end
