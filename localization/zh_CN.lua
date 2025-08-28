@@ -136,6 +136,12 @@ return {
                     "回合结束时还在手牌中则获得{C:money}#1#{}",
                 },
             },
+            card_extra_repetitions = {
+                text = {
+                    "重新触发",
+                    "此卡牌{C:attention}#1#{} #2#",
+                },
+            },
             artist = {
                 text = {
                     "{C:inactive}艺术家",
@@ -147,6 +153,24 @@ return {
                     "{E:1}#1#{}"
                 },
             },
+            generic_card_limit = {
+                name = "卡限额",
+                text = {
+                    '{C:dark_edition}#1#{}个区域槽位'
+                }
+            },
+            generic_card_limit_plural = {
+                name = "卡限额",
+                text = {
+                    '{C:dark_edition}#1#{}个区域槽位'
+                }
+            },
+            generic_extra_slots = {
+                name = "已使用槽位",
+                text = {
+                    '填充{C:dark_edition}#1#{}个槽位'
+                }
+            }
         },
         Edition = {
             e_negative_playing_card = {
@@ -155,6 +179,12 @@ return {
                     "手牌上限{C:dark_edition}+#1#{}"
                 },
             },
+            e_negative_generic = {
+                name = "负片",
+                text = {
+                    "{C:dark_edition}+#1#{}个区域槽位"
+                },
+            }
         },
         Enhanced = {
             m_gold={
@@ -210,7 +240,7 @@ return {
             b_rewrite_by = '重写者：',
             b_github_project = 'Github项目',
             b_github_bugs_1 = '你可以在此汇报漏洞',
-            b_github_bugs_2 = '和提交贡献',
+            b_github_bugs_2 = '和提交贡献'，
             b_disable_mod_badges = '禁用模组横标',
             b_author = '作者',
             b_authors = '作者',
