@@ -2409,3 +2409,160 @@ function Card:set_ability(center, initial, delay_sprites)
 		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
 	end
 end
+
+function create_shop_card_ui(card, t, area)
+    G.E_MANAGER:add_event(Event({
+        trigger = 'after',
+        delay = 0.43,
+        blocking = false,
+        blockable = false,
+        func = (function()
+            if card.opening then return true end
+            local t1 = {n=G.UIT.ROOT, config = {minw = 0.6, align = 'tm', colour = darken(G.C.BLACK, 0.2), shadow = true, r = 0.05, padding = 0.05, minh = 1}, nodes={
+                {n=G.UIT.R, config={align = "cm", colour = lighten(G.C.BLACK, 0.1), r = 0.1, minw = 1, minh = 0.55, emboss = 0.05, padding = 0.03}, nodes={
+                    {n=G.UIT.O, config={object = DynaText({string = {{prefix = localize('$'), ref_table = card, ref_value = 'cost'}}, colours = {G.C.MONEY},shadow = true, silent = true, bump = true, pop_in = 0, scale = 0.5})}},
+                }}
+            }}
+            local t2 = card.ability.set == 'Voucher' and {n = G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes = {            
+                {n=G.UIT.R, config = {ref_table = card, button_id = {"s_redeem_button", "shop_buttons"}, minw = 1.1, maxw = 1.3, padding = 0.1, align = 'bm', colour = G.C.GREEN, shadow = true, r = 0.08, minh = 0.94, func = 'can_redeem', one_press = true, button = 'redeem_from_shop', hover = true}, nodes={
+                    {n=G.UIT.T, config={text = localize('b_redeem'),colour = G.C.WHITE, scale = 0.4}}
+                }}
+            }} or card.ability.set == 'Booster' and {n = G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes = {            
+                {n=G.UIT.R, config = {ref_table = card, button_id = {"s_open_button", "shop_buttons"}, minw = 1.1, maxw = 1.3, padding = 0.1, align = 'bm', colour = G.C.GREEN, shadow = true, r = 0.08, minh = 0.94, func = 'can_open', one_press = true, button = 'open_booster', hover = true}, nodes={
+                    {n=G.UIT.T, config={text = localize('b_open'),colour = G.C.WHITE, scale = 0.5}}
+                }}
+            }} or {n = G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes = {            
+                {n=G.UIT.R, config = {ref_table = card, button_id = {"s_buy_button", "s_buy_buttons", "shop_buttons"}, minw = 1.1, maxw = 1.3, padding = 0.1, align = 'bm', colour = G.C.GOLD, shadow = true, r = 0.08, minh = 0.94, func = 'can_buy', one_press = true, button = 'buy_from_shop', hover = true}, nodes={
+                    {n=G.UIT.T, config={text = localize('b_buy'),colour = G.C.WHITE, scale = 0.5}}
+                }}
+            }}
+            local t3 = {n=G.UIT.C, config={padding = 0.15, align = 'cl'}, nodes={}}
+            if card.ability.consumeable then
+                t3.nodes[#t3.nodes+1] = {n=G.UIT.R, config= {align = "cl", button_id = {"s_buy_and_use_button", "s_buy_buttons", "shop_buttons"}}, nodes={
+                    {n=G.UIT.C, config= {align = "cr"}, nodes={
+                        {n=G.UIT.C, config = {id = 'buy_and_use', button_, ref_table = card, minh = 1.1, padding = 0.1, align = 'cr', colour = G.C.RED, shadow = true, r = 0.08, minw = 1.1, func = 'can_buy_and_use', one_press = true, button = 'buy_from_shop', hover = true, focus_args = {type = 'none'}}, nodes={
+                            {n=G.UIT.B, config = {w=0.1,h=0.6}},
+                            {n=G.UIT.C, config = {align = 'cm'}, nodes={
+                                {n=G.UIT.R, config = {align = 'cm', maxw = 1}, nodes={
+                                    {n=G.UIT.T, config={text = localize('b_buy'),colour = G.C.WHITE, scale = 0.5}}
+                                }},
+                                {n=G.UIT.R, config = {align = 'cm', maxw = 1}, nodes={
+                                    {n=G.UIT.T, config={text = localize('b_and_use'),colour = G.C.WHITE, scale = 0.3}}
+                                }},
+                            }} 
+                        }}
+                    }}
+                }}
+            end
+            local t4 = {n=G.UIT.C, config={padding = 0.15, align = 'cl'}, nodes={}} --In cases when t3 is added when the card is a consumeable BUT G.FUNCS.can_buy_and_use isn't true.
+
+            local button_context = {shop = true, cardarea = card.area}
+            local new_uibox = SMODS.calculate_button{button_context = button_context, ret = t3, card = card, add_uiboxes_check = {t2}}
+            SMODS.calculate_button{button_context = button_context, ret = t4, card = card}
+            card.shop_added_buttons = {}
+            for i,v in ipairs(new_uibox) do
+                card.children["shop_added_button"..i] = UIBox(v)
+                card.shop_added_buttons[#card.shop_added_buttons+1] = {name = "shop_added_button"..i, ui = card.children["shop_added_button"..i]}
+            end
+
+            card.children.price = UIBox{
+                definition = t1,
+                config = {
+                    align= "tm" ,
+                    offset = {x=0,y=1.5},
+                    major = card,
+                    bond = 'Weak',
+                    parent = card
+                }
+            }
+
+            card.children.buy_button = UIBox{
+                definition = t2,
+                config = {
+                    align = "bm",
+                    offset = {x=0,y=-0.3},
+                    major = card,
+                    bond = 'Weak',
+                    parent = card
+                }
+            }
+
+            local buttons_offset = {x = ((card.ability.set == "Voucher" or card.ability.set == "Booster") and -0.5) or -0.3, y = 0}
+            card.children.buy_and_use_button = UIBox{
+                definition = {n = G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes = {t3}},
+                config = {
+                    align = "cr",
+                    offset = buttons_offset,
+                    major = card,
+                    bond = 'Weak',
+                    parent = card
+                }
+            }
+            card.children.fallback_buy_and_use_button = UIBox{
+                definition = {n = G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes = {t4}},
+                config = {
+                    align = "cr",
+                    offset = buttons_offset,
+                    major = card,
+                    bond = 'Weak',
+                    parent = card
+                }
+            }
+
+            card.children.price.alignment.offset.y = card.ability.set == 'Booster' and 0.5 or 0.38
+
+            return true
+        end)
+    }))
+end
+
+function G.UIDEF.use_and_sell_buttons(card)
+    local button_context = {joker = card.ability.set == "Joker", highlight = true}
+    if card.ability.consumeable and card.area == G.pack_cards and booster_obj and booster_obj.select_card and card:selectable_from_pack(booster_obj) and (card.area == G.pack_cards and G.pack_cards) then
+        button_context = {select_card = true, select_booster = true}
+    elseif card.ability.consumeable then
+        if card.area == G.pack_cards and G.pack_cards then
+            button_context = {use_card = true, select_booster = true}
+        else
+            button_context = {consumeable = true, highlight = true}
+        end
+    elseif card.area and card.area == G.pack_cards then
+        button_context = {select_card = true, select_booster = true}
+    end
+
+    local ret = {n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes = SMODS.add_default_card_buttons(card, button_context)}
+    local new_uibox = SMODS.calculate_button{button_context = button_context, ret = ret, card = card}
+        
+    card.added_buttons = {}
+    for i,v in ipairs(new_uibox) do
+        card.children["added_button"..i] = UIBox(v)
+        card.added_buttons[#card.added_buttons+1] = {name = "added_button"..i, ui = card.children["added_button"..i]}
+    end
+    return ret
+end
+
+function Card:remove_all_buttons()
+    if self.children.use_button then self.children.use_button:remove(); self.children.use_button = nil end
+    if self.children.sell_button then self.children.sell_button:remove(); self.children.sell_button = nil end
+    if self.added_buttons then
+        for _,v in ipairs(self.added_buttons) do
+            v.ui:remove()
+            self.children[v.name] = nil
+        end
+        self.added_buttons = nil
+    end
+    if self.shop_added_buttons then
+        for _,v in ipairs(self.shop_added_buttons) do
+            v.ui:remove()
+            self.children[v.name] = nil
+        end
+        self.shop_added_buttons = nil
+    end
+end
+
+local sell_card_ref = Card.sell_card
+function Card:sell_card(...)
+    local ret = sell_card_ref(self,...)
+    self:remove_all_buttons()
+    return ret
+end
