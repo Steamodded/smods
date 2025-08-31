@@ -476,6 +476,20 @@ SMODS.DrawStep {
                 end
             end
         end
+        if self.c_added_buttons then
+            for _,v in ipairs(self.c_added_buttons) do
+                v.ui.states.visible = self.hovered
+                if self.hovered then
+                    v.ui:draw()
+                else
+                    for _,v in ipairs(self.c_added_buttons) do
+                        v.ui:remove()
+                        self.children[v.name] = nil
+                    end
+                    self.c_added_buttons = nil 
+                end
+            end
+        end
         if self.shop_added_buttons then
             for _,v in ipairs(self.shop_added_buttons) do
                 v.ui.states.visible = self.highlighted
