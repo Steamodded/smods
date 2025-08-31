@@ -338,7 +338,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 return
             end
             self.name = self.key
-            SMODS.Font.super.register(self)
+            SMODS.DynaTextEffect.super.register(self)
         end,
         inject = function(self)
         end,
