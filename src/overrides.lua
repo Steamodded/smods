@@ -2460,6 +2460,7 @@ function create_shop_card_ui(card, t, area)
             local new_uibox = SMODS.calculate_button{button_context = button_context, ret = t3, card = card, add_uiboxes_check = {t2}}
             SMODS.calculate_button{button_context = button_context, ret = t4, card = card}
             card.shop_added_buttons = {}
+
             for i,v in ipairs(new_uibox) do
                 card.children["shop_added_button"..i] = UIBox(v)
                 card.shop_added_buttons[#card.shop_added_buttons+1] = {name = "shop_added_button"..i, ui = card.children["shop_added_button"..i]}
@@ -2517,14 +2518,12 @@ function create_shop_card_ui(card, t, area)
 end
 
 function G.UIDEF.use_and_sell_buttons(card)
-    local button_context = {joker = card.ability.set == "Joker", highlight = true}
+    local button_context = {joker = card.ability.set == "Joker", consumeable = card.ability.consumeable, highlight = true}
     if card.ability.consumeable and card.area == G.pack_cards and booster_obj and booster_obj.select_card and card:selectable_from_pack(booster_obj) and (card.area == G.pack_cards and G.pack_cards) then
         button_context = {select_card = true, select_booster = true}
     elseif card.ability.consumeable then
         if card.area == G.pack_cards and G.pack_cards then
             button_context = {use_card = true, select_booster = true}
-        else
-            button_context = {consumeable = true, highlight = true}
         end
     elseif card.area and card.area == G.pack_cards then
         button_context = {select_card = true, select_booster = true}
@@ -2558,6 +2557,13 @@ function Card:remove_all_buttons()
         end
         self.shop_added_buttons = nil
     end
+	if self.c_added_buttons then
+        for _,v in ipairs(self.c_added_buttons) do
+            v.ui:remove()
+            self.children[v.name] = nil
+        end
+        self.c_added_buttons = nil
+    end
 end
 
 local sell_card_ref = Card.sell_card
@@ -2565,4 +2571,356 @@ function Card:sell_card(...)
     local ret = sell_card_ref(self,...)
     self:remove_all_buttons()
     return ret
+end
+
+local selected_button = 1
+local hoveredCard = nil
+function c_scroll_through_buttons(order)
+    if hoveredCard and hoveredCard.saved_controller_buttons and #hoveredCard.saved_controller_buttons > 0 then
+        local card = hoveredCard
+        selected_button = selected_button + order
+        if order > 0 then
+            if selected_button > #card.saved_controller_buttons then selected_button = 1 end
+        elseif order < 0 then
+            if selected_button <= 1 then
+                selected_button = #card.saved_controller_buttons
+            end
+        end
+        local old_button = card.controller_selected_button
+        if card.controller_selected_button then
+            old_button.config.outline = old_button.config.old_outline
+            old_button.config.outline_colour = old_button.config.old_outline_colour
+        end
+
+		G.E_MANAGER.queues.smods_buttons = G.E_MANAGER.queues.smods_buttons or {}
+		G.E_MANAGER:clear_queue('smods_buttons')
+        local new_button = card.saved_controller_buttons[selected_button]
+        card.controller_selected_button = card.saved_controller_buttons[selected_button]
+        new_button.config = new_button.config or {}
+        new_button.config.old_outline = new_button.config.outline
+		local base_outline = 6
+		local target_outline = 1.5
+        new_button.config.outline = base_outline
+		G.E_MANAGER:add_event(Event({
+			blocking = false,
+			blockable = false,
+			func = function() 
+				new_button.config.outline = new_button.config.outline + (target_outline - new_button.config.outline)/5
+				if (new_button.config.outline - target_outline) <= 0.1 then
+					return true 
+				end
+			end
+		}), "smods_buttons")
+        new_button.config.old_outline_colour = new_button.config.outline_colour
+        new_button.config.outline_colour = G.C.WHITE
+    end
+end
+
+function c_trigger_button()
+    if hoveredCard and hoveredCard.controller_selected_button then
+        local function check_for_func(nodes, ignore)
+            if nodes then
+                local set_ignore = false
+                if not ignore and nodes.config and nodes.config.button then G.FUNCS[nodes.config.button](nodes) end
+                for _,v in pairs(nodes.children) do
+                    if v.config and v.config.button then G.FUNCS[v.config.button](v); set_ignore = true end
+                    if v.children then
+                        check_for_func(v, set_ignore)
+                    end
+                end
+            end
+        end
+        check_for_func(hoveredCard.controller_selected_button)
+    end
+end
+
+local time_until_use = 0.35
+local ongoing_time = 0
+local used = false
+local love_update_ref = love.update
+function love.update(dt)
+    local joysticks = love.joystick.getJoysticks()
+    c_joystick = joysticks[1]
+
+    if c_joystick and hoveredCard and hoveredCard.saved_controller_buttons then
+        if G.CONTROLLER and G.CONTROLLER.held_buttons and G.CONTROLLER.held_buttons.triggerleft then
+            ongoing_time = ongoing_time + dt
+            if ongoing_time >= time_until_use and not used then
+                c_trigger_button()
+                used = true
+            end
+        else
+            if ongoing_time ~= 0 and ongoing_time < time_until_use then
+                c_scroll_through_buttons(1)
+            end
+            ongoing_time = 0
+            used = false
+        end
+    else
+        ongoing_time = 0
+        used = false
+    end
+   
+    return love_update_ref(dt)
+end
+
+local hover_ref = Card.hover
+function Card:hover(...)
+    hoveredCard = self
+    selected_button = 1
+    self.hovered = true
+    self.saved_controller_uibox = {}
+    local ret = hover_ref(self,...)
+    for _,v in ipairs(self.c_add_uibox or {}) do
+        self.saved_controller_uibox[#self.saved_controller_uibox+1] = v
+    end
+    self.saved_controller_buttons = {}
+    local function check_for_buttons(nodes, ignore)
+        if nodes then
+            local set_ignore = false
+            if not ignore and nodes.config and nodes.config.button_id then self.saved_controller_buttons[#self.saved_controller_buttons+1] = nodes end
+            for _, v in pairs(nodes.children) do
+                if v.config and v.config.button_id then self.saved_controller_buttons[#self.saved_controller_buttons+1] = v; set_ignore = true end
+                if v.children then
+                    check_for_buttons(v, set_ignore)
+                end
+            end
+        end
+    end
+    for _,v in ipairs(self.saved_controller_uibox) do
+        check_for_buttons(v.UIRoot)
+    end
+
+    self.controller_selected_button = self.saved_controller_buttons[1]
+    return ret
+end
+
+local stop_hover_ref = Card.stop_hover
+function Card:stop_hover(...)
+    self.hovered = false
+    if hoveredCard == self then 
+        hoveredCard.saved_controller_buttons = nil
+        hoveredCard.saved_controller_uibox = nil
+
+        if hoveredCard.c_added_buttons then
+            for _,v in ipairs(hoveredCard.c_added_buttons) do
+                v.ui:remove()
+                hoveredCard.children[v.name] = nil
+            end
+            hoveredCard.c_added_buttons = nil
+        end
+
+        hoveredCard = nil 
+    end
+    local ret = stop_hover_ref(self,...)
+    return ret
+end
+
+
+function G.UIDEF.card_focus_ui(card)
+    local card_width = card.T.w + (card.ability.consumeable and -0.1 or card.ability.set == 'Voucher' and -0.16 or 0)
+    local button_context = {joker = card.ability.set == "Joker", consumeable = card.ability.consumeable, highlight = true}
+    local dir = "r"
+    local playing_card_colour = copy_table(G.C.WHITE)
+    playing_card_colour[4] = 1.5
+    if G.hand and card.area == G.hand then ease_value(playing_card_colour, 4, -1.5, nil, 'REAL',nil, 0.2, 'quad') end
+
+    local tcnx, tcny = card.T.x + card.T.w/2 - G.ROOM.T.w/2, card.T.y + card.T.h/2 - G.ROOM.T.h/2
+
+    local base_background = UIBox{
+        T = {card.VT.x,card.VT.y,0,0},
+        definition = 
+        (not G.hand or card.area ~= G.hand) and {n=G.UIT.ROOT, config = {align = 'cm', minw = card_width + 0.3, minh = card.T.h + 0.3, r = 0.1, colour = adjust_alpha(G.C.BLACK, 0.7), outline_colour = lighten(G.C.JOKER_GREY, 0.5), outline = 1.5, line_emboss = 0.8}, nodes={
+            {n=G.UIT.R, config={id = 'ATTACH_TO_ME'}, nodes={}}
+        }} or 
+        {n=G.UIT.ROOT, config = {align = 'cm', minw = card_width, minh = card.T.h, r = 0.1, colour = playing_card_colour}, nodes={
+            {n=G.UIT.R, config={id = 'ATTACH_TO_ME'}, nodes={}}
+        }},
+        config = {
+            align = 'cm',
+            offset = {x= 0.007*tcnx*card.T.w, y = 0.007*tcny*card.T.h}, 
+            parent = card,
+            r_bond = (not G.hand or card.area ~= G.hand) and 'Weak' or 'Strong'
+        }
+    }
+
+    base_background.set_alignment = function()
+        local cnx, cny = card.T.x + card.T.w/2 - G.ROOM.T.w/2, card.T.y + card.T.h/2 - G.ROOM.T.h/2
+        Moveable.set_alignment(card.children.focused_ui, {offset = {x= 0.007*cnx*card.T.w, y = 0.007*cny*card.T.h}})
+    end
+
+    local base_attach = base_background:get_UIE_by_ID('ATTACH_TO_ME')
+
+    --The card UI can have BUY, REDEEM, USE, and SELL buttons depending on the context of the card
+    
+    if card.area == G.shop_jokers and G.shop_jokers then --Add a buy button
+        local buy_and_use = nil
+        if card.ability.consumeable then 
+            base_attach.children.buy_and_use = G.UIDEF.card_focus_button{
+                card = card, parent = base_attach, type = 'buy_and_use',
+                func = 'can_buy_and_use', button = 'buy_from_shop', card_width = card_width
+            }
+            buy_and_use = true
+        end
+        base_attach.children.buy = G.UIDEF.card_focus_button{
+            card = card, parent = base_attach, type = 'buy',
+            func = 'can_buy', button = 'buy_from_shop', card_width = card_width, buy_and_use = buy_and_use
+        }
+        button_context = {shop = true, cardarea = card.area}
+    end
+    if card.area == G.shop_vouchers and G.shop_vouchers then --Add a redeem button
+        base_attach.children.redeem = G.UIDEF.card_focus_button{
+            card = card, parent = base_attach, type = 'buy',
+            func = 'can_redeem', button = 'redeem_from_shop', card_width = card_width
+        }
+        button_context = {shop = true, cardarea = card.area}
+    end
+    if card.area == G.shop_booster and G.shop_booster then --Add a redeem button
+        base_attach.children.redeem = G.UIDEF.card_focus_button{
+            card = card, parent = base_attach, type = 'buy',
+            func = 'can_open', button = 'open_booster', card_width = card_width*0.85
+        }
+        button_context = {shop = true, cardarea = card.area}
+    end
+    if ((card.area == G.consumeables and G.consumeables) or (card.area == G.pack_cards and G.pack_cards)) and
+    card.ability.consumeable then --Add a use button
+        base_attach.children.use = G.UIDEF.card_focus_button{
+            card = card, parent = base_attach, type = 'use',
+            func = 'can_use_consumeable', button = 'use_card', card_width = card_width
+        }
+    end
+    if (card.area == G.pack_cards and G.pack_cards) and not card.ability.consumeable then --Add a use button
+        base_attach.children.use = G.UIDEF.card_focus_button{
+            card = card, parent = base_attach, type = 'select',
+            func = 'can_select_card', button = 'use_card', card_width = card_width
+        }
+        button_context = {shop = true, cardarea = card.area}
+    end
+    if (card.area == G.jokers and G.jokers or card.area == G.consumeables and G.consumeables) and G.STATE ~= G.STATES.TUTORIAL then --Add a sell button
+        base_attach.children.sell = G.UIDEF.card_focus_button{
+            card = card, parent = base_attach, type = 'sell',
+            func = 'can_sell_card', button = 'sell_card', card_width = card_width
+        }
+        dir = "l"
+    end
+
+    card.c_add_uibox = {}
+    local new_uibox = SMODS.calculate_button{button_context = button_context, card = card, uibox_dir = dir, raw = true, exclude_dir = true, only_dir = true}
+    card.c_added_buttons = {}
+    for i,v in ipairs(new_uibox) do
+        card.children["c_added_button"..i] = UIBox(v)
+        card.c_add_uibox[#card.c_add_uibox+1] = card.children["c_added_button"..i]
+        card.c_added_buttons[#card.c_added_buttons+1] = {name = "c_added_button"..i, ui = card.children["c_added_button"..i]}
+    end
+
+    return base_background
+end
+
+function G.UIDEF.card_focus_button(args)
+    if not args then return end 
+
+    local card = args.card
+    local button_context = {joker = card.ability.set == "Joker", consumeable = card.ability.consumeable, highlight = true}
+    local dir = "r"
+    local button_contents = {}
+    if args.type == 'sell' then 
+        button_contents = 
+        {n=G.UIT.C, config={align = "cl"}, nodes={
+            {n=G.UIT.R, config={align = "cl", maxw = 1}, nodes={
+                {n=G.UIT.T, config={text = localize('b_sell'),colour = G.C.UI.TEXT_LIGHT, scale = 0.4, shadow = true}}
+            }},
+            {n=G.UIT.R, config={align = "cl"}, nodes={
+                {n=G.UIT.T, config={text = localize('$'),colour = G.C.WHITE, scale = 0.4, shadow = true}},
+                {n=G.UIT.T, config={ref_table = args.card, ref_value = 'sell_cost_label',colour = G.C.WHITE, scale = 0.55, shadow = true}}
+            }}
+        }}
+        dir = "l"
+    elseif args.type == 'buy' then 
+        button_contents = {n=G.UIT.T, config={text = localize('b_buy'),colour = G.C.WHITE, scale = 0.5}}
+        button_context = {shop = true, cardarea = card.area}
+    elseif args.type == 'select' then 
+        button_contents = {n=G.UIT.T, config={text = localize('b_select'),colour = G.C.WHITE, scale = 0.3}}
+        button_context = {shop = true, cardarea = card.area}
+    elseif args.type == 'redeem' then 
+        button_contents = {n=G.UIT.T, config={text = localize('b_redeem'),colour = G.C.WHITE, scale = 0.5}}
+        button_context = {shop = true, cardarea = card.area}
+    elseif args.type == 'use' then
+        button_contents = {n=G.UIT.T, config={text = localize('b_use'),colour = G.C.WHITE, scale = 0.5}}
+    elseif args.type == 'buy_and_use' then
+        button_contents = 
+        {n=G.UIT.C, config={align = "cr"}, nodes={
+            {n=G.UIT.R, config={align = "cr", maxw = 1}, nodes={
+                {n=G.UIT.T, config={text = localize('b_buy'),colour = G.C.UI.TEXT_LIGHT, scale = 0.4, shadow = true}}
+            }},
+            {n=G.UIT.R, config={align = "cr", maxw = 1}, nodes={
+                {n=G.UIT.T, config={text = localize('b_and_use'),colour = G.C.WHITE, scale = 0.3, shadow = true}},
+            }}
+        }}
+        button_context = {shop = true, cardarea = card.area}
+    end
+
+    local spec_button_ids = {
+        sell = {"sell_button", "vanilla_buttons"},
+        use = {"use_button", "vanilla_buttons"},
+        select = {"b_select_button", "vanilla_buttons"},
+        buy = {"s_buy_button", "s_buy_buttons", "shop_buttons"},
+        redeem =  {"s_redeem_button", "shop_buttons"},
+        buy_and_use = {"s_buy_and_use_button", "s_buy_buttons", "shop_buttons"},
+        fallback = {"fallback_button"},
+    }
+
+    local spec_ids = {
+        sell = "sell_button",
+        use = "use_button",
+        select = "b_select_button",
+        buy = "s_buy_button",
+        redeem = "s_redeem_button",
+        buy_and_use = "buy_and_use",
+        fallback = "fallback_button",
+    }
+
+    if button_contents.n then
+        local ret = {
+            T = {args.card.VT.x,args.card.VT.y,0,0},
+            definition = 
+            {n=G.UIT.ROOT, config = {align = 'cm', colour = G.C.CLEAR}, nodes={
+                {n = G.UIT.C, nodes = {
+                    {n = G.UIT.R, nodes = {
+                        {n = G.UIT.C, nodes = {
+                            {n=G.UIT.R, config = {button_id = spec_button_ids[args.type] or spec_button_ids["fallback"], id = spec_ids[args.type] or spec_ids["fallback"], ref_table = args.card, ref_parent = args.parent, align =  args.type == 'sell' and 'cl' or 'cr', colour = G.C.BLACK, shadow = true, r = 0.08, func = args.func, one_press = true, button = args.button, focus_args = {type = 'none'}, hover = true}, nodes={
+                                {n=G.UIT.R, config={align = args.type == 'sell' and 'cl' or 'cr', minw = 1 + (args.type == 'select' and 0.1 or 0), minh = args.type == 'sell' and 1.5 or 1, padding = 0.08, focus_args = {button = args.type == 'sell' and 'leftshoulder' or args.type == 'buy_and_use' and 'leftshoulder' or 'rightshoulder', scale = 0.55, orientation = args.type == 'sell' and 'tli' or 'tri', offset = {x = args.type == 'sell' and 0.1 or -0.1, y = 0}, type = 'none'}, func = 'set_button_pip'}, nodes={
+                                    {n=G.UIT.R, config={align = "cm", minh = 0.3}, nodes={}},
+                                    {n=G.UIT.R, config={align = "cm"}, nodes={
+                                        args.type ~= 'sell' and {n=G.UIT.C, config={align = "cm",minw = 0.2, minh = 0.6}, nodes={}} or nil,
+                                        {n=G.UIT.C, config={align = "cm", maxw = 1}, nodes={
+                                            button_contents
+                                        }},
+                                        args.type == 'sell' and {n=G.UIT.C, config={align = "cm",minw = 0.2, minh = 0.6}, nodes={}} or nil,
+                                    }}
+                                }}
+                            }}
+                        }}
+                    }},
+                }},
+            }}, 
+            config = {
+                align = args.type == 'sell' and 'cl' or 'cr',
+                offset = {x=(args.type == 'sell' and -1 or 1)*((args.card_width or 0) - 0.17 - args.card.T.w/2),y=args.type == 'buy_and_use' and 0.6 or (args.buy_and_use) and -0.6 or 0}, 
+                parent = args.parent,
+            }
+        }
+
+        local new_buttons = SMODS.calculate_button{card = card, button_context = button_context, ret = ret, uibox_dir = dir, raw = true, only_dir = true}
+        for _,v in ipairs(new_buttons) do
+            local button = v.definition.nodes[1].nodes[1]
+            ret.definition.nodes[1].nodes[#ret.definition.nodes[1].nodes+1] = {n = G.UIT.R, nodes = {button}}
+        end
+
+        local uibox = UIBox(ret)
+
+        card.saved_controller_uibox = card.saved_controller_uibox or {}
+        card.saved_controller_uibox[#card.saved_controller_uibox+1] = uibox
+
+        return uibox
+    end
 end
