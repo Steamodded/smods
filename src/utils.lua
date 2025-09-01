@@ -1347,7 +1347,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     end
 
     if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or 
-        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'modify' then
+        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'modify' or key == 'immutable' then
         return { [key] = amount }
     end
     
@@ -1447,7 +1447,7 @@ SMODS.other_calculation_keys = {
     'level_up', 'func', 'extra',
     'numerator', 'denominator',
     'modify',
-    'no_destroy', 'prevent_trigger',
+    'no_destroy', 'prevent_trigger', 'immutable',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
 }
 SMODS.silent_calculation = {
@@ -3040,4 +3040,20 @@ function CardArea:handle_card_limit(card_limit, card_slots)
             check_for_unlock({type = 'min_hand_size'})
         end
     end
+end
+
+function SMODS.is_immutable(card, override)
+    if override then return false end
+    local calc_return = {}
+    local ret = false
+    SMODS.calculate_context({check_immutable = true, other_card = card, no_blueprint = true,}, calc_return)
+    for _,eff in pairs(calc_return) do
+        for _,tab in pairs(eff) do
+            if tab.immutable then
+                ret = true
+            end
+        end
+    end
+    if card.ability.immutable then ret = true end
+    return ret
 end

@@ -1801,63 +1801,141 @@ end
 -- OR another card's self.edition table
 -- immediate = boolean value
 -- silent = boolean value
-function Card:set_edition(edition, immediate, silent, delay)
-	SMODS.enh_cache:write(self, nil)
-	
-	if self.edition then
-		self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
-		self.ability.extra_slots_used = self.ability.extra_slots_used - (self.edition.extra_slots_used or 0)
-		if self.area then self.area:handle_card_limit(-1 * (self.edition.card_limit or 0), -1 * (self.edition.extra_slots_used or 0)) end
-	end
-
-	local old_edition = self.edition
-	if old_edition and old_edition.key then
-		self.ignore_base_shader[old_edition.key] = nil
-		self.ignore_shadow[old_edition.key] = nil
-
-		local on_old_edition_removed = G.P_CENTERS[old_edition.key] and G.P_CENTERS[old_edition.key].on_remove
-		if type(on_old_edition_removed) == "function" then
-			on_old_edition_removed(self)
+function Card:set_edition(edition, immediate, silent, delay, override_immutability)
+	if not SMODS.is_immutable(self, override_immutability) then
+		SMODS.enh_cache:write(self, nil)
+		
+		if self.edition then
+			self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
+			self.ability.extra_slots_used = self.ability.extra_slots_used - (self.edition.extra_slots_used or 0)
+			if self.area then self.area:handle_card_limit(-1 * (self.edition.card_limit or 0), -1 * (self.edition.extra_slots_used or 0)) end
 		end
-	end
 
-	local edition_type = nil
-	if type(edition) == 'string' then
-		assert(string.sub(edition, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(edition))
-		edition_type = string.sub(edition, 3)
-	elseif type(edition) == 'table' then
-		if edition.type then
-			edition_type = edition.type
-		else
-			for k, v in pairs(edition) do
-				if v then
-					assert(not edition_type, "Tried to apply more than one edition.")
-					edition_type = k
+		local old_edition = self.edition
+		if old_edition and old_edition.key then
+			self.ignore_base_shader[old_edition.key] = nil
+			self.ignore_shadow[old_edition.key] = nil
+
+			local on_old_edition_removed = G.P_CENTERS[old_edition.key] and G.P_CENTERS[old_edition.key].on_remove
+			if type(on_old_edition_removed) == "function" then
+				on_old_edition_removed(self)
+			end
+		end
+
+		local edition_type = nil
+		if type(edition) == 'string' then
+			assert(string.sub(edition, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(edition))
+			edition_type = string.sub(edition, 3)
+		elseif type(edition) == 'table' then
+			if edition.type then
+				edition_type = edition.type
+			else
+				for k, v in pairs(edition) do
+					if v then
+						assert(not edition_type, "Tried to apply more than one edition.")
+						edition_type = k
+					end
 				end
 			end
 		end
-	end
 
-	if not edition_type or edition_type == 'base' then
-		if self.edition == nil then -- early exit
+		if not edition_type or edition_type == 'base' then
+			if self.edition == nil then -- early exit
+				return
+			end
+			self.edition = nil -- remove edition from card
+			self:set_cost()
+			if not silent then
+				G.E_MANAGER:add_event(Event({
+					trigger = 'after',
+					delay = not immediate and 0.2 or 0,
+					blockable = not immediate,
+					func = function()
+						self:juice_up(1, 0.5)
+						play_sound('whoosh2', 1.2, 0.6)
+						return true
+					end
+				}))
+			end
+			if delay then
+				self.delay_edition = old_edition
+				G.E_MANAGER:add_event(Event({
+					trigger = 'immediate',
+					func = function()
+						self.delay_edition = nil
+						return true
+					end
+				}))
+			end
 			return
 		end
-		self.edition = nil -- remove edition from card
-		self:set_cost()
-		if not silent then
+
+		self.edition = {}
+		self.edition[edition_type] = true
+		self.edition.type = edition_type
+		self.edition.key = 'e_' .. edition_type
+
+		local p_edition = G.P_CENTERS['e_' .. edition_type]
+
+		if p_edition.override_base_shader or p_edition.disable_base_shader then
+			self.ignore_base_shader[self.edition.key] = true
+		end
+		if p_edition.no_shadow or p_edition.disable_shadow then
+			self.ignore_shadow[self.edition.key] = true
+		end
+
+		for k, v in pairs(p_edition.config) do
+			if type(v) == 'table' then
+				self.edition[k] = copy_table(v)
+			else
+				self.edition[k] = v
+			end
+		end
+
+		local on_edition_applied = p_edition.on_apply
+		if type(on_edition_applied) == "function" then
+			on_edition_applied(self)
+		end
+
+		if self.area and self.area == G.jokers then
+			if self.edition then
+				if not G.P_CENTERS['e_' .. (self.edition.type)].discovered then
+					discover_card(G.P_CENTERS['e_' .. (self.edition.type)])
+				end
+			else
+				if not G.P_CENTERS['e_base'].discovered then
+					discover_card(G.P_CENTERS['e_base'])
+				end
+			end
+		end
+
+		if self.edition and not silent then
+			local ed = G.P_CENTERS['e_' .. (self.edition.type)]
+			G.CONTROLLER.locks.edition = true
 			G.E_MANAGER:add_event(Event({
 				trigger = 'after',
 				delay = not immediate and 0.2 or 0,
 				blockable = not immediate,
 				func = function()
-					self:juice_up(1, 0.5)
-					play_sound('whoosh2', 1.2, 0.6)
+					if self.edition then
+						self:juice_up(1, 0.5)
+						play_sound(ed.sound.sound, ed.sound.per, ed.sound.vol)
+					end
+					return true
+				end
+			}))
+			G.E_MANAGER:add_event(Event({
+				trigger = 'after',
+				delay = 0.1,
+				func = function()
+					G.CONTROLLER.locks.edition = false
 					return true
 				end
 			}))
 		end
+
 		if delay then
-			self.delay_edition = old_edition
+			self.delay_edition = old_edition or {base = true}
 			G.E_MANAGER:add_event(Event({
 				trigger = 'immediate',
 				func = function()
@@ -1866,94 +1944,18 @@ function Card:set_edition(edition, immediate, silent, delay)
 				end
 			}))
 		end
-		return
-	end
 
-	self.edition = {}
-	self.edition[edition_type] = true
-	self.edition.type = edition_type
-	self.edition.key = 'e_' .. edition_type
+		self.ability.card_limit = self.ability.card_limit + (self.edition.card_limit or 0)
+		self.ability.extra_slots_used = self.ability.extra_slots_used + (self.edition.extra_slots_used or 0)
+		if self.area then self.area:handle_card_limit(self.edition.card_limit, self.edition.extra_slots_used) end
 
-	local p_edition = G.P_CENTERS['e_' .. edition_type]
 
-	if p_edition.override_base_shader or p_edition.disable_base_shader then
-		self.ignore_base_shader[self.edition.key] = true
-	end
-	if p_edition.no_shadow or p_edition.disable_shadow then
-		self.ignore_shadow[self.edition.key] = true
-	end
-
-	for k, v in pairs(p_edition.config) do
-		if type(v) == 'table' then
-			self.edition[k] = copy_table(v)
-		else
-			self.edition[k] = v
+		if G.jokers and self.area == G.jokers then
+			check_for_unlock({ type = 'modify_jokers' })
 		end
+
+		self:set_cost()
 	end
-
-	local on_edition_applied = p_edition.on_apply
-	if type(on_edition_applied) == "function" then
-		on_edition_applied(self)
-	end
-
-	if self.area and self.area == G.jokers then
-		if self.edition then
-			if not G.P_CENTERS['e_' .. (self.edition.type)].discovered then
-				discover_card(G.P_CENTERS['e_' .. (self.edition.type)])
-			end
-		else
-			if not G.P_CENTERS['e_base'].discovered then
-				discover_card(G.P_CENTERS['e_base'])
-			end
-		end
-	end
-
-	if self.edition and not silent then
-		local ed = G.P_CENTERS['e_' .. (self.edition.type)]
-		G.CONTROLLER.locks.edition = true
-		G.E_MANAGER:add_event(Event({
-			trigger = 'after',
-			delay = not immediate and 0.2 or 0,
-			blockable = not immediate,
-			func = function()
-				if self.edition then
-					self:juice_up(1, 0.5)
-					play_sound(ed.sound.sound, ed.sound.per, ed.sound.vol)
-				end
-				return true
-			end
-		}))
-		G.E_MANAGER:add_event(Event({
-			trigger = 'after',
-			delay = 0.1,
-			func = function()
-				G.CONTROLLER.locks.edition = false
-				return true
-			end
-		}))
-	end
-
-	if delay then
-		self.delay_edition = old_edition or {base = true}
-		G.E_MANAGER:add_event(Event({
-			trigger = 'immediate',
-			func = function()
-				self.delay_edition = nil
-				return true
-			end
-		}))
-	end
-
-	self.ability.card_limit = self.ability.card_limit + (self.edition.card_limit or 0)
-	self.ability.extra_slots_used = self.ability.extra_slots_used + (self.edition.extra_slots_used or 0)
-	if self.area then self.area:handle_card_limit(self.edition.card_limit, self.edition.extra_slots_used) end
-
-
-	if G.jokers and self.area == G.jokers then
-		check_for_unlock({ type = 'modify_jokers' })
-	end
-
-	self:set_cost()
 end
 
 -- _key = key value for random seed
@@ -2334,25 +2336,27 @@ function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips, scoring_h
 end
 
 local card_set_base = Card.set_base
-function Card:set_base(card, initial, manual_sprites)
-    if self.playing_card and self.base then
-        local new_rank = card and card.value and SMODS.Ranks[card.value] and SMODS.Ranks[card.value].id
-        local contexts = {}
-        if new_rank then
-            if self.base.id and self.base.id ~= new_rank then
-                SMODS.merge_defaults(contexts, {change_rank = true, other_card = self, new_rank = new_rank, old_rank = self.base.id, rank_increase = ((self.base.id < new_rank) and true) or false})
-            end
-        end
-        if card and card.suit and self.base.suit ~= card.suit then 
-            SMODS.merge_defaults(contexts, {change_suit = true, other_card = self, new_suit = card.suit, old_suit = self.base.suit})
-        end
-        if next(contexts) then
-			contexts.ignore_other_debuff = true
-            SMODS.calculate_context(contexts)
-        end
-    end
+function Card:set_base(card, initial, manual_sprites, override_immutability)
+	if not SMODS.is_immutable(self, override_immutability) then
+		if self.playing_card and self.base then
+			local new_rank = card and card.value and SMODS.Ranks[card.value] and SMODS.Ranks[card.value].id
+			local contexts = {}
+			if new_rank then
+				if self.base.id and self.base.id ~= new_rank then
+					SMODS.merge_defaults(contexts, {change_rank = true, other_card = self, new_rank = new_rank, old_rank = self.base.id, rank_increase = ((self.base.id < new_rank) and true) or false})
+				end
+			end
+			if card and card.suit and self.base.suit ~= card.suit then 
+				SMODS.merge_defaults(contexts, {change_suit = true, other_card = self, new_suit = card.suit, old_suit = self.base.suit})
+			end
+			if next(contexts) then
+				contexts.ignore_other_debuff = true
+				SMODS.calculate_context(contexts)
+			end
+		end
 
-    card_set_base(self, card, initial, manual_sprites)
+		card_set_base(self, card, initial, manual_sprites)
+	end
 end
 
 local use_consumeable = Card.use_consumeable
@@ -2402,10 +2406,26 @@ function Card:calculate_joker(context, ...)
 end
 
 local set_ability = Card.set_ability
-function Card:set_ability(center, initial, delay_sprites)
-	local old_center = self.config.center
-	set_ability(self, center, initial, delay_sprites)
-	if not initial and G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT then
-		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
+function Card:set_ability(center, initial, delay_sprites, override_immutability)
+	if not SMODS.is_immutable(self, override_immutability) then
+		local old_center = self.config.center
+		set_ability(self, center, initial, delay_sprites)
+		if not initial and G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT then
+			SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
+		end
+	end
+end
+
+local set_seal = Card.set_seal
+function Card:set_seal(_seal, silent, immediate, override_immutability)
+	if not SMODS.is_immutable(self, override_immutability) then
+		set_seal(self, _seal, silent, immediate)
+	end
+end
+
+local copy_card_ref = copy_card
+function copy_card(other, new_card, card_scale, playing_card, strip_edition, override_immutability)
+	if not SMODS.is_immutable(new_card, override_immutability) then
+		copy_card_ref(other, new_card, card_scale, playing_card, strip_edition)
 	end
 end
