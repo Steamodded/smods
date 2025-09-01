@@ -1926,7 +1926,7 @@ target = 'functions/UI_definitions.lua'
 match_indent = true
 position = 'after'
 pattern = '''
-generateTagUi()
+G.GAME.tags[#G.GAME.tags+1] = _tag
 '''
 payload = '''
 if not _tag.from_load then SMODS.calculate_context({tag_added = _tag}) end
