@@ -1802,7 +1802,7 @@ end
 -- immediate = boolean value
 -- silent = boolean value
 function Card:set_edition(edition, immediate, silent, delay, override_immutability)
-	if not SMODS.is_immutable(self, override_immutability) then
+	if not SMODS.is_immutable(self, 'set_edition', override_immutability) then
 		SMODS.enh_cache:write(self, nil)
 		
 		if self.edition then
@@ -2337,7 +2337,7 @@ end
 
 local card_set_base = Card.set_base
 function Card:set_base(card, initial, manual_sprites, override_immutability)
-	if not SMODS.is_immutable(self, override_immutability) then
+	if not SMODS.is_immutable(self, 'set_base', override_immutability, {suit = card and card.suit, rank = card and card.value and SMODS.Ranks[card.value] and SMODS.Ranks[card.value].id}) then
 		if self.playing_card and self.base then
 			local new_rank = card and card.value and SMODS.Ranks[card.value] and SMODS.Ranks[card.value].id
 			local contexts = {}
@@ -2407,7 +2407,7 @@ end
 
 local set_ability = Card.set_ability
 function Card:set_ability(center, initial, delay_sprites, override_immutability)
-	if not SMODS.is_immutable(self, override_immutability) then
+	if not SMODS.is_immutable(self, 'set_ability', override_immutability, {ability = center}) then
 		local old_center = self.config.center
 		set_ability(self, center, initial, delay_sprites)
 		if not initial and G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT then
@@ -2418,14 +2418,14 @@ end
 
 local set_seal = Card.set_seal
 function Card:set_seal(_seal, silent, immediate, override_immutability)
-	if not SMODS.is_immutable(self, override_immutability) then
+	if not SMODS.is_immutable(self, 'set_seal', override_immutability, {seal = _seal}) then
 		set_seal(self, _seal, silent, immediate)
 	end
 end
 
 local copy_card_ref = copy_card
 function copy_card(other, new_card, card_scale, playing_card, strip_edition, override_immutability)
-	if not SMODS.is_immutable(new_card, override_immutability) then
+	if not SMODS.is_immutable(new_card, 'copy_card', override_immutability) then
 		copy_card_ref(other, new_card, card_scale, playing_card, strip_edition)
 	end
 end

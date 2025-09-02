@@ -3042,11 +3042,11 @@ function CardArea:handle_card_limit(card_limit, card_slots)
     end
 end
 
-function SMODS.is_immutable(card, override)
+function SMODS.is_immutable(card, action, override, extra_args)
     if override then return false end
     local calc_return = {}
     local ret = false
-    SMODS.calculate_context({check_immutable = true, other_card = card, no_blueprint = true,}, calc_return)
+    SMODS.calculate_context({check_immutable = true, other_card = card, action = action, args = extra_args, no_blueprint = true,}, calc_return)
     for _,eff in pairs(calc_return) do
         for _,tab in pairs(eff) do
             if tab.immutable then
