@@ -251,7 +251,7 @@ position = "at"
 match_indent = true
 payload = '''
 if self.ability.name == 'Even Steven' and
-context.other_card:is_parity(0, true)
+context.other_card:is_parity(0)
 then
     return {
         mult = self.ability.extra,
@@ -259,7 +259,7 @@ then
     }
 end
 if self.ability.name == 'Odd Todd' and
-context.other_card:is_parity(1, true)
+context.other_card:is_parity(1)
 then
     return {
         chips = self.ability.extra,

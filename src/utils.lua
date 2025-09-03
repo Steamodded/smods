@@ -2810,9 +2810,9 @@ function Card:get_ranks(flags) -- Returns a table of "SMODS.Rank"s, sanitized to
     return ret
 end
 
-function Card:is_parity(parity, exclude_faces)
+function Card:is_parity(parity)
     for _, rank in ipairs(self:get_ranks()) do
-        if rank.parity == parity and (not exclude_faces or not rank.face) then
+        if rank.parity == parity then
             return true
         end
     end

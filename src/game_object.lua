@@ -2069,7 +2069,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face = true,
         shorthand = 'J',
         next = { 'Queen' },
-        parity = 2,
+        parity = nil,
     }
     SMODS.Rank {
         key = 'Queen',
@@ -2080,7 +2080,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face = true,
         shorthand = 'Q',
         next = { 'King' },
-        parity = 2,
+        parity = nil,
     }
     SMODS.Rank {
         key = 'King',
@@ -2091,7 +2091,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face = true,
         shorthand = 'K',
         next = { 'Ace' },
-        parity = 2,
+        parity = nil,
     }
     SMODS.Rank {
         key = 'Ace',
