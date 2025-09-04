@@ -2759,7 +2759,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     return { SMODS.merge_lists(parts._all_pairs, parts._flush) }
                 end
             else
-                local full_house = get_quantum_full_house(parts._3, parts._2)
+                local full_house = get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._3, min_len = 3}}) or {}
                 if next(full_house) and next(parts._flush) then
                     return { SMODS.merge_lists(full_house, parts._flush) }
                 end
@@ -2778,7 +2778,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     return parts._all_pairs
                 end
             else
-                return get_quantum_full_house(parts._3, parts._2)
+                return get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._3, min_len = 3}}) or {}
             end
             return {}
         end,
@@ -2791,7 +2791,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     return parts._all_pairs
                 end
             else
-                return get_quantum_two_pair(parts._2)
+                return get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._2, min_len = 2}}) or {}
             end
             return {}
         end,

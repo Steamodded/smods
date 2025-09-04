@@ -943,102 +943,131 @@ function get_X_same(num, hand, or_more)
 end
 
 
-function get_quantum_full_house(_3, _2)
+-- Function to get valid quantum pairings of X sets of cards, like Two Pair (2 + 2) and Full House (2 + 3)
+-- [parts] expects the following structure; { {pairs = [pokerhandpart], min_len = [number]}, ... }
+-- Example Full House (from game_object.lua): parts = {{pairs = parts._2, min_len = 2}, {pairs = parts._3, min_len = 3}}
+function get_quantum_pairing(parts, base)
 	if not SMODS.optional_features.quantum_ranks then return {} end
 
-	-- This loops over all Three-card sets and checks if there exists a Pair which doesn't overlap 
-	-- or which overlaps with few enough cards (because get_X_same is now always called with or_more=true, so a Pair can have more than 2 cards)
+	local parts_list = {}
+	for i, v in ipairs(parts) do
+		parts_list[i] = v
+	end
 
-	for _, threes in ipairs(_3) do
-		local _3_over_by = #threes - 3
-		local used_cards = {}
-		for _, card in ipairs(threes) do
-			used_cards[card] = true
-		end
-		for _, pair in ipairs(_2) do
-			local _2_over_by = #pair - 2
-			local _3_decrease = 0
-			local valid = true
-			for _, card in ipairs(pair) do
-				if used_cards[card] then
-					if _2_over_by + (_3_over_by - _3_decrease) <= 0 then
-						valid = false
-						break
-					else
-						if _2_over_by > 0 then
-							_2_over_by = _2_over_by - 1
-						else
-							_3_decrease = _3_decrease + 1
-						end
-					end
+	local valid_pairs = {}
+	local used_cards = {}
+	local used_pairs = {}
+	if base then
+		for _, pairs in ipairs(base) do
+			for pair, over_by in pairs(pairs) do
+				used_pairs[pair] = over_by
+				for _, pcard in ipairs(pair) do
+					used_cards[pcard] = pair
 				end
-			end
-			if valid then
-				local threes_cards_map = {}
-				local merged = {}
-				for _, v in pairs(threes) do
-					threes_cards_map[v] = true
-					merged[#merged+1] = v
-				end
-				for _, v in pairs(pair) do
-					if not threes_cards_map[v] then
-						merged[#merged+1] = v
-					end
-				end
-				return { merged }
 			end
 		end
 	end
-	return {}
-end
 
-
-function get_quantum_two_pair(_2)
-	if not SMODS.optional_features.quantum_ranks then return {} end
-
-	for _, pair_1 in pairs(_2) do
-		local _pair_1_over_by = #pair_1 - 2
-		local used_cards = {}
-		for _, card in ipairs(pair_1) do
-			used_cards[card] = true
-		end
-		for _, pair_2 in ipairs(_2) do
-			if pair_1 ~= pair_2 then
-				local _pair_2_over_by = #pair_2 - 2
-				local _pair_1_decrease = 0
+	if base then
+		for _, pair in ipairs(parts_list[#parts_list].pairs) do
+			if not used_pairs[pair] then
+				local pair_over_by = #pair - parts_list[#parts_list].min_len
 				local valid = true
-				for _, card in ipairs(pair_2) do
-					if used_cards[card] then
-						if _pair_2_over_by + (_pair_1_over_by - _pair_1_decrease) <= 0 then
+				local overlap_decreases = {}
+				for _, pcard in ipairs(pair) do
+					local overlap = used_cards[pcard] -- The pair in which the card appeared before
+					if overlap then
+						overlap_decreases[overlap] = overlap_decreases[overlap] or 0
+						if pair_over_by + (used_pairs[overlap] - overlap_decreases[overlap]) <= 0 then
 							valid = false
 							break
 						else
-							if _pair_2_over_by > 0 then
-								_pair_2_over_by = _pair_2_over_by - 1
+							if pair_over_by > 0 then
+								pair_over_by = pair_over_by - 1
 							else
-								_pair_1_decrease = _pair_1_decrease + 1
+								overlap_decreases[overlap] = overlap_decreases[overlap] + 1
 							end
 						end
 					end
 				end
 				if valid then
-					local pair_1_cards_map = {}
-					local merged = {}
-					for _, v in pairs(pair_1) do
-						pair_1_cards_map[v] = true
-						merged[#merged+1] = v
+					local extension = {}
+					for b_pair, over_by in pairs(base) do
+						extension[b_pair] = over_by - (overlap_decreases[b_pair] or 0)
 					end
-					for _, v in pairs(pair_2) do
-						if not pair_1_cards_map[v] then
-							merged[#merged+1] = v
+					extension[pair] = pair_over_by
+					valid_pairs[#valid_pairs+1] = extension
+				end
+			end
+		end
+	else
+		for _, pair_1 in ipairs(parts_list[#parts_list].pairs) do
+			if not used_pairs[pair_1] then
+				local pair_1_over_by = #pair_1 - parts_list[#parts_list].min_len
+				for _, pcard in ipairs(pair_1) do
+					used_cards[pcard] = pair_1
+				end
+				for _, pair_2 in ipairs(parts_list[#parts_list-1].pairs) do
+					if not used_pairs[pair_2] and pair_1 ~= pair_2 then
+						local pair_2_over_by = #pair_2 - parts_list[#parts_list-1].min_len
+						local valid = true
+						local overlap_decrease = 0
+						for _, pcard in ipairs(pair_2) do
+							local overlap = used_cards[pcard]
+							if overlap then
+								if pair_2_over_by + (pair_1_over_by - overlap_decrease) <= 0 then
+									valid = false
+									break
+								else
+									if pair_2_over_by > 0 then
+										pair_2_over_by = pair_2_over_by - 1
+									else
+										overlap_decrease = overlap_decrease + 1
+									end
+								end
+							end
+						end
+						if valid then
+							valid_pairs[#valid_pairs+1] = {[pair_1] = pair_1_over_by - overlap_decrease, [pair_2] = pair_2_over_by}
+							used_pairs[pair_1] = true -- true because over_by isn't used here before recursion, only needs pair_1 because that already fixes the symmetry issue (When passing the same parts twice, would iterate over pairing AB and also BA)
 						end
 					end
-					return { merged }
 				end
 			end
 		end
 	end
-	return {}
+
+	if #parts_list > 2 and not base then -- If first call and there's more than 2 parts
+		table.remove(parts_list, #parts_list)
+		table.remove(parts_list, #parts_list)
+		for _, valid_pair in ipairs(valid_pairs) do
+			local valid_hand = get_quantum_pairing(parts_list, valid_pair)
+			if valid_hand then
+				return valid_hand
+			end
+		end
+	elseif #parts_list > 1 and base then -- Else if there's more than 1 part remaining and it's during recursion
+		table.remove(parts_list, #parts_list)
+		for _, valid_pair in ipairs(valid_pairs) do
+			local valid_hand = get_quantum_pairing(parts_list, valid_pair)
+			if valid_hand then
+				return valid_hand
+			end
+		end
+		return nil
+	end
+
+	if next(valid_pairs) then
+		local merged_cards = {}
+		for pair, _ in pairs(valid_pairs[1]) do
+			for _, pcard in ipairs(pair) do
+				merged_cards[#merged_cards+1] = pcard
+			end
+		end
+		return { merged_cards }
+	end
+
+	return nil
 end
 
 --#endregion
