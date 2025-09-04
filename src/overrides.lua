@@ -958,8 +958,8 @@ function get_quantum_pairing(parts, base)
 	local used_cards = {}
 	local used_pairs = {}
 	if base then
-		for _, pairs in ipairs(base) do
-			for pair, over_by in pairs(pairs) do
+		for _, _pairs in ipairs(base) do
+			for pair, over_by in pairs(_pairs) do
 				used_pairs[pair] = over_by
 				for _, pcard in ipairs(pair) do
 					used_cards[pcard] = pair
