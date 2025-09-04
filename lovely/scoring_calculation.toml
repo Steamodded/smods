@@ -124,6 +124,7 @@ for name, parameter in pairs(SMODS.Scoring_Parameters) do
                     cover_align = 'cm'
                 })
             end
+            if vals[name.."_juice"] and not G.TAROT_INTERRUPT then G.hand_text_area[hand]:juice_up() end
         end
     end
 end
