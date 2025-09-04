@@ -1969,5 +1969,5 @@ delay(0.4); ease_ante(1); delay(0.4); check_for_unlock({type = 'ante_up', ante =
 '''
 position = 'at'
 payload = '''
-delay(0.4); ease_ante(1, true); delay(0.4); check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
+delay(0.4); SMODS.ante_end = true; ease_ante(1); SMODS.ante_end = nil; delay(0.4); check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
 '''
