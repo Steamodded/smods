@@ -129,6 +129,19 @@ for name, parameter in pairs(SMODS.Scoring_Parameters) do
 end
 '''
 
+# pt2
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if vals.chips and G.GAME.current_round.current_hand.chips ~= vals.chips then
+'''
+payload = '''
+SMODS.refresh_score_UI_list()
+'''
+
 # Reset other values
 [[patches]]
 [patches.pattern]
