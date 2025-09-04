@@ -101,7 +101,7 @@ if vals.handname and G.GAME.current_round.current_hand.handname ~= vals.handname
 '''
 payload = '''
 for name, parameter in pairs(SMODS.Scoring_Parameters) do
-    if vals[name] and G.GAME.current_round.current_hand[name] ~= vals[name] then
+    if name ~= "mult" and name ~= "chips" and vals[name] and G.GAME.current_round.current_hand[name] ~= vals[name] then
         local delta = (type(vals[name]) == 'number' and type(G.GAME.current_round.current_hand[name]) == 'number') and (vals[name] - G.GAME.current_round.current_hand[name]) or 0
         if delta < 0 then delta = ''..delta; col = G.C.RED
         elseif delta > 0 then delta = '+'..delta
