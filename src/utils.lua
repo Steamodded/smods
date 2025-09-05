@@ -1699,9 +1699,18 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     for k,v in pairs(f) do flags[k] = v end
                     if flags.numerator then context.numerator = flags.numerator end
                     if flags.denominator then context.denominator = flags.denominator end
-                    if flags.ranks and not context.no_mod then context.ranks = flags.ranks
-                    elseif context.no_mod then flags.ranks = context.ranks end -- If the context has [no_mod] = true, reset flags.ranks to context.ranks, because [flags] gets returned
-                    if flags.no_mod then context.no_mod = flags.no_mod end
+                    if flags.ranks then
+                        local no_mod_enabled = false
+                        if flags.no_mod then
+                            context.no_mod = flags.no_mod
+                            no_mod_enabled = true
+                        end
+                        if not context.no_mod or no_mod_enabled then
+                            context.ranks = get_rank_objects(flags.ranks)
+                        elseif context.no_mod then
+                            flags.ranks = get_rank_objects(context.ranks)
+                        end
+                    end
                     if flags.cards_to_draw then context.amount = flags.cards_to_draw end
                 end
             end
@@ -1752,9 +1761,18 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     for k,v in pairs(f) do flags[k] = v end
                     if flags.numerator then context.numerator = flags.numerator end
                     if flags.denominator then context.denominator = flags.denominator end
-                    if flags.ranks and not context.no_mod then context.ranks = flags.ranks
-                    elseif context.no_mod then flags.ranks = context.ranks end -- If the context has [no_mod] = true, reset flags.ranks to context.ranks, because [flags] gets returned 
-                    if flags.no_mod then context.no_mod = flags.no_mod end
+                    if flags.ranks then
+                        local no_mod_enabled = false
+                        if flags.no_mod then
+                            context.no_mod = flags.no_mod
+                            no_mod_enabled = true
+                        end
+                        if not context.no_mod or no_mod_enabled then
+                            context.ranks = get_rank_objects(flags.ranks)
+                        elseif context.no_mod then
+                            flags.ranks = get_rank_objects(context.ranks)
+                        end
+                    end
                     if flags.cards_to_draw then context.amount = flags.cards_to_draw end
                 end
             end
@@ -1793,14 +1811,44 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 for k,v in pairs(f) do flags[k] = v end
                 if flags.numerator then context.numerator = flags.numerator end
                 if flags.denominator then context.denominator = flags.denominator end
-                if flags.ranks and not context.no_mod then context.ranks = flags.ranks
-                elseif context.no_mod then flags.ranks = context.ranks end -- If the context has [no_mod] = true, reset flags.ranks to context.ranks, because [flags] gets returned 
-                if flags.no_mod then context.no_mod = flags.no_mod end
+                if flags.ranks then
+                    local no_mod_enabled = false
+                    if flags.no_mod then
+                        context.no_mod = flags.no_mod
+                        no_mod_enabled = true
+                    end
+                    if not context.no_mod or no_mod_enabled then
+                        context.ranks = get_rank_objects(flags.ranks)
+                    elseif context.no_mod then
+                        flags.ranks = get_rank_objects(context.ranks)
+                    end
+                end
             end
         end
     end
     return flags
 end
+
+
+-- Helper function to get a rank map that only uses 'SMODS.Rank's as keys (instead of Rank.id or Rank.value)
+get_rank_objects = function(rank_map)
+    local ret = {}
+    for r, t in pairs(rank_map) do
+        local rank = nil
+        if type(r) == "string" then
+            rank = SMODS.Ranks[r]
+        elseif type(r) == "table" and r.key then
+            rank = SMODS.Ranks[r.key]
+        elseif type(r) == "number" then
+            rank = SMODS.get_rank_from_id(r)
+        end
+        if rank then
+            ret[rank] = t
+        end
+    end
+    return ret
+end
+
 
 -- The context stack list, structured like so;
 -- SMODS.context_stack = {1: {context = [unique context 1], count = [number of times it was added consecutively]}, ...}
@@ -2771,9 +2819,13 @@ function Card:is_any_rank(ranks, bypass_debuff, flags)
     return false
 end
 
-function Card:get_ranks(flags) -- Returns a table of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
-    local default_ranks = (not self.vampired and SMODS.has_no_rank(self) and {}) or {SMODS.Ranks[self.base.value]}
-    if not SMODS.optional_features.quantum_ranks then return default_ranks end
+function Card:get_ranks(flags) -- Returns a list of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
+    local default_ranks = (not self.vampired and SMODS.has_no_rank(self) and {}) or {[SMODS.Ranks[self.base.value]] = true}
+    if not SMODS.optional_features.quantum_ranks then
+        local ret = {}
+        for k, _ in pairs(default_ranks) do ret[#ret+1] = k end
+        return ret
+    end
 
     flags = flags or {}
     local context = {get_ranks = true, card = self, ranks = default_ranks, no_mod = false}
@@ -2783,28 +2835,23 @@ function Card:get_ranks(flags) -- Returns a table of "SMODS.Rank"s, sanitized to
 
     local eval = SMODS.calculate_context(context) or {}
 
-    if not eval.ranks then return default_ranks end
+    if not eval.ranks then
+        local ret = {}
+        for k, _ in pairs(default_ranks) do ret[#ret+1] = k end
+        return ret
+    end
 
     -- Convert returned ranks to SMODS.Rank and deduplicate
     local rank_map = {}
-    for i, r in ipairs(eval.ranks) do
-        local rank = nil
-        if type(r) == "string" then
-            rank = SMODS.Ranks[r]
-        elseif type(r) == "table" and r.key then
-            rank = SMODS.Ranks[r.key]
-        elseif type(r) == "number" then
-            rank = SMODS.get_rank_from_id(r)
-        end
-        if rank and not rank_map[rank] then
-            eval.ranks[i] = rank
-            rank_map[rank] = true
-        end
-    end
-
     local ret = {}
-    for _, v in pairs(eval.ranks) do
-        if v then ret[#ret+1] = v end
+    local objectified_ranks = get_rank_objects(eval.ranks) or {}
+    for rank, t in pairs(objectified_ranks) do
+        if t then
+            if rank and not rank_map[rank] then
+                ret[#ret+1] = rank
+                rank_map[rank] = true
+            end
+        end
     end
 
     return ret

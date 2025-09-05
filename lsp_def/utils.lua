@@ -100,7 +100,7 @@
 ---@field new_suit? Suits|string New suit the card changed to.
 ---@field old_suit? Suits|string Old suit the card changed from.
 ---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
----@field get_ranks? true Check if `true` for modifying the rank(s) of the context.card. 
+---@field get_ranks? true Check if `true` for modifying the rank(s) of the context.card. `context.rank` is a map of `SMODS.Rank`s.
 ---@field eval_getting_ranks? table Passed as flag in context.get_ranks / by hand type evaluation when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside hand type evaluation)
 ---@field is_face_getting_ranks? table Passed as flag in context.get_ranks by Card:is_face() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside is_face() evaluation)
 ---@field no_mod? boolean Check if `true` to decide whether an effect should modify context.get_ranks' ranks field. (If you want to override and block other effects, return `no_mod=true` alongside ranks=[only your ranks])
