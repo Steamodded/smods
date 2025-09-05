@@ -398,7 +398,7 @@ match_indent = true
 position = 'before'
 payload = '''
 elseif v.in_pool and type(v.in_pool) == 'function' then
-    local res, options = v:in_pool()
+    local res, options = SMODS.add_to_pool(v)
     if
         (
             ((G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante >= 2) ==
@@ -465,3 +465,35 @@ position = 'at'
 line_prepend = '$indent'
 payload = '''end
 if self.name == 'Crimson Heart' and not self.disabled'''
+
+### Add blind.effect
+# Blind.set_blind
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+match_indent = true
+pattern = "self.config.blind = blind or {}"
+position = "after"
+payload = '''
+self.effect = type(self.config.blind.config) == "table" and copy_table(self.config.blind.config) or {}
+'''
+# Blind.load
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+match_indent = true
+pattern = "function Blind:load(blindTable)"
+position = "after"
+payload = '''
+self.effect = blindTable.effect
+'''
+# Blind.save
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+match_indent = true
+pattern = "local blindTable = {"
+position = "after"
+payload = '''
+effect = self.effect,
+'''

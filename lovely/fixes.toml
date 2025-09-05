@@ -217,6 +217,13 @@ self.ability.extra_value = self.ability.extra_value or 0
 for k, v in pairs(new_ability) do
     self.ability[k] = v
 end
+
+-- handles card_limit/extra_slots_used changes
+self.ability.card_limit = self.ability.card_limit + (center.config.card_limit or 0)
+self.ability.extra_slots_used = self.ability.extra_slots_used + (center.config.extra_slots_used or 0)
+if self.area then self.area:handle_card_limit(center.config.card_limit, center.config.extra_slots_used) end
+
+
 -- reset keys do not persist on ability change
 local reset_keys = {'name', 'effect', 'set', 'extra', 'played_this_ante', 'perma_debuff'}
 for _, mod in ipairs(SMODS.mod_list) do
@@ -392,7 +399,7 @@ target = "functions/misc_functions.lua"
 pattern = '''if win_ante and (win_ante >= 8) then'''
 match_indent = true
 position = "at"
-payload = '''if win_ante and (win_ante >= 8) or (v.in_pool and type(v.in_pool) == 'function' and not v:in_pool()) then'''
+payload = '''if win_ante and (win_ante >= 8) or not SMODS.add_to_pool(v) then'''
 
 #
 # Fix G.GAME.blind:set_blind(nil, true, nil)
@@ -635,10 +642,20 @@ match_indent = true
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
-position = 'after'
+position = 'at'
 match_indent = true
 pattern = 'new_card:set_edition(other.edition or {}, nil, true)'
-payload = '''for k,v in pairs(other.edition or {}) do
+payload = '''
+if other.edition then
+    new_card.ability.card_limit = new_card.ability.card_limit - (other.edition.card_limit or 0)
+    new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.edition.extra_slots_used or 0)
+end
+if other.seal then
+    new_card.ability.card_limit = new_card.ability.card_limit - (other.ability.seal.card_limit or 0)
+    new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.ability.seal.extra_slots_used or 0)
+end
+new_card:set_edition(other.edition or {}, nil, true)
+for k,v in pairs(other.edition or {}) do
     if type(v) == 'table' then
         new_card.edition[k] = copy_table(v)
     else
@@ -719,7 +736,8 @@ match_indent = true
 target = "game.lua"
 pattern = 'function Game:delete_run()'
 position = 'after'
-payload = '    G.in_delete_run = true'
+payload = '''    G.in_delete_run = true
+    booster_obj = nil'''
 match_indent = true
 [[patches]]
 [patches.pattern]
@@ -755,3 +773,29 @@ payload = '''
 self:set_ranks()
 if not G.in_delete_run and self == G.deck then check_for_unlock({type = 'modify_deck', deck = self}) end'''
 match_indent = true
+
+# Assign `getting_sliced` to destruction events
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if v ~= chosen_joker then 
+'''
+payload = '''
+v.getting_sliced = true
+'''
+
+# Allow pseudoshuffle to take a string as a seed
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function pseudoshuffle(list, seed)
+'''
+payload = '''
+    if seed and type(seed) == "string" then seed = pseudoseed(seed) end
+'''

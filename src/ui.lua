@@ -724,9 +724,15 @@ function buildAchievementsTab(mod, current_page)
             return wrappedText
         end
     
-        local loc_target = (v.hidden_text and not v.earned) and {localize("hidden_achievement", 'achievement_descriptions')} or localize(v.key, 'achievement_descriptions')
+        local loc_target
+        if (v.hidden_text and not v.earned) then
+            loc_target = (localize(v.key.."_hidden", 'achievement_descriptions') ~= 'ERROR') and localize(v.key.."_hidden", 'achievement_descriptions') or {localize("hidden_achievement", 'achievement_descriptions')}
+        else loc_target = localize(v.key, 'achievement_descriptions') end
         if type(loc_target) == 'string' then loc_target = wrapText(loc_target, maxCharsPerLine) end
-        local loc_name = (v.hidden_name and not v.earned) and localize("hidden_achievement", 'achievement_names') or localize(v.key, 'achievement_names')
+        local loc_name
+        if (v.hidden_name and not v.earned) then
+            loc_name = (localize(v.key.."_hidden", 'achievement_names') ~= 'ERROR') and localize(v.key.."_hidden", 'achievement_names') or localize("hidden_achievement", 'achievement_names')
+        else loc_name = localize(v.key, 'achievement_names') end
 
         local ability_text = {}
         if loc_target then 
@@ -2071,4 +2077,100 @@ function G.UIDEF.run_setup_option(_type)
         })
     end
     return ret
+end
+
+-- Hand Score UI Utils
+
+function SMODS.GUI.hand_score_display_ui(scale)
+    return
+    -- Outer shell container
+    {n=G.UIT.R, config={align = "cm", id = 'hand_text_area', func = 'SMODS_scoring_calculation_function', colour = darken(G.C.BLACK, 0.1), r = 0.1, emboss = 0.05, padding = 0.03}, nodes={
+        -- Inner shell container
+        {n=G.UIT.C, config={align = "cm"}, nodes={
+            -- Hand type display container
+            SMODS.GUI.current_hand_ui(scale),
+            -- Chips X Mult container
+            SMODS.GUI.hand_chips_container(scale),
+        }}
+    }}
+end
+
+function SMODS.GUI.current_hand_ui(scale)
+    return
+    {n=G.UIT.R, config={align = "cm", minh = 1.1}, nodes={
+        {n=G.UIT.O, config={id = 'hand_name', func = 'hand_text_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "handname_text"}}, colours = {G.C.UI.TEXT_LIGHT}, shadow = true, float = true, scale = scale*1.4})}},
+        {n=G.UIT.O, config={id = 'hand_chip_total', func = 'hand_chip_total_UI_set',object = DynaText({string = {{ref_table = G.GAME.current_round.current_hand, ref_value = "chip_total_text"}}, colours = {G.C.UI.TEXT_LIGHT}, shadow = true, float = true, scale = scale*1.4})}},
+        {n=G.UIT.T, config={ref_table = G.GAME.current_round.current_hand, ref_value='hand_level', scale = scale, colour = G.C.UI.TEXT_LIGHT, id = 'hand_level', shadow = true}},
+    }}
+end
+
+function SMODS.GUI.hand_chips_container(scale)
+    return
+    {n=G.UIT.R, config={align = "cm", minh = 1, padding = 0.1}, nodes={
+        -- Chips container
+        SMODS.GUI.chips_container(scale),
+        -- Operator
+        SMODS.GUI.operator(scale),
+        -- Mult container
+        SMODS.GUI.mult_container(scale)
+    }}
+end
+
+function SMODS.GUI.chips_container(scale)
+    return
+    {n=G.UIT.C, config={align = 'cm', id = 'hand_chips_container'}, nodes = {
+        SMODS.GUI.score_container({
+            type = 'chips',
+            text = 'chip_text',
+            align = 'cr',
+        })
+    }}
+end
+
+function SMODS.GUI.operator(scale)
+    return
+    {n=G.UIT.C, config={align = "cm", id = 'hand_operator_container'}, nodes={
+        {n=G.UIT.T, config={text = "X", lang = G.LANGUAGES['en-us'], scale = scale*2, colour = G.C.UI_MULT, shadow = true}},
+    }}
+end
+
+function SMODS.GUI.mult_container(scale)
+    return 
+    {n=G.UIT.C, config={align = 'cm', id = 'hand_mult_container'}, nodes = {
+        SMODS.GUI.score_container({
+            type = 'mult'
+        })
+    }}
+end
+
+function SMODS.GUI.score_container(args)
+    local scale = args.scale or 0.4
+    local type = args.type or 'mult'
+    local colour = args.colour or SMODS.Scoring_Parameters[type].colour
+    local align = args.align or 'cl'
+    local func = args.func or 'hand_type_UI_set'
+    local text = args.text or type..'_text'
+    local w = args.w or 2
+    local h = args.h or 1
+    return
+    {n=G.UIT.R, config={align = align, minw = w, minh = h, r = 0.1, colour = colour, id = 'hand_'..type..'_area', emboss = 0.05}, nodes={
+        {n=G.UIT.O, config={func = 'flame_handler', no_role = true, id = 'flame_'..type, object = Moveable(0,0,0,0), w = 0, h = 0, _w = w * 1.25, _h = h * 2.5}},
+        align == 'cl' and {n=G.UIT.B, config={w = 0.1, h = 0.1}} or nil,
+        {n=G.UIT.O, config={id = 'hand_'..type, func = func, text = text, type = type, scale = scale*2.3, object = DynaText({
+            string = {{ref_table = G.GAME.current_round.current_hand, ref_value = text}},
+            colours = {G.C.UI.TEXT_LIGHT}, font = G.LANGUAGES['en-us'].font, shadow = true, float = true, scale = scale*2.3
+        })}},
+        align ~= 'cl' and {n=G.UIT.B, config={w = 0.1, h = 0.1}} or nil,
+    }}
+end
+
+-- Internal function to automatically update UI boxes for new scoring parameters
+G.FUNCS.hand_type_UI_set = function(e)
+  local new_mult_text = number_format(G.GAME.current_round.current_hand[e.config.type] or SMODS.Scoring_Parameters[e.config.type].default_value)
+  if new_mult_text ~= G.GAME.current_round.current_hand[e.config.text] then 
+    G.GAME.current_round.current_hand[e.config.text] = new_mult_text
+    e.config.object.scale = scale_number(G.GAME.current_round.current_hand[e.config.type], e.config.scale, 1000)
+    e.config.object:update_text()
+    if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and G.GAME.current_round.current_hand[e.config.type] or 1)))) end
+  end
 end
