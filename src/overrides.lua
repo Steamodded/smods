@@ -670,7 +670,7 @@ function get_straight(hand, min_length, skip, wrap)
 			new = function (card, av_ranks)
 				local cr = {
 					card = card,
-					ranks = av_ranks
+					ranks = av_ranks -- Map of ranks or "WILD" if Wild Rank
 				}
 				return cr
 			end
@@ -696,7 +696,7 @@ function get_straight(hand, min_length, skip, wrap)
 					local card_rep = CardRep.new(pcard, pcard_ranks)
 					card_reps[#card_reps+1] = card_rep						-- Add card_rep to card_reps_holder
 
-					for _, p_rank in ipairs(pcard_ranks) do
+					for p_rank, _ in pairs(pcard_ranks) do
 						ranks[p_rank.key][card_rep] = true 					-- Add card_rep to rank
 					end
 				end
@@ -844,7 +844,7 @@ function get_straight(hand, min_length, skip, wrap)
 			if c_rep.ranks ~= "WILD" and not appeared_in_ret_straight[c_rep] then
 				local current_straight = {c_rep}
 				local used_c_reps = {[c_rep] = true} -- This is a set of all card_reps used during this eval. They are set in recursive_get_straight()
-				for _, rank in ipairs(c_rep.ranks) do
+				for rank, _ in pairs(c_rep.ranks) do
 					wild_ranks_used = 0 -- Reset used Wild ranks count for each starting c_rep.rank
 					local ret_straight = recursive_get_straight(rank, current_straight, max_hole_size, wrap, nil, used_c_reps)
 
@@ -919,12 +919,12 @@ function get_X_same(num, hand, or_more)
 			local pcard_ranks = {}
 			if SMODS.has_any_rank(pcard, {eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}}) then
 				for _, v in pairs(SMODS.Ranks) do
-					pcard_ranks[#pcard_ranks+1] = v
+					pcard_ranks[v] = true
 				end
 			else
 				pcard_ranks = pcard:get_ranks({eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}})
 			end
-			for _, r in ipairs(pcard_ranks) do
+			for r, _ in pairs(pcard_ranks) do
 				rank_tally[r] = rank_tally[r] and rank_tally[r] + 1 or 1
 				rank_cards[r] = rank_cards[r] or {}
 				rank_cards[r][#rank_cards[r]+1] = pcard
@@ -2795,9 +2795,8 @@ function Card:is_face(from_boss)
 		if SMODS.has_any_rank(self, {is_face_getting_ranks = true}) then
 			return true
 		end
-		local ranks = self:get_ranks({is_face_getting_ranks = true})
 
-		for _, rank in ipairs(ranks) do
+		for rank, _ in pairs(self:get_ranks({is_face_getting_ranks = true})) do
 			if rank.face then return true end
 		end
 	end

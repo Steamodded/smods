@@ -103,7 +103,8 @@
 ---@field get_ranks? true Check if `true` for modifying the rank(s) of the context.card. `context.ranks` is a map of `SMODS.Rank`s. Return `ranks_changed` or `ranks_fixed` to add/remove or override the `context.ranks` 
 ---@field eval_getting_ranks? table Passed as flag in context.get_ranks / by hand type evaluation when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside hand type evaluation)
 ---@field is_face_getting_ranks? table Passed as flag in context.get_ranks by Card:is_face() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside is_face() evaluation)
----@field no_mod? boolean Check if `true` to decide whether an effect should modify context.get_ranks' ranks field. (If you want to override and block other effects, return `no_mod=true` alongside ranks=[only your ranks])
+---@field is_parity_getting_ranks? table Passed as flag in context.get_ranks by Card:is_parity() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside is_parity() evaluation)
+---@field no_mod? boolean Check if `true` to decide whether an effect should modify context.get_ranks' ranks_fixed/ranks_changed fields. (If you want to override and block other effects, return `no_mod=true` alongside ranks_fixed=[only your ranks])
 ---@field money_altered? true Check if `true` for effects when the amount of money the player has changes.
 ---@field from_shop? true Check if `true` if money changed during the shop.
 ---@field from_consumeable? true Check if `true` if money changed by a consumable.

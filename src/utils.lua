@@ -2806,7 +2806,7 @@ function Card:is_rank(rank, bypass_debuff, flags) -- Accepts SMODS.Rank, a rank 
 
     if SMODS.has_any_rank(self) then return true end
 
-    for _, r in ipairs(self:get_ranks(flags)) do
+    for r, _ in pairs(self:get_ranks(flags)) do
         if r == rank or r.key == rank or r.id == rank then
             return true
         end
@@ -2838,7 +2838,7 @@ function Card:is_any_rank(ranks, bypass_debuff, flags)
 
     if not next(rank_dict) then return false end
 
-    for _, r in ipairs(self:get_ranks(flags)) do
+    for r, _ in pairs(self:get_ranks(flags)) do
         if rank_dict[r] or rank_dict[r.key] or rank_dict[r.id] then
             return true
         end
@@ -2846,13 +2846,9 @@ function Card:is_any_rank(ranks, bypass_debuff, flags)
     return false
 end
 
-function Card:get_ranks(flags) -- Returns a list of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
+function Card:get_ranks(flags) -- Returns a map of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
     local default_ranks = (not self.vampired and SMODS.has_no_rank(self) and {}) or {[SMODS.Ranks[self.base.value]] = true}
-    if not SMODS.optional_features.quantum_ranks then
-        local ret = {}
-        for k, _ in pairs(default_ranks) do ret[#ret+1] = k end
-        return ret
-    end
+    if not SMODS.optional_features.quantum_ranks then return default_ranks end
 
     flags = flags or {}
     local context = {get_ranks = true, card = self, ranks = default_ranks, no_mod = false}
@@ -2862,22 +2858,14 @@ function Card:get_ranks(flags) -- Returns a list of "SMODS.Rank"s, sanitized to 
 
     local eval = SMODS.calculate_context(context) or {}
 
-    if not eval.ranks then
-        local ret = {}
-        for k, _ in pairs(default_ranks) do ret[#ret+1] = k end
-        return ret
-    end
+    if not eval.ranks then return default_ranks end
 
-    -- Convert returned ranks to SMODS.Rank and deduplicate
-    local rank_map = {}
+    -- Convert returned ranks to SMODS.Rank (deduplication is implicit because a map is returned)
     local ret = {}
     local objectified_ranks = get_rank_objects(eval.ranks) or {}
     for rank, t in pairs(objectified_ranks) do
-        if t then
-            if rank and not rank_map[rank] then
-                ret[#ret+1] = rank
-                rank_map[rank] = true
-            end
+        if rank and t then
+            ret[rank] = true
         end
     end
 
@@ -2885,7 +2873,10 @@ function Card:get_ranks(flags) -- Returns a list of "SMODS.Rank"s, sanitized to 
 end
 
 function Card:is_parity(parity)
-    for _, rank in ipairs(self:get_ranks()) do
+    if SMODS.has_any_rank(self, {is_parity_getting_ranks = {parity = parity}}) then
+        return true
+    end
+    for rank, _ in pairs(self:get_ranks({is_parity_getting_ranks = {parity = parity}})) do
         if rank.parity == parity then
             return true
         end
