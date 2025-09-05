@@ -717,3 +717,7 @@ function SMODS.pop_from_context_stack(context, func) end
 --- Useful for Seals/Enhancements determining whether a playing card was being individually evaluated,
 --- when a Joker called (e.g.) SMODS.pseudorandom_probability().
 function SMODS.get_previous_context() end
+
+---@param context CalcContext|table The context to be updated
+---@param flags table The flags with which to update it (e.g. flags.numerator, flags.denominator, etc.)
+function SMODS.update_context_flags(context, flags) end
