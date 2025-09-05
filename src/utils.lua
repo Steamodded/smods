@@ -1361,8 +1361,8 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return key
     end
 
-    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or 
-        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'ranks' or key == 'modify' then
+    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or
+        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'ranks_changed' or key == 'ranks_fixed' or key == 'modify' then
         return { [key] = amount }
     end
     
@@ -1460,7 +1460,7 @@ SMODS.other_calculation_keys = {
     'message',
     'level_up', 'func', 'extra',
     'numerator', 'denominator',
-    'ranks',
+    'ranks_changed', 'ranks_fixed',
     'modify',
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
@@ -1699,16 +1699,25 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     for k,v in pairs(f) do flags[k] = v end
                     if flags.numerator then context.numerator = flags.numerator end
                     if flags.denominator then context.denominator = flags.denominator end
-                    if flags.ranks then
+                    if flags.ranks_fixed or flags.ranks_changed then
                         local no_mod_enabled = false
                         if flags.no_mod then
                             context.no_mod = flags.no_mod
                             no_mod_enabled = true
                         end
                         if not context.no_mod or no_mod_enabled then
-                            context.ranks = get_rank_objects(flags.ranks)
+                            if flags.ranks_fixed then
+                                context.ranks = get_rank_objects(flags.ranks_fixed)
+                                flags.ranks = context.ranks
+                            end
+                            if flags.ranks_changed then
+                                for r, t in pairs(get_rank_objects(flags.ranks_changed)) do
+                                    context.ranks[r] = t
+                                end
+                                flags.ranks = context.ranks
+                            end
                         elseif context.no_mod then
-                            flags.ranks = get_rank_objects(context.ranks)
+                            flags.ranks = context.ranks
                         end
                     end
                     if flags.cards_to_draw then context.amount = flags.cards_to_draw end
@@ -1761,16 +1770,25 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     for k,v in pairs(f) do flags[k] = v end
                     if flags.numerator then context.numerator = flags.numerator end
                     if flags.denominator then context.denominator = flags.denominator end
-                    if flags.ranks then
+                    if flags.ranks_fixed or flags.ranks_changed then
                         local no_mod_enabled = false
                         if flags.no_mod then
                             context.no_mod = flags.no_mod
                             no_mod_enabled = true
                         end
                         if not context.no_mod or no_mod_enabled then
-                            context.ranks = get_rank_objects(flags.ranks)
+                            if flags.ranks_fixed then
+                                context.ranks = get_rank_objects(flags.ranks_fixed)
+                                flags.ranks = context.ranks
+                            end
+                            if flags.ranks_changed then
+                                for r, t in pairs(get_rank_objects(flags.ranks_changed)) do
+                                    context.ranks[r] = t
+                                end
+                                flags.ranks = context.ranks
+                            end
                         elseif context.no_mod then
-                            flags.ranks = get_rank_objects(context.ranks)
+                            flags.ranks = context.ranks
                         end
                     end
                     if flags.cards_to_draw then context.amount = flags.cards_to_draw end
@@ -1811,16 +1829,25 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 for k,v in pairs(f) do flags[k] = v end
                 if flags.numerator then context.numerator = flags.numerator end
                 if flags.denominator then context.denominator = flags.denominator end
-                if flags.ranks then
+                if flags.ranks_fixed or flags.ranks_changed then
                     local no_mod_enabled = false
                     if flags.no_mod then
                         context.no_mod = flags.no_mod
                         no_mod_enabled = true
                     end
                     if not context.no_mod or no_mod_enabled then
-                        context.ranks = get_rank_objects(flags.ranks)
+                        if flags.ranks_fixed then
+                            context.ranks = get_rank_objects(flags.ranks_fixed)
+                            flags.ranks = context.ranks
+                        end
+                        if flags.ranks_changed then
+                            for r, t in pairs(get_rank_objects(flags.ranks_changed)) do
+                                context.ranks[r] = t
+                            end
+                            flags.ranks = context.ranks
+                        end
                     elseif context.no_mod then
-                        flags.ranks = get_rank_objects(context.ranks)
+                        flags.ranks = context.ranks
                     end
                 end
             end
