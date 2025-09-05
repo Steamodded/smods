@@ -1813,18 +1813,19 @@ SMODS.current_evaluated_object = nil
 function SMODS.is_getter_context(context)
     if context.mod_probability or context.fix_probability then return "probability" end
     if context.check_enhancement then return "enhancement" end
-    return nil
+    return false
 end
 
 
 function SMODS.check_looping_context(eval_object)
+    if #SMODS.context_stack < 2 then return false end
     local getter_type = SMODS.is_getter_context(SMODS.context_stack[#SMODS.context_stack].context)
     if not getter_type then return end
     for i, t in ipairs(SMODS.context_stack) do
         local other_type = SMODS.is_getter_context(t.context)
         local next_context = SMODS.context_stack[i+1]
         -- If the current kind of getter context has caused the eval_object to incite a getter context before, dont evaluate the object again
-        if other_type == getter_type and next_context and SMODS.is_getter_context(next_context) and next_context.caller == eval_object then
+        if other_type == getter_type and next_context and SMODS.is_getter_context(next_context.context) and next_context.caller == eval_object then
             return true
         end
     end
