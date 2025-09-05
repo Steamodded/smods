@@ -143,9 +143,7 @@ pattern = "if add and not G.GAME.banned_keys[v.key] then"
 match_indent = true
 position = 'before'
 payload = '''
-if v.in_pool and type(v.in_pool) == 'function' then
-    add = in_pool and (add or pool_opts.override_base_checks)
-end
+add = in_pool and (add or pool_opts.override_base_checks)
 '''
 
 [[patches]]
@@ -196,7 +194,7 @@ target = "card.lua"
 pattern = '''
 (?<indent>[\t ]*)for k, v in pairs\(G\.P_CENTERS\) do
 [\t ]*if v\.name == self\.ability\.name then
-[\t ]*if not next\(find_joker\(self\.ability\.name, true\)\) then 
+[\t ]*if not next\(find_joker\(self\.ability\.name, true\)\) then
 [\t ]*G\.GAME\.used_jokers\[k\] = nil
 [\t ]*end
 [\t ]*end
