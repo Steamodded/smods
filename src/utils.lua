@@ -2479,9 +2479,7 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, is_int
     for _, card in ipairs(cards) do
         if bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
             card.getting_sliced = true
-            if is_internal then
-                card.internal_destruction = true
-            end
+            card.internal_destruction = is_internal
             if SMODS.shatters(card) then
                 card.shattered = true
                 glass_shattered[#glass_shattered + 1] = card
