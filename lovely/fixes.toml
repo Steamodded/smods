@@ -786,3 +786,16 @@ if v ~= chosen_joker then
 payload = '''
 v.getting_sliced = true
 '''
+
+# Allow pseudoshuffle to take a string as a seed
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function pseudoshuffle(list, seed)
+'''
+payload = '''
+    if seed and type(seed) == "string" then seed = pseudoseed(seed) end
+'''

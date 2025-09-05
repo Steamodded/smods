@@ -827,6 +827,7 @@ match_indent = true
 payload = '''
 -- context.end_of_round calculations
 SMODS.saved = false
+G.GAME.saved_text = nil
 SMODS.calculate_context({end_of_round = true, game_over = game_over, beat_boss = G.GAME.blind.boss })
 if SMODS.saved then game_over = false end
 -- TARGET: main end_of_round evaluation
@@ -1598,7 +1599,7 @@ G.E_MANAGER:add_event(Event({
         local _card = create_playing_card({
             front = pseudorandom_element(G.P_CARDS, pseudoseed('cert_fr')),
             center = G.P_CENTERS.c_base}, G.hand, nil, nil, {G.C.SECONDARY_SET.Enhanced})
-        _card:set_seal(SMODS.poll_seal({type_key = 'certsl', guaranteed = true}))
+        _card:set_seal(SMODS.poll_seal({type_key = 'certsl', guaranteed = true}), nil, true)
         G.GAME.blind:debuff_card(_card)
         G.hand:sort()
         if context.blueprint_card then context.blueprint_card:juice_up() else self:juice_up() end
@@ -1714,7 +1715,7 @@ pattern = '''
 {n=G.UIT.O, config={object = DynaText({string = {' '..localize('ph_mr_bones')..' '}, colours = {G.C.FILTER}, shadow = true, pop_in = 0, scale = 0.5*scale, silent = true})}}
 '''
 payload = '''
-{n=G.UIT.O, config={object = DynaText({string = {' '..localize(type(SMODS.saved) == 'string' and SMODS.saved or 'ph_mr_bones')..' '}, colours = {G.C.FILTER}, shadow = true, pop_in = 0, scale = 0.5*scale, silent = true})}}
+{n=G.UIT.O, config={object = DynaText({string = {' '..(type(G.GAME.saved_text) == 'string' and (G.localization.misc.dictionary[G.GAME.saved_text] and localize(G.GAME.saved_text) or G.GAME.saved_text) or localize('ph_mr_bones'))..' '}, colours = {G.C.FILTER}, shadow = true, pop_in = 0, scale = 0.5*scale, silent = true})}}
 '''
 
 # Customise dissolve colours from calculate
@@ -1759,6 +1760,34 @@ pattern = '''
 delay(0.3)'''
 payload = '''    SMODS.displaying_scoring = nil'''
 
+# Adjust food jokers
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.E_MANAGER:add_event(Event({
+    func = function()
+        play_sound('tarot1')
+        self.T.r = -0.2
+        self:juice_up(0.3, 0.4)
+        self.states.drag.is = true
+        self.children.center.pinch.x = true
+        G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
+            func = function()
+                    G.jokers:remove_card(self)
+                    self:remove()
+                    self = nil
+                return true; end})) 
+        return true
+    end
+})) 
+'''
+payload = '''
+SMODS.destroy_cards(self, nil, nil, true)
+'''
+
 # Joker-type removed context added
 [[patches]]
 [patches.pattern]
@@ -1773,7 +1802,60 @@ payload = '''
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self})
         if flags.no_destroy then self.getting_sliced = nil; return end
     end
+    if self.skip_destroy_animation then
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                play_sound('tarot1')
+                self.T.r = -0.2
+                self:juice_up(0.3, 0.4)
+                self.states.drag.is = true
+                self.children.center.pinch.x = true
+                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
+                    func = function()
+                            G.jokers:remove_card(self)
+                            self:remove()
+                            self = nil
+                        return true; end})) 
+                return true
+            end
+        })) 
+        return
+    end
 '''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function Card:shatter()
+'''
+payload = '''
+    if self.getting_sliced and not (self.ability.set == 'Default' or self.ability.set == 'Enhanced') then
+        local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self, shatters = true})
+        if flags.no_destroy then self.getting_sliced = nil; return end
+    end
+    if self.skip_destroy_animation then
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                play_sound('tarot1')
+                self.T.r = -0.2
+                self:juice_up(0.3, 0.4)
+                self.states.drag.is = true
+                self.children.center.pinch.x = true
+                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
+                    func = function()
+                            G.jokers:remove_card(self)
+                            self:remove()
+                            self = nil
+                        return true; end})) 
+                return true
+            end
+        })) 
+        return
+    end
+'''
+
 
 ## Change eternal checks
 # Ceremonial Dagger
@@ -1812,7 +1894,7 @@ if not v.ability.eternal then deletable_jokers[#deletable_jokers + 1] = v end
 payload = '''
 if not SMODS.is_eternal(v, self) then deletable_jokers[#deletable_jokers + 1] = v end
 '''
-# Hex
+# Hex SMODS.is_eternal and card.getting_sliced
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -1822,7 +1904,7 @@ pattern = '''
 if v ~= eligible_card and (not v.ability.eternal) then v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
 '''
 payload = '''
-if v ~= eligible_card and (not SMODS.is_eternal(v, self)) then v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
+if v ~= eligible_card and (not SMODS.is_eternal(v, self)) then v.getting_sliced = true; v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
 '''
 # Card:can_sell()
 [[patches]]
@@ -1844,7 +1926,7 @@ target = 'functions/UI_definitions.lua'
 match_indent = true
 position = 'after'
 pattern = '''
-generateTagUi()
+G.GAME.tags[#G.GAME.tags+1] = _tag
 '''
 payload = '''
 if not _tag.from_load then SMODS.calculate_context({tag_added = _tag}) end
@@ -1887,5 +1969,5 @@ delay(0.4); ease_ante(1); delay(0.4); check_for_unlock({type = 'ante_up', ante =
 '''
 position = 'at'
 payload = '''
-delay(0.4); ease_ante(1, true); delay(0.4); check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
+delay(0.4); SMODS.ante_end = true; ease_ante(1); SMODS.ante_end = nil; delay(0.4); check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
 '''
