@@ -393,21 +393,39 @@ local loc_target = localize(target)'''
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
-pattern = 'elseif not v.boss.showdown*'
+pattern = '''
+if not v.boss then
+
+elseif not v.boss.showdown and (v.boss.min <= math.max(1, G.GAME.round_resets.ante) and ((math.max(1, G.GAME.round_resets.ante))%G.GAME.win_ante ~= 0 or G.GAME.round_resets.ante < 2)) then
+    eligible_bosses[k] = true
+elseif v.boss.showdown and (G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante >= 2 then
+    eligible_bosses[k] = true
+end
+'''
 match_indent = true
-position = 'before'
+position = 'at'
 payload = '''
+local res, options = SMODS.add_to_pool(v)
+options = options or {}
+if not v.boss then
+
+elseif options.ignore_showdown_check then
+    eligible_bosses[k] = res and true or nil
 elseif v.in_pool and type(v.in_pool) == 'function' then
-    local res, options = SMODS.add_to_pool(v)
     if
         (
             ((G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante >= 2) ==
             (v.boss.showdown or false)
-        ) or
-        (options or {}).ignore_showdown_check
+        )
     then
         eligible_bosses[k] = res and true or nil
-    end'''
+    end
+elseif not v.boss.showdown and (v.boss.min <= math.max(1, G.GAME.round_resets.ante) and ((math.max(1, G.GAME.round_resets.ante))%G.GAME.win_ante ~= 0 or G.GAME.round_resets.ante < 2)) then
+    eligible_bosses[k] = res and true or nil
+elseif v.boss.showdown and (G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante >= 2 then
+    eligible_bosses[k] = res and true or nil
+end
+'''
 
 # G.UIDEF.challenge_description_tab
 [[patches]]
