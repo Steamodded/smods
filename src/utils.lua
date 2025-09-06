@@ -1912,6 +1912,7 @@ SMODS.current_evaluated_object = nil
 function SMODS.is_getter_context(context)
     if context.mod_probability or context.fix_probability then return "probability" end
     if context.check_enhancement then return "enhancement" end
+    if context.get_ranks then return "ranks" end
     return false
 end
 
