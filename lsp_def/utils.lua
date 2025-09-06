@@ -721,3 +721,20 @@ function SMODS.get_previous_context() end
 ---@param context CalcContext|table The context to be updated
 ---@param flags table The flags with which to update it (e.g. flags.numerator, flags.denominator, etc.)
 function SMODS.update_context_flags(context, flags) end
+
+---@param context CalcContext|table The context checked
+---@return string|false
+--- Either returns a getter context identifier string 
+--- (e.g. "enhancement" for context.check_enhancement) 
+--- or false if the [context] isn't a getter context.
+function SMODS.is_getter_context(context) end
+
+
+---@param eval_object SMODS.GameObject|table The object that will be evaluated next if this returns false
+---@return boolean
+--- This functions checks whether a previous getter context of the same type
+--- as the current context (last SMODS.context_stack context) has caused the
+--- [eval_object] to incite any getter context, if yes returns false,
+--- skipping the evaluation of the object and preventing an infinite loop.
+function SMODS.check_looping_context(eval_object) end
+
