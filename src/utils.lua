@@ -2471,7 +2471,7 @@ function SMODS.info_queue_desc_from_rows(desc_nodes, empty, maxw)
 end
 
 function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
-    if not cards[1] then
+    if not cards[1] and Object.is(cards, Card) then
         cards = {cards}
     end
     local glass_shattered = {}
