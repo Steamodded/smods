@@ -316,6 +316,35 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
     }
 
+    -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.DynaTextEffect
+    -------------------------------------------------------------------------------------------------
+    
+    SMODS.DynaTextEffects = {}
+    SMODS.DynaTextEffect = SMODS.GameObject:extend {
+        obj_table = SMODS.DynaTextEffects,
+        set = 'DynaTextEffects',
+        obj_buffer = {},
+        disable_mipmap = false,
+        required_params = {
+            'key',
+            'func',
+        },
+        func = function(dynatext, index, letter)
+        end,
+        register = function(self)
+            if self.registered then
+                sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
+                return
+            end
+            self.name = self.key
+            SMODS.DynaTextEffect.super.register(self)
+        end,
+        inject = function(self)
+        end,
+        process_loc_text = function() end,
+    }
+
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Language
