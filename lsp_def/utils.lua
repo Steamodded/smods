@@ -73,7 +73,7 @@
 ---@field from_area? CardArea|table CardArea the card is being drawn from.
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand.
 ---@field drawing_cards? true `true` when cards are being drawn
----@field amount? number Used for in some contexts to specify a numerical amount. 
+---@field amount? number Used for in some contexts to specify a numerical amount.
 ---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
 ---@field display_name? PokerHands|'Royal Flush'|string Display name of the scoring poker hand.
 ---@field mod_probability? true Check if `true` for effects that make additive or multiplicative modifications to probabilities.
@@ -529,6 +529,9 @@ function SMODS.get_next_vouchers(vouchers) end
 ---@param key string
 ---@return Card|table voucher
 --- Adds a Voucher with matching `key` to the shop.
+function SMODS.add_voucher_to_shop(key) end
+
+--- Adds a Voucher with matching `key` to the shop.
 --- If dont_save is true the Voucher will not return in the next shop
 function SMODS.add_voucher_to_shop(key, dont_save) end
 
@@ -646,6 +649,7 @@ function SMODS.draw_cards(hand_space) end
 function SMODS.merge_effects(...) end
 
 ---@param trigger_obj? Card|table
+
 ---@param base_numerator number
 ---@param base_denominator number
 ---@param identifier? string optional seed key for associating results in loc_vars with in-game probability rolls
@@ -692,14 +696,12 @@ function SMODS.is_eternal(card, trigger) end
 --- Args must contain `ref_table`, `ref_value`, and `scalar_value`. It may optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
 function SMODS.scale_card(card, args) end
 
-
 ---@param prototype_obj SMODS.GameObject|table
 ---@param args table?
 ---@return boolean?, table?
 --- Checks whether an object should be added to the pool.
 --- i.e. the in_pool method doesn't exist or it returns `true`
 function SMODS.add_to_pool(prototype_obj, args) end
-
 
 ---@param context CalcContext|table The context being pushed
 ---@param func string|nil The function/file from which the call originates
@@ -712,7 +714,7 @@ function SMODS.push_to_context_stack(context, func) end
 function SMODS.pop_from_context_stack(context, func) end
 
 ---@return CalcContext|table|nil
---- Returns the second to last context from the SMODS.context_stack. 
+--- Returns the second to last context from the SMODS.context_stack.
 --- Useful for Seals/Enhancements determining whether a playing card was being individually evaluated,
 --- when a Joker called (e.g.) SMODS.pseudorandom_probability().
 function SMODS.get_previous_context() end
