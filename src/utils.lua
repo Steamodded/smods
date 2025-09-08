@@ -2857,6 +2857,33 @@ function SMODS.get_rank_from_id(id)
     return nil
 end
 
+function SMODS.get_rank_tally(cards, flags)
+    if cards.playing_card then
+        cards = {cards}
+    end
+    flags = flags or {tally_getting_ranks = true}
+    local tally = {}
+    local rank_to_cards = {}
+    for _, pcard in ipairs(cards) do
+        local pcard_ranks = {}
+        if SMODS.has_any_rank(pcard, flags) then
+            for _, v in pairs(SMODS.Ranks) do
+                pcard_ranks[v] = true
+            end
+        else
+            pcard_ranks = pcard:get_ranks(flags)
+        end
+        for rank, t in pairs(pcard_ranks) do
+            if t then
+                tally[rank] = tally[rank] and tally[rank] + 1 or 1
+                if rank_to_cards[rank] then table.insert(rank_to_cards[rank], pcard)
+                else rank_to_cards[rank] = {pcard} end
+            end
+        end
+    end
+    return tally, rank_to_cards
+end
+
 function Card:is_rank(rank, bypass_debuff, flags) -- Accepts SMODS.Rank, a rank key or a rank id
     if not self.playing_card or not rank then return false end
     

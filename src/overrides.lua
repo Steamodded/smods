@@ -912,24 +912,7 @@ function get_X_same(num, hand, or_more)
 		end
 		return ret
 	else
-		local rank_tally = {} -- {rank: int}
-		local rank_cards = {} -- {rank: {_: card}}
-
-		for _, pcard in ipairs(hand) do
-			local pcard_ranks = {}
-			if SMODS.has_any_rank(pcard, {eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}}) then
-				for _, v in pairs(SMODS.Ranks) do
-					pcard_ranks[v] = true
-				end
-			else
-				pcard_ranks = pcard:get_ranks({eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}})
-			end
-			for r, _ in pairs(pcard_ranks) do
-				rank_tally[r] = rank_tally[r] and rank_tally[r] + 1 or 1
-				rank_cards[r] = rank_cards[r] or {}
-				rank_cards[r][#rank_cards[r]+1] = pcard
-			end
-		end
+		local rank_tally, rank_cards = SMODS.get_rank_tally(hand, {eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}})
 
 		local ret = {}
 

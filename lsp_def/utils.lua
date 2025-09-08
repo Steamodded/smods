@@ -104,6 +104,7 @@
 ---@field eval_getting_ranks? table Passed as flag in context.get_ranks / by hand type evaluation when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside hand type evaluation)
 ---@field is_face_getting_ranks? table Passed as flag in context.get_ranks by Card:is_face() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside is_face() evaluation)
 ---@field is_parity_getting_ranks? table Passed as flag in context.get_ranks by Card:is_parity() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside is_parity() evaluation)
+---@field is_tally_getting_ranks? table Passed as default flag in context.get_ranks by SMODS.get_rank_tally() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside rank tally)
 ---@field no_mod? boolean Check if `true` to decide whether an effect should modify context.get_ranks' ranks_fixed/ranks_changed fields. (If you want to override and block other effects, return `no_mod=true` alongside ranks_fixed=[only your ranks])
 ---@field money_altered? true Check if `true` for effects when the amount of money the player has changes.
 ---@field from_shop? true Check if `true` if money changed during the shop.
@@ -700,6 +701,12 @@ function SMODS.is_eternal(card, trigger) end
 ---@return SMODS.Rank rank
 --- Returns the first rank from SMODS.Ranks whose .id == [id].
 function SMODS.get_rank_from_id(id) end
+
+---@param cards table<integer, Card>
+---@param flags? table
+---@return table<SMODS.Rank, integer> tally
+---@return table<SMODS.Rank, table<integer, Card>> rank_to_cards
+function SMODS.get_rank_tally(cards, flags) end
 
 ---@param card Card|table
 ---@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: string?}
