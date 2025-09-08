@@ -2858,7 +2858,7 @@ function SMODS.get_rank_from_id(id)
 end
 
 function Card:is_rank(rank, bypass_debuff, flags) -- Accepts SMODS.Rank, a rank key or a rank id
-    if not rank then return false end
+    if not self.playing_card or not rank then return false end
     
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
         if not self.vampired and SMODS.has_no_rank(self) then
@@ -2878,7 +2878,7 @@ function Card:is_rank(rank, bypass_debuff, flags) -- Accepts SMODS.Rank, a rank 
 end
 
 function Card:is_any_rank(ranks, bypass_debuff, flags)
-    if not ranks then return false end
+    if not self.playing_card or not ranks then return false end
 
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
         if not self.vampired and SMODS.has_no_rank(self) then
@@ -2910,6 +2910,7 @@ function Card:is_any_rank(ranks, bypass_debuff, flags)
 end
 
 function Card:get_ranks(flags) -- Returns a map of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
+    if not self.playing_card then return {} end
     local default_ranks = (not self.vampired and SMODS.has_no_rank(self) and {}) or {[SMODS.Ranks[self.base.value]] = true}
     if not SMODS.optional_features.quantum_ranks then return default_ranks end
 
@@ -2936,6 +2937,7 @@ function Card:get_ranks(flags) -- Returns a map of "SMODS.Rank"s, sanitized to O
 end
 
 function Card:is_parity(parity)
+    if not self.playing_card then return end
     if SMODS.has_any_rank(self, {is_parity_getting_ranks = {parity = parity}}) then
         return true
     end
