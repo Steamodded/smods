@@ -1995,7 +1995,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         },
         next = {},
         prev = nil,
-        straight_edge = false,
+        straight_edges = {},
+        parity = nil,
         -- TODO we need a better system for what this is doing.
         -- We should allow setting a playing card's atlas and position to any values,
         -- and we should also ensure that it's easy to create an atlas with a standard
@@ -2077,6 +2078,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             pos = { x = v - 2 },
             nominal = v,
             next = { (v + 1) .. '' },
+            parity = math.fmod(v, 2),
         }
     end
     SMODS.Rank {
@@ -2085,6 +2087,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         pos = { x = 8 },
         nominal = 10,
         next = { 'Jack' },
+        parity = 0,
     }
     SMODS.Rank {
         key = 'Jack',
@@ -2095,6 +2098,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face = true,
         shorthand = 'J',
         next = { 'Queen' },
+        parity = nil,
     }
     SMODS.Rank {
         key = 'Queen',
@@ -2105,6 +2109,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face = true,
         shorthand = 'Q',
         next = { 'King' },
+        parity = nil,
     }
     SMODS.Rank {
         key = 'King',
@@ -2115,6 +2120,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face = true,
         shorthand = 'K',
         next = { 'Ace' },
+        parity = nil,
     }
     SMODS.Rank {
         key = 'Ace',
@@ -2123,8 +2129,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         nominal = 11,
         face_nominal = 0.4,
         shorthand = 'A',
-        straight_edge = true,
+        straight_edges = {['King'] = true, ['2'] = true},
         next = { '2' },
+        parity = 1,
     }
     -- make consumable effects compatible with added suits
     -- TODO put this in utils.lua
@@ -2776,8 +2783,17 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             return { SMODS.merge_lists(parts._5, parts._flush) }
         end,
         ['Flush House'] = function(parts)
-            if #parts._3 < 1 or #parts._2 < 2 or not next(parts._flush) then return {} end
-            return { SMODS.merge_lists(parts._all_pairs, parts._flush) }
+            if not SMODS.optional_features.quantum_ranks then
+                if #parts._3 > 0 and #parts._2 > 1 and next(parts._flush) then
+                    return { SMODS.merge_lists(parts._all_pairs, parts._flush) }
+                end
+            else
+                local full_house = get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._3, min_len = 3}}) or {}
+                if next(full_house) and next(parts._flush) then
+                    return { SMODS.merge_lists(full_house, parts._flush) }
+                end
+            end
+            return {}
         end,
         ['Five of a Kind'] = function(parts) return parts._5 end,
         ['Straight Flush'] = function(parts)
@@ -2786,15 +2802,27 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         ['Four of a Kind'] = function(parts) return parts._4 end,
         ['Full House'] = function(parts)
-            if #parts._3 < 1 or #parts._2 < 2 then return {} end
-            return parts._all_pairs
+            if not SMODS.optional_features.quantum_ranks then
+                if #parts._3 > 0 and #parts._2 > 1 then
+                    return parts._all_pairs
+                end
+            else
+                return get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._3, min_len = 3}}) or {}
+            end
+            return {}
         end,
         ['Flush'] = function(parts) return parts._flush end,
         ['Straight'] = function(parts) return parts._straight end,
         ['Three of a Kind'] = function(parts) return parts._3 end,
         ['Two Pair'] = function(parts)
-            if #parts._2 < 2 then return {} end
-            return parts._all_pairs
+            if not SMODS.optional_features.quantum_ranks then
+                if #parts._2 > 1 then
+                    return parts._all_pairs
+                end
+            else
+                return get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._2, min_len = 2}}) or {}
+            end
+            return {}
         end,
         ['Pair'] = function(parts) return parts._2 end,
         ['High Card'] = function(parts) return parts._highest end,
