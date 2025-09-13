@@ -101,7 +101,7 @@ if vals.handname and G.GAME.current_round.current_hand.handname ~= vals.handname
 '''
 payload = '''
 for name, parameter in pairs(SMODS.Scoring_Parameters) do
-    if vals[name] and G.GAME.current_round.current_hand[name] ~= vals[name] then
+    if name ~= "mult" and name ~= "chips" and vals[name] and G.GAME.current_round.current_hand[name] ~= vals[name] then
         local delta = (type(vals[name]) == 'number' and type(G.GAME.current_round.current_hand[name]) == 'number') and (vals[name] - G.GAME.current_round.current_hand[name]) or 0
         if delta < 0 then delta = ''..delta; col = G.C.RED
         elseif delta > 0 then delta = '+'..delta
@@ -124,9 +124,23 @@ for name, parameter in pairs(SMODS.Scoring_Parameters) do
                     cover_align = 'cm'
                 })
             end
+            if vals[name.."_juice"] and not G.TAROT_INTERRUPT then G.hand_text_area[hand]:juice_up() end
         end
     end
 end
+'''
+
+# pt2
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if vals.chips and G.GAME.current_round.current_hand.chips ~= vals.chips then
+'''
+payload = '''
+SMODS.refresh_score_UI_list()
 '''
 
 # Reset other values
