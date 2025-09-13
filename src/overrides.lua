@@ -588,8 +588,8 @@ function G.UIDEF.stake_option(_type)
 end
 
 G.FUNCS.change_stake = function(args)
-	G.viewed_stake = args.to_val
-	G.PROFILES[G.SETTINGS.profile].MEMORY.stake = args.to_val
+	G.viewed_stake = args.to_val or args.to_key
+	G.PROFILES[G.SETTINGS.profile].MEMORY.stake = args.to_val or args.to_key
 end
 
 --#endregion
