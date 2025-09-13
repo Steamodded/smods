@@ -308,6 +308,7 @@ payload = "badges[#badges + 1] = create_badge(((card.ability.name == 'Pluto' or 
 
 # Fixing description error when info_queue has multi-box descriptions.
 
+
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
@@ -335,6 +336,7 @@ y_offset = -0.6,
 position = "at"
 payload = '''
 bump = not args.no_bump,
+text_effect = SMODS.DynaTextEffects[part.control.E] and part.control.E,
 silent = not args.no_silent,
 pop_in = (not args.no_pop_in and (args.pop_in or 0)) or nil,
 pop_in_rate = (not args.no_pop_in and (args.pop_in_rate or 4)) or nil,

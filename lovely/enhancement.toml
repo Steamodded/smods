@@ -301,9 +301,9 @@ payload = '''
     SMODS.enh_cache:write(self, nil)
 
     if self.ability and not initial then
-        self.ability.card_limit = self.ability.card_limit - (self.config.center.card_limit or 0)
-        self.ability.extra_slots_used = self.ability.extra_slots_used - (self.config.center.extra_slots_used or 0)
-        if self.area then self.area:handle_card_limit(-1 * (self.config.center.card_limit or 0), -1 * (self.config.center.extra_slots_used or 0)) end
+        self.ability.card_limit = self.ability.card_limit - (self.config.center.config.card_limit or 0)
+        self.ability.extra_slots_used = self.ability.extra_slots_used - (self.config.center.config.extra_slots_used or 0)
+        if self.area then self.area:handle_card_limit(-1 * (self.config.center.config.card_limit or 0), -1 * (self.config.center.config.extra_slots_used or 0)) end
     end
   
     if self.ability and not initial then

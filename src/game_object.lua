@@ -316,6 +316,35 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
     }
 
+    -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.DynaTextEffect
+    -------------------------------------------------------------------------------------------------
+    
+    SMODS.DynaTextEffects = {}
+    SMODS.DynaTextEffect = SMODS.GameObject:extend {
+        obj_table = SMODS.DynaTextEffects,
+        set = 'DynaTextEffects',
+        obj_buffer = {},
+        disable_mipmap = false,
+        required_params = {
+            'key',
+            'func',
+        },
+        func = function(dynatext, index, letter)
+        end,
+        register = function(self)
+            if self.registered then
+                sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
+                return
+            end
+            self.name = self.key
+            SMODS.DynaTextEffect.super.register(self)
+        end,
+        inject = function(self)
+        end,
+        process_loc_text = function() end,
+    }
+
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Language
@@ -3230,7 +3259,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         register = function(self)
             self.config = self.config or {}
             if self.config.card_limit then
-                print(self.key)
                 self.card_limit_keys = self.card_limit_keys or {
                     joker = string.sub(self.key, 3) .. '_SMODS_INTERNAL',
                     consumable = string.sub(self.key, 3) .. '_consumable' .. '_SMODS_INTERNAL',
@@ -3268,6 +3296,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             return self.card_limit_keys['generic']
         end
     }
+
+    function SMODS.Edition:get_card_limit_key()
+        return G.P_CENTERS[self.edition.key]:card_limit_key(self)
+    end
 
     -- TODO also, this should probably be a utility method in core
     -- card_area = pass the card area

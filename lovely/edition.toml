@@ -59,7 +59,6 @@ local ed_key = v
 if v:sub(v:len()-14) == '_SMODS_INTERNAL' then
     if v:sub(1, 9) == 'negative_' then ed_key = 'negative' else ed_key = v:sub(1, v:find('_', v:find('_')+1)-1) end
     v = v:sub(1, v:len()-15)
-    --info_queue[#info_queue+1] = {key = 'e_'..v, set = 'Edition', config = {extra = G.P_CENTERS['e_'..v].config.card_limit}}
 end
 
 if G.P_CENTERS[ed_key] and G.P_CENTERS[ed_key].set == 'Edition' then
@@ -170,7 +169,7 @@ if self.edition.type == 'negative' and self.ability.consumeable then
 position = "at"
 payload = """
 if self.edition.card_limit then
-    badges[#badges + 1] = G.P_CENTERS[self.edition.key]:card_limit_key(self)
+    badges[#badges + 1] = SMODS.Edition.get_card_limit_key(self)
 """
 match_indent = true
 
