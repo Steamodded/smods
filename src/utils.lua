@@ -2528,7 +2528,11 @@ end
 
 function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
     if not cards[1] then
-        cards = {cards}
+        if Object.is(cards, Card) then
+            cards = {cards}
+        else
+            return
+        end
     end
     local glass_shattered = {}
     local playing_cards = {}
