@@ -203,6 +203,7 @@ function SMODS.calculate_effect_table_key(effect_table, key, card, ret) end
 
 ---@param effects table
 ---@param card Card|table
+---@return table
 --- Used to calculate a table of effects generated in evaluate_play
 function SMODS.trigger_effects(effects, card) end
 
@@ -741,6 +742,10 @@ function SMODS.pop_from_context_stack(context, func) end
 --- when a Joker called (e.g.) SMODS.pseudorandom_probability().
 function SMODS.get_previous_context() end
 
+---@param context CalcContext|table The context to be updated
+---@param flags table The flags with which to update it (e.g. flags.numerator, flags.denominator, etc.)
+function SMODS.update_context_flags(context, flags) end
+
 ---@param context CalcContext|table The context checked
 ---@return string|false
 --- Either returns a getter context identifier string 
@@ -756,3 +761,4 @@ function SMODS.is_getter_context(context) end
 --- [eval_object] to incite any getter context, if yes returns false,
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
+
