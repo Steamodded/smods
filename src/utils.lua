@@ -1236,6 +1236,9 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
 
     if (key == 'p_dollars' or key == 'dollars' or key == 'h_dollars') and amount then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+        SMODS.ease_dollars_calc = true
+        ease_dollars(amount)    
+        SMODS.ease_dollars_calc = nil
         if not effect.remove_default_message then
             if effect.dollar_message then
                 card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.dollar_message)
@@ -1243,7 +1246,13 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
                 card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'dollars', amount, percent)
             end
         end
-        ease_dollars(amount)
+        SMODS.calculate_context({
+            money_altered = true,
+            amount = amount,
+            from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
+            from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
+            from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
+        })
         return true
     end
 
@@ -1335,7 +1344,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'saved' then
         SMODS.saved = amount
         G.GAME.saved_text = amount
-        return true
+        return key
     end
 
     if key == 'effect' then
@@ -1685,9 +1694,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 else
                     local f = SMODS.trigger_effects(effects, _card)
                     for k,v in pairs(f) do flags[k] = v end
-                    if flags.numerator then context.numerator = flags.numerator end
-                    if flags.denominator then context.denominator = flags.denominator end
-                    if flags.cards_to_draw then context.amount = flags.cards_to_draw end
+                    SMODS.update_context_flags(context, flags)
                 end
                 ::skip::
             end
@@ -1713,9 +1720,8 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                         local effects = {eval_card(card, context)}
                         local f = SMODS.trigger_effects(effects, card)
                         for k,v in pairs(f) do flags[k] = v end
-                        if flags.numerator then context.numerator = flags.numerator end
-                        if flags.denominator then context.denominator = flags.denominator end
-                        if flags.cards_to_draw then context.amount = flags.cards_to_draw end
+
+                        SMODS.update_context_flags(context, flags)
                         ::skip::
                     end
                 end
@@ -1746,9 +1752,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     SMODS.calculate_quantum_enhancements(card, effects, context)
                     local f = SMODS.trigger_effects(effects, card)
                     for k,v in pairs(f) do flags[k] = v end
-                    if flags.numerator then context.numerator = flags.numerator end
-                    if flags.denominator then context.denominator = flags.denominator end
-                    if flags.cards_to_draw then context.amount = flags.cards_to_draw end
+                    SMODS.update_context_flags(context, flags)
                 end
                 ::skip::
             end
@@ -1789,8 +1793,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             else
                 local f = SMODS.trigger_effects(effects, area.scored_card)
                 for k,v in pairs(f) do flags[k] = v end
-                if flags.numerator then context.numerator = flags.numerator end
-                if flags.denominator then context.denominator = flags.denominator end
+                SMODS.update_context_flags(context, flags)
             end
             ::skip::
         end
@@ -1799,6 +1802,14 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
     return flags
 end
 
+
+-- Updates a [context] with all compatible [flags]
+function SMODS.update_context_flags(context, flags)
+    if flags.numerator then context.numerator = flags.numerator end
+    if flags.denominator then context.denominator = flags.denominator end
+    if flags.cards_to_draw then context.amount = flags.cards_to_draw end
+    if flags.saved then context.game_over = false end
+end
 
 SMODS.current_evaluated_object = nil
 
@@ -2556,7 +2567,7 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
     for i = 1, #cards do
-        if immediate then
+        if immediate or skip_anim then
             if cards[i].shattered then
                 cards[i]:shatter()
             elseif cards[i].destroyed then
@@ -2975,6 +2986,7 @@ end
 local ease_dollar_ref = ease_dollars
 function ease_dollars(mod, instant)
     ease_dollar_ref(mod, instant)
+    if SMODS.ease_dollars_calc then return end
     SMODS.calculate_context({
         money_altered = true,
         amount = mod,
@@ -3099,6 +3111,15 @@ function CardArea:handle_card_limit(card_limit, card_slots)
             
         end
         if G.hand and self == G.hand and card_limit - card_slots > 0 then 
+            if G.STATE == G.STATES.DRAW_TO_HAND then 
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'immediate',
+                    func = function()
+                        G.FUNCS.draw_from_deck_to_hand(card_limit)
+                        return true
+                    end
+                }))
+            end
             if G.STATE == G.STATES.SELECTING_HAND then G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards)) end
             check_for_unlock({type = 'min_hand_size'})
         end
