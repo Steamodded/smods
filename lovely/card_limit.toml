@@ -108,6 +108,19 @@ function CardArea:emplace(card, location, stay_flipped)
 payload = '''
     self:handle_card_limit(card.ability.card_limit, card.ability.extra_slots_used)
 '''
+# CardArea:load()
+# Reloads card_limit 
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+    self:hard_set_cards()
+'''
+payload = '''
+self:load_card_limit()
+'''
 # CardArea:update()
 [[patches]]
 [patches.pattern]
@@ -292,7 +305,7 @@ position = "at"
 payload = """local hand_space = e
 local cards_to_draw = {}
 if not hand_space then
-    local limit = G.hand.config.card_limit - #G.hand.cards
+    local limit = G.hand.config.card_limit - #G.hand.cards - (SMODS.cards_to_draw or 0)
     local unfixed = not G.hand.config.fixed_limit
     local n = 0
     while n < #G.deck.cards do
@@ -307,5 +320,7 @@ if not hand_space then
         n = n + 1
     end
     hand_space = #cards_to_draw
-end"""
+end
+SMODS.cards_to_draw = (SMODS.cards_to_draw or 0) + hand_space
+"""
 match_indent = true

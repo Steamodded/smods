@@ -3151,7 +3151,7 @@ function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
     if specific_vars and specific_vars.bonus_h_chips then
         localize{type = 'other', key = 'card_extra_h_chips', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_chips)}}
     end
-    if specific_vars and specific_vars.bonus_x_chips then
+    if specific_vars and specific_vars.bonus_h_x_chips then
         localize{type = 'other', key = 'card_h_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_chips}}
     end
     if specific_vars and specific_vars.bonus_h_mult then
@@ -3298,18 +3298,37 @@ function CardArea:handle_card_limit(card_limit, card_slots)
             }))
             
         end
-        if G.hand and self == G.hand and card_limit - card_slots > 0 then 
+        if G.hand and self == G.hand and card_limit - card_slots > 0 then
             if G.STATE == G.STATES.DRAW_TO_HAND then 
                 G.E_MANAGER:add_event(Event({
                     trigger = 'immediate',
                     func = function()
-                        G.FUNCS.draw_from_deck_to_hand(card_limit)
+                        G.E_MANAGER:add_event(Event({
+                            trigger = 'immediate',
+                            func = function()                
+                                G.FUNCS.draw_from_deck_to_hand()
+                                return true
+                            end
+                        }))
                         return true
                     end
                 }))
             end
             if G.STATE == G.STATES.SELECTING_HAND then G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards)) end
             check_for_unlock({type = 'min_hand_size'})
+        end
+    end
+end
+
+function CardArea:load_card_limit()
+    if SMODS.should_handle_limit(self) and self.cards then
+        for _, card in ipairs(self.cards) do
+            local card_limit = card.ability and card.ability.card_limit or 0
+            local card_slots = card.ability and card.ability.extra_slots_used or 0
+            self.config.card_limit = self.config.card_limit + card_limit
+            self.config.no_true_limit = true
+            self.config.card_limit = self.config.card_limit - card_slots
+            self.config.no_true_limit = false
         end
     end
 end

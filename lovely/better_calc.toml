@@ -1037,6 +1037,13 @@ end
 '''
 payload = '''
 G.E_MANAGER:add_event(Event({
+    trigger = 'immediate',
+    func = function()                
+        SMODS.cards_to_draw = SMODS.cards_to_draw - hand_space
+        return true
+    end
+}))
+G.E_MANAGER:add_event(Event({
     trigger = 'before',
     delay = 0.4,
     func = function()
