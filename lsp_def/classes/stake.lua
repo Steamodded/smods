@@ -10,7 +10,7 @@
 ---@field sticker_atlas? string Atlas for stake's win sticker. 
 ---@field sticker_pos? table|{x: integer, y: integer} Position of the stake's win sticker sprite. 
 ---@field above_stake? string Key to the stake that this stake appeard above in the run menu. By default, stakes are added on top of the last injected stake. 
----@field colour? table HEX color of the stake in the stake selection menu. 
+---@field colour? Color HEX color of the stake in the stake selection menu. 
 ---@field unlocked? boolean Sets if the stake is unlocked by default. 
 ---@field shiny? boolean Draws the shiny shader on State sticker. 
 ---@field __call? fun(self: SMODS.Stake|table, o: SMODS.Stake|table): nil|table|SMODS.Stake
