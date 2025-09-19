@@ -108,19 +108,6 @@ function CardArea:emplace(card, location, stay_flipped)
 payload = '''
     self:handle_card_limit(card.ability.card_limit, card.ability.extra_slots_used)
 '''
-# CardArea:load()
-# Reloads card_limit 
-[[patches]]
-[patches.pattern]
-target = 'cardarea.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-    self:hard_set_cards()
-'''
-payload = '''
-self:load_card_limit()
-'''
 # CardArea:update()
 [[patches]]
 [patches.pattern]

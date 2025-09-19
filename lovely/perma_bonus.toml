@@ -12,7 +12,7 @@ priority = -5
 target = "functions/common_events.lua"
 pattern = "if _c.effect == 'Mult Card' then loc_vars = {cfg.mult}"
 position = "at"
-payload = "if _c.effect == 'Mult Card' then loc_vars = {SMODS.signed(cfg.mult + (specific_vars and specific_vars.bonus_mult or 0))}"
+payload = "if _c.effect == 'Mult Card' then loc_vars = {SMODS.signed(cfg.mult)}"
 match_indent = true
 
 # generate_card_ui(): gold card special case
@@ -21,7 +21,7 @@ match_indent = true
 target = "functions/common_events.lua"
 pattern = "elseif _c.effect == 'Gold Card' then loc_vars = {cfg.h_dollars}"
 position = "at"
-payload = "elseif _c.effect == 'Gold Card' then loc_vars = {specific_vars and SMODS.signed_dollars(specific_vars.total_h_dollars) or cfg.h_dollars and SMODS.signed_dollars(cfg.h_dollars) or 0}"
+payload = "elseif _c.effect == 'Gold Card' then loc_vars = {SMODS.signed_dollars(cfg.h_dollars)}"
 match_indent = true
 
 # generate_card_ui(): stone card special case

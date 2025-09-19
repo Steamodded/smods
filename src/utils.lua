@@ -1845,6 +1845,10 @@ function SMODS.update_context_flags(context, flags)
         elseif context.no_mod then
             flags.ranks = context.ranks
         end
+    if flags.modify then
+        -- insert general modified value updating here
+        if context.modify_ante then context.modify_ante = flags.modify end
+        if context.drawing_cards then context.amount = flags.modify end
     end
 end
 
@@ -2680,7 +2684,7 @@ function SMODS.draw_cards(hand_space)
     end
 
     local flags = SMODS.calculate_context({drawing_cards = true, amount = hand_space})
-    hand_space = math.min(#G.deck.cards, flags.cards_to_draw or hand_space)
+    hand_space = math.min(#G.deck.cards, flags.cards_to_draw or flags.modify or hand_space)
     delay(0.3)
     SMODS.drawn_cards = {}
     for i=1, hand_space do --draw cards from deckL
@@ -3299,13 +3303,13 @@ function CardArea:handle_card_limit(card_limit, card_slots)
             
         end
         if G.hand and self == G.hand and card_limit - card_slots > 0 then
-            if G.STATE == G.STATES.DRAW_TO_HAND then 
+            if G.STATE == G.STATES.DRAW_TO_HAND and math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards - (SMODS.cards_to_draw or 0)) > 0 then 
                 G.E_MANAGER:add_event(Event({
                     trigger = 'immediate',
                     func = function()
                         G.E_MANAGER:add_event(Event({
                             trigger = 'immediate',
-                            func = function()                
+                            func = function()     
                                 G.FUNCS.draw_from_deck_to_hand()
                                 return true
                             end
@@ -3313,22 +3317,15 @@ function CardArea:handle_card_limit(card_limit, card_slots)
                         return true
                     end
                 }))
-            end
-            if G.STATE == G.STATES.SELECTING_HAND then G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards)) end
+            elseif G.STATE == G.STATES.SELECTING_HAND then G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards)) end
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()                
+                    save_run()
+                    return true
+                end
+            }))
             check_for_unlock({type = 'min_hand_size'})
-        end
-    end
-end
-
-function CardArea:load_card_limit()
-    if SMODS.should_handle_limit(self) and self.cards then
-        for _, card in ipairs(self.cards) do
-            local card_limit = card.ability and card.ability.card_limit or 0
-            local card_slots = card.ability and card.ability.extra_slots_used or 0
-            self.config.card_limit = self.config.card_limit + card_limit
-            self.config.no_true_limit = true
-            self.config.card_limit = self.config.card_limit - card_slots
-            self.config.no_true_limit = false
         end
     end
 end
