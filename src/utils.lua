@@ -1845,6 +1845,7 @@ function SMODS.update_context_flags(context, flags)
         elseif context.no_mod then
             flags.ranks = context.ranks
         end
+    end
     if flags.modify then
         -- insert general modified value updating here
         if context.modify_ante then context.modify_ante = flags.modify end
