@@ -1838,10 +1838,16 @@ function Card:set_edition(edition, immediate, silent, delay)
 		end
 	end
 
+	if delay then
+		-- (self.delay_edition or self.edition) is the currently drawn edition,
+		-- which may not be equal to the actual edition `self.edition`.
+		-- self.delay_edition == nil means the current edition was not delayed
+		self.delay_edition = old_edition or {base = true}
+	else
+		self.delay_edition = nil
+	end
+
 	if not edition_type or edition_type == 'base' then
-		if self.edition == nil then -- early exit
-			return
-		end
 		self.edition = nil -- remove edition from card
 		self:set_cost()
 		if not silent then
@@ -1850,18 +1856,15 @@ function Card:set_edition(edition, immediate, silent, delay)
 				delay = not immediate and 0.2 or 0,
 				blockable = not immediate,
 				func = function()
-					self:juice_up(1, 0.5)
-					play_sound('whoosh2', 1.2, 0.6)
-					return true
-				end
-			}))
-		end
-		if delay then
-			self.delay_edition = old_edition
-			G.E_MANAGER:add_event(Event({
-				trigger = 'immediate',
-				func = function()
-					self.delay_edition = nil
+					if delay and self.delay_edition ~= nil then
+						self.delay_edition = {base = true}
+					end
+					local drawn_edition = self.delay_edition or self.edition
+					-- See TODO comment below in set_edition
+					if (not drawn_edition or drawn_edition.base) then
+						self:juice_up(1, 0.5)
+						play_sound('whoosh2', 1.2, 0.6)
+					end
 					return true
 				end
 			}))
@@ -1870,6 +1873,7 @@ function Card:set_edition(edition, immediate, silent, delay)
 	end
 
 	self.edition = {}
+	local self_edition_saved = self.edition
 	self.edition[edition_type] = true
 	self.edition.type = edition_type
 	self.edition.key = 'e_' .. edition_type
@@ -1916,29 +1920,29 @@ function Card:set_edition(edition, immediate, silent, delay)
 			delay = not immediate and 0.2 or 0,
 			blockable = not immediate,
 			func = function()
-				if self.edition then
+				if delay and self.delay_edition ~= nil then
+					self.delay_edition = self_edition_saved
+				end
+				if (self.delay_edition or self.edition) == self_edition_saved then
+					-- TODO this if block doesn't work in all cases.
+					-- Ideal solution for future: if multiple consecutive
+					-- editions are set/removed on a card,
+					-- the final one (or final removal of edition)
+					-- will be the only animation/sound that plays.
+					-- (does not apply to delayed editions)
 					self:juice_up(1, 0.5)
 					play_sound(ed.sound.sound, ed.sound.per, ed.sound.vol)
 				end
 				return true
 			end
 		}))
+		-- NOTE this event also is wrongly repeated and wastes extra time
+		-- in the case of consecutive set_edition calls
 		G.E_MANAGER:add_event(Event({
 			trigger = 'after',
 			delay = 0.1,
 			func = function()
 				G.CONTROLLER.locks.edition = false
-				return true
-			end
-		}))
-	end
-
-	if delay then
-		self.delay_edition = old_edition or {base = true}
-		G.E_MANAGER:add_event(Event({
-			trigger = 'immediate',
-			func = function()
-				self.delay_edition = nil
 				return true
 			end
 		}))
