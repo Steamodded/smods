@@ -2879,7 +2879,7 @@ function Card:is_rank(rank, bypass_debuff, flags) -- Accepts SMODS.Rank, a rank 
     return false
 end
 
-function Card:is_any_rank(ranks, bypass_debuff, flags)
+function Card:is_ranks(ranks, bypass_debuff, flags, all)
     if not self.playing_card or not ranks then return false end
 
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
@@ -2905,10 +2905,12 @@ function Card:is_any_rank(ranks, bypass_debuff, flags)
 
     for r, _ in pairs(self:get_ranks(flags)) do
         if rank_dict[r] or rank_dict[r.key] or rank_dict[r.id] then
-            return true
+            if not all then return true end
+        else
+            if all then return false end
         end
     end
-    return false
+    return all
 end
 
 function Card:get_ranks(flags) -- Returns a map of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
