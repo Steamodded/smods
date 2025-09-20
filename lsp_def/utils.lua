@@ -765,3 +765,24 @@ function SMODS.is_getter_context(context) end
 --- [eval_object] to incite any getter context, if yes returns false,
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
+
+
+---@param rank SMODS.Rank|integer|string The SMODS.Rank or rank id or rank key (recommended) 
+---@param bypass_debuff? boolean Whether the card being debuffed should be ignored
+---@param flags? table The flags passed to Card:get_ranks() / SMODS.has_any_rank(). Useful for rank changing effects that should only apply for certain checks. (Read CalcContext eval_getting_ranks LSP def)
+---@return boolean?
+function Card:is_rank(rank, bypass_debuff, flags) end
+
+---@param ranks table<integer, SMODS.Rank|integer|string>|SMODS.Rank|integer|string A list of 'SMODS.Rank's or rank ids or rank keys (recommended) (or a singular one, but use Card:is_rank() instead)
+---@param bypass_debuff? boolean Whether the card being debuffed should be ignored
+---@param flags? table The flags passed to Card:get_ranks() / SMODS.has_any_rank(). Useful for rank changing effects that should only apply for certain checks. (Read CalcContext eval_getting_ranks LSP def)
+---@param all? boolean Whether the card needs to be all or just any of the ranks passed to the function.
+function Card:is_ranks(ranks, bypass_debuff, flags, all) end
+
+---@param flags? table See CalcContext eval_getting_ranks, etc. lsp def
+---@return table<SMODS.Rank, boolean> ranks A map of ranks using 'SMODS.Rank's as keys.
+function Card:get_ranks(flags) end
+
+---@param parity integer The parity to be checked. (See SMODS.Rank lsp def)
+---@return boolean
+function Card:is_parity(parity) end

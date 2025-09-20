@@ -2881,12 +2881,15 @@ end
 
 function Card:is_ranks(ranks, bypass_debuff, flags, all)
     if not self.playing_card or not ranks then return false end
+    if type(ranks) ~= "table" or not ranks[1] then
+        ranks = {ranks}
+    end
 
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
         if not self.vampired and SMODS.has_no_rank(self) then
             return false
         end
-        for _, rank in pairs(ranks) do
+        for _, rank in ipairs(ranks) do
             if SMODS.Ranks[self.base.value] == rank or self.base.value == rank or self.base.id == rank then --Accepts SMODS.Rank or a rank key / id as input
                 return true
             end
@@ -2894,10 +2897,11 @@ function Card:is_ranks(ranks, bypass_debuff, flags, all)
         return false
     end
 
-    if SMODS.has_any_rank(self) then return true end
+    local is_wild = SMODS.has_any_rank(self)
+    if is_wild and (not all or #ranks < 2) then return true end
 
     local rank_dict = {}
-    for _, v in pairs(ranks) do
+    for _, v in ipairs(ranks) do
         rank_dict[v] = true
     end
 
@@ -2907,7 +2911,8 @@ function Card:is_ranks(ranks, bypass_debuff, flags, all)
         if rank_dict[r] or rank_dict[r.key] or rank_dict[r.id] then
             if not all then return true end
         else
-            if all then return false end
+            if all and not is_wild then return false
+            elseif all then is_wild = false end
         end
     end
     return all
