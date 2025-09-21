@@ -1978,3 +1978,17 @@ position = 'at'
 payload = '''
 delay(0.4); SMODS.ante_end = true; ease_ante(1); SMODS.ante_end = nil; delay(0.4); check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
 '''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = '''
+elseif card.config.center.set == 'Spectral' then  G.GAME.consumeable_usage_total.spectral = G.GAME.consumeable_usage_total.spectral + 1
+'''
+position = 'after'
+payload = '''
+else 
+    G.GAME.consumeable_usage_total[card.config.center.set] = G.GAME.consumeable_usage_total[card.config.center.set] or 0
+    G.GAME.consumeable_usage_total[card.config.center.set] = G.GAME.consumeable_usage_total[card.config.center.set] + 1
+'''
+match_indent = true
