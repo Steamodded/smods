@@ -637,9 +637,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 table.insert(G.P_CENTER_POOLS.Stake, self)
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
-                    local SpriteClass = SMODS.get_atlas(self.sticker_atlas, true) or SMODS.get_atlas("stickers", true)
-                    G.shared_stickers[self.key:sub(7)] = SpriteClass(0, 0, G.CARD_W, G.CARD_H,
-                    SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos)
+                    print("Atli: ", SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"))
+                    G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos)
                     G.sticker_map[self.key] = self.key:sub(7)
                 else
                     G.sticker_map[self.key] = nil
@@ -1673,7 +1672,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
         inject = function(self)
             if self.overlay_pos then
-                self.overlay_sprite = SMODS.get_atlas(self.atlas, true)(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas), self.overlay_pos)
+                self.overlay_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.overlay_pos)
                 self.no_overlay = true
             end
         end,
@@ -1776,9 +1775,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         },
         inject = function(self)
             G.P_SEALS[self.key] = self
-            local SpriteClass = SMODS.get_atlas(self.atlas, true) or SMODS.get_atlas('centers', true)
-            G.shared_seals[self.key] = SpriteClass(0, 0, G.CARD_W, G.CARD_H,
-                SMODS.get_atlas(self.atlas) or SMODS.get_atlas('centers'), self.pos)
+            G.shared_seals[self.key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas) or SMODS.get_atlas('centers'), self.pos)
             self.badge_to_key[self.key:lower() .. '_seal'] = self.key
             SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
             self.rng_buffer[#self.rng_buffer + 1] = self.key
@@ -2976,7 +2973,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.order = #self.obj_buffer
         end,
         inject = function(self)
-            self.sticker_sprite = SMODS.get_atlas(self.atlas, true)(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas), self.pos)
+            self.sticker_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.pos)
             G.shared_stickers[self.key] = self.sticker_sprite
         end,
         -- relocating sticker checks to here, so if the sticker has different checks than default

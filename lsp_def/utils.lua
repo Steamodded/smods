@@ -741,3 +741,12 @@ function SMODS.is_getter_context(context) end
 --- [eval_object] to incite any getter context, if yes returns false,
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
+
+---@param atlas_key string The key of the atlas 
+---@param sprite_class_instead? boolean Whether to return either the Sprite or the AnimatedSprite class object instead of the Atlas, according to which it belonged to
+--- This function gets an atlas from G.ASSET_ATLAS or G.ANIMATION_ATLAS, or returns the according Sprite/AnimatedSprite class object
+function SMODS.get_atlas(atlas_key, sprite_class_instead) end
+
+---@param ... any Either  the same parameters as Sprite() takes individually, or a list containing its params, or a table with keys according to each parameter
+--- This function creates a Sprite or AnimatedSprite depending on the atlas passed
+function SMODS.create_sprite(...) end

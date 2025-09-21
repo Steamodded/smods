@@ -340,7 +340,7 @@ function buildModDescTab(mod)
                     n = G.UIT.R, config = { align = "cm", r = 0.1, minw = 6, minh = 0.6, colour = G.SETTINGS.reduced_motion and G.C.RED or SMODS.Gradients.warning_bg, padding = 0.1 }, nodes={
                         {
                             n = G.UIT.C, config = { align = 'cm' }, nodes = {
-                                { n = G.UIT.O, config = { object = SMODS.get_atlas('mod_tags', true)(0, 0, 0.8, 0.8, SMODS.get_atlas('mod_tags'), { x = 0, y = 0 }) } },
+                                { n = G.UIT.O, config = { object = SMODS.create_sprite(0, 0, 0.8, 0.8, 'mod_tags', { x = 0, y = 0 }) } },
                             }
                         }, 
                         { 
@@ -348,7 +348,7 @@ function buildModDescTab(mod)
                         },
                         {
                             n = G.UIT.C, config = { align = 'cm' }, nodes = {
-                                { n = G.UIT.O, config = { object = SMODS.get_atlas('mod_tags', true)(0, 0, 0.8, 0.8, SMODS.get_atlas('mod_tags'), { x = 0, y = 0 }) } },
+                                { n = G.UIT.O, config = { object = SMODS.create_sprite(0, 0, 0.8, 0.8, 'mod_tags', { x = 0, y = 0 }) } },
                             }
                         }, 
                     }
@@ -661,7 +661,7 @@ function buildAchievementsTab(mod, current_page)
     for i = 1, achievements_per_row*2 do
         local v = achievement_tab[i+((achievements_per_row*2)*(current_page-1))]
         if not v then break end
-        local temp_achievement = SMODS.get_atlas(v.atlas or "achievements", true)(0, 0, 1.1, 1.1, SMODS.get_atlas(v.atlas or "achievements"), v.earned and v.pos or v.hidden_pos)
+        local temp_achievement = SMODS.create_sprite(0, 0, 1.1, 1.1, v.atlas or "achievements", v.earned and v.pos or v.hidden_pos)
         temp_achievement:define_draw_steps({
             {shader = 'dissolve', shadow_height = 0.05},
             {shader = 'dissolve'}
@@ -895,8 +895,7 @@ function buildModtag(mod)
 
     local tag_sprite_tab = nil
     local units = SMODS.pixels_to_unit(34) * 2
-    local SpriteClass = SMODS.get_atlas(tag_atlas, true) or SMODS.get_atlas('tags', true)
-    local tag_sprite = SpriteClass(0, 0, 0.8*1, 0.8*1, SMODS.get_atlas(tag_atlas) or SMODS.get_atlas('tags'), tag_pos)
+    local tag_sprite = SMODS.create_sprite(0, 0, 0.8*1, 0.8*1, SMODS.get_atlas(tag_atlas) or SMODS.get_atlas('tags'), tag_pos)
     tag_sprite.T.scale = 1
     tag_sprite_tab = {n= G.UIT.C, config={align = "cm", padding = 0}, nodes={
         {n=G.UIT.O, config={w=units, h=units, colour = G.C.BLUE, object = tag_sprite, focus_with_object = true}},
@@ -1004,7 +1003,7 @@ local function createClickableModBox(modInfo, scale)
                 {
                     n = G.UIT.O,
                     config = {
-                        object = SMODS.get_atlas('mod_tags', true)(0,0,0.3,0.3, SMODS.get_atlas('mod_tags'), {x=2,y=0})
+                        object = SMODS.create_sprite(0, 0, 0.3, 0.3, 'mod_tags', {x=2,y=0})
                     }
                 }
             }
@@ -2057,7 +2056,7 @@ function G.UIDEF.run_setup_option(_type)
             n = G.UIT.R, config = { align = "cm", r = 0.1, minw = 6, minh = 0.6, colour = G.SETTINGS.reduced_motion and G.C.RED or SMODS.Gradients.warning_bg, padding = 0.1 }, nodes={
                 {
                     n = G.UIT.C, config = { align = 'cm' }, nodes = {
-                        { n = G.UIT.O, config = { object = SMODS.get_atlas('mod_tags', true)(0, 0, 0.8, 0.8, SMODS.get_atlas('mod_tags'), { x = 0, y = 0 }) } },
+                        { n = G.UIT.O, config = { object = SMODS.create_sprite({0, 0, 0.8, 0.8, 'mod_tags', { x = 0, y = 0 }}) } },
                     }
                 }, 
                 { 
@@ -2065,7 +2064,7 @@ function G.UIDEF.run_setup_option(_type)
                 },
                 {
                     n = G.UIT.C, config = { align = 'cm' }, nodes = {
-                        { n = G.UIT.O, config = { object = SMODS.get_atlas('mod_tags', true)(0, 0, 0.8, 0.8, SMODS.get_atlas('mod_tags'), { x = 0, y = 0 }) } },
+                        { n = G.UIT.O, config = { object = SMODS.create_sprite(0, 0, 0.8, 0.8, 'mod_tags', { x = 0, y = 0 }) } },
                     }
                 }, 
             }

@@ -52,7 +52,7 @@ function create_UIBox_your_collection_blinds(exit)
 			ante_amounts[#ante_amounts + 1] = { n = G.UIT.R, config = { minh = spacing }, nodes = {} }
 		end
 		local atlas_key = "ui_" .. (G.SETTINGS.colourblind_option and 2 or 1)
-		local blind_chip = SMODS.get_atlas(atlas_key, true)(0, 0, 0.2, 0.2, SMODS.get_atlas(atlas_key), { x = 0, y = 0 })
+		local blind_chip = SMODS.create_sprite(0, 0, 0.2, 0.2, atlas_key, { x = 0, y = 0 })
 		blind_chip.states.drag.can = false
 		ante_amounts[#ante_amounts + 1] = {
 			n = G.UIT.R,
@@ -120,8 +120,7 @@ function create_UIBox_your_collection_blinds(exit)
 	local row, col = 1, 1
 	for k, v in ipairs(blind_tab) do
 		local atlas_key = v.discovered and v.atlas or 'blind_chips'
-		local temp_blind = SMODS.get_atlas(atlas_key, true)(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, SMODS.get_atlas(atlas_key),
-			v.discovered and v.pos or G.b_undiscovered.pos)
+		local temp_blind = SMODS.create_sprite(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, atlas_key, v.discovered and v.pos or G.b_undiscovered.pos)
 		temp_blind.states.click.can = false
 		temp_blind.states.drag.can = false
 		temp_blind.states.hover.can = true
@@ -311,8 +310,7 @@ function G.FUNCS.your_collection_blinds_page(args)
 	local row, col = 1, 1
 	for k, v in ipairs(blind_tab) do
 		local atlas_key = v.discovered and v.atlas or 'blind_chips'
-		local temp_blind = SMODS.get_atlas(atlas_key, true)(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, SMODS.get_atlas(atlas_key),
-			v.discovered and v.pos or G.b_undiscovered.pos)
+		local temp_blind = SMODS.create_sprite(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, atlas_key, v.discovered and v.pos or G.b_undiscovered.pos)
 		temp_blind.states.click.can = false
 		temp_blind.states.drag.can = false
 		temp_blind.states.hover.can = true
@@ -788,16 +786,15 @@ function G.UIDEF.deck_preview(args)
 			if palette and palette.suit_icon and palette.suit_icon.atlas then
 				local _x = (v == 'Spades' and 3) or (v == 'Hearts' and 0) or (v == 'Clubs' and 2) or (v == 'Diamonds' and 1)
 				local atlas_key = palette.suit_icon.atlas or 'ui_1'
-				t_s = SMODS.get_atlas(atlas_key, true)(0, 0, 0.3, 0.3, SMODS.get_atlas(atlas_key), (type(palette.suit_icon.pos) == "number" and {x=_x, y=palette.suit_icon.pos}) or palette.suit_icon.pos or {x=_x, y=0})
+				t_s = SMODS.create_sprite(0, 0, 0.3, 0.3, atlas_key, (type(palette.suit_icon.pos) == "number" and {x=_x, y=palette.suit_icon.pos}) or palette.suit_icon.pos or {x=_x, y=0})
 			elseif G.SETTINGS.colour_palettes[v] == 'lc' or G.SETTINGS.colour_palettes[v] == 'hc' then
 				local atlas_key_1 = SMODS.Suits[v][G.SETTINGS.colour_palettes[v] == 'hc' and "hc_ui_atlas" or G.SETTINGS.colour_palettes[v] == 'lc' and "lc_ui_atlas"]
 				local atlas_key_2 = ("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))
-				local SpriteClass = SMODS.get_atlas(atlas_key_1, true) or SMODS.get_atlas(atlas_key_2, true)
 				local atlas = SMODS.get_atlas(atlas_key_1) or SMODS.get_atlas(atlas_key_2)
-				t_s = SpriteClass(0, 0, 0.3, 0.3, atlas, SMODS.Suits[v].ui_pos)
+				t_s = SMODS.create_sprite(0, 0, 0.3, 0.3, atlas, SMODS.Suits[v].ui_pos)
 			else
 				local atlas_key = G.SETTINGS.colour_palettes[v] == "hc" and SMODS.Suits[v].hc_ui_atlas or SMODS.Suits[v].lc_ui_atlas or ("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))
-				t_s = SMODS.get_atlas(atlas_key, true)(0, 0, 0.3, 0.3, SMODS.get_atlas(atlas_key), SMODS.Suits[v].ui_pos)
+				t_s = SMODS.create_sprite(0, 0, 0.3, 0.3, atlas_key, SMODS.Suits[v].ui_pos)
 			end
 
 			t_s.states.drag.can = false
@@ -851,19 +848,17 @@ function tally_sprite(pos, value, tooltip, suit)
 	if palette and palette.suit_icon and palette.suit_icon.atlas then
 		local _x = (suit == 'Spades' and 3) or (suit == 'Hearts' and 0) or (suit == 'Clubs' and 2) or (suit == 'Diamonds' and 1)
 		local atlas_key = palette.suit_icon.atlas or 'ui_1'
-		t_s = SMODS.get_atlas(atlas_key, true)(0, 0, 0.3, 0.3, SMODS.get_atlas(atlas_key), (type(palette.suit_icon.pos) == "number" and {x=_x, y=palette.suit_icon.pos}) or palette.suit_icon.pos or {x=_x, y=0})
+		t_s = SMODS.create_sprite(0, 0, 0.3, 0.3, atlas_key, (type(palette.suit_icon.pos) == "number" and {x=_x, y=palette.suit_icon.pos}) or palette.suit_icon.pos or {x=_x, y=0})
 	elseif suit and (G.SETTINGS.colour_palettes[suit] == 'lc' or G.SETTINGS.colour_palettes[suit] == 'hc') then
 		local atlas_key_1 = SMODS.Suits[suit][G.SETTINGS.colour_palettes[suit] == 'hc' and "hc_ui_atlas" or G.SETTINGS.colour_palettes[suit] == 'lc' and "lc_ui_atlas"]
 		local atlas_key_2 = ("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))
-		local SpriteClass = SMODS.get_atlas(atlas_key_1, true) or SMODS.get_atlas(atlas_key_2, true)
 		local atlas = SMODS.get_atlas(atlas_key_1) or SMODS.get_atlas(atlas_key_2)
-		t_s = SpriteClass(0, 0, 0.3, 0.3, atlas, SMODS.Suits[suit].ui_pos)
+		t_s = SMODS.create_sprite(0, 0, 0.3, 0.3, atlas, SMODS.Suits[suit].ui_pos)
 	else
 		local atlas_key_1 = SMODS.Suits[suit][G.SETTINGS.colourblind_option and "hc_ui_atlas" or "lc_ui_atlas"]
 		local atlas_key_2 = ("ui_"..(G.SETTINGS.colourblind_option and "2" or "1"))
-		local SpriteClass = SMODS.get_atlas(atlas_key_1, true) or SMODS.get_atlas(atlas_key_2, true)
 		local atlas = SMODS.get_atlas(atlas_key_1) or SMODS.get_atlas(atlas_key_2)
-		t_s = SpriteClass(0,0,0.5,0.5, suit and atlas, {x=pos.x or 0, y=pos.y or 0})
+		t_s = SMODS.create_sprite(0, 0, 0.5, 0.5, suit and atlas, {x=pos.x or 0, y=pos.y or 0})
 	end
 	t_s.states.drag.can = false
 	t_s.states.hover.can = false
@@ -1689,7 +1684,7 @@ function Card:set_sprites(_center, _front)
     if _front then
         local _atlas, _pos = get_front_spriteinfo(_front)
         if self.children.front then self.children.front:remove() end
-		self.children.front = SMODS.get_atlas(_atlas.key, true)(self.T.x, self.T.y, self.T.w, self.T.h, _atlas, _pos)
+		self.children.front = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, _atlas, _pos)
 		self.children.front.states.hover = self.states.hover
 		self.children.front.states.click = self.states.click
 		self.children.front.states.drag = self.states.drag
@@ -1700,11 +1695,11 @@ function Card:set_sprites(_center, _front)
         if _center.set then
             if self.children.center then self.children.center:remove() end
 			if _center.set == 'Joker' and not _center.unlocked and not self.params.bypass_discovery_center then
-				self.children.center = SMODS.get_atlas("Joker", true)(self.T.x, self.T.y, self.T.w, self.T.h, SMODS.get_atlas("Joker"), G.j_locked.pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Joker", G.j_locked.pos)
 			elseif self.config.center.set == 'Voucher' and not self.config.center.unlocked and not self.params.bypass_discovery_center then
-				self.children.center = SMODS.get_atlas("Voucher", true)(self.T.x, self.T.y, self.T.w, self.T.h, SMODS.get_atlas("Voucher"), G.v_locked.pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Voucher", G.v_locked.pos)
 			elseif self.config.center.consumeable and self.config.center.demo then
-				self.children.center = SMODS.get_atlas("Tarot", true)(self.T.x, self.T.y, self.T.w, self.T.h, SMODS.get_atlas("Tarot"), G.c_locked.pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Tarot", G.c_locked.pos)
 			elseif not self.params.bypass_discovery_center and (_center.set == 'Edition' or _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' or _center.set == 'Booster') and not _center.discovered then
 				local atlas = SMODS.get_atlas(
 					(_center.undiscovered and
@@ -1721,12 +1716,12 @@ function Card:set_sprites(_center, _front)
 				local pos = (_center.undiscovered and _center.undiscovered.pos) or
 					(SMODS.UndiscoveredSprites[_center.set] and SMODS.UndiscoveredSprites[_center.set].pos) or
 					G.j_undiscovered.pos
-				self.children.center = SMODS.get_atlas(atlas.key, true)(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
 			elseif _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' then
 				local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
-				self.children.center = SMODS.get_atlas(atlas_key, true)(self.T.x, self.T.y, self.T.w, self.T.h, SMODS.get_atlas(atlas_key), self.config.center.pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.config.center.pos)
 			else
-				self.children.center = SMODS.get_atlas(_center.atlas or 'centers', true)(self.T.x, self.T.y, self.T.w, self.T.h, SMODS.get_atlas(_center.atlas or 'centers'), _center.pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, _center.atlas or 'centers', _center.pos)
 			end
 			self.children.center.states.hover = self.states.hover
 			self.children.center.states.click = self.states.click
@@ -1753,7 +1748,7 @@ function Card:set_sprites(_center, _front)
         if _center.soul_pos then
 			if self.children.floating_sprite then self.children.floating_sprite:remove() end
 			local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
-            self.children.floating_sprite = SMODS.get_atlas(atlas_key, true)(self.T.x, self.T.y, self.T.w, self.T.h, SMODS.get_atlas(atlas_key), self.config.center.soul_pos)
+            self.children.floating_sprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.config.center.soul_pos)
             self.children.floating_sprite.role.draw_major = self
             self.children.floating_sprite.states.hover.can = false
             self.children.floating_sprite.states.click.can = false
@@ -1761,7 +1756,7 @@ function Card:set_sprites(_center, _front)
 
         if self.children.back then self.children.back:remove() end
 		local atlas_key = (G.GAME.viewed_back or G.GAME.selected_back) and ((G.GAME.viewed_back or G.GAME.selected_back)[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or (G.GAME.viewed_back or G.GAME.selected_back).atlas) or 'centers'
-		self.children.back = SMODS.get_atlas(atlas_key, true)(self.T.x, self.T.y, self.T.w, self.T.h, SMODS.get_atlas(atlas_key), self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos))
+		self.children.back = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos))
 		self.children.back.states.hover = self.states.hover
 		self.children.back.states.click = self.states.click
 		self.children.back.states.drag = self.states.drag

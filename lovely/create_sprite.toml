@@ -1,0 +1,74 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 0
+
+
+### Sprite/AnimatedSprite or G.ASSET_ATLAS/ANIMATION_ATLAS -> SMODS.create_sprite() 
+# Case: _atlas
+[[patches]]
+[patches.regex]
+target = 'functions/UI_definitions.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)_atlas,(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.create_sprite($pre _atlas.key, $rest
+'''
+
+# Case: ..ATLAS[]
+[[patches]] # Could be a single patches.pattern instead
+[patches.regex]
+target = 'blind.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>.*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.create_sprite($pre $key, $rest 
+'''
+[[patches]] 
+[patches.regex]
+target = 'game.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>.*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.create_sprite($pre $key, $rest 
+'''
+[[patches]] # Could be a single patches.pattern instead
+[patches.regex]
+target = 'tag.lua' 
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>.*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.create_sprite($pre $key, $rest 
+'''
+[[patches]] # Could be a single patches.pattern instead
+[patches.regex]
+target = 'functions/button_callbacks.lua' 
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>.*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.create_sprite($pre $key, $rest 
+'''
+[[patches]] 
+[patches.regex]
+target = 'functions/common_events.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>.*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.create_sprite($pre $key, $rest 
+'''
+[[patches]] # Could be a single patches.pattern instead
+[patches.regex]
+target = 'functions/misc_functions.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>.*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.create_sprite($pre $key, $rest 
+'''
+[[patches]]
+[patches.regex]
+target = 'functions/UI_definitions.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>.*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.create_sprite($pre $key, $rest 
+'''
