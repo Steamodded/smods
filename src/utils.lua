@@ -3167,3 +3167,12 @@ function CardArea:handle_card_limit(card_limit, card_slots)
         end
     end
 end
+
+
+function SMODS.get_atlas(atlas_key, sprite_class_instead)
+    if sprite_class_instead then
+        return (G.ASSET_ATLAS[atlas_key] and Sprite) or (G.ANIMATION_ATLAS[atlas_key] and AnimatedSprite) or Sprite
+    else
+        return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key]
+    end
+end

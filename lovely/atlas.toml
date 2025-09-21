@@ -5,17 +5,6 @@ priority = -10
 
 ### Sprite API
 
-# get_front_spriteinfo()
-
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua' 
-pattern = 'return G.ASSET_ATLAS[_front.atlas] or G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], _front.pos'
-position = 'at'
-match_indent = true
-payload = 'return G.ASSET_ATLAS[G.SETTINGS.colourblind_option and _front.hc_atlas or _front.lc_atlas or {}] or G.ASSET_ATLAS[_front.atlas] or G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], _front.pos'
-
-
 # Game:set_render_settings()
 [[patches]]
 [patches.pattern]
@@ -75,4 +64,81 @@ if delay_sprites ~= 'quantum' then
         self.T[key] = self.original_T[key]
     end
 end
+'''
+
+### Sprite/AnimatedSprite or G.ASSET_ATLAS/ANIMATION_ATLAS -> SMODS.get_atlas() 
+# Case: _atlas
+[[patches]]
+[patches.regex]
+target = 'game.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)_atlas,(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.get_atlas(_atlas.key, true)($pre SMODS.get_atlas(_atlas.key), $rest
+'''
+[[patches]]
+[patches.regex]
+target = 'functions/UI_definitions.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)_atlas,(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.get_atlas(_atlas.key, true)($pre SMODS.get_atlas(_atlas.key), $rest
+'''
+
+# Case: ..ATLAS[]
+[[patches]] # Could be a single patches.pattern instead
+[patches.regex]
+target = 'blind.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>[^]]*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.get_atlas($key, true)($pre SMODS.get_atlas($key), $rest
+'''
+[[patches]] 
+[patches.regex]
+target = 'game.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>[^]]*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.get_atlas($key, true)($pre SMODS.get_atlas($key), $rest 
+'''
+[[patches]] # Could be a single patches.pattern instead
+[patches.regex]
+target = 'tag.lua' 
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>[^]]*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.get_atlas($key, true)($pre SMODS.get_atlas($key), $rest
+'''
+[[patches]] # Could be a single patches.pattern instead
+[patches.regex]
+target = 'functions/button_callbacks.lua' 
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>[^]]*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.get_atlas($key, true)($pre SMODS.get_atlas($key), $rest
+'''
+[[patches]] 
+[patches.regex]
+target = 'functions/common_events.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>[^]]*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.get_atlas($key, true)($pre SMODS.get_atlas($key), $rest 
+'''
+[[patches]] # Could be a single patches.pattern instead
+[patches.regex]
+target = 'functions/misc_functions.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>[^]]*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.get_atlas($key, true)($pre SMODS.get_atlas($key), $rest 
+'''
+[[patches]]
+[patches.regex]
+target = 'functions/UI_definitions.lua'
+pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>[^]]*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.get_atlas($key, true)($pre SMODS.get_atlas($key), $rest 
 '''
