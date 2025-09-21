@@ -3169,12 +3169,12 @@ function CardArea:handle_card_limit(card_limit, card_slots)
 end
 
 
-function SMODS.get_atlas(atlas_key, sprite_class_instead)
-    if sprite_class_instead then
-        return (G.ASSET_ATLAS[atlas_key] and Sprite) or (G.ANIMATION_ATLAS[atlas_key] and AnimatedSprite) or Sprite
-    else
-        return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key]
-    end
+function SMODS.get_atlas(atlas_key)
+    return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key]
+end
+
+function SMODS.get_atlas_sprite_class(atlas_key)
+    return G.ASSET_ATLAS[atlas_key] and Sprite or G.ANIMATION_ATLAS[atlas_key] and AnimatedSprite or Sprite
 end
 
 function SMODS.create_sprite(...)
@@ -3182,7 +3182,7 @@ function SMODS.create_sprite(...)
     t = type(t[1]) == "table" and t[1] or t
     local atlas_key = (type(t[5]) == "string" and t[5]) or (type(t[5]) == "table" and (t[5].name or t[5].key)) or t.atlas_key or (t.atlas and (t.atlas.name or t.atlas.key))
     local atlas = SMODS.get_atlas(atlas_key)
-    return SMODS.get_atlas(atlas_key, true)(
+    return SMODS.get_atlas_sprite_class(atlas_key)(
         t[1] or t.x or t.X,
         t[2] or t.y or t.Y,
         t[3] or t.w or t.W,
