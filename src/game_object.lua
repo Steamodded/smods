@@ -3703,6 +3703,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.Scoring_Parameter({
         key = 'mult',
         default_value = 0,
+        juice_on_update = true,
         colour = G.C.UI_MULT,
         calculation_keys = {'mult', 'h_mult', 'mult_mod','x_mult', 'Xmult', 'xmult', 'x_mult_mod', 'Xmult_mod'},
         calc_effect = function(self, effect, scored_card, key, amount, from_edition)

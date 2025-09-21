@@ -143,9 +143,7 @@ pattern = "if add and not G.GAME.banned_keys[v.key] then"
 match_indent = true
 position = 'before'
 payload = '''
-if v.in_pool and type(v.in_pool) == 'function' then
-    add = in_pool and (add or pool_opts.override_base_checks)
-end
+add = in_pool and (add or pool_opts.override_base_checks)
 '''
 
 [[patches]]

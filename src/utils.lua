@@ -703,6 +703,10 @@ end
 
 --#endregion
 
+function SMODS.poll_edition(args)
+    args = args or {}
+    return poll_edition(args.key or 'editiongeneric', args.mod, args.no_negative, args.guaranteed, args.options)
+end
 
 function SMODS.poll_seal(args)
     args = args or {}
@@ -1236,7 +1240,7 @@ SMODS.smart_level_up_hand = function(card, hand, instant, amount)
     if not (instant or SMODS.displayed_hand == hand) then
         update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'),chips = G.GAME.hands[hand].chips, mult = G.GAME.hands[hand].mult, level=G.GAME.hands[hand].level})
     end
-    level_up_hand(card, hand, instant, type(amount) == 'number' and amount or 1)
+    level_up_hand(card, hand, instant, (type(amount) == 'number' or type(amount) == 'table') and amount or 1)
     if not (instant or SMODS.displayed_hand == hand) then
         update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, vals_after_level or {mult = 0, chips = 0, handname = '', level = ''})
     end
@@ -2365,6 +2369,7 @@ G.FUNCS.can_select_from_booster = function(e)
   end
 
 function Card.selectable_from_pack(card, pack)
+    if card.config.center.select_card then return card.config.center.select_card end
     if pack.select_exclusions then
         for _, key in ipairs(pack.select_exclusions) do
             if key == card.config.center_key then return false end
@@ -2961,6 +2966,21 @@ end
 -- Scoring Calculation API
 function SMODS.set_scoring_calculation(key)
     G.GAME.current_scoring_calculation = SMODS.Scoring_Calculations[key]:new()
+    G.FUNCS.SMODS_scoring_calculation_function(G.HUD:get_UIE_by_ID('hand_text_area'))
+    G.HUD:get_UIE_by_ID('hand_operator_container').UIBox:recalculate()
+    SMODS.refresh_score_UI_list()
+end
+
+local game_start_run = Game.start_run
+function Game:start_run(args)
+    game_start_run(self, args)
+    G.E_MANAGER:add_event(Event({
+        trigger = 'immediate',
+        func = function()                
+            SMODS.refresh_score_UI_list()
+            return true
+        end
+    }))
 end
 
 G.FUNCS.SMODS_scoring_calculation_function = function(e)
@@ -3006,6 +3026,11 @@ function SMODS.get_scoring_parameter(key, flames)
     return SMODS.Scoring_Parameters[key].current or SMODS.Scoring_Parameters[key].default_value
 end
 
+function SMODS.refresh_score_UI_list()
+    for name, _ in pairs(SMODS.Scoring_Parameters) do
+        G.hand_text_area[name] = G.HUD:get_UIE_by_ID('hand_'..name)
+    end
+end
 
 -- Adds tag_triggered context
 local tag_apply = Tag.apply_to_run
