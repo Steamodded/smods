@@ -637,7 +637,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 table.insert(G.P_CENTER_POOLS.Stake, self)
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
-                    print("Atli: ", SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"))
                     G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos)
                     G.sticker_map[self.key] = self.key:sub(7)
                 else
