@@ -750,6 +750,6 @@ function SMODS.get_atlas(atlas_key) end
 --- This function returns the Sprite or the AnimatedSprite class depending on the atlas type
 function SMODS.get_atlas_sprite_class(atlas_key) end
 
----@param ... any Either the same parameters as Sprite() takes individually, or a list containing its params, or a table with keys according to each parameter
+---@param ... any The same parameters as Sprite() takes individually. The atlas may be an atlas_key instead.
 --- This function creates a Sprite or AnimatedSprite depending on the atlas passed
 function SMODS.create_sprite(...) end
