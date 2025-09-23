@@ -92,13 +92,12 @@ end
 
 # Add Scoring_Parameters to update_hand_text
 [[patches]]
-[patches.pattern]
+[patches.regex]
 target = 'functions/common_events.lua'
 match_indent = true
-position = 'before'
-pattern = '''
-if vals.handname and G.GAME.current_round.current_hand.handname ~= vals.handname then
-'''
+position = 'at'
+line_prepend = '$indent'
+pattern = '''(?<indent>[\t ]*)if vals\.[A-z0-9\n\t .~=()'\-+,<;>:{}]+mult:juice_up\(\) end\n[\t ]+end'''
 payload = '''
 for name, parameter in pairs(SMODS.Scoring_Parameters) do
     if vals[name] and G.GAME.current_round.current_hand[name] ~= vals[name] then
@@ -109,7 +108,7 @@ for name, parameter in pairs(SMODS.Scoring_Parameters) do
         end
         if type(vals[name]) == 'string' then delta = vals[name] end
         G.GAME.current_round.current_hand[name] = vals[name]
-        G.hand_text_area[name] = G.hand_text_area[name] or G.HUD:get_UIE_by_ID('hand_'..name..'_area') or nil
+        G.hand_text_area[name] = G.hand_text_area[name] or G.HUD:get_UIE_by_ID('hand_'..name) or nil
         if G.hand_text_area[name] then
             G.hand_text_area[name]:update(0)
             if vals.StatusText then 
@@ -124,6 +123,7 @@ for name, parameter in pairs(SMODS.Scoring_Parameters) do
                     cover_align = 'cm'
                 })
             end
+            if (vals[name.."_juice"] or parameter.juice_on_update) and not G.TAROT_INTERRUPT then G.hand_text_area[name]:juice_up() end
         end
     end
 end

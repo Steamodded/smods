@@ -244,12 +244,15 @@ function get_straight(hand, min_length, skip, wrap) end
 --- Creates tally sprite UI. 
 function tally_sprite(pos, value, tooltip, suit) end
 
----@param _t table[]
+---@param _t table
 ---@param seed string
----@param args table|{starting_deck?: boolean, in_pool?: fun(center: SMODS.GameObject|table, args: table)}
----@return table
----@return string key
---- Sets the seed to `seed` and randomly selects a table within `_t`. 
+---@param args table|{starting_deck?: boolean, in_pool?: fun(v: any, args: table)}
+---@return any
+---@return string|number key
+--- Sets the seed to `seed` and randomly selects an element within `_t`.
+---
+--- First filters the elements of `_t` using `args.in_pool`,
+--- or else each element `v`'s `v.in_pool` field, if given.
 function pseudorandom_element(_t, seed, args) end
 
 --- Vanilla Pools

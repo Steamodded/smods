@@ -316,6 +316,35 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
     }
 
+    -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.DynaTextEffect
+    -------------------------------------------------------------------------------------------------
+    
+    SMODS.DynaTextEffects = {}
+    SMODS.DynaTextEffect = SMODS.GameObject:extend {
+        obj_table = SMODS.DynaTextEffects,
+        set = 'DynaTextEffects',
+        obj_buffer = {},
+        disable_mipmap = false,
+        required_params = {
+            'key',
+            'func',
+        },
+        func = function(dynatext, index, letter)
+        end,
+        register = function(self)
+            if self.registered then
+                sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
+                return
+            end
+            self.name = self.key
+            SMODS.DynaTextEffect.super.register(self)
+        end,
+        inject = function(self)
+        end,
+        process_loc_text = function() end,
+    }
+
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Language
@@ -1436,7 +1465,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 G.ROOM.T.x + 9 + G.hand.T.x, G.hand.T.y,
                 math.max(1,math.min(_size,5))*G.CARD_W*1.1,
                 1.05*G.CARD_H,
-                {card_limit = _size, type = 'consumeable', highlight_limit = 1})
+                {card_limit = _size, type = 'consumeable', highlight_limit = 1, negative_info = true})
 
             local t = {n=G.UIT.ROOT, config = {align = 'tm', r = 0.15, colour = G.C.CLEAR, padding = 0.15}, nodes={
                 {n=G.UIT.R, config={align = "cl", colour = G.C.CLEAR,r=0.15, padding = 0.1, minh = 2, shadow = true}, nodes={
@@ -3229,6 +3258,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         on_load = nil,   -- function (card) - modify card when it is loaded from the save file
         register = function(self)
             self.config = self.config or {}
+            if self.config.card_limit then
+                self.card_limit_keys = self.card_limit_keys or {
+                    joker = string.sub(self.key, 3) .. '_SMODS_INTERNAL',
+                    consumable = string.sub(self.key, 3) .. '_consumable' .. '_SMODS_INTERNAL',
+                    playing_card = string.sub(self.key, 3) .. '_playing_card' .. '_SMODS_INTERNAL',
+                    generic = string.sub(self.key, 3) .. '_generic' .. '_SMODS_INTERNAL'
+                }
+            end
             SMODS.Edition.super.register(self)
         end,
         process_loc_text = function(self)
@@ -3242,7 +3279,27 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         create_fake_card = function(self)
 	        return { edition = copy_table(self.config), fake_card = true }
         end,
+        card_limit_key = function(self, card)
+            local area = (card.area or {}).config or {}
+            if area.negative_info then
+                if type(area.negative_info) == 'string' then
+                    return self.card_limit_keys[area.negative_info]
+                end
+                if card.ability.set == 'Joker' then
+                    return self.card_limit_keys['joker']
+                elseif card.ability.consumeable then
+                    return self.card_limit_keys['consumable']
+                elseif card.ability.set == 'Default' or card.ability.set == 'Enhanced' then
+                    return self.card_limit_keys['playing_card']
+                end
+            end
+            return self.card_limit_keys['generic']
+        end
     }
+
+    function SMODS.Edition:get_card_limit_key()
+        return G.P_CENTERS[self.edition.key]:card_limit_key(self)
+    end
 
     -- TODO also, this should probably be a utility method in core
     -- card_area = pass the card area
@@ -3618,6 +3675,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.Scoring_Parameter({
         key = 'mult',
         default_value = 0,
+        juice_on_update = true,
         colour = G.C.UI_MULT,
         calculation_keys = {'mult', 'h_mult', 'mult_mod','x_mult', 'Xmult', 'xmult', 'x_mult_mod', 'Xmult_mod'},
         calc_effect = function(self, effect, scored_card, key, amount, from_edition)
@@ -3766,7 +3824,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         register = function() error('INTERNAL CLASS, DO NOT CALL') end,
         pre_inject_class = function()
             for _, mod in ipairs(SMODS.mod_list) do
-                if mod.can_load then
+                if mod.can_load and not mod.lovely_only then
                     SMODS.handle_loc_file(mod.path, mod.id)
                 end
             end

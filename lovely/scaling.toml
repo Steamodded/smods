@@ -327,8 +327,12 @@ SMODS.scale_card(self, {
     ref_table = self.ability,
     ref_value = "x_mult",
     scalar_value = "extra",
-    message_colour = G.C.MULT
+    no_message = true
 })
+return {
+    extra = {focus = self, message = localize('k_upgrade_ex'), colour = G.C.MULT},
+    card = self
+}
 '''
 # Obelisk
 [[patches]]
@@ -451,7 +455,10 @@ SMODS.scale_card(self, {
     ref_value = "x_mult",
     scalar_value = "extra",
     message_key = 'a_xmult',
-    message_colour = G.C.MULT
+    message_colour = G.C.MULT,
+    operation = function(ref_table, ref_value, initial, scaling)
+        ref_table[ref_value] = initial + scaling*#enhanced
+    end
 })
 '''
 
@@ -470,7 +477,10 @@ SMODS.scale_card(self, {
     ref_table = self.ability,
     ref_value = "x_mult",
     scalar_value = "extra",
-    message_key = 'a_xmult'
+    message_key = 'a_xmult',
+    operation = function(ref_table, ref_value, initial, scaling)
+        ref_table[ref_value] = initial + scaling*#context.cards
+    end
 })
 '''
 
