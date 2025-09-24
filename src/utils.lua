@@ -3102,17 +3102,49 @@ end
 
 function SMODS.card_select_area(card, pack)
     local select_area
-    if type(pack.select_card) == "function" then select_area = pack:select_card(card, pack) else select_area = pack.select_card end
-    if type(card.config.center.select_card) == "function" then select_area = card.config.center:select_card(card, pack) else select_area = card.config.center.select_card end
-    if type(SMODS.ConsumableTypes[card.ability.set].select_card) == "function" then select_area = SMODS.ConsumableTypes[card.ability.set]:select_card(card, pack) else select_area = SMODS.ConsumableTypes[card.ability.set].select_card end
+    if card.config.center.select_card then
+        if type(card.config.center.select_card) == "function" then -- Card's value takes first priority
+            select_area = card.config.center:select_card(card, pack)
+        else
+            select_area = card.config.center.select_card
+        end
+    elseif SMODS.ConsumableTypes[card.ability.set].select_card then -- ConsumableType is second priority
+        if type(SMODS.ConsumableTypes[card.ability.set].select_card) == "function" then
+            select_area = SMODS.ConsumableTypes[card.ability.set]:select_card(card, pack)
+        else
+            select_area = SMODS.ConsumableTypes[card.ability.set].select_card
+        end
+    elseif pack.select_card then -- Pack is third priority
+        if type(pack.select_card) == "function" then
+            select_area = pack:select_card(card, pack)
+        else
+            select_area = pack.select_card
+        end
+    end
     return select_area
 end
 
 function SMODS.get_select_key(card, pack)
     local select_key
-    if type(pack.select_button) == "function" then select_key = pack:select_button(card, pack) else select_key = pack.select_button end
-    if type(card.config.center.select_button) == "function" then select_key = card.config.center:select_button(card, pack) else select_key = card.config.center.select_button end
-    if type(SMODS.ConsumableTypes[card.ability.set].select_button) == "function" then select_key = SMODS.ConsumableTypes[card.ability.set]:select_button(card, pack) else select_key = SMODS.ConsumableTypes[card.ability.set].select_button end
+    if card.config.center.select_button_text then -- Card's value takes first priority
+        if type(card.config.center.select_button_text) == "function" then
+            select_key = card.config.center:select_button_text(card, pack)
+        else
+            select_key = card.config.center.select_button_text
+        end
+    elseif SMODS.ConsumableTypes[card.ability.set].select_button_text then -- ConsumableType is second priority
+        if type(SMODS.ConsumableTypes[card.ability.set].select_button_text) == "function" then
+            select_key = SMODS.ConsumableTypes[card.ability.set]:select_button_text(card, pack)
+        else
+            select_key = SMODS.ConsumableTypes[card.ability.set].select_button_text
+        end
+    elseif pack.select_button_text then -- Pack is third priority
+        if type(pack.select_button_text) == "function" then
+            select_key = pack:select_button_text(card, pack)
+        else
+            select_key = pack.select_button_text
+        end
+    end
     return select_key
 end
 
