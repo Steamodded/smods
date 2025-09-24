@@ -3124,28 +3124,28 @@ function SMODS.card_select_area(card, pack)
     return select_area
 end
 
-function SMODS.get_select_key(card, pack)
-    local select_key
+function SMODS.get_select_text(card, pack)
+    local select_text
     if card.config.center.select_button_text then -- Card's value takes first priority
         if type(card.config.center.select_button_text) == "function" then
-            select_key = card.config.center:select_button_text(card, pack)
+            select_text = card.config.center:select_button_text(card, pack)
         else
-            select_key = card.config.center.select_button_text
+            select_text = card.config.center.select_button_text
         end
     elseif SMODS.ConsumableTypes[card.ability.set].select_button_text then -- ConsumableType is second priority
         if type(SMODS.ConsumableTypes[card.ability.set].select_button_text) == "function" then
-            select_key = SMODS.ConsumableTypes[card.ability.set]:select_button_text(card, pack)
+            select_text = SMODS.ConsumableTypes[card.ability.set]:select_button_text(card, pack)
         else
-            select_key = SMODS.ConsumableTypes[card.ability.set].select_button_text
+            select_text = SMODS.ConsumableTypes[card.ability.set].select_button_text
         end
     elseif pack.select_button_text then -- Pack is third priority
         if type(pack.select_button_text) == "function" then
-            select_key = pack:select_button_text(card, pack)
+            select_text = pack:select_button_text(card, pack)
         else
-            select_key = pack.select_button_text
+            select_text = pack.select_button_text
         end
     end
-    return select_key
+    return select_text
 end
 
 function CardArea:count_extra_slots_used(cards)
