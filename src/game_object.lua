@@ -328,7 +328,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         disable_mipmap = false,
         required_params = {
             'key',
-            'func',
         },
         func = function(dynatext, index, letter)
         end,
