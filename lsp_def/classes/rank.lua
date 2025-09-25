@@ -16,8 +16,8 @@
 ---@field face? boolean Sets if this rank counts as a "face" card. 
 ---@field next? Ranks|string[] List of keys to other ranks that come after this card. 
 ---@field prev? Ranks|string[] List of keys to other ranks that come before this card. Used when evaluating straights. 
----@field strength_effect? table|{fixed?: number, random?: boolean, ignore?: boolean} Determines how cards with this rank behave when Strength is used. 
----@field straight_edges? table<Ranks|string, boolean> Sets the rank keys from which going into this rank should terminate a straight. (Vanilla only set for Ace => {'King' = true, '2' = true})
+---@field strength_effect? table|{fixed?: string, random?: boolean, ignore?: boolean} Determines how cards with this rank behave when Strength is used. 
+---@field virtual? table|{ranks: table, next?: table, prev?: table} If set, replaces a rank or a rank's .next/.prev with VirtualRanks (used for straight calculation, e.g. Ace turns to Ace_low and Ace_high)
 ---@field parity? number The parity of the rank, 0 for Even, 1 for odd.
 ---@field suit_map? table<string, number> For any suit keys in this table, use this rank's atlas over the suit's atlas. Provided number is the `y` position of the suit on the rank's atlas. 
 ---@field __call? fun(self: SMODS.Rank|table, o: SMODS.Rank|table): nil|table|SMODS.Rank
@@ -38,6 +38,7 @@
 ---@field draw? fun(self: SMODS.Rank|table, card: Card|table, layer: string) Allows drawing additional sprites or shaders onto cards with this suit. 
 ---@field in_pool? fun(self: SMODS.Rank|table, args: table): boolean? Allows configuring if cards with this suit should spawn. 
 ---@field delete? fun(self: SMODS.Rank|table) Deletes this suit. 
+---@field get_straight_next? fun(self: SMODS.Rank|table, direction: "next"|"prev", do_wrap?: boolean) Function to get a rank's .next/.prev with respect to VirtualRanks.
 ---@overload fun(self: SMODS.Rank): SMODS.Rank
 SMODS.Rank = setmetatable({}, {
     __call = function(self)
