@@ -1978,3 +1978,65 @@ position = 'at'
 payload = '''
 delay(0.4); SMODS.ante_end = true; ease_ante(1); SMODS.ante_end = nil; delay(0.4); check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
 '''
+
+# Make draw_card and draw_card_from actually use stay_flipped
+[[patches]]
+[patches.pattern]
+target = "cardarea.lua"
+match_indent = true
+pattern = '''
+local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(self, card, area)
+'''
+position = "at"
+payload = '''
+local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(self, card, area) or stay_flipped
+'''
+
+[[patches]]
+[patches.pattern]
+target = "cardarea.lua"
+match_indent = true
+pattern = '''
+local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(to, card, from)
+'''
+position = "at"
+payload = '''
+local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(to, card, from) or stay_flipped
+'''
+
+# Discard From Play context
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+pattern = '''
+draw_card(G.play,G.discard, it*100/play_count,'down', false, v)
+'''
+position = 'at'
+payload = '''
+local flags = SMODS.calculate_context({discard_from_play = true, card = v, num_discarded = k})
+local discard_to = G[flags.draw_to] or G.discard
+draw_card(G.play,discard_to, it*100/play_count,'down', false, v, nil, nil, flags.stay_flipped)
+'''
+
+# Draw Individual context
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+pattern = '''
+    draw_card(G.deck,G.hand, i*100/hand_space,'up', true, cards_to_draw[i])
+else
+    draw_card(G.deck,G.hand, i*100/hand_space,'up', true, cards_to_draw[i])
+end
+'''
+position = 'at'
+payload = '''
+    local flags = SMODS.calculate_context({draw_individual = true, card = cards_to_draw[i], num_drawn = i, to_booster = true})
+    draw_card(G.deck,G.hand, i*100/hand_space,'up', true, cards_to_draw[i], nil, nil, flags.stay_flipped)
+else
+    local flags = SMODS.calculate_context({draw_individual = true, card = cards_to_draw[i], num_drawn = i, to_booster = false})
+    local draw_to = G[flags.draw_to] or G.hand
+    draw_card(G.deck,draw_to, i*100/hand_space,'up', true, cards_to_draw[i], nil, nil, flags.stay_flipped)
+end
+'''
