@@ -2235,7 +2235,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         get_straight_next = function (self, direction, do_wrap)
             local dir = direction == "prev" and "prev" or "next"
-            return do_wrap and self[dir.."_wrap"] or self[dir] or {}
+            local ret = {}
+            for k, v in pairs(self[dir] or {}) do
+                    ret[k] = v
+                end
+            if do_wrap then
+                for k, v in pairs(self[dir.."_wrap"] or {}) do
+                    ret[k] = v
+                end
+            end
+            return ret
         end
     }
 

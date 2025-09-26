@@ -4,8 +4,13 @@
 ---@field obj_buffer? string[] Array of keys to all objects registered to this class. 
 ---@field obj_table? table<string, SMODS.VirtualRank|table> Table of objects registered to this class. 
 ---@field super? SMODS.GameObject|table Parent class. 
+---@field base_ranks? table<SMODS.Rank|string, true> A map of rank keys this VirtualRank overrides.
 ---@field next? Ranks|string[] List of keys to other ranks that come after this VirtualRank. 
 ---@field prev? Ranks|string[] List of keys to other ranks that come before this VirtualRank.
+---@field next_redirs? table<SMODS.Rank|string, boolean> A map of ranks this VirtualRank overrides .next for. If value is false, doesn't add self to redirs but still removes base .next
+---@field prev_redirs? table<SMODS.Rank|string, boolean> A map of ranks this VirtualRank overrides .prev for. If value is false, doesn't add self to redirs but still removes base .prev
+---@field next_wrap? table<SMODS.Rank|string, boolean> A map of ranks this VirtualRank additionally returns in get_straight_next("next") if do_wrap = true.
+---@field prev_wrap? table<SMODS.Rank|string, boolean> A map of ranks this VirtualRank additionally returns in get_straight_next("prev") if do_wrap = true.
 ---@field __call? fun(self: SMODS.Rank|table, o: SMODS.Rank|table): nil|table|SMODS.Rank
 ---@field extend? fun(self: SMODS.Rank|table, o: SMODS.Rank|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Rank|table): boolean? Ensures objects already registered will not register. 
