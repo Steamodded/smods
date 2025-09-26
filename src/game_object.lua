@@ -2149,7 +2149,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         parity = nil,
         strength_effect = {
             fixed_next = 'King',
-            fixed_prev = 'Queen'
+            fixed_prev = 'Jack'
         },
     }
     SMODS.Rank {

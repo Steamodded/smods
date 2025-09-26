@@ -1064,8 +1064,16 @@ function SMODS.has_no_rank(card)
     local is_stone = false
     local is_wild = false
     for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].no_rank then is_stone = true end
+        if G.P_CENTERS[k].no_rank then is_stone = true end
         if G.P_CENTERS[k].any_rank then is_wild = true end
+    end
+    if (G.P_CENTERS[(card.edition or {}).key] or {}).no_rank then is_stone = true end
+    if (G.P_CENTERS[(card.edition or {}).key] or {}).any_rank then is_wild = true end
+    if (G.P_SEALS[card.seal or {}] or {}).no_rank then is_stone = true end
+    if (G.P_SEALS[card.seal or {}] or {}).any_rank then is_wild = true end
+    for k, v in pairs(SMODS.Stickers) do
+        if v.no_rank and card.ability[k] then is_stone = true end
+        if v.any_rank and card.ability[k] then is_wild = true end
     end
     return is_stone and not is_wild
 end
