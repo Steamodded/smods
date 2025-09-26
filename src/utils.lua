@@ -1064,7 +1064,7 @@ function SMODS.has_no_rank(card)
     local is_stone = false
     local is_wild = false
     for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if G.P_CENTERS[k].no_rank then is_stone = true end
+        if k == 'm_stone' or G.P_CENTERS[k].no_rank then is_stone = not card.vampired end
         if G.P_CENTERS[k].any_rank then is_wild = true end
     end
     if (G.P_CENTERS[(card.edition or {}).key] or {}).no_rank then is_stone = true end
@@ -2953,7 +2953,7 @@ end
 
 function Card:get_ranks(flags) -- Returns a map of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
     if not self.playing_card then return {} end
-    local default_ranks = (not self.vampired and SMODS.has_no_rank(self) and {}) or {[SMODS.Ranks[self.base.value]] = true}
+    local default_ranks = (SMODS.has_no_rank(self) and {}) or {[SMODS.Ranks[self.base.value]] = true}
     if not SMODS.optional_features.quantum_ranks then return default_ranks end
 
     flags = flags or {}
