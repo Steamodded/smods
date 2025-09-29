@@ -212,7 +212,7 @@ G.GAME.hands[hand].chips = math.max(G.GAME.hands[hand].s_chips + G.GAME.hands[ha
 '''
 payload = '''
 for name, parameter in pairs(SMODS.Scoring_Parameters) do
-    if G.GAME.hands[hand][name] then parameter:level_up_hand(amount, G.GAME.hands[hand]) end
+    if G.GAME.hands[hand][name] then parameter:upgrade_hand(amount, G.GAME.hands[hand], "levelup") end
 end
 '''
 
