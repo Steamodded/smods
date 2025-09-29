@@ -3606,13 +3606,17 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.current = self.current + amount
             update_hand_text({delay = 0}, {[self.key] = self.current})
         end,
-        upgrade_hand = function(self, amount, hand, type)
-            if type == "overwrite" then
+        upgrade_hand = function(self, amount, hand, behavior)
+            if type(behavior) == "function" then
+                hand[self.key] = behavior(hand[self.key], amount)
+            elseif behavior == "overwrite" then
                 hand[self.key] = amount
-            elseif type == "levelup" then
+            elseif behavior == "levelup" then
                 hand[self.key] = hand[self.key] + hand['l_'..self.key] * amount
             else
-                if type then print("Warning - unknown type passed to " .. self.key .. " upgrade_hand") end
+                if behavior then
+                    print("Warning - unknown behavior " .. behavior .. " passed to " .. self.key .. " upgrade_hand")
+                end
                 hand[self.key] = hand[self.key] + amount
             end
         end,
