@@ -2161,7 +2161,6 @@ function SMODS.blueprint_effect(copier, copied_card, context)
     context.blueprint_card = old_context_blueprint_card
     if other_joker_ret then
         other_joker_ret.card = eff_card
-        other_joker_ret.colour = G.C.BLUE
         return other_joker_ret
     end
 end
