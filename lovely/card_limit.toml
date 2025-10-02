@@ -308,6 +308,5 @@ if not hand_space then
     end
     hand_space = #cards_to_draw
 end
-SMODS.cards_to_draw = (SMODS.cards_to_draw or 0) + hand_space
 """
 match_indent = true

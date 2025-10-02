@@ -1538,17 +1538,6 @@ end
 
 function create_UIBox_current_hands(simple)
 	G.current_hands = {}
-	local index = 0
-	for _, v in ipairs(G.handlist) do
-		local ui_element = create_UIBox_current_hand_row(v, simple)
-		G.current_hands[index + 1] = ui_element
-		if ui_element then
-			index = index + 1
-		end
-		if index >= 10 then
-			break
-		end
-	end
 
 	local visible_hands = {}
 	for _, v in ipairs(G.handlist) do
@@ -1557,6 +1546,19 @@ function create_UIBox_current_hands(simple)
 		end
 	end
 
+	local index = 0
+	for _, v in ipairs(G.handlist) do
+		local ui_element = create_UIBox_current_hand_row(v, simple)
+		G.current_hands[index + 1] = ui_element
+		if ui_element then
+			index = index + 1
+		end
+		if index >= 10 and #visible_hands > 12 then -- keep pagination off until there's more than the vanilla max of 12 hands
+			break
+		end
+	end
+
+	
 	local hand_options = {}
 	for i = 1, math.ceil(#visible_hands / 10) do
 		table.insert(hand_options,
@@ -1566,7 +1568,8 @@ function create_UIBox_current_hands(simple)
 	local object = {n = G.UIT.ROOT, config = {align = "cm", colour = G.C.CLEAR}, nodes = {
 		{n = G.UIT.R, config = {align = "cm", padding = 0.04}, nodes =
 			G.current_hands},
-		{n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
+		-- UI consistency with vanilla 
+		#visible_hands > 12 and {n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
 			create_option_cycle({
 				options = hand_options,
 				w = 4.5,
@@ -1576,7 +1579,8 @@ function create_UIBox_current_hands(simple)
 				current_option = 1,
 				colour = G.C.RED,
 				no_pips = true
-			})}}}}
+			})}} or nil,
+		}}
 
 	local t = {n = G.UIT.ROOT, config = {align = "cm", minw = 3, padding = 0.1, r = 0.1, colour = G.C.CLEAR}, nodes = {
 		{n = G.UIT.O, config = {
