@@ -17,6 +17,25 @@ function Game:set_render_settings()
     end
 end
 
+local start_up = Game.start_up
+function Game:start_up()
+    love.window.setVSync(0)
+
+    local set_mode = G.FUNCS.apply_window_changes
+    function G.FUNCS.apply_window_changes()
+        local vsync = G.SETTINGS.WINDOW.vsync
+        G.SETTINGS.WINDOW.vsync = 0
+        set_mode()
+        G.SETTINGS.WINDOW.vsync = vsync
+    end
+
+    start_up(self)
+
+    G.FUNCS.apply_window_changes = set_mode
+
+    love.window.setVSync(G.SETTINGS.WINDOW.vsync or 1)
+end
+
 --- @param atlas table
 --- @param path string
 --- @param dpi number?

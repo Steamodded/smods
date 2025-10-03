@@ -73,7 +73,7 @@ for _, path in ipairs {
     "src/logging.lua",
     "src/compat_0_9_8.lua",
     "src/loader.lua",
-    "src/defer.lua",
+    "src/perf.lua",
 } do
     assert(load(NFS.read(SMODS.path..path), ('=[SMODS _ "%s"]'):format(path)))()
 end
