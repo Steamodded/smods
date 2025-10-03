@@ -276,7 +276,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Font
     -------------------------------------------------------------------------------------------------
-    
+
     SMODS.Fonts = {}
     SMODS.Font = SMODS.GameObject:extend {
         obj_table = SMODS.Fonts,
@@ -311,7 +311,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ('Failed to collect file data for Font %s'):format(self.key))
             self.FONT = assert(love.graphics.newFont(file_data, self.render_scale or G.TILESIZE),
                 ('Failed to initialize font data for Font %s'):format(self.key))
-            
+
         end,
         process_loc_text = function() end,
     }
@@ -319,7 +319,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.DynaTextEffect
     -------------------------------------------------------------------------------------------------
-    
+
     SMODS.DynaTextEffects = {}
     SMODS.DynaTextEffect = SMODS.GameObject:extend {
         obj_table = SMODS.DynaTextEffects,
@@ -364,14 +364,23 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         inject = function(self)
             self.font = self.font or 1
             if type(self.font) == 'table' and not self.font.FONT and self.font.file and self.font.render_scale then
-                local data = assert(NFS.newFileData(self.mod.path .. 'assets/fonts/' .. self.font.file), ('Failed to collect file data for font of language %s'):format(self.key))
-                self.font.FONT = love.graphics.newFont(data, self.font.render_scale)
+                self.full_path = self.mod.path .. 'assets/fonts/' .. self.font.file
             elseif type(self.font) ~= 'table' then
                 self.font = SMODS.Fonts[self.font] or G.FONTS[type(self.font) == 'number' and self.font or 1] or G.FONTS[1]
             end
             G.LANGUAGES[self.key] = self
             if self.key == (G.SETTINGS.real_language or G.SETTINGS.language) then G.LANG = self end
-        end,
+
+            local mt = getmetatable(self)
+            setmetatable(self, {
+                __index = function (t, k)
+                    if k == "FONT" then
+                        return SMODS.load_defer_font(self, self.full_path, true)
+                    end
+                    return mt[k]
+                end
+            })
+        end
     }
 
     -------------------------------------------------------------------------------------------------
@@ -432,25 +441,26 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             -- language specific sprites override fully defined sprites only if that language is set
             if self.language and G.SETTINGS.language ~= self.language and G.SETTINGS.real_language ~= self.language then return end
             if not self.language and (self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.language)] or self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.real_language)]) then return end
-            self.full_path = (self.mod and self.mod.path or SMODS.path) ..
-                'assets/' .. G.SETTINGS.GRAPHICS.texture_scaling .. 'x/' .. file_path
-            local file_data = assert(NFS.newFileData(self.full_path),
-                ('Failed to collect file data for Atlas %s'):format(self.key))
-            self.image_data = assert(love.image.newImageData(file_data),
-                ('Failed to initialize image data for Atlas %s'):format(self.key))
-            self.image = love.graphics.newImage(self.image_data,
-                { mipmaps = true, dpiscale = G.SETTINGS.GRAPHICS.texture_scaling })
+
+            self.dpi = self.dpi or G.SETTINGS.GRAPHICS.texture_scaling
+            self.full_path = (self.mod and self.mod.path or SMODS.path) .. string.format("assets/%dx/%s", self.dpi, file_path)
+
             G[self.atlas_table][self.key_noloc or self.key] = self
 
-            local mipmap_level = SMODS.config.graphics_mipmap_level_options[SMODS.config.graphics_mipmap_level]
-            if not self.disable_mipmap and mipmap_level and mipmap_level > 0 then
-                self.image:setMipmapFilter('linear', mipmap_level)
-            end
+            local mt = getmetatable(self)
+            setmetatable(self, {
+                __index = function (t, k)
+                    if k == "image" then
+                        return SMODS.load_defer_atlas(self, self.full_path, self.api, true)
+                    end
+                    return mt[k]
+                end
+            })
         end,
         process_loc_text = function() end,
         pre_inject_class = function(self)
             G:set_render_settings() -- restore originals first in case a texture pack was disabled
-        end
+        end,
     }
 
     SMODS.Atlas {
@@ -1178,7 +1188,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
 
             localize(target)
-            
+
             if res.main_end then
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
@@ -2041,7 +2051,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 else
                     table.insert(self.obj_buffer, self.key)
                 end
-                
+
             end
         end,
         process_loc_text = function(self)
@@ -3596,7 +3606,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         flame_handler = function(self)
             return {
-                id = 'flame_'..self.key, 
+                id = 'flame_'..self.key,
                 arg_tab = self.key..'_flames',
                 colour = self.colour,
                 accent = self.lick
@@ -3614,7 +3624,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if amount then
                 if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
                 self:modify(amount)
-                card_eval_status_text(scored_card, 'extra', nil, percent, nil, 
+                card_eval_status_text(scored_card, 'extra', nil, percent, nil,
                     {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, colour = self.colour})
                 return true
             end
@@ -3791,7 +3801,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "multiply",
         func = function(self, chips, mult, flames) return chips * mult end,
         text = 'X'
-    } 
+    }
 
     SMODS.Scoring_Calculation {
         key = "add",

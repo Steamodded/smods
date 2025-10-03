@@ -564,11 +564,11 @@ function SMODS.check_applied_stakes(stake, deck)
 end
 
 function G.UIDEF.stake_option(_type)
-	
+
 	local middle = {n=G.UIT.R, config={align = "cm", minh = 1.7, minw = 7.3}, nodes={
 		{n=G.UIT.O, config={id = nil, func = 'RUN_SETUP_check_stake2', object = Moveable()}},
 	}}
-	
+
 	local stake_options = {}
 	local curr_options = {}
 	local deck_usage = G.PROFILES[G.SETTINGS.profile].deck_usage[G.GAME.viewed_back.effect.center.key]
@@ -579,7 +579,7 @@ function G.UIDEF.stake_option(_type)
 			curr_options[i] = #stake_options
 		end
 	end
-	
+
 	return {n=G.UIT.ROOT, config={align = "tm", colour = G.C.CLEAR, minh = 2.03, minw = 8.3}, nodes={
 		_type == 'Continue' and middle
 		or create_option_cycle({options = stake_options, opt_callback = 'change_stake', current_option = curr_options[G.viewed_stake] or 1,
@@ -1182,7 +1182,7 @@ G.FUNCS.your_suits_page = function(args)
 	G.VIEWING_DECK = true
 	table.sort(G.playing_cards, function(a, b) return a:get_nominal('suit') > b:get_nominal('suit') end)
 	local SUITS = {}
-	local suit_map = {} 
+	local suit_map = {}
 	for i = #SMODS.Suit.obj_buffer, 1, -1 do
 		SUITS[SMODS.Suit.obj_buffer[i]] = {}
 		suit_map[#suit_map + 1] = SMODS.Suit.obj_buffer[i]
@@ -1558,7 +1558,7 @@ function create_UIBox_current_hands(simple)
 		end
 	end
 
-	
+
 	local hand_options = {}
 	for i = 1, math.ceil(#visible_hands / 10) do
 		table.insert(hand_options,
@@ -1568,7 +1568,7 @@ function create_UIBox_current_hands(simple)
 	local object = {n = G.UIT.ROOT, config = {align = "cm", colour = G.C.CLEAR}, nodes = {
 		{n = G.UIT.R, config = {align = "cm", padding = 0.04}, nodes =
 			G.current_hands},
-		-- UI consistency with vanilla 
+		-- UI consistency with vanilla
 		#visible_hands > 12 and {n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
 			create_option_cycle({
 				options = hand_options,
@@ -1807,7 +1807,7 @@ end
 -- silent = boolean value
 function Card:set_edition(edition, immediate, silent, delay)
 	SMODS.enh_cache:write(self, nil)
-	
+
 	if self.edition then
 		self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
 		self.ability.extra_slots_used = self.ability.extra_slots_used - (self.edition.extra_slots_used or 0)
@@ -2273,7 +2273,7 @@ end
 local debuff_card = Blind.debuff_card
 function Blind:debuff_card(card, from_blind)
 	local flags = SMODS.calculate_context({ debuff_card = card, ignore_debuff = true })
-	if flags.prevent_debuff then 
+	if flags.prevent_debuff then
 		if card.debuff then card:set_debuff(false) end
 		return
 	elseif flags.debuff then
@@ -2345,7 +2345,7 @@ function Card:set_base(card, initial, manual_sprites)
                 SMODS.merge_defaults(contexts, {change_rank = true, other_card = self, new_rank = new_rank, old_rank = self.base.id, rank_increase = ((self.base.id < new_rank) and true) or false})
             end
         end
-        if card and card.suit and self.base.suit ~= card.suit then 
+        if card and card.suit and self.base.suit ~= card.suit then
             SMODS.merge_defaults(contexts, {change_suit = true, other_card = self, new_suit = card.suit, old_suit = self.base.suit})
         end
         if next(contexts) then
