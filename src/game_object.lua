@@ -3224,12 +3224,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         set = 'Shader',
         send_vars = nil, -- function (sprite) - get custom externs to send to shader.
         inject = function(self)
-            self.full_path = (self.mod and self.mod.path or SMODS.path) ..
-                'assets/shaders/' .. self.path
-            local file = NFS.read(self.full_path)
-            love.filesystem.write(self.key .. "-temp.fs", file)
-            G.SHADERS[self.key] = love.graphics.newShader(self.key .. "-temp.fs")
-            love.filesystem.remove(self.key .. "-temp.fs")
+            self.full_path = (self.mod and self.mod.path or SMODS.path) .. 'assets/shaders/' .. self.path
+            G.SHADERS[self.key] = love.graphics.newShader(NFS.newFileData(self.full_path))
             -- G.SHADERS[self.key] = love.graphics.newShader(self.full_path)
         end,
         process_loc_text = function() end
