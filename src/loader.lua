@@ -62,7 +62,7 @@ function loadMods(modsDirectory)
                     if t.min_version and not V(t[#t].min_version):is_valid() then t[#t].min_version = nil end
                     if t.max_version and not V(t[#t].max_version):is_valid() then t[#t].max_version = nil end
                 end
-                
+
                 return t
             end
         },
@@ -72,7 +72,7 @@ function loadMods(modsDirectory)
         dump_loc      = { pattern = { '%-%-%- DUMP_LOCALIZATION\n'}}
     }
 
-    
+
     local json_spec = {
         id = { type = 'string', required = true },
         author = { type = 'table', required = true, check = function(mod, t)
@@ -168,15 +168,15 @@ function loadMods(modsDirectory)
                 local id = v:match '^([^(%s]+)'
                 local ver = v:match '%((.-)%)'
                 ver = (ver and V(ver):is_valid()) and ver or mod.version
-                if id and ver then 
+                if id and ver then
                     SMODS.provided_mods[id] = SMODS.provided_mods[id] or {}
                     table.insert(SMODS.provided_mods[id], { version = ver, mod = mod })
                 end
             end
         end}
-        
+
     }
-    
+
 
     local used_prefixes = {}
     local lovely_directories = {}
@@ -195,7 +195,7 @@ function loadMods(modsDirectory)
             -- Check if the current file is a directory
             local file_type = NFS.getInfo(file_path).type
             if file_type == 'directory' or file_type == 'symlink' then
-                -- Lovely patches 
+                -- Lovely patches
                 if depth == 2 and filename == "lovely" and not isDirLovely then
                     isDirLovely = true
                     table.insert(lovely_directories, directory .. "/")
@@ -321,7 +321,7 @@ function loadMods(modsDirectory)
                         sane = false
                         sendWarnMessage("Duplicate Mod ID: " .. mod.id, 'Loader')
                     end
-                
+
                     if mod.outdated then
                         mod.prefix_config = { key = { mod = false }, atlas = false }
                     else
@@ -329,7 +329,7 @@ function loadMods(modsDirectory)
                     end
                     if mod.prefix and used_prefixes[mod.prefix] then
                         mod.can_load = false
-                        mod.load_issues = { 
+                        mod.load_issues = {
                             prefix_conflict = used_prefixes[mod.prefix],
                             dependencies = {},
                             conflicts = {},
@@ -360,7 +360,7 @@ function loadMods(modsDirectory)
         end
     end
 
-    
+
     boot_print_stage('Processing Mod Files')
     -- Start processing with the initial directory at depth 1
     processDirectory(modsDirectory, 1)
@@ -372,7 +372,7 @@ function loadMods(modsDirectory)
                 hasSMOD = true
             end
         end
-        if not hasSMOD then 
+        if not hasSMOD then
             local name = string.match(path, "[/\\]([^/\\]+)[/\\]?$")
             local disabled = not not NFS.getInfo(path .. '/.lovelyignore')
             local mod = {
@@ -426,7 +426,7 @@ function loadMods(modsDirectory)
             dependencies = {},
             conflicts = {},
         }
-        if not mod.json then 
+        if not mod.json then
             for _, v in ipairs(mod.conflicts or {}) do
                 -- block load even if the conflict is also blocked
                 if
@@ -531,14 +531,14 @@ function loadMods(modsDirectory)
         end
         for _, x in ipairs(mod.dependencies or {}) do
             for _, y in ipairs(x) do
-                if y.fulfilled then 
+                if y.fulfilled then
                     if y.provided then
                         y.provided.mod.can_load = true
                     else
-                        SMODS.Mods[y.id].can_load = true 
+                        SMODS.Mods[y.id].can_load = true
                     end
                 end
-            end 
+            end
         end
         return true
     end
@@ -556,6 +556,7 @@ function loadMods(modsDirectory)
         for _, mod in ipairs(SMODS.mod_priorities[priority]) do
             SMODS.mod_list[#SMODS.mod_list + 1] = mod -- keep mod list in prioritized load order
             if mod.can_load and not mod.lovely_only then
+                boot_print_stage('Loading Mod: '.. mod.name)
                 SMODS.current_mod = mod
                 if mod.outdated then
                     SMODS.compat_0_9_8.with_compat(function()
@@ -646,7 +647,7 @@ local function checkForLoadFailure()
         if v and not v.can_load and not v.disabled then
             SMODS.mod_button_alert = true
             return
-        end 
+        end
     end
 end
 
@@ -713,12 +714,12 @@ function SMODS.load_file(path, id)
             error("No ID was provided! Usage without an ID is only available when file is first loaded.")
         end
         mod = SMODS.current_mod
-    else 
+    else
         mod = SMODS.Mods[id]
     end
     if not mod then
         error("Mod not found. Ensure you are passing the correct ID.")
-    end 
+    end
     local file_path = mod.path .. path
     local file_content, err = NFS.read(file_path)
     if not file_content then return  nil, "Error reading file '" .. path .. "' for mod with ID '" .. mod.id .. "': " .. err end
