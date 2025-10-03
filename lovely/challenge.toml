@@ -20,6 +20,41 @@ challenge_unlocked = challenge_unlocked or G.PROFILES[G.SETTINGS.profile].all_un
 """
 match_indent = true
 
+# function G.UIDEF.challenges() - fix challenge unlock count
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = """
+function G.UIDEF.challenges(from_game_over)
+"""
+position = 'after'
+payload = """
+  local unlock_count = 0
+"""
+match_indent = true
+
+# function G.UIDEF.challenges() - fix challenge unlock count p2
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = """
+local _ch_tab = {comp = _ch_comp, unlocked = G.PROFILES[G.SETTINGS.profile].challenges_unlocked}
+"""
+position = 'at'
+payload = """
+for k, v in ipairs(G.CHALLENGES) do
+    if (v.unlocked and type(v.unlocked) == 'function' and v:unlocked())
+    or (v.unlocked == true)
+    or (G.PROFILES[G.SETTINGS.profile].all_unlocked)
+    or (not v.unlocked and (_ch_comp+5 <= k)) then
+        unlock_count = unlock_count + 1
+    end
+end
+
+local _ch_tab = {comp = _ch_comp, unlocked = unlock_count or G.PROFILES[G.SETTINGS.profile].challenges_unlocked}
+"""
+match_indent = true
+
 # Add button colour
 [[patches]]
 [patches.pattern]
