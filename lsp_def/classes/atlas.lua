@@ -11,6 +11,7 @@
 ---@field raw_key? boolean Sets whether the mod prefix is added to atlas key. Used for overriding vanilla sprites. 
 ---@field language? string Key to a language. Restricts the atlas to only when this language is enabled. 
 ---@field disable_mipmap? boolean Sets if the sprite is affected by the mipmap. 
+---@field dpi? number Atlas DPI to enforce. Defaults to the players' texture scaling settings. This should be set if the atlas contains only a single DPI (either 1x or 2x).
 ---@field __call? fun(self: SMODS.Atlas|table, o: SMODS.Atlas|table): nil|table|SMODS.Atlas
 ---@field extend? fun(self: SMODS.Atlas|table, o: SMODS.Atlas|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Atlas|table): boolean? Ensures objects already registered will not register. 

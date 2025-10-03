@@ -451,7 +451,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             setmetatable(self, {
                 __index = function (t, k)
                     if k == "image" then
-                        return SMODS.load_defer_atlas(self, self.full_path, self.api, true)
+                        return SMODS.load_defer_atlas(self, self.full_path, self.dpi, true)
                     end
                     return mt[k]
                 end
