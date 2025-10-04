@@ -99,7 +99,7 @@ pattern = "bypass_lock = self.bypass_lock,"
 position = "after"
 payload = """
 unique_val = self.unique_val,
-unique_val__saved_ID = self.ID,
+unique_val__saved_ID = self.unique_val__saved_ID or self.ID,
 ignore_base_shader = self.ignore_base_shader,
 ignore_shadow = self.ignore_shadow,"""
 match_indent = true
@@ -112,6 +112,7 @@ pattern = "self.bypass_lock = cardTable.bypass_lock"
 position = "after"
 payload = """
 self.unique_val = cardTable.unique_val or self.unique_val
+self.unique_val__saved_ID = cardTable.unique_val__saved_ID or self.unique_val__saved_ID
 if cardTable.unique_val__saved_ID and G.ID <= cardTable.unique_val__saved_ID then
     G.ID = cardTable.unique_val__saved_ID + 1
 end
