@@ -38,7 +38,7 @@ end
 
 --- @param atlas table
 --- @param path string
---- @param opts? { nfs?: boolean, dpi?: number }
+--- @param opts? { nfs?: boolean, dpi?: number, nomipmap?: boolean }
 function SMODS.load_defer_atlas(atlas, path, opts)
     opts = opts or {}
     local file = opts.nfs and assert(NFS.newFileData(path)) or path
@@ -48,7 +48,7 @@ function SMODS.load_defer_atlas(atlas, path, opts)
     })
 
     local mipmap_level = SMODS.config.graphics_mipmap_level_options[SMODS.config.graphics_mipmap_level]
-    if mipmap_level and mipmap_level ~= 0 then
+    if not opts.nomipmap and mipmap_level and mipmap_level ~= 0 then
         atlas.image:setMipmapFilter('linear', mipmap_level)
     end
 
@@ -67,7 +67,7 @@ end
 
 --- @param atlas table
 --- @param path string
---- @param opts? { nfs?: boolean, dpi?: number }
+--- @param opts? { nfs?: boolean, dpi?: number, nomipmap?: boolean }
 function SMODS.defer_atlas(atlas, path, opts)
     local rawmt = getmetatable(atlas)
     setmetatable(atlas, {
