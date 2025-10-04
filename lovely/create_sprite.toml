@@ -6,6 +6,20 @@ priority = -5
 
 ### Sprite/AnimatedSprite or G.ASSET_ATLAS/ANIMATION_ATLAS -> SMODS.create_sprite() 
 
+# Game:set_render_settings()
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+        self.ANIMATION_ATLAS[self.animation_atli[i].name].frames = self.animation_atli[i].frames
+'''
+position = 'after'
+payload = '''
+self.ANIMATION_ATLAS[self.animation_atli[i].name].atlas_table = "ANIMATION_ATLAS"
+'''
+match_indent = true
+
+
 # Case: ..ATLAS[]
 # Blind:init()
 [[patches]]
