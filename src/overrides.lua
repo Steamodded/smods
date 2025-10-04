@@ -854,11 +854,11 @@ function tally_sprite(pos, value, tooltip, suit)
 		local atlas_key_2 = ("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))
 		local atlas = SMODS.get_atlas(atlas_key_1) or SMODS.get_atlas(atlas_key_2)
 		t_s = SMODS.create_sprite(0, 0, 0.3, 0.3, atlas, SMODS.Suits[suit].ui_pos)
-	else
-		local atlas_key_1 = SMODS.Suits[suit][G.SETTINGS.colourblind_option and "hc_ui_atlas" or "lc_ui_atlas"]
+	else 
+		local atlas_key_1 = suit and SMODS.Suits[suit][G.SETTINGS.colourblind_option and "hc_ui_atlas" or "lc_ui_atlas"]
 		local atlas_key_2 = ("ui_"..(G.SETTINGS.colourblind_option and "2" or "1"))
 		local atlas = SMODS.get_atlas(atlas_key_1) or SMODS.get_atlas(atlas_key_2)
-		t_s = SMODS.create_sprite(0, 0, 0.5, 0.5, suit and atlas, {x=pos.x or 0, y=pos.y or 0})
+		t_s = SMODS.create_sprite(0, 0, 0.5, 0.5, atlas, {x=pos.x or 0, y=pos.y or 0})
 	end
 	t_s.states.drag.can = false
 	t_s.states.hover.can = false
