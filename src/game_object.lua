@@ -305,13 +305,17 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             local file_path = self.path
             if file_path == 'DEFAULT' then return end
 
-            self.full_path = (self.mod and self.mod.path or SMODS.path) ..
-                'assets/fonts/' .. file_path
-            local file_data = assert(NFS.newFileData(self.full_path),
-                ('Failed to collect file data for Font %s'):format(self.key))
-            self.FONT = assert(love.graphics.newFont(file_data, self.render_scale or G.TILESIZE),
-                ('Failed to initialize font data for Font %s'):format(self.key))
+            self.full_path = (self.mod and self.mod.path or SMODS.path) .. 'assets/fonts/' .. file_path
 
+            local mt = getmetatable(self)
+            setmetatable(self, {
+                __index = function (t, k)
+                    if k == "FONT" then
+                        return SMODS.load_defer_font(self, { nfs = true, path = self.full_path })
+                    end
+                    return mt[k]
+                end
+            })
         end,
         process_loc_text = function() end,
     }
@@ -364,22 +368,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         inject = function(self)
             self.font = self.font or 1
             if type(self.font) == 'table' and not self.font.FONT and self.font.file and self.font.render_scale then
-                self.full_path = self.mod.path .. 'assets/fonts/' .. self.font.file
+                local data = assert(NFS.newFileData(self.mod.path .. 'assets/fonts/' .. self.font.file), ('Failed to collect file data for font of language %s'):format(self.key))
+                self.font.FONT = love.graphics.newFont(data, self.font.render_scale)
             elseif type(self.font) ~= 'table' then
                 self.font = SMODS.Fonts[self.font] or G.FONTS[type(self.font) == 'number' and self.font or 1] or G.FONTS[1]
             end
             G.LANGUAGES[self.key] = self
             if self.key == (G.SETTINGS.real_language or G.SETTINGS.language) then G.LANG = self end
-
-            local mt = getmetatable(self)
-            setmetatable(self, {
-                __index = function (t, k)
-                    if k == "FONT" then
-                        return SMODS.load_defer_font(self, { nfs = true, path = self.full_path })
-                    end
-                    return mt[k]
-                end
-            })
         end
     }
 
