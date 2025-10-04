@@ -375,7 +375,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             setmetatable(self, {
                 __index = function (t, k)
                     if k == "FONT" then
-                        return SMODS.load_defer_font(self, self.full_path, true)
+                        return SMODS.load_defer_font(self, { nfs = true, path = self.full_path })
                     end
                     return mt[k]
                 end
@@ -451,7 +451,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             setmetatable(self, {
                 __index = function (t, k)
                     if k == "image" then
-                        return SMODS.load_defer_atlas(self, self.full_path, self.dpi, true)
+                        return SMODS.load_defer_atlas(self, self.full_path, { dpi = self.dpi, nfs = true })
                     end
                     return mt[k]
                 end
