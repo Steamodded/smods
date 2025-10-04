@@ -3184,6 +3184,9 @@ end
 function SMODS.create_sprite(...)
     local t = {...}
     local atlas_key = (type(t[5]) == "string" and t[5]) or (type(t[5]) == "table" and (t[5].name or t[5].key))
+    if not atlas_key then
+        sendWarnMessage("SMODS.create_sprite called with invalid atlas key", "Utils")
+    end
     t[5] = SMODS.get_atlas(atlas_key)
     return SMODS.get_atlas_sprite_class(atlas_key)((table.unpack or unpack)(t))
 end

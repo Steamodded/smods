@@ -2056,7 +2056,7 @@ function G.UIDEF.run_setup_option(_type)
             n = G.UIT.R, config = { align = "cm", r = 0.1, minw = 6, minh = 0.6, colour = G.SETTINGS.reduced_motion and G.C.RED or SMODS.Gradients.warning_bg, padding = 0.1 }, nodes={
                 {
                     n = G.UIT.C, config = { align = 'cm' }, nodes = {
-                        { n = G.UIT.O, config = { object = SMODS.create_sprite({0, 0, 0.8, 0.8, 'mod_tags', { x = 0, y = 0 }}) } },
+                        { n = G.UIT.O, config = { object = SMODS.create_sprite(0, 0, 0.8, 0.8, 'mod_tags', { x = 0, y = 0 }) } },
                     }
                 }, 
                 { 
