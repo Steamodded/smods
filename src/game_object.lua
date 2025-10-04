@@ -308,12 +308,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.full_path = (self.mod and self.mod.path or SMODS.path) .. 'assets/fonts/' .. file_path
 
             local mt = getmetatable(self)
+            local w = setmetatable({}, mt)
             setmetatable(self, {
                 __index = function (t, k)
                     if k == "FONT" then
                         return SMODS.load_defer_font(self, { nfs = true, path = self.full_path })
                     end
-                    return mt[k]
+                    return w[k]
                 end
             })
         end,
@@ -443,12 +444,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G[self.atlas_table][self.key_noloc or self.key] = self
 
             local mt = getmetatable(self)
+            local w = setmetatable({}, mt)
             setmetatable(self, {
                 __index = function (t, k)
                     if k == "image" then
                         return SMODS.load_defer_atlas(self, self.full_path, { dpi = self.dpi, nfs = true, nomipmap = self.disable_mipmap })
                     end
-                    return mt[k]
+                    return w[k]
                 end
             })
         end,
