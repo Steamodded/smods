@@ -72,7 +72,7 @@ match_indent = true
 [[patches]]
 [patches.regex]
 target = 'functions/UI_definitions.lua'
-pattern = '(?<start>[\t ].*)Sprite\((?<pre>.*)(?:G\.ASSET_ATLAS\[|G\.ANIMATION_ATLAS\[)(?<key>.*)\],(?<rest>.*)'
+pattern = '(?<start>[\t ].*)(?:Animated)Sprite\((?<pre>.*)G\.(?:ASSET|ANIMATION)_ATLAS\[(?<key>.*)\],(?<rest>.*)'
 position = 'at'
 payload = '''
 $start SMODS.create_sprite($pre $key, $rest 
