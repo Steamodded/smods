@@ -6,15 +6,6 @@ priority = 0
 [[patches]]
 [patches.pattern]
 target = 'game.lua'
-pattern = '''if not (love.filesystem.read('localization/'..G.SETTINGS.language..'.lua')) or G.F_ENGLISH_ONLY then'''
-payload = '''if not (love.filesystem.getInfo('localization/'..G.SETTINGS.language..'.lua')) G.F_ENGLISH_ONLY then'''
-position = 'at'
-match_indent = true
-
-# Game.set_language
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
 pattern = '''v.FONT = love.graphics.newFont( v.file, v.render_scale)'''
 payload = 'v.FONT = nil; SMODS.defer_font(v)'
 position = 'at'
