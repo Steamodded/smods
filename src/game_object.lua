@@ -3581,6 +3581,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             'key',
             'default_value',
         },
+        text_alignment = "cm",
         inject = function(self)
             self.colour = self.colour or G.C.UI_MULT
             self.lick = {1, 1, 1, 1}
@@ -3625,6 +3626,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = 'chips',
         default_value = 0,
         colour = G.C.UI_CHIPS,
+        text_alignment = "cr",
         calculation_keys = {'chips', 'h_chips', 'chip_mod', 'x_chips', 'xchips', 'Xchip_mod',},
         calc_effect = function(self, effect, scored_card, key, amount, from_edition)
             if not SMODS.Calculation_Controls.chips then return end
@@ -3677,6 +3679,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         default_value = 0,
         juice_on_update = true,
         colour = G.C.UI_MULT,
+        text_alignment = "cl",
         calculation_keys = {'mult', 'h_mult', 'mult_mod','x_mult', 'Xmult', 'xmult', 'x_mult_mod', 'Xmult_mod'},
         calc_effect = function(self, effect, scored_card, key, amount, from_edition)
             if not SMODS.Calculation_Controls.mult then return end

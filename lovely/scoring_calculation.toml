@@ -113,14 +113,14 @@ for name, parameter in pairs(SMODS.Scoring_Parameters) do
             G.hand_text_area[name]:update(0)
             if vals.StatusText then 
                 attention_text({
-                    text =delta,
+                    text = delta,
                     scale = 0.8, 
                     hold = 1,
                     cover = G.hand_text_area[name].parent,
                     cover_colour = mix_colours(parameter.colour, col, 0.1),
                     emboss = 0.05,
                     align = 'cm',
-                    cover_align = 'cm'
+                    cover_align = parameter.text_alignment or 'cm'
                 })
             end
             if (vals[name.."_juice"] or parameter.juice_on_update) and not G.TAROT_INTERRUPT then G.hand_text_area[name]:juice_up() end

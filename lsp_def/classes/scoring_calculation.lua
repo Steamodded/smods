@@ -61,6 +61,7 @@ SMODS.calculate_round_score = function(flames) end
 ---@field key string Used to reference the parameter, mod_prefix is added
 ---@field default_value number Default value of the parameter
 ---@field colour? table HEX colour
+---@field text_alignment? string Must be two letters, first indicates vertical alignment, second indicates horizontal alignment
 ---@field calculation_keys? string[] Valid return keys from calculate functions
 ---@field hands? table[] Used to add custom values for different poker hands
 ---@field modify? fun(self: SMODS.Scoring_Parameter, amount: number) Alters the value of the parameter
