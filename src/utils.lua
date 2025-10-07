@@ -2956,6 +2956,7 @@ function SMODS.quip(quip_type)
 end
 
 function SMODS.smart_add_tag(tag)
+    G.GAME.orbital_choices[G.GAME.round_resets.ante] = G.GAME.orbital_choices[G.GAME.round_resets.ante] or {}
     if not (tag.is and tag:is(Tag)) then
         tag = Tag(tag.key, nil, tag.blind_type or 'Small')
     end
