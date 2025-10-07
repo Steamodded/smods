@@ -741,3 +741,9 @@ function SMODS.is_getter_context(context) end
 --- [eval_object] to incite any getter context, if yes returns false,
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
+
+---@param tag Tag|table|{key: string, blind_type: string?} The Tag object
+--- Wrapper function to `add_tag` that automatically initializes
+--- Orbital Tag's Poker hand if there isn't one.\
+--- Also accepts a table, much like `SMODS.create_card`.
+function SMODS.smart_add_tag(tag) end
