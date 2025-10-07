@@ -2957,6 +2957,7 @@ end
 
 function SMODS.smart_add_tag(tag)
     G.GAME.orbital_choices[G.GAME.round_resets.ante] = G.GAME.orbital_choices[G.GAME.round_resets.ante] or {}
+    assert(G.P_TAGS[tag.key], ("Could not find tag \"%s\"."):format(tag.key))
     if not (tag.is and tag:is(Tag)) then
         tag = Tag(tag.key, nil, tag.blind_type or 'Small')
     end
