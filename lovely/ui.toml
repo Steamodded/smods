@@ -378,6 +378,22 @@ match_indent = true
 
 [[patches]]
 [patches.pattern]
+target = 'engine/node.lua'
+pattern = '''
+self.children.h_popup.states.drag.can = true
+'''
+position = "after"
+payload = '''
+-- Fixes styled info_queue names
+-- This ensures show_infotip runs just after the main hover box is created instead of being able to fall one frame after
+if ((self.children.h_popup.UIRoot.children[1] or {}).config or {}).func == "show_infotip" then
+  G.FUNCS.show_infotip(self.children.h_popup.UIRoot.children[1])
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
 target = 'functions/UI_definitions.lua'
 pattern = '''
 {n=G.UIT.R, config={align = "tm", minh = 0.36, padding = 0.03}, nodes={{n=G.UIT.T, config={text = name, scale = 0.32, colour = G.C.UI.TEXT_LIGHT}}}},
