@@ -5,17 +5,6 @@ priority = -10
 
 ### Sprite API
 
-# get_front_spriteinfo()
-
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua' 
-pattern = 'return G.ASSET_ATLAS[_front.atlas] or G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], _front.pos'
-position = 'at'
-match_indent = true
-payload = 'return G.ASSET_ATLAS[G.SETTINGS.colourblind_option and _front.hc_atlas or _front.lc_atlas or {}] or G.ASSET_ATLAS[_front.atlas] or G.ASSET_ATLAS["cards_"..(G.SETTINGS.colourblind_option and 2 or 1)], _front.pos'
-
-
 # Game:set_render_settings()
 [[patches]]
 [patches.pattern]
@@ -25,19 +14,6 @@ position = 'at'
 match_indent = true
 payload = "SMODS.injectObjects(SMODS.Atlas)"
 
-
-# create_UIBox_notify_alert()
-[[patches]]
-[patches.pattern]
-target = 'functions/UI_definitions.lua'
-pattern = 'G.ASSET_ATLAS["icons"]'
-position = 'after'
-match_indent = false
-payload = '''
-    local _smods_atlas = _c and ((G.SETTINGS.colourblind_option and _c.hc_atlas or _c.lc_atlas) or _c.atlas)
-    if _smods_atlas then
-        _atlas = G.ASSET_ATLAS[_smods_atlas] or _atlas
-    end'''
 
 ## Set ability resizing fix
 [[patches]]
@@ -76,3 +52,4 @@ if delay_sprites ~= 'quantum' then
     end
 end
 '''
+
