@@ -207,6 +207,11 @@ function loadMods(modsDirectory)
             elseif depth == 2 and filename == "lovely.toml" and not isDirLovely then
                 isDirLovely = true
                 table.insert(lovely_directories, directory .. "/")
+            elseif depth == 1 and filename:lower():match("%.zip") then
+                local loveName = "__SMODS_MOUNTS__/" .. filename
+                assert(NFS.mount(file_path, loveName))
+                assert(NFS.smodsAddRedirect(file_path .. ".mnt", loveName))
+                processDirectory(file_path .. ".mnt", depth + 1)
             elseif filename:lower():match('%.json') and depth > 1 then
                 local json_str = NFS.read(file_path)
                 local parsed, mod = pcall(JSON.decode, json_str)
