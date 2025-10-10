@@ -1359,8 +1359,8 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return key
     end
 
-    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or 
-        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'modify' then
+    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or
+        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'modify' or key == 'shop_create_flags'  then
         return { [key] = amount }
     end
     
@@ -1461,7 +1461,8 @@ SMODS.other_calculation_keys = {
     'numerator', 'denominator',
     'modify',
     'no_destroy', 'prevent_trigger',
-    'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
+    'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
+    'shop_create_flags'
 }
 SMODS.silent_calculation = {
     saved = true, effect = true, remove = true,
