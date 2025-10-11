@@ -1,0 +1,36 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Shader patching
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''            self.SHADERS[shader_name] = love.graphics.newShader("resources/shaders/"..filename)'''
+position = "at"
+payload = '''
+local shader = "resources/shaders/"..filename
+local lovely = require"lovely"
+if lovely.apply_patches then
+    local res, err = lovely.apply_patches(filename, love.filesystem.read("resources/shaders/"..filename))
+    if res then
+        shader = res
+    else
+        sendErrorMessage(err, 'ShaderPatcher')
+    end
+end
+self.SHADERS[shader_name] = love.graphics.newShader(shader)
+'''
+match_indent = true
+
+
+# DEMO: remove the comments below. Enter a run and watch the squiggles. fixme: remove before merge
+
+# [[patches]]
+# [patches.pattern]
+# target = "background.fs"
+# pattern = '''    speed = time*(2.);'''
+# position = "at"
+# payload = '''    speed = time*(200.);'''
+# match_indent = true

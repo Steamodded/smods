@@ -3213,6 +3213,15 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.full_path = (self.mod and self.mod.path or SMODS.path) ..
                 'assets/shaders/' .. self.path
             local file = NFS.read(self.full_path)
+            local lovely = require"lovely"
+            if lovely.apply_patches then
+                local res, err = lovely.apply_patches("=[SMODS " .. self.mod.id .. ' "' .. self.path .. '"]', file)
+                if res then
+                    file = res
+                else
+                    sendErrorMessage(err, 'ShaderPatcher')
+                end
+            end
             love.filesystem.write(self.key .. "-temp.fs", file)
             G.SHADERS[self.key] = love.graphics.newShader(self.key .. "-temp.fs")
             love.filesystem.remove(self.key .. "-temp.fs")
