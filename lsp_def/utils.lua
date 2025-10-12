@@ -741,3 +741,7 @@ function SMODS.is_getter_context(context) end
 --- [eval_object] to incite any getter context, if yes returns false,
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
+
+---@param naey string The hors- erm, name or key of the Blind to check
+---@param ignore_disabled? boolean Whether to ignore the Blind being disabled
+function SMODS.is_active_blind(naey, ignore_disabled) end
