@@ -747,3 +747,9 @@ function SMODS.check_looping_context(eval_object) end
 --- Orbital Tag's Poker hand if there isn't one.\
 --- Also accepts a table, much like `SMODS.create_card`.
 function SMODS.smart_add_tag(tag) end
+
+---Check if `challenge` is unlocked.
+---@param challenge SMODS.Challenge
+---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
+---@return boolean
+function SMODS.challenge_is_unlocked(challenge, k) end
