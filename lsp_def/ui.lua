@@ -256,7 +256,7 @@ function create_UIBox_your_collection_stickers() end
 ---@param table
 ---@field scale? number Set scale of text
 ---@field colour? table HEX colour of the container
----@field type? string Type of scoring component - defaults to `'mult'`
+---@field type string Type of scoring component, ex. 'mult'. Can take the key of a Scoring_Parameter
 ---@field align? string Must be two letters, first indicates vertical alignment, second indicates horizontal alignment
 ---@field func? string Reference to function in `G.FUNCS` that controls changing the text - defaults to `'hand_'..type..'_UI_set'`
 ---@field text? string Key of value in `G.GAME.current_round.current_hand` - defaults to `type..'_text'`
