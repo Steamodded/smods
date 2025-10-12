@@ -745,3 +745,9 @@ function SMODS.check_looping_context(eval_object) end
 ---@param naey string The hors- erm, name or key of the Blind to check
 ---@param ignore_disabled? boolean Whether to ignore the Blind being disabled
 function SMODS.is_active_blind(naey, ignore_disabled) end
+
+---Check if `challenge` is unlocked.
+---@param challenge SMODS.Challenge
+---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
+---@return boolean
+function SMODS.challenge_is_unlocked(challenge, k) end
