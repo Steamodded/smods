@@ -802,3 +802,9 @@ function SMODS.get_keys(t) end
 ---@return table<SMODS.Rank|string, true|table>
 --- Helper function for straight calculation, gets SMODS.Ranks with respect to VirtualRanks
 function SMODS.get_straight_ranks(t, objectified) end
+
+---Check if `challenge` is unlocked.
+---@param challenge SMODS.Challenge
+---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
+---@return boolean
+function SMODS.challenge_is_unlocked(challenge, k) end

@@ -3202,6 +3202,21 @@ function G.UIDEF.challenge_description_tab(args)
 
 	return ref_challenge_desc(args)
 end
+
+function SMODS.challenge_is_unlocked(challenge, k)
+    local challenge_unlocked
+    if type(challenge.unlocked) == 'function' then
+        challenge_unlocked = challenge:unlocked()
+    elseif type(challenge.unlocked) == 'boolean' then
+        challenge_unlocked = challenge.unlocked
+    else
+        -- vanilla condition, only for non-smods challenges
+        challenge_unlocked = G.PROFILES[G.SETTINGS.profile].challenges_unlocked and (G.PROFILES[G.SETTINGS.profile].challenges_unlocked >= (k or 0))
+    end
+    challenge_unlocked = challenge_unlocked or G.PROFILES[G.SETTINGS.profile].all_unlocked
+    return challenge_unlocked
+end
+
 function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
     if specific_vars and specific_vars.bonus_x_chips then
         localize{type = 'other', key = 'card_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_x_chips}}
