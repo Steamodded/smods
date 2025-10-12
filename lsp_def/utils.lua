@@ -753,3 +753,9 @@ function SMODS.get_atlas_sprite_class(atlas_key) end
 ---@param ... any The same parameters as Sprite() takes individually. The atlas may be an atlas_key instead.
 --- This function creates a Sprite or AnimatedSprite depending on the atlas passed
 function SMODS.create_sprite(...) end
+
+---Check if `challenge` is unlocked.
+---@param challenge SMODS.Challenge
+---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
+---@return boolean
+function SMODS.challenge_is_unlocked(challenge, k) end
