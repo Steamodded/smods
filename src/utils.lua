@@ -2768,6 +2768,19 @@ function SMODS.scale_card(card, args)
                     SMODS.calculate_effect(ret, _card)
                 end
             end
+            if card.edition then
+                local edition = G.P_CENTERS[card.edition.key]
+                if edition.calc_scaling and type(edition.calc_scaling) == 'function' then
+                    local ret = edition:calc_scaling(_card, card, initial, scalar_value, args)
+                    if ret then
+                        if ret.override_value and not args.block_overrides.value then initial = ret.override_value.value; SMODS.calculate_effect(ret.override_value, _card) end
+                        if ret.override_scalar_value and not args.block_overrides.scalar then scalar_value = ret.override_scalar_value.value; SMODS.calculate_effect(ret.override_scalar_value, _card) end
+                        if ret.override_message and not args.block_overrides.message then scaling_message = SMODS.merge_defaults(ret.override_message, scaling_message) end
+                        if ret.post then ret.post.source = _card; scaling_responses[#scaling_responses + 1] = ret.post end
+                        SMODS.calculate_effect(ret, _card)
+                    end
+                end
+            end
         end
     end
     
