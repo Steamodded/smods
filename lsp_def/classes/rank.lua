@@ -19,6 +19,7 @@
 ---@field strength_effect? table|{fixed?: string, random?: boolean, ignore?: boolean} Determines how cards with this rank behave when Strength is used. 
 ---@field virtual? table|{ranks: table, next?: table, prev?: table} If set, replaces a rank or a rank's .next/.prev with VirtualRanks (used for straight calculation, e.g. Ace turns to Ace_low and Ace_high)
 ---@field parity? number The parity of the rank, 0 for Even, 1 for odd.
+---@field is_royal? boolean Whether this rank allows for a Royal Flush. (Only relevant for displayed hand text by default)
 ---@field suit_map? table<string, number> For any suit keys in this table, use this rank's atlas over the suit's atlas. Provided number is the `y` position of the suit on the rank's atlas. 
 ---@field __call? fun(self: SMODS.Rank|table, o: SMODS.Rank|table): nil|table|SMODS.Rank
 ---@field extend? fun(self: SMODS.Rank|table, o: SMODS.Rank|table): table Primary method of creating a class. 

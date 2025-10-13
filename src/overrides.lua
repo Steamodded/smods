@@ -885,6 +885,7 @@ end
 -- Example Full House (from game_object.lua): parts = {{pairs = parts._2, min_len = 2}, {pairs = parts._3, min_len = 3}}
 function get_quantum_pairing(parts, base)
 	if not SMODS.optional_features.quantum_ranks then return {} end
+	if #parts < 2 and not base then return {} end
 
 	local parts_list = {}
 	for i, v in ipairs(parts) do
@@ -1864,12 +1865,7 @@ function G.FUNCS.get_poker_hand_info(_cards)
 	disp_text = text
 	local _hand = SMODS.PokerHands[text]
     if text == 'Straight Flush' then
-        local royal = true
-        for j = 1, #scoring_hand do
-            local rank = SMODS.Ranks[scoring_hand[j].base.value]
-            royal = royal and (rank.key == 'Ace' or rank.key == '10' or rank.face)
-        end
-        if royal then
+        if SMODS.all_royal(scoring_hand) then
             disp_text = 'Royal Flush'
         end
     elseif _hand and _hand.modify_display_text and type(_hand.modify_display_text) == 'function' then

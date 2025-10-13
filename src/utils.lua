@@ -2990,6 +2990,25 @@ function Card:is_parity(parity)
     return false
 end
 
+function Card:is_royal()
+    for rank, _ in pairs(self:get_ranks({is_royal_getting_ranks = true})) do
+        if rank.is_royal then
+            return true
+        end
+    end
+    return false
+end
+
+function SMODS.all_royal(cards)
+    if type(cards) ~= "table" then return false end
+    for _, pcard in ipairs(cards) do
+        if not pcard:is_royal() then
+            return false
+        end
+    end
+    return #cards > 0
+end
+
 -- Scoring Calculation API
 function SMODS.set_scoring_calculation(key)
     G.GAME.current_scoring_calculation = SMODS.Scoring_Calculations[key]:new()

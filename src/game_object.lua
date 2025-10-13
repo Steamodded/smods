@@ -1998,6 +1998,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             prev = nil,
         },
         parity = nil,
+        is_royal = nil,
         -- TODO we need a better system for what this is doing.
         -- We should allow setting a playing card's atlas and position to any values,
         -- and we should also ensure that it's easy to create an atlas with a standard
@@ -2114,6 +2115,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         nominal = 10,
         next = { Jack = true },
         parity = 0,
+        is_royal = true,
         strength_effect = {
             fixed_next = 'Jack',
             fixed_prev = '9'
@@ -2129,6 +2131,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         shorthand = 'J',
         next = { Queen = true },
         parity = nil,
+        is_royal = true,
         strength_effect = {
             fixed_next = 'Queen',
             fixed_prev = '10'
@@ -2144,6 +2147,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         shorthand = 'Q',
         next = { King = true },
         parity = nil,
+        is_royal = true,
         strength_effect = {
             fixed_next = 'King',
             fixed_prev = 'Jack'
@@ -2159,6 +2163,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         shorthand = 'K',
         next = { Ace = true },
         parity = nil,
+        is_royal = true,
         strength_effect = {
             fixed_next = 'Ace',
             fixed_prev = 'Queen'
@@ -2173,6 +2178,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         shorthand = 'A',
         next = { ['2'] = true },
         parity = 1,
+        is_royal = true,
         strength_effect = {
             fixed_next = '2',
             fixed_prev = 'King'
