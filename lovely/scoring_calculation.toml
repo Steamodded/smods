@@ -210,9 +210,14 @@ pattern = '''
 G.GAME.hands[hand].mult = math.max(G.GAME.hands[hand].s_mult + G.GAME.hands[hand].l_mult*(G.GAME.hands[hand].level - 1), 1)
 G.GAME.hands[hand].chips = math.max(G.GAME.hands[hand].s_chips + G.GAME.hands[hand].l_chips*(G.GAME.hands[hand].level - 1), 0)
 '''
-payload = '''
+payload = '''    
 for name, parameter in pairs(SMODS.Scoring_Parameters) do
-    if G.GAME.hands[hand][name] then parameter:upgrade_hand(amount, G.GAME.hands[hand], "levelup") end
+    if G.GAME.hands[hand][name] then
+        parameter:level_up_hand(amount, G.GAME.hands[hand], function(base, amount)
+            return base + G.GAME.hands[hand]['l_' .. parameter.key] * amount
+        end
+        )
+    end
 end
 '''
 

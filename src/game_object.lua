@@ -3606,18 +3606,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.current = self.current + amount
             update_hand_text({delay = 0}, {[self.key] = self.current})
         end,
-        upgrade_hand = function(self, amount, hand, behavior)
-            if type(behavior) == "function" then
-                hand[self.key] = behavior(hand[self.key], amount)
-            elseif behavior == "overwrite" then
-                hand[self.key] = amount
-            elseif behavior == "levelup" then
-                hand[self.key] = hand[self.key] + hand['l_'..self.key] * amount
+        level_up_hand = function(self, amount, hand, behaviour)
+            if type(behaviour) == "function" then
+                hand[self.key] = math.max(behaviour(hand[self.key], amount), 0)
             else
-                if behavior then
-                    print("Warning - unknown behavior " .. behavior .. " passed to " .. self.key .. " upgrade_hand")
+                if behaviour then
+                    print("Warning - non-function behaviour " .. behaviour .. " passed to " .. self.key .. " level_up_hand")
                 end
-                hand[self.key] = hand[self.key] + amount
+                hand[self.key] = math.max(hand[self.key] + amount, 0)
             end
         end,
         calc_effect = function(self, effect, scored_card, key, amount, from_edition)
