@@ -2310,12 +2310,12 @@ G.FUNCS.can_select_from_booster = function(e)
 
 function Card.selectable_from_pack(card, pack)
     if card.config.center.select_card then return card.config.center.select_card end
-    if pack.select_exclusions then
+    if pack and pack.select_exclusions then
         for _, key in ipairs(pack.select_exclusions) do
             if key == card.config.center_key then return false end
         end
     end
-    if pack.select_card then
+    if pack and pack.select_card then
         if type(pack.select_card) == 'table' then
             if pack.select_card[card.ability.set] then return pack.select_card[card.ability.set] else return false end
         end
@@ -2979,6 +2979,21 @@ function G.UIDEF.challenge_description_tab(args)
 
 	return ref_challenge_desc(args)
 end
+
+function SMODS.challenge_is_unlocked(challenge, k)
+    local challenge_unlocked
+    if type(challenge.unlocked) == 'function' then
+        challenge_unlocked = challenge:unlocked()
+    elseif type(challenge.unlocked) == 'boolean' then
+        challenge_unlocked = challenge.unlocked
+    else
+        -- vanilla condition, only for non-smods challenges
+        challenge_unlocked = G.PROFILES[G.SETTINGS.profile].challenges_unlocked and (G.PROFILES[G.SETTINGS.profile].challenges_unlocked >= (k or 0))
+    end
+    challenge_unlocked = challenge_unlocked or G.PROFILES[G.SETTINGS.profile].all_unlocked
+    return challenge_unlocked
+end
+
 function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
     if specific_vars and specific_vars.bonus_x_chips then
         localize{type = 'other', key = 'card_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_x_chips}}
