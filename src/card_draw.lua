@@ -1,3 +1,35 @@
+-- CanvasSprite: a Sprite that draws from a Love2D canvas
+SMODS.CanvasSprite = Sprite:extend()
+
+-- init: create a canvas for the sprite
+function SMODS.CanvasSprite:init(X, Y, W, H)
+  Sprite.init(self, X, Y, W, H, G.ASSET_ATLAS.Joker, { x = 0, y = 0 })
+  self.canvas = love.graphics.newCanvas(love.graphics.getDimensions())
+  self.canvas:renderTo(love.graphics.clear, 0, 0, 0, 0)
+end
+
+-- draw_from: draw the canvas
+-- code mostly borrowed from vanilla Sprite:draw_from
+function SMODS.CanvasSprite:draw_from(other_obj, ms, mr, mx, my)
+    self.ARGS.draw_from_offset = self.ARGS.draw_from_offset or {}
+    self.ARGS.draw_from_offset.x = mx or 0
+    self.ARGS.draw_from_offset.y = my or 0
+    prep_draw(other_obj, (1 + (ms or 0)), (mr or 0), self.ARGS.draw_from_offset, true)
+    love.graphics.scale(1/(other_obj.scale_mag or other_obj.VT.scale))
+    love.graphics.setColor(G.BRUTE_OVERLAY or G.C.WHITE)
+    love.graphics.draw(
+        self.canvas,
+        self.sprite,
+        -(other_obj.T.w/2 -other_obj.VT.w/2)*10,
+        0,
+        0,
+        other_obj.VT.w/(other_obj.T.w),
+        other_obj.VT.h/(other_obj.T.h)
+    )
+    self:draw_boundingrect()
+    love.graphics.pop()
+end
+
 SMODS.DrawSteps = {}
 SMODS.DrawStep = SMODS.GameObject:extend {
     obj_table = SMODS.DrawSteps,
