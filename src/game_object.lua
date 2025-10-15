@@ -3852,21 +3852,28 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         self.callbacks = args.callbacks or {}
         self.blinds = args.blinds or {}
         self.tags = args.tags or {}
-
-        self.resolved_callback_types = {}
     end
 
-    function SMODS.BTNode:trigger_callbacks(type, leave_unresolved)
-        if not type or self.resolved_callback_types[type] then return end
+    function SMODS.BTNode:trigger_callbacks(type)
+        if not type then return end
         local hold = false
         for _, callback in ipairs(self.callbacks) do
             if not callback.called and (not hold or callback.ignore_hold) and callback.type == type then
                 hold = hold or callback:on_callback(self)
             end
         end
-        if not (hold or leave_unresolved) then
-            self.resolved_callback_types[type] = true
-        end
+    end
+
+    function SMODS.BTNode:get_blind(keep)
+        local blind = self.blinds[1]
+        if not keep then table.remove(self.blinds, 1) end
+        return blind
+    end
+
+    function SMODS.BTNode:get_tag(keep)
+        local tag = self.tags[1]
+        if not keep then table.remove(self.tags, 1) end
+        return tag
     end
 
     ------- API CODE GameObject.BTNodeCallback
@@ -3900,7 +3907,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.BTNodeCallback {
         key = "enter_shop",
-        type = "cashout",
+        type = "cashed_out",
         on_callback = function (self, bt_node)
             -- Change game state to shop
             return true
@@ -3928,33 +3935,71 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     ------- API CODE OVERRIDES
-    
+
+
+    --[[
+    Game:init_game_object()
+    Game:update(dt)
+    G.GAME.round_resets.blind_tags
+    ]]
+
     -- Create Blind Select UI
     function create_UIBox_blind_select()
         return SMODS.get_blind_tree().create_ui()
+    end
+
+    -- Run Info Tab 
+    function G.UIDEF.current_blinds()
+        return SMODS.get_blind_tree().create_run_info_ui()
+    end
+
+    -- Blind Choice Handler
+    function G.FUNCS.blind_choice_handler(e)
+
+    end
+
+    -- Cash Out (probably should be a lovely patch)
+    -- AND/OR: Consider separating the cashout into its own BTNodeCallback "enter_cashout"
+    G.FUNCS.cash_out = function(e)
+
+    end
+
+    -- reset_blinds()
+    function reset_blinds()
+
+    end
+
+    -- new_round() (also lovely patch maybe)
+    function new_round()
+
+    end
+
+    -- end_round() (also lovely patch maybe)
+    function end_round()
+
+    end
+
+    -- get_blind_main_colour()
+    function get_blind_main_colour(blind)
+    
     end
 
     -- Toggle Shop
     function G.FUNCS.toggle_shop(e)
 
     end
-    
-    -- Run Info Tab 
-    function G.UIDEF.current_blinds()
-        return SMODS.get_blind_tree().create_run_info_ui()
-    end
 
-    -- Select Blind
+    -- Select Blind (-> use own func in UI defs)
     function G.FUNCS.select_blind(e)
 
     end
 
-    -- Skip Blind
+    -- Skip Blind (-> use own func in UI defs)
     function G.FUNCS.skip_blind(e)
 
     end
 
-    -- Reroll Boss
+    -- Reroll Boss (-> use own func in UI defs)
     function G.FUNCS.reroll_boss(e)
 
     end
