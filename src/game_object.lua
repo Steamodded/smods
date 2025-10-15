@@ -3849,7 +3849,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     function SMODS.BTNode:init(...)
         local args = {...}
 
-        self.callbacks = args.callbacks or {}
+        self.callbacks = args.callbacks or {} -- {key: String, called: Boolean}
         self.blinds = args.blinds or {}
         self.tags = args.tags or {}
     end
@@ -3857,9 +3857,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     function SMODS.BTNode:trigger_callbacks(type)
         if not type then return end
         local hold = false
-        for _, callback in ipairs(self.callbacks) do
-            if not callback.called and (not hold or callback.ignore_hold) and callback.type == type then
-                hold = hold or callback:on_callback(self)
+        for _, cb in ipairs(self.callbacks) do
+            local callback = SMODS.BTNodeCallbacks[cb.key]
+            if not cb.called and (not hold or callback.ignore_hold) and callback.type == type then
+                cb.called = true
+                hold = hold or callback:on_callback(self, cb)
             end
         end
     end
@@ -3874,6 +3876,21 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         local tag = self.tags[1]
         if not keep then table.remove(self.tags, 1) end
         return tag
+    end
+
+    function SMODS.BTNode:save()
+        local node_table = {
+            callbacks = self.callbacks,
+            blinds = self.blinds,
+            tags = self.tags
+        }
+        return node_table
+    end
+
+    function SMODS.BTNode:load(node_table)
+        self.callbacks = node_table.callbacks or {}
+        self.blinds = node_table.blinds or {}
+        self.tags = node_table.tags or {}
     end
 
     ------- API CODE GameObject.BTNodeCallback
@@ -3892,14 +3909,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 sendWarnMessage(("BTNodeCallback injected with invalid function '%s'"):format(self.on_callback))
             end
             self.type = self.type or "selected"
-            self.called = false
         end,
     }
 
     SMODS.BTNodeCallback {
         key = "enter_blind",
         type = "selected",
-        on_callback = function (self, bt_node)
+        on_callback = function (self, bt_node, cb)
             -- Change game state to bt_node:get_blind()
             return true
         end
@@ -3908,7 +3924,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.BTNodeCallback {
         key = "enter_shop",
         type = "cashed_out",
-        on_callback = function (self, bt_node)
+        on_callback = function (self, bt_node, cb)
             -- Change game state to shop
             return true
         end
@@ -3918,7 +3934,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "ante_up",
         type = "defeated",
         ignore_hold = true,
-        on_callback = function (self, bt_node)
+        on_callback = function (self, bt_node, cb)
             -- Ante up
             return false
         end
@@ -3928,7 +3944,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "create_tag",
         type = "skipped",
         ignore_hold = true,
-        on_callback = function (self, bt_node)
+        on_callback = function (self, bt_node, cb)
             -- Create tag(s) from bt_node:get_tag()
             return false
         end
