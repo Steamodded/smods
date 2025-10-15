@@ -3803,6 +3803,164 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
 
     -------------------------------------------------------------------------------------------------
+    ------- API CODE SMODS.BlindTree AND RELATED
+    -------------------------------------------------------------------------------------------------
+    
+    ------- API CODE SMODS.BlindTree 
+    SMODS.BlindTrees = {}
+    SMODS.BlindTree = SMODS.GameObject:extend {
+        set = 'BlindTree',
+        obj_table = SMODS.BlindTrees,
+        obj_buffer = {},
+        required_parameters = {
+            'key',
+        },
+        inject = function(self)
+
+        end,
+        create_data = function ()
+            -- Vanilla Blind structure
+            -- "Small" -> "Big" -> "Boss"
+        end,
+        create_ui = function ()
+            -- Vanilla Blind select UI
+        end,
+        create_run_info_ui = function ()
+            -- Vanilla Run Info Blind Tab UI
+        end,
+    }
+
+    SMODS.BlindTree {
+        key = "vanilla",
+    }
+
+    function SMODS.get_blind_tree()
+        local tree_key = SMODS.get_active_blind_tree()
+        tree_key = type(tree_key) == "table" and tree_key.key or tree_key
+        return SMODS.BlindTrees[tree_key] or SMODS.BlindTrees["vanilla"]
+    end
+
+    function SMODS.get_active_blind_tree()
+        return "vanilla"
+    end
+    
+    ------- API CODE Object.BTNode
+    SMODS.BTNode = Object:extend()
+    function SMODS.BTNode:init(...)
+        local args = {...}
+
+        self.callbacks = args.callbacks or {}
+        self.blinds = args.blinds or {}
+        self.tags = args.tags or {}
+
+        self.resolved_callback_types = {}
+    end
+
+    function SMODS.BTNode:trigger_callbacks(type, leave_unresolved)
+        if not type or self.resolved_callback_types[type] then return end
+        local hold = false
+        for _, callback in ipairs(self.callbacks) do
+            if not callback.called and (not hold or callback.ignore_hold) and callback.type == type then
+                hold = hold or callback:on_callback(self)
+            end
+        end
+        if not (hold or leave_unresolved) then
+            self.resolved_callback_types[type] = true
+        end
+    end
+
+    ------- API CODE GameObject.BTNodeCallback
+    SMODS.BTNodeCallbacks = {}
+    SMODS.BTNodeCallback = SMODS.GameObject:extend {
+        set = 'BTNodeCallback',
+        obj_table = SMODS.BTNodeCallbacks,
+        obj_buffer = {},
+        required_parameters = {
+            'key',
+            'on_callback',
+        },
+        ignore_hold = false,
+        inject = function(self)
+            if type(self.on_callback) ~= "function" then
+                sendWarnMessage(("BTNodeCallback injected with invalid function '%s'"):format(self.on_callback))
+            end
+            self.type = self.type or "selected"
+            self.called = false
+        end,
+    }
+
+    SMODS.BTNodeCallback {
+        key = "enter_blind",
+        type = "selected",
+        on_callback = function (self, bt_node)
+            -- Change game state to bt_node:get_blind()
+            return true
+        end
+    }
+
+    SMODS.BTNodeCallback {
+        key = "enter_shop",
+        type = "cashout",
+        on_callback = function (self, bt_node)
+            -- Change game state to shop
+            return true
+        end
+    }
+
+    SMODS.BTNodeCallback {
+        key = "ante_up",
+        type = "defeated",
+        ignore_hold = true,
+        on_callback = function (self, bt_node)
+            -- Ante up
+            return false
+        end
+    }
+
+    SMODS.BTNodeCallback {
+        key = "create_tag",
+        type = "skipped",
+        ignore_hold = true,
+        on_callback = function (self, bt_node)
+            -- Create tag(s) from bt_node:get_tag()
+            return false
+        end
+    }
+
+    ------- API CODE OVERRIDES
+    
+    -- Create Blind Select UI
+    function create_UIBox_blind_select()
+        return SMODS.get_blind_tree().create_ui()
+    end
+
+    -- Toggle Shop
+    function G.FUNCS.toggle_shop(e)
+
+    end
+    
+    -- Run Info Tab 
+    function G.UIDEF.current_blinds()
+        return SMODS.get_blind_tree().create_run_info_ui()
+    end
+
+    -- Select Blind
+    function G.FUNCS.select_blind(e)
+
+    end
+
+    -- Skip Blind
+    function G.FUNCS.skip_blind(e)
+
+    end
+
+    -- Reroll Boss
+    function G.FUNCS.reroll_boss(e)
+
+    end
+
+
+    -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
     -------------------------------------------------------------------------------------------------
 
