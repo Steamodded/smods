@@ -3130,19 +3130,19 @@ function SMODS.get_select_text(card, pack)
         if type(card.config.center.select_button_text) == "function" then
             select_text = card.config.center:select_button_text(card, pack)
         else
-            select_text = card.config.center.select_button_text
+            select_text = localize(card.config.center.select_button_text)
         end
     elseif SMODS.ConsumableTypes[card.ability.set].select_button_text then -- ConsumableType is second priority
         if type(SMODS.ConsumableTypes[card.ability.set].select_button_text) == "function" then
             select_text = SMODS.ConsumableTypes[card.ability.set]:select_button_text(card, pack)
         else
-            select_text = SMODS.ConsumableTypes[card.ability.set].select_button_text
+            select_text = localize(SMODS.ConsumableTypes[card.ability.set].select_button_text)
         end
     elseif pack.select_button_text then -- Pack is third priority
         if type(pack.select_button_text) == "function" then
             select_text = pack:select_button_text(card, pack)
         else
-            select_text = pack.select_button_text
+            select_text = localize(pack.select_button_text)
         end
     end
     return select_text
