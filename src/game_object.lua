@@ -3829,6 +3829,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                         index = 1,
                         callbacks = {
                             {key = "enter_blind", triggers = {selected = true}},
+                            {key = "evaluate_round", triggers = {defeated = true}},
                             {key = "enter_shop", triggers = {cashed_out = true}},
                             {key = "create_tag", triggers = {skipped = true}},
                         },
@@ -3840,6 +3841,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                         index = 2,
                         callbacks = {
                             {key = "enter_blind", triggers = {selected = true}},
+                            {key = "evaluate_round", triggers = {defeated = true}},
                             {key = "enter_shop", triggers = {cashed_out = true}},
                             {key = "create_tag", triggers = {skipped = true}},
                         },
@@ -3851,8 +3853,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                         index = 3,
                         callbacks = {
                             {key = "enter_blind", triggers = {selected = true}},
-                            {key = "enter_shop", triggers = {cashed_out = true}},
                             {key = "ante_up", triggers = {defeated = true}},
+                            {key = "evaluate_round", triggers = {defeated = true}},
+                            {key = "enter_shop", triggers = {cashed_out = true}},
                         },
                         blinds = {get_new_boss()}, -- TODO: Replace with own function
                     }
@@ -3981,6 +3984,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     SMODS.BTNodeCallback {
+        key = "evaluate_round",
+        on_callback = function (self, bt_node, cb, trigger_type)
+            -- Create cashout and evaluate round 
+            return true
+        end
+    }
+
+    SMODS.BTNodeCallback {
         key = "enter_shop",
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Change game state to shop
@@ -4013,6 +4024,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     Game:start_run()
     G.GAME.round_resets.blind_tags
     get_new_boss()
+    function Node:collides_with_point(point) -- Needs to be fixed so that clipping parents are accounted for
     ]]
 
     -- Create Blind Select UI
@@ -4031,8 +4043,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     -- Cash Out (probably should be a lovely patch)
-    -- AND/OR: Consider separating the cashout into its own BTNodeCallback "enter_cashout"
-    G.FUNCS.cash_out = function(e)
+    -- AND/OR: Consider separating the Round eval/cashout into its own BTNodeCallback "evaluate_round"
+    function G.FUNCS.cash_out(e)
+
+    end
+
+    -- If I separate the cash out from necessarily following a Blind, override this as well 
+    function G.FUNCS.evaluate_round()
 
     end
 
