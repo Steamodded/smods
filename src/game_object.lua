@@ -1221,6 +1221,22 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     }
 
+    SMODS.Joker:take_ownership("cloud_9", {
+        update = function () end,
+        loc_vars = function (self, info_queue, card)
+            local tally = SMODS.get_rank_tally(G.playing_cards, {effect_getting_ranks = "Cloud 9"})
+            card.ability.nine_tally = tally[SMODS.Ranks["9"]] or 0
+            return { vars = {card.ability.extra, card.ability.extra*(card.ability.nine_tally or 0)}}
+        end,
+        calc_dollar_bonus = function (self, card)
+            local tally = SMODS.get_rank_tally(G.playing_cards, {effect_getting_ranks = "Cloud 9"})
+            card.ability.nine_tally = tally[SMODS.Ranks["9"]] or 0
+            if card.ability.nine_tally and card.ability.nine_tally > 0 then
+                return card.ability.extra*(card.ability.nine_tally)
+            end
+        end
+    })
+
     -------------------------------------------------------------------------------------------------
     ------- API CODE GameObject.Center.Consumable
     -------------------------------------------------------------------------------------------------
