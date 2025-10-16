@@ -2096,7 +2096,6 @@ function SMODS.blueprint_effect(copier, copied_card, context)
     context.blueprint_card = old_context_blueprint_card
     if other_joker_ret then
         other_joker_ret.card = eff_card
-        other_joker_ret.colour = G.C.BLUE
         return other_joker_ret
     end
 end
@@ -2311,7 +2310,7 @@ G.FUNCS.can_select_from_booster = function(e)
 
 function Card.selectable_from_pack(card, pack)
     if card.config.center.select_card then return card.config.center.select_card end
-    if pack.select_exclusions then
+    if pack and pack.select_exclusions then
         for _, key in ipairs(pack.select_exclusions) do
             if key == card.config.center_key then return false end
         end
@@ -2981,6 +2980,21 @@ function G.UIDEF.challenge_description_tab(args)
 
 	return ref_challenge_desc(args)
 end
+
+function SMODS.challenge_is_unlocked(challenge, k)
+    local challenge_unlocked
+    if type(challenge.unlocked) == 'function' then
+        challenge_unlocked = challenge:unlocked()
+    elseif type(challenge.unlocked) == 'boolean' then
+        challenge_unlocked = challenge.unlocked
+    else
+        -- vanilla condition, only for non-smods challenges
+        challenge_unlocked = G.PROFILES[G.SETTINGS.profile].challenges_unlocked and (G.PROFILES[G.SETTINGS.profile].challenges_unlocked >= (k or 0))
+    end
+    challenge_unlocked = challenge_unlocked or G.PROFILES[G.SETTINGS.profile].all_unlocked
+    return challenge_unlocked
+end
+
 function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
     if specific_vars and specific_vars.bonus_x_chips then
         localize{type = 'other', key = 'card_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_x_chips}}

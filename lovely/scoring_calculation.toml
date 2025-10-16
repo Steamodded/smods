@@ -120,7 +120,7 @@ for name, parameter in pairs(SMODS.Scoring_Parameters) do
                     cover_colour = mix_colours(parameter.colour, col, 0.1),
                     emboss = 0.05,
                     align = 'cm',
-                    cover_align = 'cm'
+                    cover_align = G.hand_text_area[name].parent.config.align
                 })
             end
             if (vals[name.."_juice"] or parameter.juice_on_update) and not G.TAROT_INTERRUPT then G.hand_text_area[name]:juice_up() end

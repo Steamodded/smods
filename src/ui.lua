@@ -894,7 +894,7 @@ function buildModtag(mod)
     local tag_atlas, tag_pos, tag_message, specific_vars = getModtagInfo(mod)
 
     local tag_sprite_tab = nil
-    local units = SMODS.pixels_to_unit(34) * 2
+    local units = 1
     local animated = G.ANIMATION_ATLAS[tag_atlas] or nil
     local tag_sprite
     if animated then
@@ -2145,7 +2145,7 @@ end
 
 function SMODS.GUI.score_container(args)
     local scale = args.scale or 0.4
-    local type = args.type or 'mult'
+    local type = args.type
     local colour = args.colour or SMODS.Scoring_Parameters[type].colour
     local align = args.align or 'cl'
     local func = args.func or 'hand_type_UI_set'
@@ -2155,6 +2155,7 @@ function SMODS.GUI.score_container(args)
     return
     {n=G.UIT.R, config={align = align, minw = w, minh = h, r = 0.1, colour = colour, id = 'hand_'..type..'_area', emboss = 0.05}, nodes={
         {n=G.UIT.O, config={func = 'flame_handler', no_role = true, id = 'flame_'..type, object = Moveable(0,0,0,0), w = 0, h = 0, _w = w * 1.25, _h = h * 2.5}},
+        -- TODO padding should depend only on 2nd letter of alignment?
         align == 'cl' and {n=G.UIT.B, config={w = 0.1, h = 0.1}} or nil,
         {n=G.UIT.O, config={id = 'hand_'..type, func = func, text = text, type = type, scale = scale*2.3, object = DynaText({
             string = {{ref_table = G.GAME.current_round.current_hand, ref_value = text}},
