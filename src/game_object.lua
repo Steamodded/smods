@@ -3821,6 +3821,44 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         create_data = function ()
             -- Vanilla Blind structure
             -- "Small" -> "Big" -> "Boss"
+            local tree_data = {
+                key = "vanilla",
+                active_node = nil,
+                nodes = {
+                    SMODS.BTNode {
+                        index = 1,
+                        callbacks = {
+                            {key = "enter_blind", triggers = {selected = true}},
+                            {key = "enter_shop", triggers = {cashed_out = true}},
+                            {key = "create_tag", triggers = {skipped = true}},
+                        },
+                        blinds = {"bl_small"},
+                        tags = {get_next_tag_key()},
+                        next_nodes_indices = {[2] = true}
+                    },
+                    SMODS.BTNode {
+                        index = 2,
+                        callbacks = {
+                            {key = "enter_blind", triggers = {selected = true}},
+                            {key = "enter_shop", triggers = {cashed_out = true}},
+                            {key = "create_tag", triggers = {skipped = true}},
+                        },
+                        blinds = {"bl_big"},
+                        tags = {get_next_tag_key()},
+                        next_nodes_indices = {[3] = true}
+                    },
+                    SMODS.BTNode {
+                        index = 3,
+                        callbacks = {
+                            {key = "enter_blind", triggers = {selected = true}},
+                            {key = "enter_shop", triggers = {cashed_out = true}},
+                            {key = "ante_up", triggers = {defeated = true}},
+                        },
+                        blinds = {get_new_boss()}, -- TODO: Replace with own function
+                    }
+                }
+            }
+            return tree_data
         end,
         create_ui = function ()
             -- Vanilla Blind select UI
@@ -3835,13 +3873,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     function SMODS.get_blind_tree()
-        local tree_key = SMODS.get_active_blind_tree()
-        tree_key = type(tree_key) == "table" and tree_key.key or tree_key
-        return SMODS.BlindTrees[tree_key] or SMODS.BlindTrees["vanilla"]
+        return SMODS.BLIND_TREE and SMODS.BlindTrees[SMODS.BLIND_TREE.key] or SMODS.BlindTrees["vanilla"]
     end
 
-    function SMODS.get_active_blind_tree()
-        return "vanilla"
+    function SMODS.get_bt_node(index)
+        return SMODS.BLIND_TREE and SMODS.BLIND_TREE.nodes and SMODS.BLIND_TREE.nodes[index] or {}
     end
     
     ------- API CODE Object.BTNode
@@ -3849,19 +3885,36 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     function SMODS.BTNode:init(...)
         local args = {...}
 
-        self.callbacks = args.callbacks or {} -- {key: String, called: Boolean}
+        self.index = args.index
+
+        self:set_callbacks(args.callbacks or {})
         self.blinds = args.blinds or {}
         self.tags = args.tags or {}
+
+        self.selected = args.selected or false
+        self:set_next_nodes(args.next_nodes_indices or {})
     end
 
-    function SMODS.BTNode:trigger_callbacks(type)
+    function SMODS.BTNode:set_callbacks(cbs)
+        self.callbacks = {}
+        for _, cb in ipairs(cbs) do
+            table.insert(self.callbacks, {
+                key = cb.key,
+                triggers = cb.triggers,
+                called = cb.called or false,
+                ignore_hold = cb.ignore_hold or false
+            })
+        end
+    end
+
+    function SMODS.BTNode:trigger_callbacks(trigger_type)
         if not type then return end
         local hold = false
         for _, cb in ipairs(self.callbacks) do
             local callback = SMODS.BTNodeCallbacks[cb.key]
-            if not cb.called and (not hold or callback.ignore_hold) and callback.type == type then
+            if not cb.called and (not hold or cb.ignore_hold) and cb.triggers[trigger_type] then
                 cb.called = true
-                hold = hold or callback:on_callback(self, cb)
+                hold = hold or callback:on_callback(self, cb, trigger_type)
             end
         end
     end
@@ -3878,11 +3931,17 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         return tag
     end
 
+    function SMODS.BTNode:set_next_nodes(nni)
+        self.next_nodes_indices = nni or {}
+    end
+
     function SMODS.BTNode:save()
         local node_table = {
             callbacks = self.callbacks,
             blinds = self.blinds,
-            tags = self.tags
+            tags = self.tags,
+            selected = self.selected,
+            next_nodes_indices = self.next_nodes_indices,
         }
         return node_table
     end
@@ -3891,6 +3950,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         self.callbacks = node_table.callbacks or {}
         self.blinds = node_table.blinds or {}
         self.tags = node_table.tags or {}
+        self.selected = node_table.selected or false
+        self.next_nodes_indices = node_table.next_nodes_indices or {}
+        self:load_next_nodes()
     end
 
     ------- API CODE GameObject.BTNodeCallback
@@ -3903,19 +3965,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             'key',
             'on_callback',
         },
-        ignore_hold = false,
         inject = function(self)
             if type(self.on_callback) ~= "function" then
                 sendWarnMessage(("BTNodeCallback injected with invalid function '%s'"):format(self.on_callback))
             end
-            self.type = self.type or "selected"
-        end,
+        end
     }
 
     SMODS.BTNodeCallback {
         key = "enter_blind",
-        type = "selected",
-        on_callback = function (self, bt_node, cb)
+        on_callback = function (self, bt_node, cb, trigger_type)
             -- Change game state to bt_node:get_blind()
             return true
         end
@@ -3923,8 +3982,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.BTNodeCallback {
         key = "enter_shop",
-        type = "cashed_out",
-        on_callback = function (self, bt_node, cb)
+        on_callback = function (self, bt_node, cb, trigger_type)
             -- Change game state to shop
             return true
         end
@@ -3932,9 +3990,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.BTNodeCallback {
         key = "ante_up",
-        type = "defeated",
-        ignore_hold = true,
-        on_callback = function (self, bt_node, cb)
+        on_callback = function (self, bt_node, cb, trigger_type)
             -- Ante up
             return false
         end
@@ -3942,9 +3998,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.BTNodeCallback {
         key = "create_tag",
-        type = "skipped",
-        ignore_hold = true,
-        on_callback = function (self, bt_node, cb)
+        on_callback = function (self, bt_node, cb, trigger_type)
             -- Create tag(s) from bt_node:get_tag()
             return false
         end
@@ -3956,7 +4010,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     --[[
     Game:init_game_object()
     Game:update(dt)
+    Game:start_run()
     G.GAME.round_resets.blind_tags
+    get_new_boss()
     ]]
 
     -- Create Blind Select UI
