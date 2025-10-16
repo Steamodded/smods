@@ -105,6 +105,7 @@
 ---@field is_face_getting_ranks? table Passed as flag in context.get_ranks by Card:is_face() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside is_face() evaluation)
 ---@field is_parity_getting_ranks? table Passed as flag in context.get_ranks by Card:is_parity() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside is_parity() evaluation)
 ---@field is_tally_getting_ranks? table Passed as default flag in context.get_ranks by SMODS.get_rank_tally() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside rank tally)
+---@field effect_getting_ranks? string Should be manually passed as flag param when calling any Quantum Rank function, its string value being e.g. the key of the caller object. (Allows quantum ranks exclusively during / outside specific effects)
 ---@field no_mod? boolean Check if `true` to decide whether an effect should modify context.get_ranks' ranks_fixed/ranks_changed fields. (If you want to override and block other effects, return `no_mod=true` alongside ranks_fixed=[only your ranks])
 ---@field money_altered? true Check if `true` for effects when the amount of money the player has changes.
 ---@field from_shop? true Check if `true` if money changed during the shop.
