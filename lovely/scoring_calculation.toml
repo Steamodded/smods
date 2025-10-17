@@ -108,7 +108,7 @@ for name, parameter in pairs(SMODS.Scoring_Parameters) do
         end
         if type(vals[name]) == 'string' then delta = vals[name] end
         G.GAME.current_round.current_hand[name] = vals[name]
-        G.hand_text_area[name] = G.hand_text_area[name] or G.HUD:get_UIE_by_ID('hand_'..name) or nil
+        G.hand_text_area[name] = G.hand_text_area[name] or G.HUD:get_UIE_by_ID('hand_'..name..'_area')
         if G.hand_text_area[name] then
             G.hand_text_area[name]:update(0)
             if vals.StatusText then 
@@ -305,4 +305,38 @@ return _chips
 '''
 payload = '''
 SMODS.Scoring_Parameters.chips:modify(nil, _chips - (hand_chips or 0))
+'''
+
+# Properly target SMODS-defined chips/mult text area for level up hand animation
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+chips = self.HUD:get_UIE_by_ID('hand_chips'),
+mult = self.HUD:get_UIE_by_ID('hand_mult'),
+'''
+payload = '''
+chips = self.HUD:get_UIE_by_ID('hand_mult_area'),
+mult = self.HUD:get_UIE_by_ID('hand_chips_area'),
+'''
+
+# Making planet cards have proper level up hand animation (with other scoring parameters)
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(self.ability.consumeable.hand_type, 'poker_hands'),chips = G.GAME.hands[self.ability.consumeable.hand_type].chips, mult = G.GAME.hands[self.ability.consumeable.hand_type].mult, level=G.GAME.hands[self.ability.consumeable.hand_type].level})
+level_up_hand(used_tarot, self.ability.consumeable.hand_type)
+update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, {mult = 0, chips = 0, handname = '', level = ''})
+'''
+payload = '''
+SMODS.start_level_up_hand_animation{
+    hand = self.ability.consumeable.hand_type
+}
+level_up_hand(self, self.ability.consumeable.hand_type, nil, 1)
+SMODS.end_level_up_hand_animation{}
 '''
