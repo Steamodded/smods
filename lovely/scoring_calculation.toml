@@ -318,8 +318,8 @@ chips = self.HUD:get_UIE_by_ID('hand_chips'),
 mult = self.HUD:get_UIE_by_ID('hand_mult'),
 '''
 payload = '''
-chips = self.HUD:get_UIE_by_ID('hand_mult_area'),
-mult = self.HUD:get_UIE_by_ID('hand_chips_area'),
+chips = self.HUD:get_UIE_by_ID('hand_chips_area'),
+mult = self.HUD:get_UIE_by_ID('hand_mult_area'),
 '''
 
 # Making planet cards have proper level up hand animation (with other scoring parameters)
