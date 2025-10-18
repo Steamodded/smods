@@ -2,11 +2,12 @@
 SMODS.CanvasSprite = Sprite:extend()
 
 -- init: create a canvas for the sprite
-function SMODS.CanvasSprite:init(X, Y, W, H, canvasW, canvasH)
+function SMODS.CanvasSprite:init(X, Y, W, H, canvasW, canvasH, canvasScale)
   self.canvasW = canvasW or 71
   self.canvasH = canvasH or 95
-  self.canvas = love.graphics.newCanvas(self.canvasW, self.canvasH)
-  Sprite.init(self, X, Y, W, H, { name = "dummy", px = self.canvasW, py = self.canvasH, image = self.canvas }, { x = 0, y = 0 })
+  self.canvasScale = canvasScale or 1
+  self.canvas = love.graphics.newCanvas(canvasW * canvasScale, canvasH * canvasScale)
+  Sprite.init(self, X, Y, W, H, { name = "dummy", px = canvasW * canvasScale, py = canvasH * canvasScale, image = self.canvas }, { x = 0, y = 0 })
   self.canvas:renderTo(love.graphics.clear, 0, 0, 0, 0)
 end
 
@@ -25,8 +26,8 @@ function SMODS.CanvasSprite:draw_from(other_obj, ms, mr, mx, my)
         -(other_obj.T.w/2 -other_obj.VT.w/2)*10,
         0,
         0,
-        other_obj.VT.w/(other_obj.T.w)/(self.canvasW/71),
-        other_obj.VT.h/(other_obj.T.h)/(self.canvasH/95)
+        other_obj.VT.w/(other_obj.T.w)/(self.canvasScale),
+        other_obj.VT.h/(other_obj.T.h)/(self.canvasScale)
     )
     self:draw_boundingrect()
     love.graphics.pop()
