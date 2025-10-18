@@ -1888,8 +1888,9 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
     args.w_mod = args.w_mod or 1
     args.h_mod = args.h_mod or 1
     args.card_scale = args.card_scale or 1
+    args.show_hidden = args.show_hidden or false
     local deck_tables = {}
-    local pool = SMODS.collection_pool(_pool)
+    local pool = SMODS.collection_pool(_pool, args.show_hidden)
 
     G.your_collection = {}
     local cards_per_page = 0
