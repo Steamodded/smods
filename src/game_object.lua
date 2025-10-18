@@ -1220,6 +1220,21 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     }
 
+    -- Required for proper level up hand animation with other scoring parameters
+    SMODS.Joker:take_ownership('burnt', {
+        calculate = function (self, card, context)
+            if context.pre_discard then
+                local text,disp_text = G.FUNCS.get_poker_hand_info(G.hand.highlighted)
+                card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex')})
+                SMODS.start_level_up_hand_animation{hand = text}
+                level_up_hand(card, text, nil, 1)
+                SMODS.end_level_up_hand_animation{}
+                return nil, true
+            end
+
+        end
+    }, true)
+
     -------------------------------------------------------------------------------------------------
     ------- API CODE GameObject.Center.Consumable
     -------------------------------------------------------------------------------------------------
@@ -1280,6 +1295,26 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         atlas = 'Spectral',
         cost = 4,
     }
+
+    -- Required for proper level up hand animation with other scoring parameters
+    SMODS.Consumable:take_ownership('black_hole', {
+        use = function (self, card, area, copier)
+            SMODS.start_level_up_hand_animation{
+                hand_text = localize('k_all_hands'),
+                all_parameter_text = '...',
+                level_text = '',
+            }
+            SMODS.level_up_hand_animation{
+                card = card,
+                all_parameter_status_text = '+',
+                level_text = '+1'
+            }
+            SMODS.end_level_up_hand_animation{}
+            for hand_key in pairs(G.GAME.hands) do
+                level_up_hand(card, hand_key, true)
+            end
+        end
+    }, true)
 
 
     -------------------------------------------------------------------------------------------------
@@ -2936,6 +2971,26 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     }
 
+    -- Required for proper level up hand animation with other scoring parameters
+    SMODS.Tag:take_ownership('orbital', {
+        apply = function (self, tag, context)
+            if context.type == 'immediate' then
+                local orbital_hand = tag.ability.orbital_hand
+
+                SMODS.start_level_up_hand_animation{hand = orbital_hand}
+                level_up_hand(tag, orbital_hand, nil, tag.config.levels)
+                SMODS.end_level_up_hand_animation{}
+
+                tag:yep('+', G.C.MONEY, function ()
+                    G.CONTROLLER.locks[tag.ID] = nil
+                    return true
+                end)
+                tag.triggered = true
+                return true
+            end
+        end
+    }, true)
+
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Sticker
     -------------------------------------------------------------------------------------------------
@@ -3732,7 +3787,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             'key',
             'func',
         },
-        parameters = {'chips', 'mult'},
+        parameters = {'mult', 'chips'},
         inject = function() end,
         new = function(self, def)
             def = def or {}

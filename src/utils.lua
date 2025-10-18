@@ -2833,7 +2833,7 @@ end
 
 function SMODS.refresh_score_UI_list()
     for name, _ in pairs(SMODS.Scoring_Parameters) do
-        G.hand_text_area[name] = G.HUD:get_UIE_by_ID('hand_'..name)
+        G.hand_text_area[name] = G.HUD:get_UIE_by_ID('hand_'..name..'_area')
     end
 end
 
@@ -3229,4 +3229,88 @@ function CardArea:handle_card_limit(card_limit, card_slots)
             check_for_unlock({type = 'min_hand_size'})
         end
     end
+end
+
+function SMODS.scoring_parameter_is_upgradeable(param_key, hand_key)
+    -- This function is necessary to prevent unnecessary inclusions
+    -- of unused scoring parameters into the update_hand_text `vals` table
+    -- Might see use outside SMODS code?
+    if hand_key and G.GAME.hands[hand_key] then
+        if G.GAME.hands[hand_key][param_key] then
+            return true
+        end
+    else
+        return true
+    end
+    return false
+end
+
+function SMODS.start_level_up_hand_animation(args)
+    args = args or {}
+    local hand = args.hand
+    local hand_text = args.hand_text or hand or ''
+    local parameter_text = args.parameter_text or {}
+    local all_parameter_text = args.all_parameter_text or ''
+    local level_text = args.level_text or (hand and G.GAME.hands[hand].level) or '?'
+
+    local init_hand_text = {handname = hand_text, level = level_text}
+    for _,param_key in ipairs(G.GAME.current_scoring_calculation.parameters) do
+        if SMODS.scoring_parameter_is_upgradeable(param_key, hand) then
+            init_hand_text[param_key] = parameter_text[param_key] or (hand and G.GAME.hands[hand][param_key]) or all_parameter_text
+        end
+    end
+    update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, init_hand_text)
+end
+
+function SMODS.level_up_hand_animation(args)
+    args = args or {}
+    local hand = args.hand
+    local card = args.card
+    local parameter_status_text = args.parameter_status_text or {}
+    local all_parameter_status_text = args.all_parameter_status_text or ''
+    local level_text = args.level_text or (hand and G.GAME.hands[hand].level) or ''
+
+    -- Animations play in order of the `parameters` parameter of the scoring calculation
+    for i,param_key in ipairs(G.GAME.current_scoring_calculation.parameters) do
+        if SMODS.scoring_parameter_is_upgradeable(param_key, hand) then
+            local current_param_text = parameter_status_text[param_key] or (hand and G.GAME.hands[hand][param_key]) or all_parameter_status_text
+            G.E_MANAGER:add_event(Event {
+                trigger = 'after',
+                delay = i == 1 and 0.2 or 0.9,
+                func = function ()
+                    play_sound('tarot1')
+                    if card then card:juice_up(0.8, 0.5) end
+                    G.TAROT_INTERRUPT_PULSE = true
+                    return true
+                end
+            })
+            update_hand_text({delay = 0}, {[param_key] = current_param_text, StatusText = true})
+        end
+    end
+
+    -- Finally, 'level' text is animated
+    G.E_MANAGER:add_event(Event {
+        trigger = 'after',
+        delay = 0.9,
+        func = function ()
+            play_sound('tarot1')
+            if card then card:juice_up(0.8, 0.5) end
+            G.TAROT_INTERRUPT_PULSE = nil
+            return true
+        end
+    })
+    update_hand_text({sound = 'button', volume = 0.7, pitch = 0.9, delay = 0}, {level=level_text})
+    delay(1.3)
+end
+
+function SMODS.end_level_up_hand_animation(args)
+    args = args or {}
+
+    local post_hand_text = {handname = '', level = ''}
+    for _,param_key in ipairs(G.GAME.current_scoring_calculation.parameters) do
+        if SMODS.scoring_parameter_is_upgradeable(param_key, hand) then
+            post_hand_text[param_key] = SMODS.Scoring_Parameters[param_key].default_value
+        end
+    end
+    update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, post_hand_text)
 end
