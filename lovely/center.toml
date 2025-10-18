@@ -500,7 +500,7 @@ if G.booster_pack and not G.booster_pack.alignment.offset.py and (card.ability.c
 '''
 payload = '''
 local nc
-local select_to = card.area == G.pack_cards and G.pack_cards and card:selectable_from_pack(booster_obj)
+local select_to = card.area == G.pack_cards and G.pack_cards and booster_obj and SMODS.card_select_area(card, booster_obj) and card:selectable_from_pack(booster_obj)
 if card.ability.consumeable and not select_to then
     local obj = card.config.center
     if obj.keep_on_use and type(obj.keep_on_use) == 'function' then

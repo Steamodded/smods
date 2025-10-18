@@ -894,7 +894,7 @@ function buildModtag(mod)
     local tag_atlas, tag_pos, tag_message, specific_vars = getModtagInfo(mod)
 
     local tag_sprite_tab = nil
-    local units = SMODS.pixels_to_unit(34) * 2
+    local units = 1
     local animated = G.ANIMATION_ATLAS[tag_atlas] or nil
     local tag_sprite
     if animated then
