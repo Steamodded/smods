@@ -59,7 +59,9 @@ payload = '''
 for k, v in ipairs(SMODS.Sticker.obj_buffer) do
     local sticker = SMODS.Stickers[v]
     if sticker.should_apply and type(sticker.should_apply) == 'function' and sticker:should_apply(card, center, area) then
-        sticker:apply(card, true)
+        SMODS.sticker_from_game = true
+        card:add_sticker(sticker.key)
+        SMODS.sticker_from_game = nil
     end
 end'''
 
@@ -109,3 +111,30 @@ pattern = '''table.sort(self.cards, function (a, b) return a.T.x + a.T.w/2 - 100
 position = 'at'
 match_indent = true
 payload = '''table.sort(self.cards, function (a, b) return a.T.x + a.T.w/2 - 100*((a.pinned and not a.ignore_pinned) and a.sort_id or 0) < b.T.x + b.T.w/2 - 100*((b.pinned and not b.ignore_pinned) and b.sort_id or 0) end)'''
+
+# Change challenge apply processes to use SMODS.sticker_from_game
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = "if v.eternal then card:set_eternal(true) end"
+position = 'at'
+payload = '''
+if v.eternal then 
+    SMODS.sticker_from_game = true
+    card:set_eternal(true) 
+    SMODS.sticker_from_game = nil
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = "if v.pinned then card.pinned = true end"
+position = 'at'
+payload = '''
+if v.pinned then 
+    SMODS.sticker_from_game = true
+    card:add_sticker('pinned')
+    SMODS.sticker_from_game = nil
+end
+'''
