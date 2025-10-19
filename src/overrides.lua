@@ -2411,3 +2411,14 @@ function Card:set_ability(center, initial, delay_sprites)
 		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
 	end
 end
+
+local add_tag_ref = add_tag
+function add_tag(_tag)
+	_tag = _tag or {}
+	_tag.key = _tag.key or 'unknown'
+	assert(G.P_TAGS[_tag.key], ("Could not find tag \"%s\"."):format(_tag.key))
+	if not (_tag.is and _tag:is(Tag)) then
+		_tag = Tag(_tag.key, nil, _tag.blind_type or 'Small')
+	end
+	add_tag_ref(_tag)
+end

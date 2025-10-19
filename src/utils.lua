@@ -2955,24 +2955,6 @@ function SMODS.quip(quip_type)
     end
 end
 
-function SMODS.smart_add_tag(tag)
-    G.GAME.orbital_choices[G.GAME.round_resets.ante] = G.GAME.orbital_choices[G.GAME.round_resets.ante] or {}
-    assert(G.P_TAGS[tag.key], ("Could not find tag \"%s\"."):format(tag.key))
-    if not (tag.is and tag:is(Tag)) then
-        tag = Tag(tag.key, nil, tag.blind_type or 'Small')
-    end
-    if tag.key == 'tag_orbital' then
-        local _poker_hands = {}
-        for k, v in pairs(G.GAME.hands) do
-            if SMODS.is_poker_hand_visible(k) then _poker_hands[#_poker_hands+1] = k end
-        end
-        if tag.ability.orbital_hand == '['..localize('k_poker_hand')..']' then
-            tag.ability.orbital_hand = pseudorandom_element(_poker_hands, pseudoseed('orbital'))
-        end
-    end
-    add_tag(tag)
-end
-
 
 local ref_challenge_desc = G.UIDEF.challenge_description_tab
 function G.UIDEF.challenge_description_tab(args)
