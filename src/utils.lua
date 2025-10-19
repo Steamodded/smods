@@ -3233,3 +3233,245 @@ function CardArea:handle_card_limit(card_limit, card_slots)
         end
     end
 end
+
+G.NewButtons = {}
+function SMODS.CardButton(args)
+    if args and type(args) == "table" and args.key then
+        G.NewButtons[args.key] = args
+    end
+end
+
+function SMODS.add_default_card_buttons(card, button_context)
+    local ret = {}
+    if button_context.highlight then
+        ret[#ret+1] = {n=G.UIT.C, config={padding = 0.15, align = 'cl'}, nodes={
+            {n=G.UIT.R, config={align = 'cl', button_id = {"sell_button", "vanilla_buttons"}}, nodes={
+                {n=G.UIT.C, config={align = "cr"}, nodes={
+                    {n=G.UIT.C, config={ref_table = card, align = "cr",padding = 0.1, r=0.08, minw = 1.25, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'sell_card', func = 'can_sell_card'}, nodes={
+                        {n=G.UIT.B, config = {w=0.1,h=0.6}},
+                        {n=G.UIT.C, config={align = "tm"}, nodes={
+                            {n=G.UIT.R, config={align = "cm", maxw = 1.25}, nodes={
+                                {n=G.UIT.T, config={text = localize('b_sell'),colour = G.C.UI.TEXT_LIGHT, scale = 0.4, shadow = true}}
+                            }},
+                            {n=G.UIT.R, config={align = "cm"}, nodes={
+                                {n=G.UIT.T, config={text = localize('$'),colour = G.C.WHITE, scale = 0.4, shadow = true}},
+                                {n=G.UIT.T, config={ref_table = card, ref_value = 'sell_cost_label',colour = G.C.WHITE, scale = 0.55, shadow = true}}
+                            }}
+                        }}
+                    }},
+                }}
+            }},
+        }}
+        if button_context.consumeable then
+            ret[#ret].nodes[#ret[#ret].nodes+1] = {n=G.UIT.R, config={align = "cr", button_id = {"use_button", "vanilla_buttons"}}, nodes={
+                {n=G.UIT.C, nodes = {
+                    {n=G.UIT.C, config={ref_table = card, align = "cr", maxw = 1.25, padding = 0.1, r=0.08, minw = 1.25, minh = (card.area and card.area.config.type == 'joker') and 0 or 1, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'use_card', func = 'can_use_consumeable'}, nodes={
+                        {n=G.UIT.B, config = {w=0.1,h=0.6}},
+                        {n=G.UIT.T, config={text = localize('b_use'),colour = G.C.UI.TEXT_LIGHT, scale = 0.55, shadow = true}}
+                    }}
+                }}
+            }}
+        end
+    elseif button_context.select_booster then
+        if button_context.select_card then
+            ret[#ret+1] = {n=G.UIT.R, config={ref_table = card, r = 0.08, padding = 0.1, align = "bm", button_id = {"b_select_button", "vanilla_buttons"}, minw = 0.5*card.T.w - 0.15, maxw = 0.9*card.T.w - 0.15, minh = 0.3*card.T.h, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'use_card', func = 'can_select_from_booster'}, nodes={
+                {n=G.UIT.T, config={text = localize('b_select'),colour = G.C.UI.TEXT_LIGHT, scale = 0.45, shadow = true}}
+            }}
+        elseif button_context.use_card then
+            ret[#ret+1] = {n=G.UIT.R, config={mid = true}, nodes={}}
+            ret[#ret+1] = {n=G.UIT.R, config={ref_table = card, r = 0.08, padding = 0.1, align = "bm", button_id = {"b_use_button", "vanilla_buttons"}, minw = 0.5*card.T.w - 0.15, minh = 0.8*card.T.h, maxw = 0.7*card.T.w - 0.15, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'use_card', func = 'can_use_consumeable'}, nodes={
+                {n=G.UIT.T, config={text = localize('b_use'),colour = G.C.UI.TEXT_LIGHT, scale = 0.55, shadow = true}}
+            }}
+        end
+    end
+    return ret
+end
+ 
+function SMODS.create_simple_button(args)
+    args = args or {}
+    local card = args.card
+    local button = {n = G.UIT.C, config = {align = args.button_dir or (args.dir == "l" and "cl") or "cr"}, nodes = {
+        {n = G.UIT.C, config = {ref_table = card, button_id = args.id or {"fallback_button"}, align = args.text_align or (args.dir == "l" and "cl") or "cr", maxw = args.maxw or 1.25, padding = args.padding or 0.1, r = args.r or 0.08, minw = args.minw or 1.25, minh = args.minh or 0, hover = true, shadow = true, one_press = args.one_press, colour = args.button_colour or G.C.RED, button = args.button, func = args.func}, nodes = {
+            {n = G.UIT.B, config = {w = 0.1, h = 0.6}},
+            {n = G.UIT.C, config = { align = args.text_align or "tm" }, nodes = {}}
+        }},
+    }}
+
+    if args.dir == "b" then
+        button = {n = G.UIT.C, nodes = {
+            {n=G.UIT.R, config={ref_table = card, button_id = args.id or {"fallback_button"}, r = args.r or 0.08, padding = args.padding or 0.1, align = args.text_align or "bm", minw = args.minw or (0.5*card.T.w - 0.15), maxw = args.maxw or (0.9*card.T.w - 0.15), minh = args.minh or (0.3*card.T.h), hover = true, shadow = true, colour = args.button_colour or G.C.RED, button = 'test_button', one_press = args.one_press, func = args.func}, nodes={
+                
+            }},
+        }}
+    end
+
+    if args.text then
+        local text = type(args.text) == "table" and copy_table(args.text) or {args.text}
+        local target = args.dir == "b" and (button.nodes[1].nodes) or button.nodes[1].nodes[2].nodes
+        for _,v in ipairs(text) do
+            if type(v) == "table" then
+                target[#target+1] = {n = G.UIT.R, config = {align = "cm", maxw = 1.25}, nodes = {
+                    {n = G.UIT.T, config = {ref_table = v.ref_table, ref_value = v.ref_value, colour = args.text_colour or G.C.UI.TEXT_LIGHT, scale = args.text_scale or 0.4, shadow = true}}
+                }}
+            else
+                target[#target+1] = {n = G.UIT.R, config = {align = "cm", maxw = 1.25}, nodes = {
+                    {n = G.UIT.T, config = {text = v, colour = args.text_colour or G.C.UI.TEXT_LIGHT, scale = args.text_scale or 0.4, shadow = true}}
+                }}
+            end
+        end
+    end
+    
+    return {n=G.UIT.R, config={align = 'cl'}, nodes={
+        button
+    }}
+end
+
+function SMODS.add_simple_button(ui_buttons, args)
+    if ui_buttons and args then
+        local button = args.button
+        if args.button_context.highlight and ((not args.exclude_dir and args.uibox_dir == args.dir) or (args.exclude_dir and args.uibox_dir ~= args.dir)) and not args.raw then
+            ui_buttons.nodes[1].nodes[#ui_buttons.nodes[1].nodes+1] = button
+        elseif args.button_context.shop and not args.raw then
+            ui_buttons.nodes[#ui_buttons.nodes+1] = button
+        else
+            local card = args.card
+            local x_off = (card.ability.consumeable and -0.1 or 0)
+            if not args.only_dir or (args.only_dir and ((not args.exclude_dir and args.uibox_dir == args.dir) or (args.exclude_dir and args.uibox_dir ~= args.dir))) then
+                if args.dir == "b" then
+                    args.new_uibox[#args.new_uibox+1] = {
+                        definition = {
+                            n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+                                button
+                            }}, 
+                        config = {align= "bmi", offset = {x = 0, y = 0.65}, parent = card, button_dir = "bottom"}
+                    }
+                else
+                    args.new_uibox[#args.new_uibox+1] = {
+                        definition = {
+                            n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+                                {n=G.UIT.C, config={padding = 0.15, align = (args.dir == "l" and "cr") or "cl"}, nodes={
+                                    button
+                                }},
+                            }}, 
+                        config = {align= (args.dir == "l" and "cl") or "cr", offset = {x= (args.dir == "l" and -(x_off - 0.32)) or x_off - 0.4, y = 0}, parent = card, button_dir = (args.dir == "r" and "right") or (args.dir == "l" and "left")}
+                    }
+                end
+            end
+        end
+    end
+end
+
+function SMODS.calculate_button_removal(args)
+    local card = args.card
+    local check_remove_uiboxes = {}
+    local remove_button_ids = {}
+    local new_uibox = {}
+    local ret = {}
+    local button_context = args.button_context
+    for _,v in ipairs(args.add_uiboxes_check or {}) do
+        check_remove_uiboxes[#check_remove_uiboxes+1] = v
+    end
+    local function t_contains(t1, s)
+        for _,v in pairs(t1) do
+            if v == s then return true end
+        end
+    end
+
+    local function remove_button(id, b)
+        local function deep_remove(t) 
+            if t and t.config and t.config.button_id and t_contains(type(t.config.button_id) == "table" and t.config.button_id or {t.config.button_id}, id) then
+                t.config = {}
+                t.nodes = {}
+                t = nil
+            end
+            for i,v in ipairs(t and t.nodes or {}) do
+                if v.config and v.config.button_id and t_contains(type(v.config.button_id) == "table" and v.config.button_id or {v.config.button_id}, id) then table.remove(t.nodes,i) end
+                if v.nodes and type(v.nodes) == "table" then
+                    deep_remove(v)
+                end
+            end
+        end
+
+        deep_remove(b)
+    end
+
+    for _,v in pairs(G.NewButtons) do
+        if v.button_apply then
+            local indiv_ret = v:button_apply(ret, card, button_context, new_uibox)
+            if indiv_ret then
+                for _,v in ipairs(indiv_ret.remove_buttons or {}) do
+                    remove_button_ids[#remove_button_ids+1] = v
+                end
+            end
+        end
+    end
+
+    for _,id in ipairs(remove_button_ids) do
+        for _,uibox in ipairs(check_remove_uiboxes) do
+            remove_button(id, uibox)
+        end
+    end
+end
+
+function SMODS.calculate_button(args)
+    local button_context = args.button_context or {}
+    local ret = args.ret or {}
+    local new_uibox = args.new_uibox or {}
+    local card = args.card
+    local check_remove_uiboxes = {ret, new_uibox}
+    for _,v in ipairs(args.add_uiboxes_check or {}) do
+        check_remove_uiboxes[#check_remove_uiboxes+1] = v
+    end
+
+    for _,v in pairs(G.NewButtons) do
+        if v.button_apply then
+            local indiv_ret = v:button_apply(ret, card, button_context, new_uibox)
+            if indiv_ret then
+                for _,v in ipairs(indiv_ret.buttons or {}) do
+                    v.card = v.card or card
+                    local button = SMODS.create_simple_button(v)
+                    SMODS.add_simple_button(ret, {button = button, new_uibox = new_uibox, button_context = button_context, card = card, uibox_dir = args.uibox_dir or "r", dir = v.dir or "r", raw = args.raw, only_dir = args.only_dir, exclude_dir = args.exclude_dir})
+                end
+            end
+        end
+    end
+
+    if #new_uibox > 0 then
+        local x_off = (card.ability.consumeable and -0.1 or 0)
+        local button_types = {right = {}, left = {}}
+        local reog_new_uibox = {}
+        for _,v in ipairs(new_uibox) do
+            if button_types[v.config.button_dir] then
+                button_types[v.config.button_dir][#button_types[v.config.button_dir]+1] = v
+            else
+                reog_new_uibox[#reog_new_uibox+1] = v
+            end
+        end
+        for btype,v in pairs(button_types) do
+            for i,uibox in ipairs(v) do
+                if btype == "right" or btype == "left" then
+                    local button_nodes = uibox.definition.nodes[1].nodes
+                    if i == 1 then 
+                        reog_new_uibox[#reog_new_uibox+1] = {
+                            definition = {
+                                n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+                                    {n=G.UIT.C, config={padding = 0.15, align = (btype == "left" and 'cr') or 'cl'}, nodes=button_nodes},
+                                }}, 
+                            config = {align= (btype == "left" and 'cl') or 'cr', offset = {x = (btype == "left" and -(x_off - 0.32)) or x_off - 0.4, y = 0}, parent = card, button_dir = btype}
+                        }
+                    else
+                        for _,v in ipairs(button_nodes) do
+                            reog_new_uibox[#reog_new_uibox].definition.nodes[1].nodes[#reog_new_uibox[#reog_new_uibox].definition.nodes[1].nodes+1] = v
+                        end
+                    end
+                end
+            end
+        end
+
+        new_uibox = reog_new_uibox
+    end
+
+    SMODS.calculate_button_removal{card = card, button_context = button_context, add_uiboxes_check = check_remove_uiboxes}
+
+    return new_uibox
+end

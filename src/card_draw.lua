@@ -463,3 +463,50 @@ function Card:draw(layer)
         if SMODS.DrawSteps[k]:check_conditions(self, layer) then SMODS.DrawSteps[k].func(self, layer) end
     end
 end
+
+SMODS.DrawStep {
+    key = 'added_buttons',
+    order = -30,
+    func = function(self)
+        if self.added_buttons then
+            for _,v in ipairs(self.added_buttons) do
+                v.ui.states.visible = self.highlighted
+                if self.highlighted then
+                    v.ui:draw()
+                end
+            end
+        end
+        if self.c_added_buttons then
+            for _,v in ipairs(self.c_added_buttons) do
+                v.ui.states.visible = self.hovered
+                if self.hovered then
+                    v.ui:draw()
+                else
+                    for _,v in ipairs(self.c_added_buttons) do
+                        v.ui:remove()
+                        self.children[v.name] = nil
+                    end
+                    self.c_added_buttons = nil 
+                end
+            end
+        end
+        if self.shop_added_buttons then
+            for _,v in ipairs(self.shop_added_buttons) do
+                v.ui.states.visible = self.highlighted
+                if self.highlighted then
+                    v.ui:draw()
+                end
+            end
+        end
+        if self.children.fallback_buy_and_use_button then
+            if self.children.buy_and_use_button and not self.children.buy_and_use_button.states.visible then
+                self.children.fallback_buy_and_use_button.states.visible = self.highlighted
+                if self.highlighted then
+                    self.children.fallback_buy_and_use_button:draw()
+                end
+            else
+                self.children.fallback_buy_and_use_button.states.visible = false
+            end
+        end
+    end,
+} 
