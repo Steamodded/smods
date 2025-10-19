@@ -2411,3 +2411,27 @@ function Card:set_ability(center, initial, delay_sprites)
 		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
 	end
 end
+
+function Card:set_eternal(_eternal)
+    if not self.ability.eternal and _eternal then
+		self:add_sticker('eternal')
+	elseif self.ability.eternal and not _eternal then
+		self:remove_sticker('eternal')
+	end
+end
+
+function Card:set_perishable(_perishable)
+    if not self.ability.perishable and _perishable then
+		self:add_sticker('perishable')
+	elseif self.ability.perishable and not _perishable then
+		self:remove_sticker('perishable')
+	end
+end
+
+function Card:set_rental(_rental)
+    if not self.ability.rental and _rental then
+		self:add_sticker('rental')
+	elseif self.ability.rental and not _rental then
+		self:remove_sticker('rental')
+	end
+end

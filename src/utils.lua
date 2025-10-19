@@ -917,6 +917,7 @@ function Card:add_sticker(sticker, bypass_check)
     if bypass_check or (sticker and sticker.should_apply and type(sticker.should_apply) == 'function' and sticker:should_apply(self, self.config.center, self.area, true)) then
         sticker:apply(self, true)
         SMODS.enh_cache:write(self, nil)
+        SMODS.calculate_context({apply_sticker = true, other_card = self, sticker = sticker, applied_by_game = SMODS.sticker_from_game or false})
     end
 end
 
@@ -924,6 +925,7 @@ function Card:remove_sticker(sticker)
     if self.ability[sticker] then
         SMODS.Stickers[sticker]:apply(self, false)
         SMODS.enh_cache:write(self, nil)
+        SMODS.calculate_context({remove_sticker = true, other_card = self, sticker = sticker})
     end
 end
 
