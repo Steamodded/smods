@@ -2411,3 +2411,54 @@ function Card:set_ability(center, initial, delay_sprites)
 		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
 	end
 end
+
+local set_seal_ref = Card.set_seal
+function Card:set_seal(_seal, silent, immediate)
+    if self.seal and self.added_to_deck and G.P_SEALS[self.seal] and G.P_SEALS[self.seal].remove then
+        G.P_SEALS[self.seal]:remove(self)
+    end
+    local ret = set_seal_ref(self, _seal, silent, immediate)
+    if G.P_SEALS[_seal] then
+        if G.P_SEALS[_seal].apply and self.added_to_deck then G.P_SEALS[_seal]:apply(self) end
+        if G.P_SEALS[_seal].set_ability then G.P_SEALS[_seal]:set_ability(self) end
+    end
+    return ret
+end
+
+local card_remove_ref = Card.remove
+function Card:remove()
+    local ret = card_remove_ref(self)
+    if self.seal and self.added_to_deck and G.P_SEALS[self.seal] and G.P_SEALS[self.seal].remove then
+        G.P_SEALS[self.seal]:remove(self)
+    end
+    return ret
+end
+
+local add_to_deck_ref = Card.add_to_deck
+function Card:add_to_deck(...)
+    if not self.added_to_deck and self.seal and G.P_SEALS[self.seal] and G.P_SEALS[self.seal].apply then
+        G.P_SEALS[self.seal]:apply(self)
+    end
+    local ret = add_to_deck_ref(self,...)
+    return ret
+end
+
+local remove_from_deck_ref = Card.remove_from_deck
+function Card:remove_from_deck(...)
+    if self.added_to_deck and self.seal and G.P_SEALS[self.seal] and G.P_SEALS[self.seal].remove then
+    	G.P_SEALS[self.seal]:remove(self)
+    end
+    local ret = remove_from_deck_ref(self,...)
+    return ret
+end
+
+local start_run_ref = Game.start_run
+function Game.start_run(...)
+    local ret = start_run_ref(...)
+    if G.playing_cards then
+        for _,v in ipairs(G.playing_cards) do
+            v.added_to_deck = true
+        end
+    end
+    return ret
+end
