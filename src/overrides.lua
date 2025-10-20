@@ -2418,7 +2418,7 @@ function add_tag(_tag)
 	_tag.key = _tag.key or 'unknown'
 	assert(G.P_TAGS[_tag.key], ("Could not find tag \"%s\"."):format(_tag.key))
 	if not (_tag.is and _tag:is(Tag)) then
-		_tag = Tag(_tag.key, nil, _tag.blind_type or 'Small')
+		_tag = Tag(_tag.key, nil, _tag.blind_type)
 	end
 	add_tag_ref(_tag)
 end
