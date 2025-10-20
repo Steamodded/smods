@@ -2175,3 +2175,112 @@ G.FUNCS.hand_type_UI_set = function(e)
     if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and G.GAME.current_round.current_hand[e.config.type] or 1)))) end
   end
 end
+
+
+SMODS.CanvasContainer = UIBox:extend()
+
+local function inverted_collides_with_point(self, point)
+    return not self.parent:collides_with_point(point)
+end
+function SMODS.CanvasContainer:init(args)
+    UIBox.init(self, args)
+    self.canvas = love.graphics.newCanvas(self.T.w, self.T.h, {type = '2d'})
+    self.canvas:setFilter('linear', 'linear')
+    self.culler = Node()
+    self.culler.parent = self
+    self.culler.states.visible = false
+    self.culler.states.collide.can = true
+    self.culler.states.drag.can = false
+    self.culler.collides_with_point = inverted_collides_with_point
+end
+
+function SMODS.CanvasContainer:draw()
+    if self.FRAME.DRAW >= G.FRAMES.DRAW and not G.OVERLAY_TUTORIAL then return end
+    self.FRAME.DRAW = G.FRAMES.DRAW
+
+    love.graphics.setCanvas(self.canvas)
+    for k, v in pairs(self.children) do
+        if k ~= 'h_popup' and k ~= 'alert' then v:draw() end
+    end
+
+    if self.states.visible then
+        add_to_drawhash(self)
+        love.graphics.setCanvas(G.CANVAS)
+        self.UIRoot:draw_self()
+        love.graphics.setCanvas(self.canvas)
+        self.UIRoot:draw_children()
+        for k, v in ipairs(self.draw_layers) do
+            love.graphics.setCanvas(G.CANVAS)
+            if v.draw_self then v:draw_self() else v:draw() end
+            love.graphics.setCanvas(self.canvas)
+            if v.draw_children then v:draw_children() end
+        end
+    end
+
+    add_to_drawhash(self.culler)
+
+    love.graphics.setCanvas(G.CANVAS)
+    self:draw_canvas()
+
+    if self.children.alert then self.children.alert:draw() end
+
+    self:draw_boundingrect()
+end
+
+function SMODS.CanvasContainer:draw_canvas()
+    if not self.states.visible then return end
+    love.graphics.draw(
+        self.canvas,
+        self.sprite,
+        0 ,0,
+        0,
+        self.VT.w/(self.T.w),
+        self.VT.h/(self.T.h)
+    )
+    love.graphics.pop()
+end
+
+function SMODS.CanvasContainer:set_parent_child(node, parent)
+    local UIE = (not parent and UIElement or SMODS.CanvasContainerUIE)(parent, self, node.n, node.config)
+
+    --set the group of the element
+    if parent and parent.config and parent.config.group then if UIE.config then UIE.config.group = parent.config.group else UIE.config = {group = parent.config.group} end end
+
+    --set the button for the element
+    if parent and parent.config and parent.config.button then if UIE.config then UIE.config.button_UIE = parent else UIE.config = {button_UIE = parent} end end
+    if parent and parent.config and parent.config.button_UIE then if UIE.config then UIE.config.button_UIE = parent.config.button_UIE else UIE.config = {button = parent.config.button} end end
+
+    if node.n and node.n == G.UIT.O and UIE.config.button then
+        UIE.config.object.states.click.can = false
+    end
+
+    --current node is a container
+    if (node.n and node.n == G.UIT.C or node.n == G.UIT.R or node.n == G.UIT.ROOT) and node.nodes then
+        for k, v in pairs(node.nodes) do
+            self:set_parent_child(v, UIE)
+        end
+    end
+
+    if not parent then
+        self.UIRoot = UIE 
+        self.UIRoot.parent = self
+    else
+        table.insert(parent.children, UIE)
+    end
+    if node.config and node.config.mid then 
+        self.Mid = UIE
+    end
+end
+
+function SMODS.CanvasContainer:calculate_xywh(node, _T, recalculate, _scale)
+
+end
+
+SMODS.CanvasContainerUIE = UIElement:extend()
+function SMODS.CanvasContainerUIE:set_wh()
+    
+end
+
+function SMODS.CanvasContainerUIE:set_alignments()
+
+end
