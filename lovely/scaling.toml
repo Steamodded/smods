@@ -60,6 +60,7 @@ SMODS.scale_card(self, {
     message_key = 'a_mult',
     message_colour = G.C.RED
 })
+return nil, true
 '''
 # Red Card
 [[patches]]
@@ -308,6 +309,7 @@ SMODS.scale_card(self, {
     scalar_value = "extra",
     message_colour = G.C.FILTER
 })
+return nil, true
 '''
 # Lucky Cat
 [[patches]]
@@ -631,6 +633,7 @@ SMODS.scale_card(self, {
     end,
     message_key = 'a_xmult'
 })
+return nil, true
 '''
 
 # Glass Joker

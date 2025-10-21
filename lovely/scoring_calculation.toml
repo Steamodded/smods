@@ -9,7 +9,6 @@ target = "functions/state_events.lua"
 pattern = "^(.*)hand_chips\\s*\\*\\s*mult(.*)$"
 position = "at"
 payload = '''$1 SMODS.calculate_round_score() $2'''
-match_indent = true
 
 [[patches]]
 [patches.pattern]
@@ -94,7 +93,6 @@ end
 [[patches]]
 [patches.regex]
 target = 'functions/common_events.lua'
-match_indent = true
 position = 'at'
 line_prepend = '$indent'
 pattern = '''(?<indent>[\t ]*)if vals\.[A-z0-9\n\t .~=()'\-+,<;>:{}]+mult:juice_up\(\) end\n[\t ]+end'''

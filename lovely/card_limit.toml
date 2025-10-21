@@ -310,3 +310,13 @@ if not hand_space then
 end
 """
 match_indent = true
+
+
+# check_for_unlock
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if args.type == 'min_hand_size' and G.hand and G.hand.config.card_limit <= card.unlock_condition.extra then"
+position = "at"
+payload = "if args.type == 'min_hand_size' and G.hand and G.hand.config.true_card_limit <= card.unlock_condition.extra then"
+match_indent = true

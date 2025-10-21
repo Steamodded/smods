@@ -2430,3 +2430,14 @@ function level_up_hand(card, hand, instant, amount)
         func = (function() check_for_unlock{type = 'upgrade_hand', hand = hand, level = G.GAME.hands[hand].level} return true end)
     }))
 end
+
+local add_tag_ref = add_tag
+function add_tag(_tag)
+	_tag = _tag or {}
+	_tag.key = _tag.key or 'unknown'
+	assert(G.P_TAGS[_tag.key], ("Could not find tag \"%s\"."):format(_tag.key))
+	if not (_tag.is and _tag:is(Tag)) then
+		_tag = Tag(_tag.key, nil, _tag.blind_type)
+	end
+	add_tag_ref(_tag)
+end
