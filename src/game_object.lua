@@ -3806,6 +3806,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     ------- API CODE SMODS.BlindTree AND RELATED
     -------------------------------------------------------------------------------------------------
     
+    ------- UI DEFS 
+    function SMODS.create_CanvasContainer_BlindSelect(run_info)
+
+    end
+    
     ------- API CODE SMODS.BlindTree 
     SMODS.BlindTrees = {}
     SMODS.BlindTree = SMODS.GameObject:extend {
@@ -3818,7 +3823,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         inject = function(self)
 
         end,
-        create_data = function ()
+        create_data = function (self)
             -- Vanilla Blind structure
             -- "Small" -> "Big" -> "Boss"
             local tree_data = {
@@ -3855,20 +3860,33 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                             {key = "enter_blind", triggers = {selected = true}},
                             {key = "ante_up", triggers = {defeated = true}},
                             {key = "evaluate_round", triggers = {defeated = true}},
+                            {key = "next_blind_tree", triggers = {cashed_out = true}},
                             {key = "enter_shop", triggers = {cashed_out = true}},
                         },
-                        blinds = {get_new_boss()}, -- TODO: Replace with own function
+                        blinds = {get_new_boss()},
                     }
                 }
             }
             return tree_data
         end,
-        create_ui = function ()
+        create_ui = function (self)
             -- Vanilla Blind select UI
+            local canvas_container = SMODS.CanvasContainer {
+                definition = SMODS.create_CanvasContainer_BlindSelect(),
+                config = {align="cm", offset = {x=0,y=0}, major = G.ROOM_ATTACH, bond = 'Weak'}
+            }
         end,
-        create_run_info_ui = function ()
+        create_run_info_ui = function (self)
             -- Vanilla Run Info Blind Tab UI
+            local canvas_container = SMODS.CanvasContainer {
+                definition = SMODS.create_CanvasContainer_BlindSelect(true),
+                config = {align="cm", offset = {x=0,y=0}, major = G.ROOM_ATTACH, bond = 'Weak'}
+            }
         end,
+        create_callback_ui = function (self, cb_key, bt_node, bt_node_UIE)
+            if not cb_key or not SMODS.BTNodeCallbacks[cb_key] then return end
+            return SMODS.BTNodeCallbacks[cb_key]:create_ui(bt_node, bt_node_UIE)
+        end
     }
 
     SMODS.BlindTree {
@@ -3880,7 +3898,15 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     function SMODS.get_bt_node(index)
-        return SMODS.BLIND_TREE and SMODS.BLIND_TREE.nodes and SMODS.BLIND_TREE.nodes[index] or {}
+        return SMODS.BLIND_TREE and SMODS.BLIND_TREE.nodes and SMODS.BLIND_TREE.nodes[index]
+    end
+
+    function SMODS.next_blind_tree()
+        SMODS.set_blind_tree(SMODS.get_blind_tree():create_data())
+    end
+
+    function SMODS.set_blind_tree(data)
+        SMODS.BLIND_TREE = data
     end
     
     ------- API CODE Object.BTNode
@@ -3911,7 +3937,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     function SMODS.BTNode:trigger_callbacks(trigger_type)
-        if not type then return end
+        if not trigger_type then return end
         local hold = false
         for _, cb in ipairs(self.callbacks) do
             local callback = SMODS.BTNodeCallbacks[cb.key]
@@ -3924,13 +3950,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     function SMODS.BTNode:get_blind(keep)
         local blind = self.blinds[1]
-        if not keep then table.remove(self.blinds, 1) end
+        if blind and not keep then table.remove(self.blinds, 1) end
         return blind
     end
 
     function SMODS.BTNode:get_tag(keep)
         local tag = self.tags[1]
-        if not keep then table.remove(self.tags, 1) end
+        if tag and not keep then table.remove(self.tags, 1) end
         return tag
     end
 
@@ -3972,6 +3998,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if type(self.on_callback) ~= "function" then
                 sendWarnMessage(("BTNodeCallback injected with invalid function '%s'"):format(self.on_callback))
             end
+        end,
+        create_ui = function (self, bt_node, bt_node_UIE)
         end
     }
 
@@ -3980,6 +4008,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Change game state to bt_node:get_blind()
             return true
+        end,
+        create_ui = function (self, bt_node, bt_node_UIE)
+            return SMODS.GUI.bt_callback_enter_blind(bt_node, bt_node_UIE)
         end
     }
 
@@ -3988,6 +4019,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Create cashout and evaluate round 
             return true
+        end,
+        create_ui = function (self, bt_node, bt_node_UIE)
+            return SMODS.GUI.bt_callback_evaluate_round(bt_node, bt_node_UIE)
         end
     }
 
@@ -3996,6 +4030,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Change game state to shop
             return true
+        end,
+        create_ui = function (self, bt_node, bt_node_UIE)
+            return SMODS.GUI.bt_callback_enter_shop(bt_node, bt_node_UIE)
         end
     }
 
@@ -4004,6 +4041,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Ante up
             return false
+        end,
+        create_ui = function (self, bt_node, bt_node_UIE)
+            return SMODS.GUI.bt_callback_ante_up(bt_node, bt_node_UIE)
         end
     }
 
@@ -4012,6 +4052,26 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Create tag(s) from bt_node:get_tag()
             return false
+        end,
+        create_ui = function (self, bt_node, bt_node_UIE)
+            return SMODS.GUI.bt_callback_create_tag(bt_node, bt_node_UIE)
+        end
+    }
+
+    SMODS.BTNodeCallback {
+        key = "next_blind_tree",
+        on_callback = function (self, bt_node, cb, trigger_type)
+            G.E_MANAGER:add_event(Event{
+                trigger = "immediate",
+                func = function ()
+                    SMODS.next_blind_tree()
+                    return true
+                end
+            })
+            return false
+        end,
+        create_ui = function (self, bt_node, bt_node_UIE)
+            return SMODS.GUI.bt_callback_next_blind_tree(bt_node, bt_node_UIE)
         end
     }
 
@@ -4024,17 +4084,18 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     Game:start_run()
     G.GAME.round_resets.blind_tags
     get_new_boss()
-    function Node:collides_with_point(point) -- Needs to be fixed so that clipping parents are accounted for
+    add_round_eval_row()
+    Blind:get_type()
     ]]
 
     -- Create Blind Select UI
     function create_UIBox_blind_select()
-        return SMODS.get_blind_tree().create_ui()
+        return SMODS.get_blind_tree():create_ui()
     end
 
     -- Run Info Tab 
     function G.UIDEF.current_blinds()
-        return SMODS.get_blind_tree().create_run_info_ui()
+        return SMODS.get_blind_tree():create_run_info_ui()
     end
 
     -- Blind Choice Handler
@@ -4048,9 +4109,113 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     end
 
-    -- If I separate the cash out from necessarily following a Blind, override this as well 
     function G.FUNCS.evaluate_round()
+        total_cashout_rows = 0
+        local pitch = 0.95
+        local dollars = 0
 
+        if not G.GAME.blind then
+            add_round_eval_row({dollars = G.GAME.default_eval_dollars or 0, name='???', pitch = pitch}) -- TODO: Check name
+            pitch = pitch + 0.06
+            dollars = dollars + (G.GAME.default_eval_dollars or 0)
+        elseif G.GAME.chips - G.GAME.blind.chips >= 0 then
+            add_round_eval_row({dollars = G.GAME.blind.dollars, name='blind1', pitch = pitch})
+            pitch = pitch + 0.06
+            dollars = dollars + G.GAME.blind.dollars
+        else
+            add_round_eval_row({dollars = 0, name='blind1', pitch = pitch, saved = true})
+            pitch = pitch + 0.06
+        end
+
+        -- if G.GAME.blind then
+        --     G.E_MANAGER:add_event(Event({
+        --         trigger = 'before',
+        --         delay = 1.3*math.min(G.GAME.blind.dollars+2, 7)/2*0.15 + 0.5,
+        --         func = function()
+        --         G.GAME.blind:defeat() -- TODO: Replace in end_round()
+        --         return true
+        --         end
+        --     }))
+        -- end
+        delay(0.2)
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                ease_background_colour_blind(G.STATES.ROUND_EVAL, '')
+                return true
+            end
+        }))
+        SMODS.calculate_context{round_eval = true}
+        G.GAME.selected_back:trigger_effect({context = 'eval'})
+
+        if G.GAME.current_round.hands_left > 0 and not G.GAME.modifiers.no_extra_hand_money then
+            add_round_eval_row({dollars = G.GAME.current_round.hands_left*(G.GAME.modifiers.money_per_hand or 1), disp = G.GAME.current_round.hands_left, bonus = true, name='hands', pitch = pitch})
+            pitch = pitch + 0.06
+            dollars = dollars + G.GAME.current_round.hands_left*(G.GAME.modifiers.money_per_hand or 1)
+        end
+        if G.GAME.current_round.discards_left > 0 and G.GAME.modifiers.money_per_discard then
+            add_round_eval_row({dollars = G.GAME.current_round.discards_left*(G.GAME.modifiers.money_per_discard), disp = G.GAME.current_round.discards_left, bonus = true, name='discards', pitch = pitch})
+            pitch = pitch + 0.06
+            dollars = dollars +  G.GAME.current_round.discards_left*(G.GAME.modifiers.money_per_discard)
+        end
+        local i = 0
+        for _, area in ipairs(SMODS.get_card_areas('jokers')) do
+                for _, _card in ipairs(area.cards) do
+                local ret = _card:calculate_dollar_bonus()
+        
+                -- TARGET: calc_dollar_bonus per card
+                if ret then
+                    i = i+1
+                    add_round_eval_row({dollars = ret, bonus = true, name='joker'..i, pitch = pitch, card = _card})
+                    pitch = pitch + 0.06
+                    dollars = dollars + ret
+                end
+            end
+        end
+        for i = 1, #G.GAME.tags do
+            local ret = G.GAME.tags[i]:apply_to_run({type = 'eval'})
+            if ret then
+                add_round_eval_row({dollars = ret.dollars, bonus = true, name='tag'..i, pitch = pitch, condition = ret.condition, pos = ret.pos, tag = ret.tag})
+                pitch = pitch + 0.06
+                dollars = dollars + ret.dollars
+            end
+        end
+        if G.GAME.dollars >= 5 and not G.GAME.modifiers.no_interest then
+            add_round_eval_row({bonus = true, name='interest', pitch = pitch, dollars = G.GAME.interest_amount*math.min(math.floor(G.GAME.dollars/5), G.GAME.interest_cap/5)})
+            pitch = pitch + 0.06
+            if (not G.GAME.seeded and not G.GAME.challenge) or SMODS.config.seeded_unlocks then
+                if G.GAME.interest_amount*math.min(math.floor(G.GAME.dollars/5), G.GAME.interest_cap/5) == G.GAME.interest_amount*G.GAME.interest_cap/5 then 
+                    G.PROFILES[G.SETTINGS.profile].career_stats.c_round_interest_cap_streak = G.PROFILES[G.SETTINGS.profile].career_stats.c_round_interest_cap_streak + 1
+                else
+                    G.PROFILES[G.SETTINGS.profile].career_stats.c_round_interest_cap_streak = 0
+                end
+            end
+            check_for_unlock({type = 'interest_streak'})
+            dollars = dollars + G.GAME.interest_amount*math.min(math.floor(G.GAME.dollars/5), G.GAME.interest_cap/5)
+        end
+
+        pitch = pitch + 0.06
+
+        if total_cashout_rows > 7 then
+            local total_hidden = total_cashout_rows - 7
+        
+            G.E_MANAGER:add_event(Event({
+                trigger = 'before',delay = 0.38,
+                func = function()
+                    local hidden = {n=G.UIT.R, config={align = "cm"}, nodes={
+                        {n=G.UIT.O, config={object = DynaText({
+                            string = {localize{type = 'variable', key = 'cashout_hidden', vars = {total_hidden}}}, 
+                            colours = {G.C.WHITE}, shadow = true, float = false, 
+                            scale = 0.45,
+                            font = G.LANGUAGES['en-us'].font, pop_in = 0
+                        })}}
+                    }}
+        
+                    G.round_eval:add_child(hidden, G.round_eval:get_UIE_by_ID('bonus_round_eval'))
+                    return true
+                end
+            }))
+        end
+        add_round_eval_row({name = 'bottom', dollars = dollars})
     end
 
     -- reset_blinds()
@@ -4064,6 +4229,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     -- end_round() (also lovely patch maybe)
+    -- Needs to create an Event to call Blind:defeat() because I removed that from G.FUNCS.evaluate_round()
     function end_round()
 
     end
@@ -4093,6 +4259,44 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     end
 
+    -------------------------------------------------------------------------------------------------
+    ----- API CODE SMODS.GameState
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.STATES = {
+        SHOP = "SHOP",
+        ROUND_EVAL = "ROUND_EVAL",
+        BLIND = "BLIND",
+        BLIND_SELECT = "BLIND_SELECT"
+    }
+    SMODS.GameStates = {}
+    SMODS.GameState = SMODS.GameObject:extend{
+        set = 'GameState',
+        obj_table = SMODS.GameStates,
+        obj_buffer = {},
+        required_parameters = {
+            'key',
+        },
+        update = function (self, dt)
+            
+        end
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.SHOP
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.ROUND_EVAL
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.BLIND
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.BLIND_SELECT
+    }
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep

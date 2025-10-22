@@ -2190,6 +2190,7 @@ function SMODS.CanvasContainer:init(args)
     self.culler.parent = self
     self.culler.states.visible = false
     self.culler.states.collide.can = true
+    self.culler.states.focus.can = true
     self.culler.states.drag.can = false
     self.culler.collides_with_point = inverted_collides_with_point
 end
@@ -2231,8 +2232,8 @@ function SMODS.CanvasContainer:draw_canvas()
     if not self.states.visible then return end
     love.graphics.draw(
         self.canvas,
-        self.sprite,
-        0 ,0,
+        --self.sprite, -- WRONG
+        0, 0,
         0,
         self.VT.w/(self.T.w),
         self.VT.h/(self.T.h)
@@ -2278,7 +2279,7 @@ end
 
 SMODS.CanvasContainerUIE = UIElement:extend()
 function SMODS.CanvasContainerUIE:set_wh()
-    
+
 end
 
 function SMODS.CanvasContainerUIE:set_alignments()
