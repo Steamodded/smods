@@ -1019,6 +1019,7 @@ for i=1, hand_space do --draw cards from deckL
 end
 '''
 payload = '''
+SMODS.cards_to_draw = (SMODS.cards_to_draw or 0) + math.max(hand_space, 0)
 SMODS.drawn_cards = {}
 '''
 [[patches]]
@@ -1039,7 +1040,7 @@ payload = '''
 G.E_MANAGER:add_event(Event({
     trigger = 'immediate',
     func = function()                
-        SMODS.cards_to_draw = math.max(SMODS.cards_to_draw - hand_space, 0)
+        SMODS.cards_to_draw = SMODS.cards_to_draw - math.max(hand_space, 0)
         return true
     end
 }))

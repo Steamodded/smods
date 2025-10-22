@@ -308,19 +308,6 @@ payload = "badges[#badges + 1] = create_badge(((card.ability.name == 'Pluto' or 
 
 # Fixing description error when info_queue has multi-box descriptions.
 
-
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''
-generate_card_ui(v, full_UI_table)
-'''
-position = "at"
-payload = '''
-generate_card_ui(v, full_UI_table, {is_info_queue = true})
-'''
-match_indent = true
-
 [[patches]]
 [patches.pattern]
 target = 'functions/misc_functions.lua'
@@ -353,17 +340,22 @@ desc_nodes.name = localize{type = 'name_text', key = name_override or _c.key, se
 '''
 position = "after"
 payload = '''
-local set = name_override and "Other" or _c.set
-local key = name_override or _c.key
-if set == "Seal" then
-	if G.localization.descriptions["Other"][_c.key.."_seal"] then set = "Other"; key = key.."_seal" end
-else
-	if not G.localization.descriptions[set][_c.key] then set = "Other" end
+-- If statement guards against setting `name_styled` twice. This apparently happens
+-- when generating ui for Lucky Cards: smods takes ownership of vanilla, so
+-- this code is reached in both places it appears
+if not desc_nodes.name_styled then
+  local set = name_override and "Other" or _c.set
+  local key = name_override or _c.key
+  if set == "Seal" then
+    if G.localization.descriptions["Other"][_c.key.."_seal"] then set = "Other"; key = key.."_seal" end
+  else
+    if not G.localization.descriptions[set][_c.key] then set = "Other" end
+  end
+  desc_nodes.name_styled = {}
+  localize{type = 'name', key = key, set = set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars({}, _c:create_fake_card()) or {}).vars) or {colours = {}}} 
+  desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+  desc_nodes.name_styled.config.align = "cm"
 end
-desc_nodes.loc_name = {}
-localize{type = 'name', key = key, set = set, nodes = desc_nodes.loc_name, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars({}, _c:create_fake_card()) or {}).vars) or {colours = {}}} 
-desc_nodes.loc_name = SMODS.info_queue_desc_from_rows(desc_nodes.loc_name, true)
-desc_nodes.loc_name.config.align = "cm"
 '''
 match_indent = true
 
@@ -375,22 +367,28 @@ function info_tip_from_rows(desc_nodes, name)
 '''
 position = "after"
 payload = '''
-  local name_nodes = {}
-  local function deep_find(t, index)
-    if t[index] then return true end
-    for i,v in pairs(t) do
-      if i == index then return true end
-      if type(v) == "table" then
-        return deep_find(v, index)
-      end
-    end
-    return false
-  end
-  if not desc_nodes.loc_name or not deep_find(desc_nodes.loc_name, "object") then
+  local name_nodes
+  if not desc_nodes.name_styled then
     name_nodes = {{n=G.UIT.T, config={text = name, scale = 0.32, colour = G.C.UI.TEXT_LIGHT}}}
   else
-    name_nodes = {desc_nodes.loc_name}
+    name_nodes = {desc_nodes.name_styled}
   end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'engine/node.lua'
+pattern = '''
+self.children.h_popup.states.drag.can = true
+'''
+position = "after"
+payload = '''
+-- Fixes styled info_queue names
+-- This ensures show_infotip runs just after the main hover box is created instead of being able to fall one frame after
+if ((self.children.h_popup.UIRoot.children[1] or {}).config or {}).func == "show_infotip" then
+  G.FUNCS.show_infotip(self.children.h_popup.UIRoot.children[1])
+end
 '''
 match_indent = true
 

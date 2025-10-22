@@ -99,7 +99,7 @@ pattern = "bypass_lock = self.bypass_lock,"
 position = "after"
 payload = """
 unique_val = self.unique_val,
-unique_val__saved_ID = self.ID,
+unique_val__saved_ID = self.unique_val__saved_ID or self.ID,
 ignore_base_shader = self.ignore_base_shader,
 ignore_shadow = self.ignore_shadow,"""
 match_indent = true
@@ -112,6 +112,7 @@ pattern = "self.bypass_lock = cardTable.bypass_lock"
 position = "after"
 payload = """
 self.unique_val = cardTable.unique_val or self.unique_val
+self.unique_val__saved_ID = cardTable.unique_val__saved_ID or self.unique_val__saved_ID
 if cardTable.unique_val__saved_ID and G.ID <= cardTable.unique_val__saved_ID then
     G.ID = cardTable.unique_val__saved_ID + 1
 end
@@ -131,11 +132,6 @@ position = 'at'
 match_indent = true
 payload = '''function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end, card)
     if _c.specific_vars then specific_vars = _c.specific_vars end
-    local is_info_queue = false
-    if specific_vars and specific_vars.is_info_queue then
-        is_info_queue = true
-        specific_vars = nil
-    end
 '''
 
 [[patches]]
@@ -638,13 +634,13 @@ if success then st = _st else sendWarnMessage(_st, "LuaSteam"); st = {} end"""
 overwrite = true
 match_indent = true
 
-# copy_card edition config
+# copy_card: Subtract from .ability.card_limit
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
-position = 'at'
+position = 'before'
 match_indent = true
-pattern = 'new_card:set_edition(other.edition or {}, nil, true)'
+pattern = 'if not strip_edition then'
 payload = '''
 if other.edition then
     new_card.ability.card_limit = new_card.ability.card_limit - (other.edition.card_limit or 0)
@@ -653,8 +649,16 @@ end
 if other.seal then
     new_card.ability.card_limit = new_card.ability.card_limit - (other.ability.seal.card_limit or 0)
     new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.ability.seal.extra_slots_used or 0)
-end
-new_card:set_edition(other.edition or {}, nil, true)
+end'''
+
+# copy_card edition config
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+position = 'after'
+match_indent = true
+pattern = 'new_card:set_edition(other.edition or {}, nil, true)'
+payload = '''
 for k,v in pairs(other.edition or {}) do
     if type(v) == 'table' then
         new_card.edition[k] = copy_table(v)

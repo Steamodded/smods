@@ -24,7 +24,7 @@
 ---@field inject? fun(self: SMODS.Challenge|table, i?: number) Called during `inject_class`. Injects the object into the game.
 ---@field take_ownership? fun(self: SMODS.Challenge|table, key: string, obj: SMODS.Challenge|table, silent?: boolean): nil|table|SMODS.Challenge Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.Challenge|table, key: string): SMODS.Challenge|table? Returns an object if one matches the `key`.
----@field unlocked? fun(self: SMODS.Challenge|table): boolean
+---@field unlocked? fun(self: SMODS.Challenge|table): boolean | boolean
 ---@field button_colour? table HEX color of the button on the challenge list.
 ---@field calculate? fun(self: SMODS.Challenge|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
 ---@field apply? fun(self: SMODS.Challenge|table) Applied modifiers at the start of a run. 

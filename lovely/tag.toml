@@ -39,6 +39,30 @@ payload = '''
     end
 '''
 
+# Orbital Tag's set_ability
+# Initialize fallback Poker Hand
+[[patches]]
+[patches.pattern]
+target = "tag.lua"
+pattern = '''
+elseif self.ability.blind_type then
+    if G.GAME.orbital_choices and G.GAME.orbital_choices[G.GAME.round_resets.ante][self.ability.blind_type] then
+        self.ability.orbital_hand = G.GAME.orbital_choices[G.GAME.round_resets.ante][self.ability.blind_type]       
+    end
+end
+'''
+position = 'after'
+match_indent = true
+payload = '''
+if self.ability.orbital_hand == '['..localize('k_poker_hand')..']' then
+    local _poker_hands = {}
+    for k, v in pairs(G.GAME.hands) do
+        if SMODS.is_poker_hand_visible(k) then _poker_hands[#_poker_hands+1] = k end
+    end
+    self.ability.orbital_hand = pseudorandom_element(_poker_hands, pseudoseed('orbital'))
+end
+'''
+
 # create_UIBox_your_collection_tags()
 [[patches]]
 [patches.regex]
