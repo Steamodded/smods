@@ -1988,7 +1988,7 @@ elseif card.config.center.set == 'Spectral' then  G.GAME.consumeable_usage_total
 position = 'after'
 payload = '''
 else 
-    G.GAME.consumeable_usage_total[card.config.center.set] = G.GAME.consumeable_usage_total[card.config.center.set] or 0
-    G.GAME.consumeable_usage_total[card.config.center.set] = G.GAME.consumeable_usage_total[card.config.center.set] + 1
+    G.GAME.consumeable_usage_total[card.config.center.set:lower()] = G.GAME.consumeable_usage_total[card.config.center.set:lower()] or 0
+    G.GAME.consumeable_usage_total[card.config.center.set:lower()] = G.GAME.consumeable_usage_total[card.config.center.set:lower()] + 1
 '''
 match_indent = true
