@@ -3485,6 +3485,27 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     }
 
+    SMODS.Keybind {
+        key_pressed = 'l',
+        event = 'held',
+        held_duration = 1.1,
+        action = function(self)
+			G.FUNCS.wipe_on()
+			G.E_MANAGER:add_event(Event({
+				no_delete = true,
+				blockable = true, 
+				blocking = false,
+				func = function()
+					G:set_language()
+					G:init_item_prototypes()
+					return true
+				end
+			}))
+			G.FUNCS.wipe_off()
+        end
+    }
+
+
     -------------------------------------------------------------------------------------------------
     ------- API CODE GameObject.Achievement
     -------------------------------------------------------------------------------------------------
