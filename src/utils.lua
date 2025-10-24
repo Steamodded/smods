@@ -1088,13 +1088,13 @@ function SMODS.never_scores(card)
     end
 end
 
-SMODS.collection_pool = function(_base_pool)
+SMODS.collection_pool = function(_base_pool, show_no_collection)
     local pool = {}
     if type(_base_pool) ~= 'table' then return pool end
     local is_array = _base_pool[1]
     local ipairs = is_array and ipairs or pairs
     for _, v in ipairs(_base_pool) do
-        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and not v.no_collection then
+        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (show_no_collection or not v.no_collection) then
             pool[#pool+1] = v
         end
     end
