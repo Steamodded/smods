@@ -59,8 +59,12 @@ end'''
 [[patches]]
 [patches.pattern]
 target = "card.lua"
-pattern = 'if G.STAGE == G.STAGES.RUN then'
-position = 'before'
+pattern = '''
+    if self.ability.consumeable and self.ability.consumeable.max_highlighted then
+        self.ability.consumeable.mod_num = math.min(5, self.ability.consumeable.max_highlighted)
+    end
+'''
+position = 'after'
 match_indent = true
 payload = '''
 local obj = G.P_SEALS[self.seal] or {}
