@@ -638,10 +638,24 @@ function SMODS.localize_box(lines, args) end
 function SMODS.get_multi_boxes(multi_box) end
 
 ---@param cards Card|Card[]
----@param bypass_eternal boolean?
----@param immediate boolean?
---- Destroys the cards passed to the function, handling calculation events that need to happen
-function SMODS.destroy_cards(cards, bypass_eternal, immediate) end
+---@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, delay?: number, no_run?: false}
+---@return {destroyed: Card[]}
+--- Destroys the cards passed to the function, handling calculation events that need to happen.
+--- Returns list of cards successfully destroyed in `result.destroyed`.
+function SMODS.destroy_cards(cards, args) end
+---@param cards Card|Card[]
+---@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, delay?: number, no_run: true}
+---@return {destroyed: Card[], run_destroy: (fun(): nil), run_calc: (fun(): nil)}
+--- When `args.no_run` is true, doesn't run anything; returns functions
+--- `result.run_destroy` and `result.run_calc` that you can run yourself
+function SMODS.destroy_cards(cards, args) end
+-- Old signature
+---@param cards Card|Card[]
+---@param bypass_eternal? boolean
+---@param immediate? boolean
+---@param pinch_anim? boolean
+---@return {destroyed: Card[], run_destroy?: (fun(): nil), run_calc?: (fun(): nil)}
+function SMODS.destroy_cards(cards, bypass_eternal, immediate, pinch_anim) end
 
 ---@param hand_space number
 --- Used to draw cards to hand outside of the normal card draw
