@@ -415,10 +415,14 @@ end
 function SMODS.debuff_card(card, debuff, source)
     debuff = debuff or nil
     source = source and tostring(source) or nil
-    if debuff == 'reset' then card.ability.debuff_sources = {}; return end
+    if debuff == 'reset' then
+        sendWarnMessage("SMODS.debuff_card(card, 'reset', source) is deprecated")
+        card.ability.debuff_sources = {};
+        return
+    end
     card.ability.debuff_sources = card.ability.debuff_sources or {}
     card.ability.debuff_sources[source] = debuff
-    card:set_debuff()
+    SMODS.recalc_debuff(card)
 end
 
 -- Recalculate whether a card should be debuffed
@@ -1477,12 +1481,13 @@ SMODS.other_calculation_keys = {
     'stay_flipped', 'prevent_stay_flipped',
     'cards_to_draw',
     'message',
-    'level_up', 'func', 'extra',
+    'level_up', 'func',
     'numerator', 'denominator',
     'ranks_changed', 'ranks_fixed',
     'modify',
     'no_destroy', 'prevent_trigger',
-    'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
+    'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
+    'extra'
 }
 SMODS.silent_calculation = {
     saved = true, effect = true, remove = true,
@@ -2380,11 +2385,12 @@ function Card.selectable_from_pack(card, pack)
             if key == card.config.center_key then return false end
         end
     end
-    if pack and pack.select_card then
-        if type(pack.select_card) == 'table' then
-            if pack.select_card[card.ability.set] then return pack.select_card[card.ability.set] else return false end
+    local select_area = SMODS.card_select_area(card, pack)
+    if select_area then
+        if type(select_area) == 'table' then
+            if select_area[card.ability.set] then return select_area[card.ability.set] else return false end
         end
-        return pack.select_card
+        return select_area
     end
 end
 
@@ -3297,6 +3303,7 @@ function Card:is_rarity(rarity)
     return own_rarity == rarity or SMODS.Rarities[own_rarity] == rarity
 end
 
+
 function UIElement:draw_pixellated_under(_type, _parallax, _emboss, _progress)
     if not self.pixellated_rect or
         #self.pixellated_rect[_type].vertices < 1 or
@@ -3352,17 +3359,62 @@ function UIElement:draw_pixellated_under(_type, _parallax, _emboss, _progress)
         end
     end
     love.graphics.polygon("fill", self.pixellated_rect.fill.vertices)
-
 end
 
-function CardArea:count_extra_slots_used(cards)
-    local slots = #cards
-    if (self.config.type == 'joker' or self.config.type == 'hand') and not self.config.fixed_limit then
-        for _, card in ipairs(cards) do
-            slots = slots + card.ability.extra_slots_used
+function SMODS.card_select_area(card, pack)
+    local select_area
+    if card.config.center.select_card then
+        if type(card.config.center.select_card) == "function" then -- Card's value takes first priority
+            select_area = card.config.center:select_card(card, pack)
+        else
+            select_area = card.config.center.select_card
+        end
+    elseif SMODS.ConsumableTypes[card.ability.set] and SMODS.ConsumableTypes[card.ability.set].select_card then -- ConsumableType is second priority
+        if type(SMODS.ConsumableTypes[card.ability.set].select_card) == "function" then
+            select_area = SMODS.ConsumableTypes[card.ability.set]:select_card(card, pack)
+        else
+            select_area = SMODS.ConsumableTypes[card.ability.set].select_card
+        end
+    elseif pack.select_card then -- Pack is third priority
+        if type(pack.select_card) == "function" then
+            select_area = pack:select_card(card, pack)
+        else
+            select_area = pack.select_card
         end
     end
-    return slots
+    return select_area
+end
+
+function SMODS.get_select_text(card, pack)
+    local select_text
+    if card.config.center.select_button_text then -- Card's value takes first priority
+        if type(card.config.center.select_button_text) == "function" then
+            select_text = card.config.center:select_button_text(card, pack)
+        else
+            select_text = localize(card.config.center.select_button_text)
+        end
+    elseif SMODS.ConsumableTypes[card.ability.set] and SMODS.ConsumableTypes[card.ability.set].select_button_text then -- ConsumableType is second priority
+        if type(SMODS.ConsumableTypes[card.ability.set].select_button_text) == "function" then
+            select_text = SMODS.ConsumableTypes[card.ability.set]:select_button_text(card, pack)
+        else
+            select_text = localize(SMODS.ConsumableTypes[card.ability.set].select_button_text)
+        end
+    elseif pack.select_button_text then -- Pack is third priority
+        if type(pack.select_button_text) == "function" then
+            select_text = pack:select_button_text(card, pack)
+        else
+            select_text = localize(pack.select_button_text)
+        end
+    end
+    return select_text
+end
+
+function CardArea:count_property(property)
+    local value = 0
+    for _, card in ipairs(self.cards) do
+        value = value + card.ability[property]
+    end
+    return value
 end
 
 function SMODS.should_handle_limit(area)
@@ -3373,54 +3425,41 @@ end
 
 function CardArea:handle_card_limit(card_limit, card_slots)
     if SMODS.should_handle_limit(self) then
-        card_limit = card_limit or 0
-        card_slots = card_slots or 0
-        if card_limit ~= 0 then
-            G.E_MANAGER:add_event(Event({
-                trigger = 'immediate',
-                func = function()
-                    self.config.card_limit = self.config.card_limit + card_limit
-                    return true
-                end
-            }))
-        end
-        if card_slots ~= 0 then
-            G.E_MANAGER:add_event(Event({
-                trigger = 'immediate',
-                func = function()
-                    self.config.no_true_limit = true
-                    self.config.card_limit = self.config.card_limit - card_slots
-                    self.config.no_true_limit = false
-                    return true
-                end
-            }))
-            
-        end
-        if G.hand and self == G.hand and card_limit - card_slots > 0 then
-            if G.STATE == G.STATES.DRAW_TO_HAND and math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards - (SMODS.cards_to_draw or 0)) > 0 then 
+        self.config.card_limits.old_slots = self.config.card_limits.total_slots or 0
+        self.config.card_limits.extra_slots = self:count_property('card_limit')
+        self.config.card_limits.total_slots = self:count_property('card_limit') + (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
+        self.config.card_limits.extra_slots_used = self:count_property('extra_slots_used')
+        self.config.card_count = #self.cards + self:count_property('extra_slots_used')
+        
+        if G.hand and self == G.hand and self.config.card_count + (SMODS.cards_to_draw or 0) < self.config.card_limits.total_slots then
+            if G.STATE == G.STATES.DRAW_TO_HAND and not SMODS.blind_modifies_draw(G.GAME.blind.config.blind.key) and not SMODS.draw_queued then
+                SMODS.draw_queued = true
                 G.E_MANAGER:add_event(Event({
                     trigger = 'immediate',
                     func = function()
+                        SMODS.draw_queued = nil
                         G.E_MANAGER:add_event(Event({
                             trigger = 'immediate',
-                            func = function()     
-                                G.FUNCS.draw_from_deck_to_hand()
+                            func = function()
+                                if (self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0)) > 0 then
+                                    G.FUNCS.draw_from_deck_to_hand(self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0))                
+                                end
                                 return true
                             end
                         }))
                         return true
                     end
                 }))
-            elseif G.STATE == G.STATES.SELECTING_HAND then G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards)) end
-            G.E_MANAGER:add_event(Event({
-                trigger = 'immediate',
-                func = function()                
-                    save_run()
-                    return true
+            elseif G.STATE == G.STATES.SELECTING_HAND and #G.deck.cards > 0 and self.config.card_limits.old_slots < self.config.card_limits.total_slots then
+                if (self.config.card_limits.total_slots - self.config.card_limits.old_slots) > 0 then
+                    G.FUNCS.draw_from_deck_to_hand((self.config.card_limits.total_slots - self.config.card_limits.old_slots))
                 end
-            }))
-            check_for_unlock({type = 'min_hand_size'})
+            end
+            return
         end
+    else
+        self.config.card_count = #self.cards 
+        self.config.card_limits.total_slots = math.max(#self.cards, self.config.card_limits.total_slots or self.config.card_limits.base)
     end
 end
 
@@ -3441,4 +3480,9 @@ function SMODS.get_keys(t)
         ret[#ret + 1] = k
     end
     return ret
+end
+
+-- Function used to determine whether the current blind modifies the number of cards drawn
+function SMODS.blind_modifies_draw(key)
+    if SMODS.Blinds.modifies_draw[key] then return true end
 end
