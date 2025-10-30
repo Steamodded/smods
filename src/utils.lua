@@ -2892,7 +2892,8 @@ function SMODS.scale_card(card, args)
     
     scaling_message = scaling_message or {
         message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or scalar_value}} or 'k_upgrade_ex'),
-        colour = args.message_colour or G.C.FILTER
+        colour = args.message_colour or G.C.FILTER,
+        delay = args.message_delay,
     }
     if next(scaling_message) and not args.no_message then
         SMODS.calculate_effect(scaling_message, card)
@@ -3216,8 +3217,8 @@ function CardArea:handle_card_limit(card_limit, card_slots)
             return
         end
     else
-        self.config.card_count = #self.cards 
-        self.config.card_limits.total_slots = math.max(#self.cards, self.config.card_limits.total_slots or self.config.card_limits.base)
+        self.config.card_count = #self.cards
+        if not self.config.card_limits.total_slots then self.config.card_limits.total_slots = self.config.card_limits.base end
     end
 end
 
