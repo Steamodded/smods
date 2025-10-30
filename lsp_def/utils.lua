@@ -433,7 +433,7 @@ function SMODS.add_card(t) end
 ---@param card Card|table
 ---@param debuff boolean|"reset"|'prevent_debuff'?
 ---@param source string?
---- Debuffs provided `card`.
+--- Sets a flag that debuffs (or prevents debuff on) provided `card`.
 function SMODS.debuff_card(card, debuff, source) end
 
 ---@param card Card|table
