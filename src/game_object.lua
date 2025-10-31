@@ -1702,6 +1702,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         config = {},
         dollars = 5,
         mult = 2,
+        blind_types = nil, -- Map of types, used by SMODS.get_new_blind()
         atlas = 'blind_chips',
         discovered = false,
         pos = { x = 0, y = 0 },
@@ -1721,6 +1722,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
             G.P_BLINDS[self.key] = self
             if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
+        end,
+        get_types = function(self)
+            return self.blind_types
         end
     }
     SMODS.Blind:take_ownership('eye', {
@@ -3843,6 +3847,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         create_data = function (self)
             -- Vanilla Blind structure
             -- "Small" -> "Big" -> "Boss"
+            local boss_type = (G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante > 0 and "Showdown" or "Boss"
             local tree_data = {
                 key = "vanilla",
                 active_node = 1,
@@ -3885,7 +3890,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                             {key = "next_blind_tree", triggers = {cashed_out = true}},
                             {key = "enter_shop", triggers = {cashed_out = true}},
                         },
-                        blinds = {get_new_boss()},
+                        blinds = {SMODS.get_new_blind({[boss_type] = true})},
                     }
                 }
             }
@@ -4124,6 +4129,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "enter_blind",
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Change game state to bt_node:get_blind()
+            SMODS.queue_state(SMODS.STATES.BLIND, {key = bt_node:get_blind()})
             return true
         end,
         create_ui = function (self, bt_node, bt_node_UIE)
@@ -4139,6 +4145,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "evaluate_round",
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Create cashout and evaluate round 
+            SMODS.queue_state(SMODS.STATES.ROUND_EVAL)
             return true
         end,
         create_ui = function (self, bt_node, bt_node_UIE)
@@ -4150,6 +4157,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "enter_shop",
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Change game state to shop
+            SMODS.queue_state(SMODS.STATES.SHOP)
             return true
         end,
         create_ui = function (self, bt_node, bt_node_UIE)
@@ -4228,6 +4236,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         on_click = function (self, bt_node)
             SMODS.set_active_bt_node(bt_node)
             bt_node:trigger_callbacks("selected")
+            SMODS.next_state()
         end,
     }
 
@@ -4236,6 +4245,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         on_click = function (self, bt_node)
             SMODS.set_active_bt_node(bt_node)
             bt_node:trigger_callbacks("skipped")
+            SMODS.next_state()
         end,
     }
 
@@ -4246,7 +4256,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
     }
 
-
     ------- API CODE OVERRIDES
 
 
@@ -4254,11 +4263,117 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     Game:init_game_object()
     Game:update(dt)
     Game:start_run()
-    G.GAME.round_resets.blind_tags
-    get_new_boss()
-    add_round_eval_row()
     Blind:get_type()
     ]]
+    function reset_blinds()
+        G.GAME.round_resets.boss_rerolled = false
+    end
+
+    function SMODS.get_blind_types(blind_obj)
+        if type(blind_obj.get_types) == "function" then
+            return blind_obj:get_types()
+        else
+            if v.boss then
+                if not v.boss.showdown then
+                    return {Boss = true}
+                else
+                    return {Showdown = true}
+                end
+            else
+                if v.name == "Small Blind" then
+                    return {Small = true}
+                else
+                    return {Big = true}
+                end
+            end
+        end
+    end
+
+    function SMODS.get_new_blind(blind_types)
+        if not blind_types or (blind_types.Boss or blind_types.Showdown) then
+            G.GAME.perscribed_bosses = G.GAME.perscribed_bosses or {}
+            if G.GAME.perscribed_bosses and G.GAME.perscribed_bosses[G.GAME.round_resets.ante] then
+                local ret_boss = G.GAME.perscribed_bosses[G.GAME.round_resets.ante] 
+                G.GAME.perscribed_bosses[G.GAME.round_resets.ante] = nil
+                G.GAME.bosses_used[ret_boss] = G.GAME.bosses_used[ret_boss] + 1
+                return ret_boss
+            end
+            if G.FORCE_BOSS then return G.FORCE_BOSS end
+        end
+
+        local eligible_bosses = {}
+        for k, v in pairs(G.P_BLINDS) do
+            local res = SMODS.add_to_pool(v)
+            if res then
+                local b_types = SMODS.get_blind_types(v)
+                for _, b_type in pairs(b_types) do
+                    if blind_types[b_type] then
+                        if v.in_pool or not v.boss or (v.boss.min <= math.max(1, G.GAME.round_resets.ante) and ((math.max(1, G.GAME.round_resets.ante))%G.GAME.win_ante ~= 0 or G.GAME.round_resets.ante < 2)) then
+                            eligible_bosses[k] = true
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        for k, v in pairs(G.GAME.banned_keys) do
+            if eligible_bosses[k] then eligible_bosses[k] = nil end
+        end
+
+        local min_use = 100
+        for k, v in pairs(G.GAME.bosses_used) do
+            if eligible_bosses[k] then
+                eligible_bosses[k] = v
+                if eligible_bosses[k] <= min_use then 
+                    min_use = eligible_bosses[k]
+                end
+            end
+        end
+        for k, v in pairs(eligible_bosses) do
+            if eligible_bosses[k] then
+                if eligible_bosses[k] > min_use then 
+                    eligible_bosses[k] = nil
+                end
+            end
+        end
+        local _, boss = pseudorandom_element(eligible_bosses, pseudoseed('boss'))
+        G.GAME.bosses_used[boss] = G.GAME.bosses_used[boss] + 1
+        
+        return boss
+    end
+
+    function Blind:get_type()
+        return SMODS.get_blind_types(self.config.blind)
+    end
+
+    function Blind:is_type(b_type)
+        return self:is_types({[b_type] = true}, false)
+    end
+
+    function Blind:is_types(b_types_map, all)
+        for k, v in pairs(self:get_type()) do
+            if v and b_types_map[k] or (k == "Showdown" and b_types_map.Boss) then
+                if not all then
+                    return true
+                end
+            elseif all then
+                return false
+            end
+        end
+        return all
+    end
+
+    SMODS.Joker:take_ownership("j_matador", {
+        check_for_unlock = function (self, args)
+            return G.GAME.current_round.hands_played == 1 and G.GAME.current_round.discards_left == G.GAME.round_resets.discards and G.GAME.blind:is_type("Boss")
+        end
+    })
+
+    SMODS.Joker:take_ownership("j_hanging_chad", {
+        check_for_unlock = function (self, args)
+            return G.GAME.last_hand_played == self.unlock_condition.extra and G.GAME.blind:is_type("Boss")
+        end
+    })
 
     -- Create Blind Select UI
     function create_UIBox_blind_select()
@@ -4275,7 +4390,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     end
 
-    -- Cash Out (probably should be a lovely patch)
+    -- Cash Out
     -- AND/OR: Consider separating the Round eval/cashout into its own BTNodeCallback "evaluate_round"
     function G.FUNCS.cash_out(e)
 
@@ -4390,11 +4505,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         add_round_eval_row({name = 'bottom', dollars = dollars})
     end
 
-    -- reset_blinds()
-    function reset_blinds()
-
-    end
-
     -- new_round() (also lovely patch maybe)
     function new_round()
 
@@ -4411,41 +4521,33 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     
     end
 
-    -- Toggle Shop
-    function G.FUNCS.toggle_shop(e)
+    -- Toggle Shop 
+    function G.FUNCS.toggle_shop(e) 
+
     end
 
     -- Select Blind (-> use own func in UI defs)
-    function G.FUNCS.select_blind(e)
-    end
+    function G.FUNCS.select_blind(e) end
 
     -- Skip Blind (-> use own func in UI defs)
-    function G.FUNCS.skip_blind(e)
-    end
+    function G.FUNCS.skip_blind(e) end
 
     -- Reroll Boss (-> use own func in UI defs)
-    function G.FUNCS.reroll_boss(e)
-    end
+    function G.FUNCS.reroll_boss(e) end
 
-    function G.FUNCS.reroll_boss_button(e)
+    function G.FUNCS.reroll_boss_button(e) end
+
+    ease_bg_col_bl_ref = ease_background_colour_blind
+    function ease_background_colour_blind(state, blind_override)
+        if SMODS.GameStates[state] and SMODS.GameStates[state].ease_background_colour then
+            return SMODS.GameStates[state]:ease_background_colour(blind_override)
+        end
+        return ease_bg_col_bl_ref(state, blind_override)
     end
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE SMODS.GameState
     -------------------------------------------------------------------------------------------------
-    
-    SMODS.StateQueue = {}
-    
-    function SMODS.clear_states()
-        if G.blind_select then G.blind_select:remove(); G.blind_select = nil end
-        if G.shop then G.shop:remove(); G.shop = nil end
-        if G.buttons then G.buttons:remove(); G.buttons = nil end
-        if G.round_eval then G.round_eval:remove(); G.round_eval = nil end
-    end
-
-    function SMODS.queue_state(state)
-
-    end
 
     SMODS.STATES = {
         SHOP = "SHOP",
@@ -4453,6 +4555,31 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         BLIND = "BLIND",
         BLIND_SELECT = "BLIND_SELECT"
     }
+
+    SMODS.state_queue = {}
+
+    function SMODS.clear_states()
+        if G.blind_select then G.blind_select:remove(); G.blind_select = nil end
+        if G.shop then G.shop:remove(); G.shop = nil end
+        if G.buttons then G.buttons:remove(); G.buttons = nil end
+        if G.round_eval then G.round_eval:remove(); G.round_eval = nil end
+    end
+
+    function SMODS.queue_state(state, args)
+        table.insert(SMODS.state_queue, {state=state, args=args})
+    end
+
+    function SMODS.next_state()
+        if #SMODS.state_queue > 0 then
+            local next_state = SMODS.state_queue[#SMODS.state_queue]
+            G.STATE = next_state.state
+            if SMODS.GameStates[next_state.state] then
+                SMODS.GameStates[next_state.state]:on_set(next_state.args)
+            end
+            table.remove(SMODS.state_queue, #SMODS.state_queue)
+        end
+    end
+
     SMODS.GameStates = {}
     SMODS.GameState = SMODS.GameObject:extend{
         set = 'GameState',
@@ -4461,9 +4588,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         required_parameters = {
             'key',
         },
-        update = function (self, dt)
-            
-        end
+        on_set = function (self, args) end,
+        update = function (self, dt) end,
+        ease_background_colour = nil, -- function
     }
 
     SMODS.GameState {
@@ -4475,7 +4602,23 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     SMODS.GameState {
-        key = SMODS.STATES.BLIND
+        key = SMODS.STATES.BLIND,
+        ease_background_colour = function (self, blind_override)
+            local blindname = ((blind_override or (G.GAME.blind and G.GAME.blind.name ~= '' and G.GAME.blind.name)) or 'Small Blind')
+            blindname = (blindname == '' and 'Small Blind' or blindname)
+            
+            local boss_col = G.C.BLACK
+            for k, v in pairs(G.P_BLINDS) do
+                if v.name == blindname then
+                    if v.boss.showdown then
+                        ease_background_colour{new_colour = G.C.BLUE, special_colour = G.C.RED, tertiary_colour = darken(G.C.BLACK, 0.4), contrast = 3}
+                        return
+                    end
+                    boss_col = v.boss_colour or G.C.BLACK
+                end
+            end
+            ease_background_colour{new_colour = lighten(mix_colours(boss_col, G.C.BLACK, 0.3), 0.1), special_colour = boss_col, contrast = 2}
+        end
     }
 
     SMODS.GameState {
@@ -4488,25 +4631,27 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 G.E_MANAGER:add_event(Event({ func = function() save_run(); return true end}))
                 G.STATE_COMPLETE = true
                 G.CONTROLLER.interrupt.focus = true
-                G.E_MANAGER:add_event(Event({ func = function() 
-                G.E_MANAGER:add_event(Event({
-                    trigger = 'immediate',
-                    func = function()
-                        play_sound('cancel')
-                        G.blind_select = SMODS.get_blind_tree():create_ui()
-                        G.blind_select.alignment.offset.y = 0.8-(G.hand.T.y - G.jokers.T.y) + G.blind_select.T.h
-                        G.ROOM.jiggle = G.ROOM.jiggle + 3
-                        G.blind_select.alignment.offset.x = 0
-                        G.CONTROLLER.lock_input = false
-                        for i = 1, #G.GAME.tags do
-                            G.GAME.tags[i]:apply_to_run({type = 'immediate'})
+                G.E_MANAGER:add_event(Event({ func = function()
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = function()
+                            play_sound('cancel')
+                            G.blind_select = SMODS.get_blind_tree():create_ui()
+                            G.blind_select.alignment.offset.y = 0.8-(G.hand.T.y - G.jokers.T.y) + G.blind_select.T.h
+                            G.ROOM.jiggle = G.ROOM.jiggle + 3
+                            G.blind_select.alignment.offset.x = 0
+                            G.CONTROLLER.lock_input = false
+                            for i = 1, #G.GAME.tags do
+                                G.GAME.tags[i]:apply_to_run({type = 'immediate'})
+                            end
+                            for i = 1, #G.GAME.tags do
+                                if G.GAME.tags[i]:apply_to_run({type = 'new_blind_choice'}) then break end
+                            end
+                            return true
                         end
-                        for i = 1, #G.GAME.tags do
-                            if G.GAME.tags[i]:apply_to_run({type = 'new_blind_choice'}) then break end
-                        end
-                        return true
-                    end
-                }))  ; return true end}))
+                    }))
+                    return true
+                end}))
             end
         end
     }
