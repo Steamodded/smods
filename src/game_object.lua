@@ -4129,7 +4129,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "enter_blind",
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Change game state to bt_node:get_blind()
-            SMODS.queue_state(SMODS.STATES.BLIND, {key = bt_node:get_blind()})
+            SMODS.enter_state(SMODS.STATES.BLIND, {key = bt_node:get_blind()})
             return true
         end,
         create_ui = function (self, bt_node, bt_node_UIE)
@@ -4145,7 +4145,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "evaluate_round",
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Create cashout and evaluate round 
-            SMODS.queue_state(SMODS.STATES.ROUND_EVAL)
+            SMODS.enter_state(SMODS.STATES.ROUND_EVAL)
             return true
         end,
         create_ui = function (self, bt_node, bt_node_UIE)
@@ -4157,7 +4157,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "enter_shop",
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Change game state to shop
-            SMODS.queue_state(SMODS.STATES.SHOP)
+            SMODS.enter_state(SMODS.STATES.SHOP)
             return true
         end,
         create_ui = function (self, bt_node, bt_node_UIE)
@@ -4555,8 +4555,20 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         BLIND = "BLIND",
         BLIND_SELECT = "BLIND_SELECT"
     }
+    SMODS.default_state = SMODS.STATES.BLIND_SELECT
 
-    SMODS.state_queue = {}
+    SMODS.state_stack = {}
+
+    function SMODS.push_to_state_stack(state, args)
+        table.insert(SMODS.state_stack, {state=state, args=args})
+    end
+
+    function SMODS.pop_from_state_stack(state)
+        if #SMODS.state_stack < 1 then return end
+        if SMODS.state_stack[#SMODS.state_stack].state == state then
+            table.remove(SMODS.state_stack, #SMODS.state_stack)
+        end
+    end
 
     function SMODS.clear_states()
         if G.blind_select then G.blind_select:remove(); G.blind_select = nil end
@@ -4565,18 +4577,34 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         if G.round_eval then G.round_eval:remove(); G.round_eval = nil end
     end
 
-    function SMODS.queue_state(state, args)
-        table.insert(SMODS.state_queue, {state=state, args=args})
+    function SMODS.enter_state(state, args, hold_state)
+        if G.STATE == state then return end
+        if SMODS.GameStates[G.STATE] and hold_state then
+            SMODS.GameStates[G.STATE]:on_exit({new_state=state}, true)
+        end
+        if not hold_state then
+            SMODS.pop_from_state_stack(G.STATE)
+        end
+        G.STATE = state
+        if SMODS.GameStates[G.STATE] then
+            SMODS.GameStates[G.STATE]:on_enter(args)
+        end
+        SMODS.push_to_state_stack(state, args)
     end
 
-    function SMODS.next_state()
-        if #SMODS.state_queue > 0 then
-            local next_state = SMODS.state_queue[#SMODS.state_queue]
-            G.STATE = next_state.state
-            if SMODS.GameStates[next_state.state] then
-                SMODS.GameStates[next_state.state]:on_set(next_state.args)
-            end
-            table.remove(SMODS.state_queue, #SMODS.state_queue)
+    function SMODS.exit_state(args)
+        if SMODS.GameStates[G.STATE] then
+            SMODS.GameStates[G.STATE]:on_exit(args)
+        end
+        SMODS.pop_from_state_stack(G.STATE)
+        if #SMODS.context_stack < 1 then
+            G.STATE = nil
+            SMODS.enter_state(SMODS.default_state)
+            return
+        end
+        G.STATE = SMODS.context_stack[#SMODS.context_stack].state
+        if SMODS.GameStates[G.STATE] then
+            SMODS.GameStates[G.STATE]:on_enter(args, true)
         end
     end
 
@@ -4588,7 +4616,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         required_parameters = {
             'key',
         },
-        on_set = function (self, args) end,
+        on_enter = function (self, args, from_hold) end,
+        on_exit = function (self, args, from_hold) end,
         update = function (self, dt) end,
         ease_background_colour = nil, -- function
     }
