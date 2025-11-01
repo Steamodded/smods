@@ -747,3 +747,8 @@ function SMODS.check_looping_context(eval_object) end
 ---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
 ---@return boolean
 function SMODS.challenge_is_unlocked(challenge, k) end
+
+---Checks if a spectral card should perform an adverse effect
+---@param card Card|table spectral card being used
+---@return boolean
+function SMODS.spectral_downside(card) end

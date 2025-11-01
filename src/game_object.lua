@@ -276,7 +276,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Font
     -------------------------------------------------------------------------------------------------
-    
+
     SMODS.Fonts = {}
     SMODS.Font = SMODS.GameObject:extend {
         obj_table = SMODS.Fonts,
@@ -311,7 +311,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ('Failed to collect file data for Font %s'):format(self.key))
             self.FONT = assert(love.graphics.newFont(file_data, self.render_scale or G.TILESIZE),
                 ('Failed to initialize font data for Font %s'):format(self.key))
-            
+
         end,
         process_loc_text = function() end,
     }
@@ -319,7 +319,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.DynaTextEffect
     -------------------------------------------------------------------------------------------------
-    
+
     SMODS.DynaTextEffects = {}
     SMODS.DynaTextEffect = SMODS.GameObject:extend {
         obj_table = SMODS.DynaTextEffects,
@@ -700,6 +700,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         for _, s in pairs(stake.applied_stakes) do
             SMODS.build_stake_chain(G.P_STAKES[s], applied)
         end
+
         return applied
     end
 
@@ -1176,7 +1177,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
 
             localize(target)
-            
+
             if res.main_end then
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
@@ -2042,7 +2043,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 else
                     table.insert(self.obj_buffer, self.key)
                 end
-                
+
             end
         end,
         process_loc_text = function(self)
@@ -2247,7 +2248,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     end
                 }))
             end
-            G.hand:change_size(-1)
+
+            if SMODS.spectral_downside() then
+                G.hand:change_size(-1)
+            end
+
             for i = 1, #G.hand.cards do
                 local percent = 0.85 + (i - 0.999) / (#G.hand.cards - 0.998) * 0.3
                 G.E_MANAGER:add_event(Event({
@@ -2263,7 +2268,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     })
     local function random_destroy(used_tarot)
         local destroyed_cards = {}
-        destroyed_cards[#destroyed_cards + 1] = pseudorandom_element(G.hand.cards, pseudoseed('random_destroy'))
+        local downside = SMODS.spectral_downside(used_tarot)
+        if downside then
+            destroyed_cards[#destroyed_cards + 1] = pseudorandom_element(G.hand.cards, pseudoseed('random_destroy'))
+        end
         G.E_MANAGER:add_event(Event({
             trigger = 'after',
             delay = 0.4,
@@ -2273,30 +2281,33 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 return true
             end
         }))
-        G.E_MANAGER:add_event(Event({
-            trigger = 'after',
-            delay = 0.1,
-            func = function()
-                for i = #destroyed_cards, 1, -1 do
-                    local card = destroyed_cards[i]
-                    if SMODS.shatters(card) then
-                        card:shatter()
-                    else
-                        card:start_dissolve(nil, i ~= #destroyed_cards)
+        if downside then
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = 0.1,
+                func = function()
+                    for i = #destroyed_cards, 1, -1 do
+                        local card = destroyed_cards[i]
+                        if SMODS.shatters(card) then
+                            card:shatter()
+                        else
+                            card:start_dissolve(nil, i ~= #destroyed_cards)
+                        end
                     end
+                    return true
                 end
-                return true
-            end
-        }))
+            }))
+        end
         return destroyed_cards
     end
+
     SMODS.Consumable:take_ownership('grim', {
         use = function(self, card, area, copier)
             local used_tarot = copier or card
             local destroyed_cards = random_destroy(used_tarot)
             G.E_MANAGER:add_event(Event({
                 trigger = 'after',
-                delay = 0.7,
+                delay = #destroyed_cards > 0 and 0.7 or 0,
                 func = function()
                     local cards = {}
                     for i = 1, card.ability.extra do
@@ -2305,10 +2316,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                             pseudorandom_element(SMODS.Suits, pseudoseed('grim_create')).card_key, 'A'
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if v.key ~= 'm_stone' and not G.GAME.banned_keys[v.key] and not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
+
+                        if #cen_pool == 0 then cen_pool[1] = 'c_base' end
+
                         cards[i] = create_playing_card({
                             front = G.P_CARDS[_suit .. '_' .. _rank],
                             center = pseudorandom_element(cen_pool, pseudoseed('spe_card'))
@@ -2318,17 +2332,22 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     return true
                 end
             }))
+
             delay(0.3)
-            SMODS.calculate_context({ remove_playing_cards = true, removed = destroyed_cards })
-        end,
+
+            if #destroyed_cards > 0 then
+                SMODS.calculate_context({ remove_playing_cards = true, removed = destroyed_cards })
+            end
+        end
     })
+
     SMODS.Consumable:take_ownership('familiar', {
         use = function(self, card, area, copier)
             local used_tarot = copier or card
             local destroyed_cards = random_destroy(used_tarot)
             G.E_MANAGER:add_event(Event({
                 trigger = 'after',
-                delay = 0.7,
+                delay = #destroyed_cards > 0 and 0.7 or 0,
                 func = function()
                     local cards = {}
                     for i = 1, card.ability.extra do
@@ -2343,10 +2362,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                             pseudorandom_element(faces, pseudoseed('familiar_create')).card_key
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if v.key ~= 'm_stone' and not G.GAME.banned_keys[v.key] and not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
+                        if #cen_pool == 0 then cen_pool[1] = 'c_base' end
                         cards[i] = create_playing_card({
                             front = G.P_CARDS[_suit .. '_' .. _rank],
                             center = pseudorandom_element(cen_pool, pseudoseed('spe_card'))
@@ -2356,20 +2376,25 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     return true
                 end
             }))
+
             delay(0.3)
-            SMODS.calculate_context({ remove_playing_cards = true, removed = destroyed_cards })
-        end,
+
+            if #destroyed_cards > 0 then
+                SMODS.calculate_context({ remove_playing_cards = true, removed = destroyed_cards })
+            end
+        end
     })
+
     SMODS.Consumable:take_ownership('incantation', {
         use = function(self, card, area, copier)
             local used_tarot = copier or card
             local destroyed_cards = random_destroy(used_tarot)
             G.E_MANAGER:add_event(Event({
                 trigger = 'after',
-                delay = 0.7,
+                delay = #destroyed_cards > 0 and 0.7 or 0,
                 func = function()
                     local cards = {}
-                    for i = 1, card.ability.extra do
+                    for i=1, card.ability.extra do
                         -- TODO preserve suit vanilla RNG
                         local numbers = {}
                         for _, v in ipairs(SMODS.Rank.obj_buffer) do
@@ -2381,10 +2406,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                             pseudorandom_element(numbers, pseudoseed('incantation_create')).card_key
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if v.key ~= 'm_stone' and not G.GAME.banned_keys[v.key] and not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
+                        if #cen_pool == 0 then cen_pool[1] = 'c_base' end
                         cards[i] = create_playing_card({
                             front = G.P_CARDS[_suit .. '_' .. _rank],
                             center = pseudorandom_element(cen_pool, pseudoseed('spe_card'))
@@ -2394,11 +2420,192 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     return true
                 end
             }))
-            delay(0.3)
-            SMODS.calculate_context({ remove_playing_cards = true, removed = destroyed_cards })
 
-        end,
+            delay(0.3)
+
+            if #destroyed_cards > 0 then
+                SMODS.calculate_context({ remove_playing_cards = true, removed = destroyed_cards })
+            end
+        end
     })
+
+
+    SMODS.Consumable:take_ownership('ankh', {
+        use = function(self, card, area, copier)
+            --Need to check for edgecases - if there are max Jokers and all are eternal OR there is a max of 1 joker this isn't possible already
+            --If there are max Jokers and exactly 1 is not eternal, that joker cannot be the one selected
+            --otherwise, the selected joker can be totally random and all other non-eternal jokers can be removed
+
+            local chosen_joker = pseudorandom_element(G.jokers.cards, pseudoseed('ankh_choice'))
+
+            G.E_MANAGER:add_event(Event({
+                trigger = 'before',
+                func = function()
+                    local new_copy = copy_card(chosen_joker, nil, nil, nil, chosen_joker.edition and chosen_joker.edition.negative)
+                    new_copy:start_materialize()
+                    new_copy:add_to_deck()
+                    if new_copy.edition and new_copy.edition.negative then
+                        new_copy:set_edition(nil, true)
+                    end
+                    G.jokers:emplace(new_copy)
+                    return true
+                end
+            }))
+
+            if not SMODS.spectral_downside(card) then return end
+            delay(0.4)
+            local deletable_jokers = {}
+            for _, v in pairs(G.jokers.cards) do
+                if v ~= chosen_joker and not SMODS.is_eternal(v, card) then deletable_jokers[#deletable_jokers + 1] = v end
+            end
+
+            local _first_dissolve = nil
+            G.E_MANAGER:add_event(Event({
+                trigger = 'before',
+                delay = 0.75,
+                func = function()
+                    for k, v in pairs(deletable_jokers) do
+                        if v ~= chosen_joker then
+                            v:start_dissolve(nil, _first_dissolve)
+                            _first_dissolve = true
+                        end
+                    end
+                    return true
+                end
+            }))
+        end
+    })
+
+    SMODS.Consumable:take_ownership('hex', {
+        use = function(self, card, area, copier)
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = 0.4,
+                func = function()
+                    local eligible_card = pseudorandom_element(card.eligible_editionless_jokers, pseudoseed('hex'))
+                    eligible_card:set_edition({polychrome = true}, true)
+                    check_for_unlock({type = 'have_edition'})
+
+                    if SMODS.spectral_downside(card) then
+                        local _first_dissolve = nil
+                        for k, v in pairs(G.jokers.cards) do
+                            if v ~= eligible_card and not SMODS.is_eternal(v, card) then
+                                v:start_dissolve(nil, _first_dissolve)
+                                _first_dissolve = true
+
+                            end
+                        end
+                    end
+
+                    card:juice_up(0.3, 0.5)
+                    return true
+                end
+            }))
+            delay(0.6)
+        end
+    })
+
+    SMODS.Consumable:take_ownership('ectoplasm', {
+        use = function(self, card, area, copier)
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = 0.4,
+                func = function()
+                    local eligible_card = pseudorandom_element(card.eligible_editionless_jokers, pseudoseed('ectoplasm'))
+                    eligible_card:set_edition({negative = true}, true)
+                    check_for_unlock({type = 'have_edition'})
+
+                    if SMODS.spectral_downside(card) then
+                        G.GAME.ecto_minus = G.GAME.ecto_minus or 1
+                        G.hand:change_size(-G.GAME.ecto_minus)
+                        G.GAME.ecto_minus = G.GAME.ecto_minus + 1
+                    end
+
+                    card:juice_up(0.3, 0.5)
+                    return true
+                end
+            }))
+            delay(0.6)
+        end
+    })
+
+    SMODS.Consumable:take_ownership('wraith', {
+        use = function(self, card, area, copier)
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = 0.4,
+                func = function()
+                    play_sound('timpani')
+                    local new_rare = create_card('Joker', G.jokers, nil, 0.99, nil, nil, nil, 'wra')
+                    new_rare:add_to_deck()
+                    G.jokers:emplace(new_rare)
+                    card:juice_up(0.3, 0.5)
+                    if G.GAME.dollars ~= 0 and SMODS.spectral_downside(card) then
+                        ease_dollars(-G.GAME.dollars, true)
+                    end
+                    return true
+                end
+            }))
+            delay(0.6)
+        end
+    })
+
+    SMODS.Consumable:take_ownership('immolate', {
+        use = function(self, card, area, copier)
+            local destroyed_cards = {}
+            local downside = SMODS.spectral_downside(card)
+            if downside then
+                local temp_hand = {}
+                for _, v in ipairs(G.hand.cards) do
+                    temp_hand[#temp_hand+1] = v
+                end
+                table.sort(temp_hand, function (a, b) return not a.playing_card or not b.playing_card or a.playing_card < b.playing_card end)
+                pseudoshuffle(temp_hand, pseudoseed('immolate'))
+
+                for i = 1, card.ability.extra.destroy do
+                    destroyed_cards[#destroyed_cards+1] = temp_hand[i]
+                end
+            end
+
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = downside and 0.4 or 0,
+                func = function()
+                    play_sound('tarot1')
+                    card:juice_up(0.3, 0.5)
+                    return true
+                end
+            }))
+
+            if downside then
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    delay = 0.1,
+                    func = function()
+                        for i=#destroyed_cards, 1, -1 do
+                            local card = destroyed_cards[i]
+                            if SMODS.shatters(card) then
+                                card:shatter()
+                            else
+                                card:start_dissolve(nil, i == #destroyed_cards)
+                            end
+                        end
+                        return true
+                    end
+                }))
+                delay(0.5)
+            end
+
+            ease_dollars(card.ability.extra.dollars)
+
+            delay(0.3)
+
+            if downside then
+                SMODS.calculate_context({ remove_playing_cards = true, removed = destroyed_cards })
+            end
+        end
+    })
+
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.DeckSkin
     -------------------------------------------------------------------------------------------------
@@ -3603,7 +3810,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         flame_handler = function(self)
             return {
-                id = 'flame_'..self.key, 
+                id = 'flame_'..self.key,
                 arg_tab = self.key..'_flames',
                 colour = self.colour,
                 accent = self.lick
@@ -3621,7 +3828,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if amount then
                 if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
                 self:modify(amount)
-                card_eval_status_text(scored_card, 'extra', nil, percent, nil, 
+                card_eval_status_text(scored_card, 'extra', nil, percent, nil,
                     {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, colour = self.colour})
                 return true
             end
@@ -3798,7 +4005,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "multiply",
         func = function(self, chips, mult, flames) return chips * mult end,
         text = 'X'
-    } 
+    }
 
     SMODS.Scoring_Calculation {
         key = "add",
