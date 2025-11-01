@@ -3864,6 +3864,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                             {key = "enter_blind", triggers = {selected = true}},
                             {key = "evaluate_round", triggers = {defeated = true}},
                             {key = "enter_shop", triggers = {cashed_out = true}},
+                            {key = "enter_blind_tree", triggers = {shop_ended = true}},
                             {key = "create_tag", triggers = {skipped = true}},
                         },
                         blinds = {"bl_small"},
@@ -3876,6 +3877,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                             {key = "enter_blind", triggers = {selected = true}},
                             {key = "evaluate_round", triggers = {defeated = true}},
                             {key = "enter_shop", triggers = {cashed_out = true}},
+                            {key = "enter_blind_tree", triggers = {shop_ended = true}},
                             {key = "create_tag", triggers = {skipped = true}},
                         },
                         blinds = {"bl_big"},
@@ -3888,6 +3890,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                             {key = "enter_blind", triggers = {selected = true}},
                             {key = "ante_up", triggers = {defeated = true}},
                             {key = "evaluate_round", triggers = {defeated = true}},
+                            {key = "enter_blind_tree", triggers = {shop_ended = true}},
                             {key = "next_blind_tree", triggers = {cashed_out = true}},
                             {key = "enter_shop", triggers = {cashed_out = true}},
                         },
@@ -4132,7 +4135,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "enter_blind",
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Change game state to bt_node:get_blind()
-            SMODS.enter_state(SMODS.STATES.BLIND, {key = bt_node:get_blind()})
+            SMODS.enter_state(SMODS.STATES.BLIND, {key = bt_node:get_blind(), trigger_callbacks = true})
             return true
         end,
         create_ui = function (self, bt_node, bt_node_UIE)
@@ -4148,7 +4151,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "evaluate_round",
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Create cashout and evaluate round 
-            SMODS.enter_state(SMODS.STATES.ROUND_EVAL)
+            SMODS.enter_state(SMODS.STATES.ROUND_EVAL, {trigger_callbacks = true})
             return true
         end,
         create_ui = function (self, bt_node, bt_node_UIE)
@@ -4164,7 +4167,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "enter_shop",
         on_callback = function (self, bt_node, cb, trigger_type)
             -- Change game state to shop
-            SMODS.enter_state(SMODS.STATES.SHOP)
+            SMODS.enter_state(SMODS.STATES.SHOP, {trigger_callbacks = true})
             return true
         end,
         create_ui = function (self, bt_node, bt_node_UIE)
@@ -4175,6 +4178,18 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     function SMODS.GUI.bt_callback_enter_shop(bt_node, bt_node_UIE)
         return {}
     end
+    
+    SMODS.BTNodeCallback {
+        key = "enter_blind_tree",
+        on_callback = function (self, bt_node, cb, trigger_type)
+            -- Change game state to blind select
+            SMODS.enter_state(SMODS.STATES.BLIND_SELECT)
+            return true
+        end,
+        create_ui = function (self, bt_node, bt_node_UIE)
+            return nil
+        end
+    }
 
     SMODS.BTNodeCallback {
         key = "ante_up",
@@ -4409,7 +4424,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     -- Cash Out -> Functionality is handled by custom SMODS.GameStates and BTNodeCallbacks
     function G.FUNCS.cash_out(e)
-        SMODS.get_active_bt_node():trigger_callbacks("cashed_out")
+        if SMODS.get_current_state().args.trigger_callbacks then
+            SMODS.get_active_bt_node():trigger_callbacks("cashed_out")
+        end
     end
 
     -- TODO : move to lovely patches
@@ -4648,7 +4665,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                         trigger = 'after',
                         delay = 0.3,
                         func = function()
-                            SMODS.enter_state(SMODS.STATES.ROUND_EVAL)
+                            if SMODS.get_current_state().args.trigger_callbacks then
+                                SMODS.get_active_bt_node():trigger_callbacks("defeated")
+                            end
                             G.STATE_COMPLETE = false
 
                             if G.GAME.round_resets.blind == G.P_BLINDS.bl_small then
@@ -4694,8 +4713,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     
     end
 
-    -- Toggle Shop -> Replaced by SMODS.GameStates.SHOP:on_exit()
-    function G.FUNCS.toggle_shop(e) end
+    -- Toggle Shop -> Functionality is handled by custom SMODS.GameStates and BTNodeCallbacks
+    function G.FUNCS.toggle_shop(e)
+        if SMODS.get_current_state().args.trigger_callbacks then
+            SMODS.get_active_bt_node():trigger_callbacks("shop_ended")
+        end
+    end
 
     -- Select Blind -> Replaced by SMODS.GameStates.BLIND:on_enter()
     function G.FUNCS.select_blind(e) end
@@ -4731,6 +4754,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.default_state = SMODS.STATES.BLIND_SELECT
 
     SMODS.state_stack = {}
+
+    function SMODS.get_current_state()
+        return #SMODS.state_stack > 0 and SMODS.state_stack[#SMODS.state_stack]
+    end
 
     function SMODS.push_to_state_stack(state, args)
         table.insert(SMODS.state_stack, {state=state, args=args})
