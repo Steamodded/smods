@@ -747,3 +747,26 @@ function SMODS.check_looping_context(eval_object) end
 ---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
 ---@return boolean
 function SMODS.challenge_is_unlocked(challenge, k) end
+
+---Check if a scoring parameter can be upgraded in a hand.
+---@param param_key string
+---@param hand_key? string If not given, function returns true.
+---@return boolean
+function SMODS.scoring_parameter_is_upgradeable(param_key, hand_key) end
+
+---Begins the hand level-up animation by setting initial text for scoring parameters and the hand level.
+---@param args table|{hand: string?, hand_text: string?, parameter_text: table<string, string>?, all_parameter_text: string?, level_text: string}
+---@return nil
+function SMODS.start_level_up_hand_animation(args) end
+
+---Update the text of each scoring parameter one at a time\
+---(in the order of `G.GAME.current_scoring_calculation.parameters`),\
+---then update the text of the displayed hand level.
+---@param args table|{hand: string?, card: Card?, parameter_status_text: table<string, string>?, all_parameter_status_text: string?, level_text: string}
+---@return nil
+function SMODS.level_up_hand_animation(args) end
+
+---Ends the hand level-up animation by re-setting default values as displayed text for scoring parameters, and hiding the hand level.
+---@param args table
+---@return nil
+function SMODS.end_level_up_hand_animation(args) end
