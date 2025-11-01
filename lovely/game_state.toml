@@ -16,7 +16,7 @@ pattern = '''
 position = 'after'
 match_indent = true
 payload = '''
-if self.STATE and SMODS.GameStates[self.STATE] then
+if SMODS.GameStates[self.STATE] then
     SMODS.GameStates[self.STATE]:update(dt)
 end
 '''

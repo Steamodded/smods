@@ -4550,6 +4550,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
 
     SMODS.STATES = {
+        BOOSTER_OPENED = "BOOSTER_OPENED",
+        REDEEM_VOUCHER = "REDEEM_VOUCHER",
         SHOP = "SHOP",
         ROUND_EVAL = "ROUND_EVAL",
         BLIND = "BLIND",
@@ -4620,6 +4622,17 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         on_exit = function (self, args, from_hold) end,
         update = function (self, dt) end,
         ease_background_colour = nil, -- function
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.BOOSTER_OPENED,
+        update = function (self, dt)
+            SMODS.OPENED_BOOSTER.config.center:update_pack(dt)
+        end
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.REDEEM_VOUCHER
     }
 
     SMODS.GameState {

@@ -1257,7 +1257,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         SMODS.calculate_context({
             money_altered = true,
             amount = amount,
-            from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
+            from_shop = (G.STATE == SMODS.STATES.SHOP or G.STATE == SMODS.STATES.BOOSTER_OPENED or G.STATE == SMODS.STATES.REDEEM_VOUCHER) or nil,
             from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
             from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
         })
@@ -2629,7 +2629,7 @@ function SMODS.update_hand_limit_text(play, discard)
 end
 
 function SMODS.draw_cards(hand_space)
-    if not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED) and
+    if not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) and
         G.hand.config.card_limit <= 0 and #G.hand.cards == 0 then 
         G.STATE = G.STATES.GAME_OVER; G.STATE_COMPLETE = false 
         return true
@@ -3041,7 +3041,7 @@ function ease_dollars(mod, instant)
     SMODS.calculate_context({
         money_altered = true,
         amount = mod,
-        from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
+        from_shop = (G.STATE == SMODS.STATES.SHOP or G.STATE == SMODS.STATES.BOOSTER_OPENED or G.STATE == SMODS.STATES.REDEEM_VOUCHER) or nil,
         from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
         from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
     })
