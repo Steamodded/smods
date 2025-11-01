@@ -1122,7 +1122,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         delete = function(self)
             G.P_CENTERS[self.key] = nil
-            SMODS.remove_pool(G.P_CENTER_POOLS[self.set], self.key)
+            if not self.omit then SMODS.remove_pool(G.P_CENTER_POOLS[self.set], self.key) end
             for k, v in pairs(SMODS.ObjectTypes) do
                 if ((self.pools and self.pools[k]) or (v.cards and v.cards[self.key])) then
                     v:delete_card(self)
@@ -1720,6 +1720,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 self.order = 30 + i
             end
             G.P_BLINDS[self.key] = self
+            if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
         end
     }
     SMODS.Blind:take_ownership('eye', {
@@ -1750,6 +1751,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         get_loc_debuff_text = function() return G.GAME.blind.loc_debuff_text end,
     })
+
+    SMODS.Blinds.modifies_draw = {
+        bl_serpent = true
+    }
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Seal
@@ -2994,6 +2999,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
         end,
         apply = function(self, card, val)
+            if not val and card.ability[self.key] and type(card.ability[self.key]) == 'table' then
+                if card.ability[self.key].card_limit then card.ability.card_limit = card.ability.card_limit - card.ability[self.key].card_limit end
+                if card.ability[self.key].extra_slots_used then card.ability.extra_slots_used = card.ability.extra_slots_used - card.ability[self.key].extra_slots_used end
+            end
             card.ability[self.key] = val
             if val and self.config and next(self.config) then
                 card.ability[self.key] = {}
@@ -3002,6 +3011,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                         card.ability[self.key][k] = copy_table(v)
                     else
                         card.ability[self.key][k] = v
+                        if k == 'card_limit' or k == 'extra_slots_used' then
+                            card.ability[k] = (card.ability[k] or 0) + v
+                        end
                     end
                 end
             end
