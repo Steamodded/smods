@@ -4,7 +4,7 @@ dump_lua = true
 priority = -10
 
 
-# game:update() inject SMODS.GameStates
+# game.lua : Game:update() : inject SMODS.GameStates
 [[patches]]
 [patches.pattern]
 target = 'game.lua'
@@ -20,3 +20,12 @@ if SMODS.GameStates[self.STATE] then
     SMODS.GameStates[self.STATE]:update(dt)
 end
 '''
+
+# functions/button_callbacks.lua : G.FUNCS.use_card() : update logic
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = '''if card.ability.set == 'Booster' and not nosave and G.STATE == G.STATES.SHOP then'''
+position = 'at'
+match_indent = true
+payload = '''if card.ability.set == 'Booster' and not nosave and G.STATE == SMODS.STATES.SHOP then'''
