@@ -531,7 +531,7 @@ function SMODS.applied_stakes_UI(i, stake_desc_rows, num_added)
 							_full_desc},}}
 				end
 				num_added.val = num_added.val + 1
-				num_added.val = SMODS.applied_stakes_UI(G.P_STAKES[v].stake_level, stake_desc_rows,
+				SMODS.applied_stakes_UI(G.P_STAKES[v].stake_level, stake_desc_rows,
 					num_added)
 			end
 		end
