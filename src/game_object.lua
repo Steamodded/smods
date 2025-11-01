@@ -620,20 +620,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.P_STAKES = {}
         end,
         inject = function(self)
+            G.P_STAKES[self.key] = self
+            self.count = #G.P_CENTER_POOLS[self.set] + 1
+            self.order = self.count
+                SMODS.insert_pool(G.P_CENTER_POOLS.Stake, self)
             if not self.injected then
-                -- Inject stake in the correct spot
-                self.count = #G.P_CENTER_POOLS[self.set] + 1
-                self.order = self.count
-                if self.above_stake and G.P_STAKES[self.above_stake] then
-                    self.order = G.P_STAKES[self.above_stake].order + 1
-                end
-                for _, v in pairs(G.P_STAKES) do
-                    if v.order >= self.order then
-                        v.order = v.order + 1
-                    end
-                end
-                G.P_STAKES[self.key] = self
-                table.insert(G.P_CENTER_POOLS.Stake, self)
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
                     G.shared_stickers[self.key:sub(7)] = Sprite(0, 0, G.CARD_W, G.CARD_H,
@@ -642,15 +633,24 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 else
                     G.sticker_map[self.key] = nil
                 end
-            else
-                G.P_STAKES[self.key] = self
-                SMODS.insert_pool(G.P_CENTER_POOLS.Stake, self)
+            end
+            -- Sorts stake into the correct spot
+            if self.above_stake and G.P_STAKES[self.above_stake] then
+                self.order = G.P_STAKES[self.above_stake].order + 1
+            end
+            for _, v in pairs(G.P_STAKES) do
+                if v.order >= self.order then
+                    v.order = v.order + 1
+                end
             end
             self.injected = true
             -- should only need to do this once per injection routine
         end,
         post_inject_class = function(self)
             table.sort(G.P_CENTER_POOLS[self.set], function(a, b) return a.order < b.order end)
+            for i,v in ipairs(G.P_CENTER_POOLS[self.set]) do
+                G.P_STAKES[v.key].order = i
+            end
             for _,stake in pairs(G.P_CENTER_POOLS.Stake) do
                 local applied = SMODS.build_stake_chain(stake)
                 stake.stake_level = 0
