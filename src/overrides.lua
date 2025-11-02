@@ -508,8 +508,6 @@ end
 --#endregion
 --#region stakes UI
 function SMODS.applied_stakes_UI(i, stake_desc_rows, num_added)
-	print("i == "..i)
-	print("associated stake: "..G.P_CENTER_POOLS['Stake'][i].key)
 	if num_added == nil then num_added = { val = 0 } end
 	if G.P_CENTER_POOLS['Stake'][i].applied_stakes then
 		for _, v in pairs(G.P_CENTER_POOLS['Stake'][i].applied_stakes) do
