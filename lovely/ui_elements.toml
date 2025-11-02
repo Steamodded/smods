@@ -173,17 +173,9 @@ payload = '''
             _draw()
             return
         elseif send then
-            for k, v in ipairs(send) do
+            for _, v in ipairs(send) do
                 local val = v.val or (v.func and v.func(self))
-
-                -- thanks talisman
-                if Talisman and type(val) == "table" and is_number(val) then
-                	if val > to_big(1e300) then
-                		val = 1e300
-                	else
-                		val = val:tonumber()
-                	end
-                end
+                -- TARGET: Convert v.val to a number if your mod adds an alternate number data type (ala Talisman)
 
                 G.SHADERS[shader]:send(v.name, val)
             end
