@@ -793,7 +793,7 @@ function convert_save_data()
         end
         v.losses_by_key = {}
         for index, number in pairs(v.losses or {}) do
-            if SMODS.stake_from_index(index) == "error" then
+            if SMODS.stake_from_index(index) ~= "error" then
                 v.losses_by_key[SMODS.stake_from_index(index)] = number
             end
         end
@@ -801,13 +801,13 @@ function convert_save_data()
     for k, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
         v.wins_by_key = {}
         for index, number in pairs(v.wins or {}) do
-            if SMODS.stake_from_index(index) == "error" then
+            if SMODS.stake_from_index(index) ~= "error" then
                 v.wins_by_key[SMODS.stake_from_index(index)] = number
             end
         end
         v.losses_by_key = {}
         for index, number in pairs(v.losses or {}) do
-            if SMODS.stake_from_index(index) == "error" then
+            if SMODS.stake_from_index(index) ~= "error" then
                 v.losses_by_key[SMODS.stake_from_index(index)] = number
             end
         end
