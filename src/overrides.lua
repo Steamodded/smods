@@ -2062,7 +2062,7 @@ function get_joker_win_sticker(_center, index)
 			if applied[v.order] then
 				_count = _count+1
 				if (v.stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
-					_stake = v.key
+					_stake = G.sticker_map[v.key] and v.key or _stake
 				end
 			end
 		end
