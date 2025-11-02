@@ -3026,6 +3026,51 @@ function SMODS.challenge_is_unlocked(challenge, k)
     return challenge_unlocked
 end
 
+function SMODS.stake_is_unlocked(stake_key, deck_key)
+    if not (SMODS.Stakes[stake_key] and G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key]) then return stake_key == SMODS.stake_from_index(1) end
+    if G.PROFILES[G.SETTINGS.profile].all_unlocked then return true end
+    local stake = SMODS.Stakes[stake_key]
+    if stake.unlocked then return true end
+    local unlocked = true
+    local wins = G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key].wins_by_key
+    for i,v in ipairs(stake.applied_stakes) do
+        if not (wins[v] and wins[v] > 0) then
+            unlocked = false
+        end
+    end
+    return unlocked
+end
+
+function SMODS.next_stake(stake_key, deck_key, ignore_unlock)
+    if not (stake_key and SMODS.Stakes[stake_key]) then return SMODS.stake_from_index(1) end
+    local next_stake
+    local looking_for_won = true
+    local wins = (G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key] or {}).wins_by_key
+    for k,v in pairs(SMODS.Stakes) do
+        local is_next = false
+        local unlocked = ignore_unlock or SMODS.stake_is_unlocked(k, deck_key)
+        if unlocked and v.applied_stakes then
+            for ii,vv in ipairs(v.applied_stakes) do
+                if vv == stake_key then
+                    is_next = true
+                    break
+                end
+            end
+        end
+        if is_next then
+            if not next_stake then
+                next_stake = v
+            elseif looking_for_won and (not wins[v.key] or v.order > next_stake.order) then
+                next_stake = v
+            elseif v.order < next_stake.order then
+                next_stake = v
+            end
+            looking_for_won = looking_for_won and not not (wins or {})[v.key]
+        end
+    end
+    return (next_stake or SMODS.Stakes.stake_white).key
+end
+
 function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
     if specific_vars and specific_vars.bonus_x_chips then
         localize{type = 'other', key = 'card_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_x_chips}}
