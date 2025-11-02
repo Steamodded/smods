@@ -2110,7 +2110,7 @@ function get_deck_win_sticker(_center)
 		local _stake = nil
 		for key, _ in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage[_center.key].wins_by_key) do
 			if (G.P_STAKES[key] and G.P_STAKES[key].stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
-				_stake = key
+				_stake = G.sticker_map[key] and key or _stake
 			end
 		end
 		if _stake then return G.sticker_map[_stake] end
