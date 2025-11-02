@@ -174,7 +174,7 @@ payload = '''
             return
         elseif send then
             for _, v in ipairs(send) do
-                local val = v.val or (v.func and v.func(self))
+                local val = v.val or (v.func and v.func(self)) or v.ref_table[v.ref_value]
                 -- TARGET: Convert v.val to a number if your mod adds an alternate number data type (ala Talisman)
 
                 G.SHADERS[shader]:send(v.name, val)
