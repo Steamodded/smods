@@ -189,6 +189,8 @@ payload = '''
             G.SHADERS[shader]:send(prefixless_key, args)
             G.SHADERS[shader]:send("uibox_size", {self.VT.w, self.VT.h})
             G.SHADERS[shader]:send("uibox_pos", {self.VT.x, self.VT.y})
+            G.SHADERS[shader]:send("uibox_rot", self.VT.r)
+            G.SHADERS[shader]:send("uibox_scale", self.VT.scale)
             G.SHADERS[shader]:send("screen_scale", G.TILESCALE*G.TILESIZE*G.CANV_SCALE)
             
             -- placeholder values
