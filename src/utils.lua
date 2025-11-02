@@ -785,29 +785,32 @@ end
 
 function convert_save_data()
     for k, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
-        local first_pass = not v.wins_by_key and not v.losses_by_key
-        v.wins_by_key = v.wins_by_key or {}
+        v.wins_by_key = {}
         for index, number in pairs(v.wins or {}) do
-            if index > 8 and not first_pass then break end
-            v.wins_by_key[SMODS.stake_from_index(index)] = number
+            if SMODS.stake_from_index(index) ~= "error" then
+                v.wins_by_key[SMODS.stake_from_index(index)] = number 
+            end
         end
-        v.losses_by_key = v.losses_by_key or {}
+        v.losses_by_key = {}
         for index, number in pairs(v.losses or {}) do
-            if index > 8 and not first_pass then break end
-            v.losses_by_key[SMODS.stake_from_index(index)] = number
+            if SMODS.stake_from_index(index) == "error" then 
+                v.losses_by_key[SMODS.stake_from_index(index)] = number    
+            end
         end
     end
     for k, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
         local first_pass = not v.wins_by_key and not v.losses_by_key
-        v.wins_by_key = v.wins_by_key or {}
+        v.wins_by_key = {}
         for index, number in pairs(v.wins or {}) do
-            if index > 8 and not first_pass then break end
-            v.wins_by_key[SMODS.stake_from_index(index)] = number
+            if SMODS.stake_from_index(index) == "error" then 
+                v.wins_by_key[SMODS.stake_from_index(index)] = number
+            end
         end
-        v.losses_by_key = v.losses_by_key or {}
+        v.losses_by_key = {}
         for index, number in pairs(v.losses or {}) do
-            if index > 8 and not first_pass then break end
-            v.losses_by_key[SMODS.stake_from_index(index)] = number
+            if SMODS.stake_from_index(index) == "error" then 
+                v.losses_by_key[SMODS.stake_from_index(index)] = number
+            end
         end
     end
     G:save_settings()
