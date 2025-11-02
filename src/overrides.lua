@@ -508,13 +508,15 @@ end
 --#endregion
 --#region stakes UI
 function SMODS.applied_stakes_UI(i, stake_desc_rows, num_added)
+	print("i == "..i)
+	print("associated stake: "..G.P_CENTER_POOLS['Stake'][i].key)
 	if num_added == nil then num_added = { val = 0 } end
 	if G.P_CENTER_POOLS['Stake'][i].applied_stakes then
 		for _, v in pairs(G.P_CENTER_POOLS['Stake'][i].applied_stakes) do
 			if v ~= "white" then
 				--todo: manage this with pages
 				if num_added.val < 8 then
-					local i = G.P_STAKES[v].stake_level
+					local i = G.P_STAKES[v].order
 					local _stake_desc = {}
 					local _stake_center = G.P_CENTER_POOLS.Stake[i]
 					localize { type = 'descriptions', key = _stake_center.key, set = _stake_center.set, nodes = _stake_desc }
@@ -531,7 +533,7 @@ function SMODS.applied_stakes_UI(i, stake_desc_rows, num_added)
 							_full_desc},}}
 				end
 				num_added.val = num_added.val + 1
-				SMODS.applied_stakes_UI(G.P_STAKES[v].stake_level, stake_desc_rows,
+				SMODS.applied_stakes_UI(G.P_STAKES[v].order, stake_desc_rows,
 					num_added)
 			end
 		end
