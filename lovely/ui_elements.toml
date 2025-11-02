@@ -149,3 +149,99 @@ if deck_center.check_for_unlock and type(deck_center.check_for_unlock) == "funct
 end
 """
 match_indent = true
+
+## UIBox shaders
+# UIElement:draw_pixellated_rect()
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+pattern = '''love.graphics.polygon((_type == 'line' or _type == 'line_emboss') and 'line' or "fill", self.pixellated_rect[_type].vertices)'''
+position = "at"
+payload = '''
+    local function _draw()
+        -- don't duplicate the line
+        love.graphics.polygon((_type == 'line' or _type == 'line_emboss') and 'line' or "fill", self.pixellated_rect[_type].vertices)
+    end
+
+    local function _draw_layer(shader, send)
+        local args = {
+            G.TIMERS.REAL/28,
+            G.TIMERS.REAL
+        }
+        
+        if shader == "none" or shader == "dissolve" then
+            _draw()
+            return
+        elseif send then
+            for k, v in ipairs(send) do
+                local val = v.val or (v.func and v.func(self))
+
+                -- thanks talisman
+                if Talisman and type(val) == "table" and is_number(val) then
+                	if val > to_big(1e300) then
+                		val = 1e300
+                	else
+                		val = val:tonumber()
+                	end
+                end
+
+                G.SHADERS[shader]:send(v.name, val)
+            end
+        elseif shader == "vortex" then
+            G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
+        else
+            local prefix = SMODS.Shaders[shader] and SMODS.Shaders[shader].mod and SMODS.Shaders[shader].mod.prefix
+            local prefixless_key = prefix and string.sub(shader, #prefix + 2) or shader
+
+            -- actually supported
+            G.SHADERS[shader]:send(prefixless_key, args)
+            G.SHADERS[shader]:send("uibox_size", {self.VT.w, self.VT.h})
+            G.SHADERS[shader]:send("uibox_pos", {self.VT.x, self.VT.y})
+            G.SHADERS[shader]:send("screen_scale", G.TILESCALE*G.TILESIZE*G.CANV_SCALE)
+            
+            -- placeholder values
+            G.SHADERS[shader]:send("time",123.33412*(12.5123152)%3000)
+            -- G.SHADERS[shader]:send('mouse_screen_pos', {0,0})
+            -- G.SHADERS[shader]:send('hovering', 0)
+            -- G.SHADERS[shader]:send("shadow", false)
+
+            -- i might add support for dissolving ui elements later because it'd be funny
+            -- G.SHADERS[shader]:send("dissolve", 0)
+            -- G.SHADERS[shader]:send("burn_colour_1", G.C.CLEAR)
+            -- G.SHADERS[shader]:send("burn_colour_2", G.C.CLEAR)
+        end
+
+        love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
+        _draw()
+        love.graphics.setShader()
+    end
+
+    if self.config.shader then
+        -- simple single shader
+        if type(self.config.shader) == "string" then
+            _draw_layer(self.config.shader)
+
+        -- more complex shader calls
+        elseif type(self.config.shader) == "table" then
+            -- one shader pass with a custom send
+            if self.config.shader.shader then
+                _draw_layer(self.config.shader.shader, self.config.shader.send)
+
+            -- list of shaders
+            elseif #shader > 0 then
+                for _, v in ipairs(self.config.shader) do
+                    if type(v) == "string" then
+                        _draw_layer(v.shader)
+                    elseif type(v) == "table" then
+                        _draw_layer(v.shader, v.send)
+                    end
+                end
+            end
+        end
+
+    -- no shader
+    else
+        _draw()
+    end
+'''
+match_indent = true
