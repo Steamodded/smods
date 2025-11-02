@@ -1811,7 +1811,6 @@ function Card:set_edition(edition, immediate, silent, delay)
 	if self.edition then
 		self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
 		self.ability.extra_slots_used = self.ability.extra_slots_used - (self.edition.extra_slots_used or 0)
-		if self.area then self.area:handle_card_limit(-1 * (self.edition.card_limit or 0), -1 * (self.edition.extra_slots_used or 0)) end
 	end
 
 	local old_edition = self.edition
@@ -1950,7 +1949,6 @@ function Card:set_edition(edition, immediate, silent, delay)
 
 	self.ability.card_limit = self.ability.card_limit + (self.edition.card_limit or 0)
 	self.ability.extra_slots_used = self.ability.extra_slots_used + (self.edition.extra_slots_used or 0)
-	if self.area then self.area:handle_card_limit(self.edition.card_limit, self.edition.extra_slots_used) end
 
 
 	if G.jokers and self.area == G.jokers then
@@ -2260,6 +2258,7 @@ end
 local defeat = Blind.defeat
 function Blind:defeat(silent)
 	defeat(self, silent)
+	G.hand.config.card_limits.blind_restriction = nil
 	SMODS.calculate_context({ blind_defeated = true })
 end
 
@@ -2407,7 +2406,18 @@ local set_ability = Card.set_ability
 function Card:set_ability(center, initial, delay_sprites)
 	local old_center = self.config.center
 	set_ability(self, center, initial, delay_sprites)
-	if not initial and G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT then
+	if not initial and (G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT) then
 		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
 	end
+end
+
+local add_tag_ref = add_tag
+function add_tag(_tag)
+	_tag = _tag or {}
+	_tag.key = _tag.key or 'unknown'
+	assert(G.P_TAGS[_tag.key], ("Could not find tag \"%s\"."):format(_tag.key))
+	if not (_tag.is and _tag:is(Tag)) then
+		_tag = Tag(_tag.key, nil, _tag.blind_type)
+	end
+	add_tag_ref(_tag)
 end

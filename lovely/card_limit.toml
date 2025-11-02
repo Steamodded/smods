@@ -16,14 +16,13 @@ payload = '''
 self.config = setmetatable({card_limits = {card_limit}}, {
     __index = function(t, key)
         if key == "card_limit" then
-            return t.card_limits.card_limit        
+            return (t.card_limits.total_slots or 0) - (t.card_limits.extra_slots_used or 0)
         end
     end,
     __newindex = function(t, key, value)
         if key == 'card_limit' then
-            t.true_card_limit = t.true_card_limit or 0
-            if not t.no_true_limit then rawset(t, 'true_card_limit', math.max(0, t.true_card_limit + value - (t.card_limits.card_limit or 0))) end
-            rawset(t.card_limits, key, value)
+            if not t.card_limits.base then rawset(t.card_limits, 'base', value) end
+            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0))
         else
             rawset(t, key, value)
         end
@@ -46,14 +45,13 @@ payload = '''
 self.config = setmetatable(cardAreaTable.config, {
     __index = function(t, key)
         if key == "card_limit" then
-            return t.card_limits.card_limit        
+            return (t.card_limits.total_slots or 0) - (t.card_limits.extra_slots_used or 0)
         end
     end,
     __newindex = function(t, key, value)
         if key == 'card_limit' then
-            t.true_card_limit = t.true_card_limit or 0
-            if not t.no_true_limit then rawset(t, 'true_card_limit', math.max(0, t.true_card_limit + value - (t.card_limits.card_limit or 0))) end
-            rawset(t.card_limits, key, value)
+            if not t.card_limits.base then rawset(t.card_limits, 'base', value) end
+            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0))
         else
             rawset(t, key, value)
         end
@@ -73,41 +71,11 @@ function CardArea:change_size(delta)
 '''
 payload = '''
     if true then
-        self:handle_card_limit(delta)
+        self.config.card_limits.mod = (self.config.card_limits.mod or 0) + delta
         return
     end
 '''
 
-
-# CardArea:init()
-# Add real_card_limit parameter
-[[patches]]
-[patches.pattern]
-target = 'cardarea.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-self.config.card_limit = config.card_limit or 52
-'''
-payload = '''
-self.config.true_card_limit = self.config.card_limit
-'''
-
-
-
-# CardArea:emplace()
-# Modifies card_limit 
-[[patches]]
-[patches.pattern]
-target = 'cardarea.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-function CardArea:emplace(card, location, stay_flipped)
-'''
-payload = '''
-    self:handle_card_limit(card.ability.card_limit, card.ability.extra_slots_used)
-'''
 # CardArea:update()
 [[patches]]
 [patches.pattern]
@@ -118,22 +86,10 @@ pattern = '''
 if self == G.deck and self.config.card_limit > #G.playing_cards then self.config.card_limit = #G.playing_cards end
 '''
 payload = '''
-if self == G.deck and (self.config.card_limit ~= #G.playing_cards or self.config.true_card_limit ~= #G.playing_cards) then self.config.card_limit = #G.playing_cards; self.config.true_card_limit = #G.playing_cards end
-'''
-
-
-
-# CardArea:remove_card()
-[[patches]]
-[patches.pattern]
-target = 'cardarea.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-card:remove_from_area()
-'''
-payload = '''
-self:handle_card_limit(-1 * (card.ability.card_limit or 0), -1 * (card.ability.extra_slots_used or 0))
+if self == G.deck and (self.config.card_limit ~= #G.playing_cards or self.config.total_slots ~= #G.playing_cards) then
+    self.config.card_limit = #G.playing_cards
+    self.config.card_limits.total_slots = #G.playing_cards
+end
 '''
 
 # Card:add_to_deck()
@@ -192,10 +148,12 @@ target = 'cardarea.lua'
 match_indent = true
 position = 'at'
 pattern = '''
+self.config.temp_limit = math.max(#self.cards, self.config.card_limit)
 self.config.card_count = #self.cards
 '''
 payload = '''
-self.config.card_count = self:count_extra_slots_used(self.cards)
+self:handle_card_limit()
+self.config.temp_limit = math.max(#self.cards, self.config.card_limit or 0)
 '''
 
 # CardArea:draw()
@@ -209,7 +167,7 @@ pattern = '''
 {n=G.UIT.T, config={ref_table = self.config, ref_value = 'card_limit', scale = 0.3, colour = G.C.WHITE}},
 '''
 payload = '''
-{n=G.UIT.T, config={ref_table = self.config, ref_value = 'true_card_limit', scale = 0.3, colour = G.C.WHITE}},
+{n=G.UIT.T, config={ref_table = self.config.card_limits, ref_value = 'total_slots', scale = 0.3, colour = G.C.WHITE}},
 '''
 
 # Add negative info_queue support
@@ -271,12 +229,16 @@ if first_pass and not (_c.set == 'Edition') and badges then
 '''
 payload = '''
 if card and card.ability and (card.ability.extra_slots_used or 0) ~= 0 then
-    info_queue[#info_queue + 1] = {set = 'Other', key = 'generic_extra_slots', vars = {card.ability.extra_slots_used + 1}}
+    local str = 'generic_extra_slots'
+    if card.ability.set == 'Default' or card.ability.set == 'Enhanced' then str = str .. '_pc' end
+    info_queue[#info_queue + 1] = {set = 'Other', key = str, vars = {card.ability.extra_slots_used + 1}}
 end
 if card and card.ability and (card.ability.card_limit or 0) ~= 0 then
     if not (card.edition and card.edition.card_limit == card.ability.card_limit) then
         local amount = card.ability.card_limit - (card.edition and card.edition.card_limit or 0)
-        info_queue[#info_queue + 1] = {set = 'Other', key = amount == 1 and 'generic_card_limit' or 'generic_card_limit_plural', vars = {localize({type='variable', key= amount > 0 and 'a_chips' or 'a_chips_minus', vars ={math.abs(amount)}})}}
+        local str = 'generic_card_limit'
+        if card.ability.set == 'Default' or card.ability.set == 'Enhanced' then str = str .. '_pc' end
+        info_queue[#info_queue + 1] = {set = 'Other', key = amount == 1 and str or str..'_plural', vars = {localize({type='variable', key= amount > 0 and 'a_chips' or 'a_chips_minus', vars ={math.abs(amount)}})}}
     end
 end
 '''
@@ -291,7 +253,7 @@ pattern = "local hand_space = e or*"
 position = "at"
 payload = """local hand_space = e
 local cards_to_draw = {}
-if not hand_space then
+local space_taken = 0
     local limit = G.hand.config.card_limit - #G.hand.cards - (SMODS.cards_to_draw or 0)
     local unfixed = not G.hand.config.fixed_limit
     local n = 0
@@ -302,11 +264,46 @@ if not hand_space then
         else    
             limit = limit - 1 + mod
             table.insert(cards_to_draw, card)
+            space_taken = space_taken + (1 - mod)
             if limit <= 0 then break end
         end
         n = n + 1
     end
     hand_space = #cards_to_draw
-end
 """
+match_indent = true
+
+# Handle The Serpent blind drawing
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+hand_space = math.min(#G.deck.cards, 3)
+'''
+payload = '''
+G.hand.config.card_limits.blind_restriction = hand_space - math.min(#G.deck.cards, 3)
+'''
+# The Serpent only affects refilling the hand
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if G.GAME.blind.name == 'The Serpent' and
+'''
+payload = '''
+    G.STATE == G.STATES.DRAW_TO_HAND and
+'''
+
+
+# check_for_unlock
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if args.type == 'min_hand_size' and G.hand and G.hand.config.card_limit <= card.unlock_condition.extra then"
+position = "at"
+payload = "if args.type == 'min_hand_size' and G.hand and G.hand.config.true_card_limit <= card.unlock_condition.extra then"
 match_indent = true

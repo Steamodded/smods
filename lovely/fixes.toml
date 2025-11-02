@@ -217,7 +217,6 @@ end
 -- handles card_limit/extra_slots_used changes
 self.ability.card_limit = self.ability.card_limit + (center.config.card_limit or 0)
 self.ability.extra_slots_used = self.ability.extra_slots_used + (center.config.extra_slots_used or 0)
-if self.area then self.area:handle_card_limit(center.config.card_limit, center.config.extra_slots_used) end
 
 
 -- reset keys do not persist on ability change
@@ -246,6 +245,17 @@ payload = "self.label = center.label or self.config.card and self.config.card.la
 ### Fix Matador
 
 # These patches have been removed for altering vanilla behavior. Git blame this line to see what they were
+
+### Debuffing boss blinds and Verdant Leaf don't debuff things
+### that aren't a Joker or playing card
+
+## Blind:debuff_card
+[[patches]]
+[patches.regex]
+target = 'blind.lua'
+pattern = '''card\.area ~= G.jokers'''
+position = 'at'
+payload = """card.playing_card"""
 
 ### Fix Crimson Heart
 

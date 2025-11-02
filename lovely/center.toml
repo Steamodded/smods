@@ -387,11 +387,24 @@ pattern = "if not forced_key and soulable and (not G.GAME.banned_keys['c_soul'])
 match_indent = true
 position = 'after'
 payload = '''
+    local soul_total_rate = 0
+    local non_soul_rate = 1
+    local modded_souls = {}
     for _, v in ipairs(SMODS.Consumable.legendaries) do
         if (_type == v.type.key or _type == v.soul_set) and not (G.GAME.used_jokers[v.key] and not SMODS.showman(v.key) and not v.can_repeat_soul) and SMODS.add_to_pool(v) then
-            if pseudorandom('soul_'..v.key.._type..G.GAME.round_resets.ante) > (1 - v.soul_rate) then
-                forced_key = v.key
-            end
+            soul_total_rate = soul_total_rate + v.soul_rate
+            non_soul_rate = non_soul_rate * (1 - v.soul_rate)
+            non_soul_rate = math.max(non_soul_rate, 0)
+            table.insert(modded_souls, v)
+        end
+    end
+    local roll = pseudorandom('soul_smods_'.._type..G.GAME.round_resets.ante)
+    local threshold = 1
+    for _, v in ipairs(modded_souls) do
+        threshold = threshold - v.soul_rate/soul_total_rate * (1-non_soul_rate)
+        if roll > threshold then
+            forced_key = v.key
+            break
         end
     end'''
 
