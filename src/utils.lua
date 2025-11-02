@@ -799,7 +799,6 @@ function convert_save_data()
         end
     end
     for k, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
-        local first_pass = not v.wins_by_key and not v.losses_by_key
         v.wins_by_key = {}
         for index, number in pairs(v.wins or {}) do
             if SMODS.stake_from_index(index) == "error" then
