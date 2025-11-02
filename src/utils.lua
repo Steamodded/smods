@@ -788,31 +788,54 @@ function SMODS.stake_from_index(index)
 end
 
 function convert_save_data()
-    for k, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
-        v.wins_by_key = {}
-        for index, number in pairs(v.wins or {}) do
-            if SMODS.stake_from_index(index) ~= "error" then
-                v.wins_by_key[SMODS.stake_from_index(index)] = number
+    local stakecount = #G.P_CENTER_POOLS.Stake
+    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
+        if v.wins_by_key then
+            v.wins = {}
+            for kk,vv in pairs(v.wins_by_key) do
+                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
+                if index then v.wins[index] = vv end
+            end
+        else
+            v.wins_by_key = {}
+            for index=1,stakecount do
+                v.wins_by_key[SMODS.stake_from_index(index)] = v.wins[index]
             end
         end
-        v.losses_by_key = {}
-        for index, number in pairs(v.losses or {}) do
-            if SMODS.stake_from_index(index) ~= "error" then
-                v.losses_by_key[SMODS.stake_from_index(index)] = number
+        if v.losses_by_key then
+            for kk,vv in pairs(v.losses_by_key) do
+                local index = G.P_STAKES[kk].order
+                if index then v.losses[index] = vv end
+            end
+        else
+            v.losses_by_key = {}
+            for index=1,stakecount do
+                v.losses_by_key[SMODS.stake_from_index(index)] = v.losses[index]
             end
         end
     end
-    for k, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
-        v.wins_by_key = {}
-        for index, number in pairs(v.wins or {}) do
-            if SMODS.stake_from_index(index) ~= "error" then
-                v.wins_by_key[SMODS.stake_from_index(index)] = number
+    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
+        if v.wins_by_key then
+            v.wins = {}
+            for kk,vv in pairs(v.wins_by_key) do
+                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
+                if index then v.wins[index] = vv end
+            end
+        else
+            v.wins_by_key = {}
+            for index=1,stakecount do
+                v.wins_by_key[SMODS.stake_from_index(index)] = v.wins[index]
             end
         end
-        v.losses_by_key = {}
-        for index, number in pairs(v.losses or {}) do
-            if SMODS.stake_from_index(index) ~= "error" then
-                v.losses_by_key[SMODS.stake_from_index(index)] = number
+        if v.losses_by_key then
+            for kk,vv in pairs(v.losses_by_key) do
+                local index = G.P_STAKES[kk].order
+                if index then v.losses[index] = vv end
+            end
+        else
+            v.losses_by_key = {}
+            for index=1,stakecount do
+                v.losses_by_key[SMODS.stake_from_index(index)] = v.losses[index]
             end
         end
     end

@@ -616,6 +616,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             'applied_stakes'
         },
         pre_inject_class = function(self)
+            convert_save_data()
             G.P_CENTER_POOLS[self.set] = {}
             G.P_STAKES = {}
         end,
