@@ -303,7 +303,6 @@ payload = '''
     if self.ability and not initial then
         self.ability.card_limit = self.ability.card_limit - (self.config.center.config.card_limit or 0)
         self.ability.extra_slots_used = self.ability.extra_slots_used - (self.config.center.config.extra_slots_used or 0)
-        if self.area then self.area:handle_card_limit(-1 * (self.config.center.config.card_limit or 0), -1 * (self.config.center.config.extra_slots_used or 0)) end
     end
   
     if self.ability and not initial then
@@ -351,7 +350,6 @@ payload = '''
     if self.seal then
         self.ability.card_limit = self.ability.card_limit - (self.ability.seal.card_limit or 0)
         self.ability.extra_slots_used = self.ability.extra_slots_used - (self.ability.seal.extra_slots_used or 0)
-        if self.area then self.area:handle_card_limit(-1 * (self.ability.seal.card_limit or 0), -1 * (self.ability.seal.extra_slots_used or 0)) end
     end
 '''
 match_indent = true

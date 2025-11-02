@@ -417,10 +417,14 @@ end
 function SMODS.debuff_card(card, debuff, source)
     debuff = debuff or nil
     source = source and tostring(source) or nil
-    if debuff == 'reset' then card.ability.debuff_sources = {}; return end
+    if debuff == 'reset' then
+        sendWarnMessage("SMODS.debuff_card(card, 'reset', source) is deprecated")
+        card.ability.debuff_sources = {};
+        return
+    end
     card.ability.debuff_sources = card.ability.debuff_sources or {}
     card.ability.debuff_sources[source] = debuff
-    card:set_debuff()
+    SMODS.recalc_debuff(card)
 end
 
 -- Recalculate whether a card should be debuffed
@@ -1459,11 +1463,12 @@ SMODS.other_calculation_keys = {
     'stay_flipped', 'prevent_stay_flipped',
     'cards_to_draw',
     'message',
-    'level_up', 'func', 'extra',
+    'level_up', 'func',
     'numerator', 'denominator',
     'modify',
     'no_destroy', 'prevent_trigger',
-    'replace_scoring_name', 'replace_display_name', 'replace_poker_hands'
+    'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
+    'extra'
 }
 SMODS.silent_calculation = {
     saved = true, effect = true, remove = true,
@@ -2889,7 +2894,8 @@ function SMODS.scale_card(card, args)
 
     scaling_message = scaling_message or {
         message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or scalar_value}} or 'k_upgrade_ex'),
-        colour = args.message_colour or G.C.FILTER
+        colour = args.message_colour or G.C.FILTER,
+        delay = args.message_delay,
     }
     if next(scaling_message) and not args.no_message then
         SMODS.calculate_effect(scaling_message, card)
@@ -3164,14 +3170,12 @@ function SMODS.get_select_text(card, pack)
     return select_text
 end
 
-function CardArea:count_extra_slots_used(cards)
-    local slots = #cards
-    if (self.config.type == 'joker' or self.config.type == 'hand') and not self.config.fixed_limit then
-        for _, card in ipairs(cards) do
-            slots = slots + card.ability.extra_slots_used
-        end
+function CardArea:count_property(property)
+    local value = 0
+    for _, card in ipairs(self.cards) do
+        value = value + card.ability[property]
     end
-    return slots
+    return value
 end
 
 function SMODS.should_handle_limit(area)
@@ -3180,55 +3184,47 @@ function SMODS.should_handle_limit(area)
     end
 end
 
-function CardArea:handle_card_limit(card_limit, card_slots)
+function CardArea:handle_card_limit()
     if SMODS.should_handle_limit(self) then
-        card_limit = card_limit or 0
-        card_slots = card_slots or 0
-        if card_limit ~= 0 then
-            G.E_MANAGER:add_event(Event({
-                trigger = 'immediate',
-                func = function()
-                    self.config.card_limit = self.config.card_limit + card_limit
-                    return true
-                end
-            }))
-        end
-        if card_slots ~= 0 then
-            G.E_MANAGER:add_event(Event({
-                trigger = 'immediate',
-                func = function()
-                    self.config.no_true_limit = true
-                    self.config.card_limit = self.config.card_limit - card_slots
-                    self.config.no_true_limit = false
-                    return true
-                end
-            }))
-
-        end
-        if G.hand and self == G.hand and card_limit - card_slots > 0 then
-            if G.STATE == G.STATES.DRAW_TO_HAND and math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards - (SMODS.cards_to_draw or 0)) > 0 then
+        self.config.card_limits.old_slots = self.config.card_limits.total_slots or 0
+        self.config.card_limits.extra_slots = self:count_property('card_limit')
+        self.config.card_limits.total_slots = self:count_property('card_limit') + (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
+        self.config.card_limits.extra_slots_used = self:count_property('extra_slots_used')
+        self.config.card_count = #self.cards + self:count_property('extra_slots_used')
+        
+        if G.hand and self == G.hand and self.config.card_count + (SMODS.cards_to_draw or 0) < self.config.card_limits.total_slots then
+            if G.STATE == G.STATES.DRAW_TO_HAND and not SMODS.blind_modifies_draw(G.GAME.blind.config.blind.key) and not SMODS.draw_queued then
+                SMODS.draw_queued = true
                 G.E_MANAGER:add_event(Event({
                     trigger = 'immediate',
                     func = function()
+                        SMODS.draw_queued = nil
                         G.E_MANAGER:add_event(Event({
                             trigger = 'immediate',
                             func = function()
-                                G.FUNCS.draw_from_deck_to_hand()
+                                if (self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0)) > 0 then
+                                    G.FUNCS.draw_from_deck_to_hand(self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0))                
+                                end
                                 return true
                             end
                         }))
                         return true
                     end
                 }))
-            elseif G.STATE == G.STATES.SELECTING_HAND then G.FUNCS.draw_from_deck_to_hand(math.min(card_limit - card_slots, (self.config.card_limit + card_limit - card_slots) - #self.cards)) end
-            G.E_MANAGER:add_event(Event({
-                trigger = 'immediate',
-                func = function()
-                    save_run()
-                    return true
+            elseif G.STATE == G.STATES.SELECTING_HAND and #G.deck.cards > 0 and self.config.card_limits.old_slots < self.config.card_limits.total_slots then
+                if (self.config.card_limits.total_slots - self.config.card_limits.old_slots) > 0 then
+                    G.FUNCS.draw_from_deck_to_hand((self.config.card_limits.total_slots - self.config.card_limits.old_slots))
                 end
-            }))
-            check_for_unlock({type = 'min_hand_size'})
+            end
+            return
         end
+    else
+        self.config.card_count = #self.cards
+        self.config.card_limits.total_slots = (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
     end
+end
+
+-- Function used to determine whether the current blind modifies the number of cards drawn
+function SMODS.blind_modifies_draw(key)
+    if SMODS.Blinds.modifies_draw[key] then return true end
 end
