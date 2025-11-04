@@ -2551,7 +2551,7 @@ function SMODS.info_queue_desc_from_rows(desc_nodes, empty, maxw)
   }}
 end
 
-function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
+function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, is_internal)
     if not cards[1] then
         if Object.is(cards, Card) then
             cards = {cards}
@@ -2573,6 +2573,7 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
             if card.base.name then
                 playing_cards[#playing_cards + 1] = card
             end
+            card.internal_destruction = is_internal
             card.skip_destroy_animation = skip_anim
         end
     end
