@@ -187,14 +187,16 @@ payload = '''
 
             -- actually supported
             G.SHADERS[shader]:send(prefixless_key, args)
-            G.SHADERS[shader]:send("uibox_size", {self.VT.w, self.VT.h})
-            G.SHADERS[shader]:send("uibox_pos", {self.VT.x, self.VT.y})
-            G.SHADERS[shader]:send("uibox_rot", self.VT.r)
-            G.SHADERS[shader]:send("uibox_scale", self.VT.scale)
-            G.SHADERS[shader]:send("screen_scale", G.TILESCALE*G.TILESIZE*G.CANV_SCALE)
+            G.SHADERS[shader]:send("uibox_size", {self.VT.w*G.TILESCALE*G.TILESIZE, self.VT.h*G.TILESCALE*G.TILESIZE})
+            
+            -- pos could be supported if there was a way to get the current graphics translation
+            --G.SHADERS[shader]:send("uibox_pos", {self.VT.x, self.VT.y})
+            --G.SHADERS[shader]:send("uibox_rot", self.VT.r)
+            --G.SHADERS[shader]:send("uibox_scale", self.VT.scale)
+            --G.SHADERS[shader]:send("screen_scale", G.TILESCALE*G.TILESIZE*G.CANV_SCALE)
             
             -- placeholder values
-            G.SHADERS[shader]:send("time",123.33412*(12.5123152)%3000)
+            -- G.SHADERS[shader]:send("time",123.33412*(12.5123152)%3000)
             -- G.SHADERS[shader]:send('mouse_screen_pos', {0,0})
             -- G.SHADERS[shader]:send('hovering', 0)
             -- G.SHADERS[shader]:send("shadow", false)
