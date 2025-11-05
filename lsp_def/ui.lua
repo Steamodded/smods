@@ -57,7 +57,7 @@ G.UIT = {
 ---@field vert? boolean Sets if the text is drawn vertically.
 ---@field object? Node Object to render.
 ---@field role? "Major"|"Minor"|"Glued" Sets object's role type.
----@field shader UINode.shader_config|string|(UINode.shader_config|string)[] Defines what shaders are used. If a string, uses that string as the key and sends default arguments.
+---@field shader UINode.shader_config|string|(UINode.shader_config|string)[] Defines what shaders are used to draw this UI box. If a string, uses that string as the key and sends default arguments.
 
 --- Internal class for annotating UIBox/UIElement tables before being turned into objects.
 ---@class UINode: table
