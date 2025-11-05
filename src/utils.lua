@@ -804,7 +804,7 @@ function convert_save_data()
         end
         if v.losses_by_key then
             for kk,vv in pairs(v.losses_by_key) do
-                local index = G.P_STAKES[kk].order
+                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
                 if index then v.losses[index] = vv end
             end
         else
@@ -829,7 +829,7 @@ function convert_save_data()
         end
         if v.losses_by_key then
             for kk,vv in pairs(v.losses_by_key) do
-                local index = G.P_STAKES[kk].order
+                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
                 if index then v.losses[index] = vv end
             end
         else
