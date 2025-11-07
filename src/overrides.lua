@@ -511,7 +511,7 @@ function SMODS.applied_stakes_UI(i, stake_desc_rows, num_added)
 	if num_added == nil then num_added = { val = 0 } end
 	if G.P_CENTER_POOLS['Stake'][i].applied_stakes then
 		for _, v in pairs(G.P_CENTER_POOLS['Stake'][i].applied_stakes) do
-			if v ~= "white" then
+			if v ~= "white" and v ~= "stake_white" then
 				--todo: manage this with pages
 				if num_added.val < 8 then
 					local i = G.P_STAKES[v].order
