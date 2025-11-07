@@ -183,28 +183,14 @@ payload = '''
             G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
         else
             local prefix = SMODS.Shaders[shader] and SMODS.Shaders[shader].mod and SMODS.Shaders[shader].mod.prefix
-            local prefixless_key = prefix and string.sub(shader, #prefix + 2) or shader
+            local prefixless_key = shader.original_key
+
+            local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
 
             -- actually supported
             G.SHADERS[shader]:send(prefixless_key, args)
-            G.SHADERS[shader]:send("uibox_size", {self.VT.w*G.TILESCALE*G.TILESIZE, self.VT.h*G.TILESCALE*G.TILESIZE})
-            
-            -- pos could be supported if there was a way to get the current graphics translation
-            --G.SHADERS[shader]:send("uibox_pos", {self.VT.x, self.VT.y})
-            --G.SHADERS[shader]:send("uibox_rot", self.VT.r)
-            --G.SHADERS[shader]:send("uibox_scale", self.VT.scale)
-            --G.SHADERS[shader]:send("screen_scale", G.TILESCALE*G.TILESIZE*G.CANV_SCALE)
-            
-            -- placeholder values
-            -- G.SHADERS[shader]:send("time",123.33412*(12.5123152)%3000)
-            -- G.SHADERS[shader]:send('mouse_screen_pos', {0,0})
-            -- G.SHADERS[shader]:send('hovering', 0)
-            -- G.SHADERS[shader]:send("shadow", false)
-
-            -- i might add support for dissolving ui elements later because it'd be funny
-            -- G.SHADERS[shader]:send("dissolve", 0)
-            -- G.SHADERS[shader]:send("burn_colour_1", G.C.CLEAR)
-            -- G.SHADERS[shader]:send("burn_colour_2", G.C.CLEAR)
+            G.SHADERS[shader]:send("uibox_size", {self.VT.w * tile_scale, self.VT.h * tile_scale})
+            G.SHADERS[shader]:send("uibox_pos", {self.T.x * tile_scale, self.T.y * tile_scale})
         end
 
         love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
