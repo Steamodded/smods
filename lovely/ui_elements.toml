@@ -182,13 +182,11 @@ payload = '''
         elseif shader == "vortex" then
             G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
         else
-            local prefix = SMODS.Shaders[shader] and SMODS.Shaders[shader].mod and SMODS.Shaders[shader].mod.prefix
-            local prefixless_key = shader.original_key
-
+            local key = SMODS.Shaders[shader].original_key
             local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
 
             -- actually supported
-            G.SHADERS[shader]:send(prefixless_key, args)
+            G.SHADERS[shader]:send(key, args)
             G.SHADERS[shader]:send("uibox_size", {self.VT.w * tile_scale, self.VT.h * tile_scale})
             G.SHADERS[shader]:send("uibox_pos", {self.T.x * tile_scale, self.T.y * tile_scale})
         end
