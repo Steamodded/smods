@@ -22,7 +22,7 @@ self.config = setmetatable({card_limits = {card_limit}}, {
     __newindex = function(t, key, value)
         if key == 'card_limit' then
             if not t.card_limits.base then rawset(t.card_limits, 'base', value) end
-            rawset(t.card_limits, 'mod', (t.card_limits.mod or 0) + (value - (t.card_limits.base)))
+            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0))
         else
             rawset(t, key, value)
         end
@@ -51,7 +51,7 @@ self.config = setmetatable(cardAreaTable.config, {
     __newindex = function(t, key, value)
         if key == 'card_limit' then
             if not t.card_limits.base then rawset(t.card_limits, 'base', value) end
-            rawset(t.card_limits, 'mod', (t.card_limits.mod or 0) + (value - (t.card_limits.base)))
+            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0))
         else
             rawset(t, key, value)
         end
@@ -74,21 +74,6 @@ payload = '''
         self.config.card_limits.mod = (self.config.card_limits.mod or 0) + delta
         return
     end
-'''
-
-
-# CardArea:init()
-# Add real_card_limit parameter
-[[patches]]
-[patches.pattern]
-target = 'cardarea.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-self.config.card_limit = config.card_limit or 52
-'''
-payload = '''
-self.config.card_limits.total_slots = self.config.card_limit
 '''
 
 # CardArea:update()
@@ -268,7 +253,7 @@ pattern = "local hand_space = e or*"
 position = "at"
 payload = """local hand_space = e
 local cards_to_draw = {}
-if not hand_space then
+local space_taken = 0
     local limit = G.hand.config.card_limit - #G.hand.cards - (SMODS.cards_to_draw or 0)
     local unfixed = not G.hand.config.fixed_limit
     local n = 0
@@ -279,12 +264,12 @@ if not hand_space then
         else    
             limit = limit - 1 + mod
             table.insert(cards_to_draw, card)
+            space_taken = space_taken + (1 - mod)
             if limit <= 0 then break end
         end
         n = n + 1
     end
     hand_space = #cards_to_draw
-end
 """
 match_indent = true
 

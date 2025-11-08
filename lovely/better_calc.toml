@@ -1019,7 +1019,7 @@ for i=1, hand_space do --draw cards from deckL
 end
 '''
 payload = '''
-SMODS.cards_to_draw = (SMODS.cards_to_draw or 0) + math.max(hand_space, 0)
+SMODS.cards_to_draw = (SMODS.cards_to_draw or 0) + space_taken
 SMODS.drawn_cards = {}
 '''
 [[patches]]
@@ -1040,7 +1040,7 @@ payload = '''
 G.E_MANAGER:add_event(Event({
     trigger = 'immediate',
     func = function()                
-        SMODS.cards_to_draw = SMODS.cards_to_draw - math.max(hand_space, 0)
+        SMODS.cards_to_draw = SMODS.cards_to_draw - space_taken
         return true
     end
 }))
@@ -1748,7 +1748,12 @@ target = 'functions/state_events.lua'
 match_indent = false
 position = 'after'
 pattern = '''delay = G.GAME.current_round.current_hand.handname ~= disp_text and 0.4 or 0}, {handname=disp_text, level=G.GAME.hands[text].level, mult = G.GAME.hands[text].mult, chips = G.GAME.hands[text].chips})'''
-payload = '''    SMODS.displayed_hand = text; SMODS.displaying_scoring = true'''
+payload = '''    
+for name, parameter in pairs(SMODS.Scoring_Parameters) do
+    if name ~= 'chips' and name ~= 'mult' then update_hand_text({immediate = true}, {[name] = parameter.current}) end
+end
+SMODS.displayed_hand = text
+SMODS.displaying_scoring = true'''
 [[patches]]
 [patches.pattern]
 target = 'functions/state_events.lua'
