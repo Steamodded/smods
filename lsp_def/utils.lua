@@ -693,7 +693,7 @@ function SMODS.is_poker_hand_visible(handname) end
 function SMODS.is_eternal(card, trigger) end
 
 ---@param card Card|table
----@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: string?}
+---@param args? table|{ref_table: table, ref_value: string, scalar_value: string|number, scalar_table: table?, operation: string?}
 ---@return table? results
 --- Tells Jokers that this card is scaling allowing for scaling detection
 --- Can return scaling_value and scalar_value in results to change the scaling cards values
