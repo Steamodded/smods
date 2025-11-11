@@ -2860,7 +2860,14 @@ function SMODS.scale_card(card, args)
     args.ref_table = args.ref_table or card.ability.extra
     args.scalar_table = args.scalar_table or args.ref_table
     local initial = args.ref_table[args.ref_value]
-    local scalar_value = args.scalar_table[args.scalar_value]
+	local scalar_value
+	if type(args.scalar_value) == "string" then
+    	scalar_value = args.scalar_table[args.scalar_value]
+	elseif type(args.scalar_value) == "number" then
+		scalar_value = args.scalar_value
+	else
+		error("Unexpected data type for scalar_value in SMODS.scale_card; was "..type(args.scalar_value)..", should be string or number")
+	end
     if args.operation == '-' and scalar_value < 0 then scalar_value = scalar_value * -1 end
     local scaling_message = args.scaling_message
     local scaling_responses = {}
