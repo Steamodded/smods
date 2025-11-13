@@ -1097,6 +1097,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     ----- API CODE GameObject.Center
     -------------------------------------------------------------------------------------------------
 
+    local key_unique = 0
     SMODS.Centers = {}
     --- Shared class for center objects. Holds no default values; only register an object directly using this if it doesn't fit any subclass, creating one isn't justified and you know what you're doing.
     SMODS.Center = SMODS.GameObject:extend {
@@ -1107,6 +1108,19 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         register = function(self)
             -- 0.9.8 defense
             self.name = self.name or self.key
+            if (self.default_size or (self.px and self.py) or self.size ) and self.path then
+                key_unique = key_unique + 1;
+                local size = self.size or self.default_size -- if a mod wants to override
+                local px, py = self.px or size.px, self.py or size.py
+                SMODS.Atlas {
+                    key = "__autogen_atlas_"..self.key.."_"..key_unique,
+                    path = self.path,
+                    px = px,
+                    py = py,
+                    raw_key = true,
+                }
+                self.atlas = "__autogen_atlas_"..self.key.."_"..key_unique
+            end
             SMODS.Center.super.register(self)
         end,
         inject = function(self)
@@ -1204,6 +1218,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         required_params = {
             'key',
         },
+        default_size = {
+            px = 71,
+            py = 95,
+        },
         inject = function(self)
             -- call the parent function to ensure all pools are set
             SMODS.Center.inject(self)
@@ -1234,6 +1252,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         cost = 3,
         config = {},
         class_prefix = 'c',
+        default_size = { px = 71, py = 95 },
         required_params = {
             'set',
             'key',
@@ -1294,6 +1313,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         unlocked = true,
         available = true,
         pos = { x = 0, y = 0 },
+        default_size = {px = 71, py = 95},
         config = {},
         class_prefix = 'v',
         required_params = {
@@ -1326,6 +1346,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         unlocked = true,
         atlas = 'centers',
         pos = { x = 0, y = 0 },
+        default_size = { px = 71, py = 95 },
         config = {},
         omit = false,
         unlock_condition = {},
@@ -1369,6 +1390,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         set = "Booster",
         atlas = "Booster",
         pos = {x = 0, y = 0},
+        default_size = {px = 71, py = 95},
         loc_txt = {},
         discovered = false,
         weight = 1,
@@ -1771,6 +1793,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         pos = { x = 0, y = 0 },
         discovered = false,
         badge_colour = HEX('FFFFFF'),
+        default_size = { px = 71, py = 95 },
         required_params = {
             'key',
             'pos',
@@ -3114,6 +3137,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             'key',
             -- table with keys `name` and `text`
         },
+        default_size = {
+            px = 71,
+            py = 95,
+        },
         -- other fields:
         -- replace_base_card
         -- if true, don't draw base card sprite and don't give base card's chips
@@ -3253,6 +3280,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         required_params = {
             'key',
             'shader' -- can be set to `false` for shaderless edition
+        },
+        default_size = {
+            px = 71,
+            py = 95,
         },
         -- optional fields:
         extra_cost = nil,
