@@ -1277,49 +1277,74 @@ payload = '''
 if context.discard and context.other_card == self then
     if self.seal == 'Purple' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then'''
 
-# Make Blueprint and Brainstorm use SMODS.blueprint_effect
+
+## Make Blueprint and Brainstorm use SMODS.blueprint_effect (Patches taken from HotPot)
+# Blueprint
+# Card:calculate_joker()
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
 match_indent = true
 position = 'at'
-pattern = 'if self.ability.name == "Blueprint" then'
-payload = '''
-if self.ability.name == "Blueprint" then
-    local other_joker_ret
-    for i = 1, #G.jokers.cards do
-        if G.jokers.cards[i] == self then
-            other_joker_ret = SMODS.blueprint_effect(self, G.jokers.cards[i+1], context)
-            break
-        end
-    end
-
-    if other_joker_ret then
+pattern = '''
+if other_joker and other_joker ~= self and not other_joker.debuff and not context.no_blueprint then
+    if (context.blueprint or 0) > #G.jokers.cards then return end
+    local old_context_blueprint = context.blueprint
+    context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
+    local old_context_blueprint_card = context.blueprint_card
+    context.blueprint_card = context.blueprint_card or self
+    local eff_card = context.blueprint_card
+    local other_joker_ret = other_joker:calculate_joker(context)
+    context.blueprint = old_context_blueprint
+    context.blueprint_card = old_context_blueprint_card
+    if other_joker_ret then 
+        other_joker_ret.card = eff_card
         other_joker_ret.colour = G.C.BLUE
         return other_joker_ret
     end
 end
--- Vanilla Blueprint code; above is the SMODS code
-if false then
+'''
+payload = '''
+local ret = SMODS.blueprint_effect(self, other_joker, context)
+if ret then
+    ret.colour = G.C.BLUE
+    return ret
+end
 '''
 
+# Brainstorm
+# Card:calculate_joker()
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
 match_indent = true
 position = 'at'
-pattern = 'if self.ability.name == "Brainstorm" then'
-payload = '''
-if self.ability.name == "Brainstorm" then
-    local other_joker_ret = SMODS.blueprint_effect(self, G.jokers.cards[1], context)
-    if other_joker_ret then
+pattern = '''
+if other_joker and other_joker ~= self and not other_joker.debuff and not context.no_blueprint then
+    if (context.blueprint or 0) > #G.jokers.cards then return end
+    local old_context_blueprint = context.blueprint
+    context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
+    local old_context_blueprint_card = context.blueprint_card
+    context.blueprint_card = context.blueprint_card or self
+    local eff_card = context.blueprint_card
+    local other_joker_ret = other_joker:calculate_joker(context)
+    context.blueprint = old_context_blueprint
+    context.blueprint_card = old_context_blueprint_card
+    if other_joker_ret then 
+        other_joker_ret.card = eff_card
         other_joker_ret.colour = G.C.RED
         return other_joker_ret
     end
 end
--- Vanilla Brainstorm code; above is the SMODS code
-if false then
 '''
+payload = '''
+local ret = SMODS.blueprint_effect(self, other_joker, context)
+if ret then
+    ret.colour = G.C.RED
+    return ret
+end
+'''
+
 
 # Auto deal with negative chips card_eval_status_text()
 [[patches]]
