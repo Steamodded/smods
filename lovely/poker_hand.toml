@@ -103,3 +103,25 @@ payload = '''
 if SMODS.is_poker_hand_visible(k) then _poker_hands[#_poker_hands+1] = k end
 '''
 match_indent = true
+
+# G.FUNCS.evaluate_play()
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''G.GAME.hands[text].played_this_round = G.GAME.hands[text].played_this_round + 1'''
+position = "after"
+payload = '''G.GAME.hands[text].played_this_ante = G.GAME.hands[text].played_this_ante + 1'''
+match_indent = true
+times = 1
+
+# end_round()
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''G.GAME.voucher_restock = nil'''
+position = "after"
+payload = '''for k, v in pairs(G.GAME.hands) do
+    v.played_this_ante = 0
+end'''
+match_indent = true
+times = 1
