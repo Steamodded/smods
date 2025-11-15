@@ -572,7 +572,11 @@ function G.UIDEF.stake_option(_type)
 	local stake_options = {}
 	local curr_options = {}
 	local deck_usage = G.PROFILES[G.SETTINGS.profile].deck_usage[G.GAME.viewed_back.effect.center.key]
-	G.viewed_stake = deck_usage and ((deck_usage.wins_by_key[SMODS.stake_from_index(G.viewed_stake)] or G.PROFILES[G.SETTINGS.profile].all_unlocked) and G.viewed_stake or (get_deck_win_stake(G.GAME.viewed_back.effect.center.key) + 1)) or 1
+	local is_all_unlocked = G.PROFILES[G.SETTINGS.profile].all_unlocked
+	local is_stake_available = SMODS.check_applied_stakes(G.P_CENTER_POOLS.Stake[G.viewed_stake], deck_usage or {wins_by_key = {}})
+	G.viewed_stake = (is_all_unlocked or is_stake_available) and G.viewed_stake
+		or (deck_usage and (math.min(get_deck_win_stake(G.GAME.viewed_back.effect.center.key) + 1, #G.P_CENTER_POOLS.Stake)))
+		or 1
 	for i=1, #G.P_CENTER_POOLS.Stake do
 		if G.PROFILES[G.SETTINGS.profile].all_unlocked or SMODS.check_applied_stakes(G.P_CENTER_POOLS.Stake[i], deck_usage or {wins_by_key = {}}) then
 			stake_options[#stake_options + 1] = i
