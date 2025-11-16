@@ -239,10 +239,10 @@ local t, res = {}, {}
 if _stake_center then
   if _stake_center.loc_vars and type(_stake_center.loc_vars) == 'function' then
     res = _stake_center:loc_vars() or {}
-    t.vars = res.vars or {}
-    t.key = res.key or _stake_center.key
-    t.set = res.set or _stake_center.set
   end
+  t.vars = res.vars or {}
+  t.key = res.key or _stake_center.key
+  t.set = res.set or _stake_center.set
   localize{type = 'descriptions', key = t.key, set = t.set, nodes = ret_nodes, vars = t.vars}
 end
 '''
