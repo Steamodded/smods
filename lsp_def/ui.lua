@@ -251,9 +251,7 @@ G.FUNCS.your_collection_stickers = function(e) end
 --- Creates UIBox for "Stickers" collection menu
 function create_UIBox_your_collection_stickers() end
 
-
----@return UINode
----@param table
+---@class ScoreContainerArgs
 ---@field scale? number Set scale of text
 ---@field colour? table HEX colour of the container
 ---@field type string Type of scoring component, ex. 'mult'. Can take the key of a Scoring_Parameter
@@ -262,4 +260,7 @@ function create_UIBox_your_collection_stickers() end
 ---@field text? string Key of value in `G.GAME.current_round.current_hand` - defaults to `type..'_text'`
 ---@field w? number Minimum width
 ---@field h? number Minimum height
+
+---@return UINode
+---@param args ScoreContainerArgs
 function SMODS.GUI.score_container(args) end

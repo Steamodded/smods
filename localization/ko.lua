@@ -66,11 +66,11 @@ return {
 
 
 			-- card perma bonuses
-			card_extra_chips = {
-				text = {
-					"추가 칩 {C:chips}#1#{}개",
-				},
-			},
+            card_extra_chips = {
+                text = {
+                    "추가 칩 {C:chips}#1#{}개",
+                },
+            },
 			card_x_chips = {
 				text = {
 					"칩 {X:chips,C:white}X#1#{}개",

@@ -417,10 +417,14 @@ end
 function SMODS.debuff_card(card, debuff, source)
     debuff = debuff or nil
     source = source and tostring(source) or nil
-    if debuff == 'reset' then card.ability.debuff_sources = {}; return end
+    if debuff == 'reset' then
+        sendWarnMessage("SMODS.debuff_card(card, 'reset', source) is deprecated")
+        card.ability.debuff_sources = {};
+        return
+    end
     card.ability.debuff_sources = card.ability.debuff_sources or {}
     card.ability.debuff_sources[source] = debuff
-    card:set_debuff()
+    SMODS.recalc_debuff(card)
 end
 
 -- Recalculate whether a card should be debuffed
@@ -2085,7 +2089,7 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
 end
 
 function SMODS.blueprint_effect(copier, copied_card, context)
-    if not copied_card or copied_card == copier or copied_card.debuff or context.no_blueprint then return end
+    if not copied_card or copied_card == copier or copied_card.debuff or context.no_blueprint or not copied_card.config.center.blueprint_compat then return end
     if (context.blueprint or 0) > #G.jokers.cards then return end
     local old_context_blueprint = context.blueprint
     context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
@@ -2888,7 +2892,8 @@ function SMODS.scale_card(card, args)
     
     scaling_message = scaling_message or {
         message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or scalar_value}} or 'k_upgrade_ex'),
-        colour = args.message_colour or G.C.FILTER
+        colour = args.message_colour or G.C.FILTER,
+        delay = args.message_delay,
     }
     if next(scaling_message) and not args.no_message then
         SMODS.calculate_effect(scaling_message, card)
@@ -3177,12 +3182,13 @@ function SMODS.should_handle_limit(area)
     end
 end
 
-function CardArea:handle_card_limit(card_limit, card_slots)
+function CardArea:handle_card_limit()
     if SMODS.should_handle_limit(self) then
+        self.config.card_limits.old_slots = self.config.card_limits.total_slots or 0
         self.config.card_limits.extra_slots = self:count_property('card_limit')
         self.config.card_limits.total_slots = self:count_property('card_limit') + (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
+        self.config.card_limits.extra_slots_used = self:count_property('extra_slots_used')
         self.config.card_count = #self.cards + self:count_property('extra_slots_used')
-        self.config.card_limit = self.config.card_limits.total_slots - self:count_property('extra_slots_used')
         
         if G.hand and self == G.hand and self.config.card_count + (SMODS.cards_to_draw or 0) < self.config.card_limits.total_slots then
             if G.STATE == G.STATES.DRAW_TO_HAND and not SMODS.blind_modifies_draw(G.GAME.blind.config.blind.key) and not SMODS.draw_queued then
@@ -3194,8 +3200,8 @@ function CardArea:handle_card_limit(card_limit, card_slots)
                         G.E_MANAGER:add_event(Event({
                             trigger = 'immediate',
                             func = function()
-                                if (self.config.card_limits.total_slots - self.config.card_count - SMODS.cards_to_draw) > 0 then
-                                    G.FUNCS.draw_from_deck_to_hand(self.config.card_limits.total_slots - self.config.card_count - SMODS.cards_to_draw)                
+                                if (self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0)) > 0 and #G.deck.cards > (SMODS.cards_to_draw or 0) then
+                                    G.FUNCS.draw_from_deck_to_hand(self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0))                
                                 end
                                 return true
                             end
@@ -3203,19 +3209,20 @@ function CardArea:handle_card_limit(card_limit, card_slots)
                         return true
                     end
                 }))
-            elseif G.STATE == G.STATES.SELECTING_HAND and #G.deck.cards > 0 then
-                if self.config.card_limits.total_slots - self.config.card_count - SMODS.cards_to_draw - (self.config.card_limits.blind_restriction or 0) > 0 then
-                    G.FUNCS.draw_from_deck_to_hand(self.config.card_limits.total_slots - self.config.card_count - SMODS.cards_to_draw - (self.config.card_limits.blind_restriction or 0))
+            elseif G.STATE == G.STATES.SELECTING_HAND and #G.deck.cards > 0 and self.config.card_limits.old_slots < self.config.card_limits.total_slots then
+                if (self.config.card_limits.total_slots - self.config.card_limits.old_slots) > 0 then
+                    G.FUNCS.draw_from_deck_to_hand((self.config.card_limits.total_slots - self.config.card_limits.old_slots))
                 end
             end
             return
         end
     else
-        self.config.card_count = #self.cards 
+        self.config.card_count = #self.cards
+        self.config.card_limits.total_slots = (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
     end
 end
 
 -- Function used to determine whether the current blind modifies the number of cards drawn
 function SMODS.blind_modifies_draw(key)
-    if key == 'bl_serpent' then return true end
+    if SMODS.Blinds.modifies_draw[key] then return true end
 end

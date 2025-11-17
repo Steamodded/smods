@@ -1019,7 +1019,7 @@ for i=1, hand_space do --draw cards from deckL
 end
 '''
 payload = '''
-SMODS.cards_to_draw = (SMODS.cards_to_draw or 0) + math.max(hand_space, 0)
+SMODS.cards_to_draw = (SMODS.cards_to_draw or 0) + space_taken
 SMODS.drawn_cards = {}
 '''
 [[patches]]
@@ -1040,7 +1040,7 @@ payload = '''
 G.E_MANAGER:add_event(Event({
     trigger = 'immediate',
     func = function()                
-        SMODS.cards_to_draw = SMODS.cards_to_draw - math.max(hand_space, 0)
+        SMODS.cards_to_draw = SMODS.cards_to_draw - space_taken
         return true
     end
 }))
@@ -1277,38 +1277,6 @@ payload = '''
 if context.discard and context.other_card == self then
     if self.seal == 'Purple' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then'''
 
-# Fix context.blueprint persisting
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'at'
-pattern = '''context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
-context.blueprint_card = context.blueprint_card or self
-if context.blueprint > #G.jokers.cards + 1 then return end'''
-payload = '''if (context.blueprint or 0) > #G.jokers.cards then return end
-local old_context_blueprint = context.blueprint
-context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
-local old_context_blueprint_card = context.blueprint_card
-context.blueprint_card = context.blueprint_card or self
-local eff_card = context.blueprint_card'''
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'after'
-pattern = '''local other_joker_ret = other_joker:calculate_joker(context)'''
-payload = '''context.blueprint = old_context_blueprint
-context.blueprint_card = old_context_blueprint_card'''
-
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'at'
-pattern = 'other_joker_ret.card = context.blueprint_card or self'
-payload = '''other_joker_ret.card = eff_card'''
 
 # Auto deal with negative chips card_eval_status_text()
 [[patches]]
@@ -1748,7 +1716,12 @@ target = 'functions/state_events.lua'
 match_indent = false
 position = 'after'
 pattern = '''delay = G.GAME.current_round.current_hand.handname ~= disp_text and 0.4 or 0}, {handname=disp_text, level=G.GAME.hands[text].level, mult = G.GAME.hands[text].mult, chips = G.GAME.hands[text].chips})'''
-payload = '''    SMODS.displayed_hand = text; SMODS.displaying_scoring = true'''
+payload = '''    
+for name, parameter in pairs(SMODS.Scoring_Parameters) do
+    if name ~= 'chips' and name ~= 'mult' then update_hand_text({immediate = true}, {[name] = parameter.current}) end
+end
+SMODS.displayed_hand = text
+SMODS.displaying_scoring = true'''
 [[patches]]
 [patches.pattern]
 target = 'functions/state_events.lua'
@@ -1978,4 +1951,72 @@ delay(0.4); ease_ante(1); delay(0.4); check_for_unlock({type = 'ante_up', ante =
 position = 'at'
 payload = '''
 delay(0.4); SMODS.ante_end = true; ease_ante(1); SMODS.ante_end = nil; delay(0.4); check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
+'''
+
+# Sixth Sense only triggers once with multiple copies
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:get_id() == 6 and G.GAME.current_round.hands_played == 0 then
+'''
+payload = '''
+if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:get_id() == 6 and not context.full_hand[1].sixth_sense and G.GAME.current_round.hands_played == 0 then
+    context.full_hand[1].sixth_sense = true
+'''
+
+# Blueprint uses SMODS.blueprint_effect
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if other_joker and other_joker ~= self then
+    context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
+    context.blueprint_card = context.blueprint_card or self
+    if context.blueprint > #G.jokers.cards + 1 then return end
+    local other_joker_ret = other_joker:calculate_joker(context)
+    if other_joker_ret then 
+        other_joker_ret.card = context.blueprint_card or self
+        other_joker_ret.colour = G.C.BLUE
+        return other_joker_ret
+    end
+end
+'''
+payload = '''
+local ret = SMODS.blueprint_effect(self, other_joker, context)
+if ret then
+    ret.colour = G.C.BLUE
+    return ret
+end
+'''
+
+# Brainstorm uses SMODS.blueprint_effect
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if other_joker and other_joker ~= self then
+    context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
+    context.blueprint_card = context.blueprint_card or self
+    if context.blueprint > #G.jokers.cards + 1 then return end
+    local other_joker_ret = other_joker:calculate_joker(context)
+    if other_joker_ret then 
+        other_joker_ret.card = context.blueprint_card or self
+        other_joker_ret.colour = G.C.RED
+        return other_joker_ret
+    end
+end
+'''
+payload = '''
+local ret = SMODS.blueprint_effect(self, other_joker, context)
+if ret then
+    ret.colour = G.C.RED
+    return ret
+end
 '''
