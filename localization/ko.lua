@@ -180,7 +180,7 @@ return {
 				},
 			},
             e_negative_generic = {
-                name = "Negative",
+                name = "네거티브",
                 text = {
                     "영역 슬롯 {C:dark_edition}#1#{}개"
                 },
