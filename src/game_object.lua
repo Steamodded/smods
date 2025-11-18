@@ -573,10 +573,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if replace_sound.args then
                 local args = replace_sound.args
                 if type(args) == 'function' then args = args(sound, { pitch = per, volume = vol }) end
-                play_sound(sound.sound_code, args.pitch, args.volume)
+                play_sound_ref(sound.sound_code, args.pitch, args.volume)
                 if not args.continue_base_sound then rt = true end
             else
-                play_sound(sound.sound_code, per, vol)
+                play_sound_ref(sound.sound_code, per, vol)
                 rt = true
             end
             if replace_sound.times > 0 then replace_sound.times = replace_sound.times - 1 end
