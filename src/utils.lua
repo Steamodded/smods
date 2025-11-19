@@ -389,7 +389,7 @@ function SMODS.create_card(t)
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
     if t.edition then _card:set_edition(t.edition) end
     if t.enhancement then _card:set_ability(G.P_CENTERS[t.enhancement]) end
-    if t.seal then _card:set_seal(t.seal, nil, true) end
+    if t.seal then _card:set_seal(t.seal); _card.ability.delay_seal = false end
     if t.stickers then
         for i, v in ipairs(t.stickers) do
             _card:add_sticker(v, t.force_stickers)
@@ -1991,7 +1991,7 @@ function SMODS.calculate_context(context, return_table, no_resolve)
 end
 
 function SMODS.in_scoring(card, scoring_hand)
-    if SMODS.always_scores(card) then return true end
+    -- if SMODS.always_scores(card) then return true end
     for _, _card in pairs(scoring_hand) do
         if card == _card then return true end
     end
@@ -2154,7 +2154,7 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
 end
 
 function SMODS.blueprint_effect(copier, copied_card, context)
-    if not copied_card or copied_card == copier or copied_card.debuff or context.no_blueprint then return end
+    if not copied_card or copied_card == copier or copied_card.debuff or context.no_blueprint or not copied_card.config.center.blueprint_compat then return end
     if (context.blueprint or 0) > #G.jokers.cards then return end
     local old_context_blueprint = context.blueprint
     context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
@@ -3428,9 +3428,9 @@ function CardArea:handle_card_limit()
     if SMODS.should_handle_limit(self) then
         self.config.card_limits.old_slots = self.config.card_limits.total_slots or 0
         self.config.card_limits.extra_slots = self:count_property('card_limit')
-        self.config.card_limits.total_slots = self:count_property('card_limit') + (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
+        self.config.card_limits.total_slots = self.config.card_limits.extra_slots + (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
         self.config.card_limits.extra_slots_used = self:count_property('extra_slots_used')
-        self.config.card_count = #self.cards + self:count_property('extra_slots_used')
+        self.config.card_count = #self.cards + self.config.card_limits.extra_slots_used
         
         if G.hand and self == G.hand and self.config.card_count + (SMODS.cards_to_draw or 0) < self.config.card_limits.total_slots then
             if G.STATE == G.STATES.DRAW_TO_HAND and not SMODS.blind_modifies_draw(G.GAME.blind.config.blind.key) and not SMODS.draw_queued then
