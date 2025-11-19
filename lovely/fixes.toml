@@ -246,6 +246,17 @@ payload = "self.label = center.label or self.config.card and self.config.card.la
 
 # These patches have been removed for altering vanilla behavior. Git blame this line to see what they were
 
+### Debuffing boss blinds and Verdant Leaf don't debuff things
+### that aren't a Joker or playing card
+
+## Blind:debuff_card
+[[patches]]
+[patches.regex]
+target = 'blind.lua'
+pattern = '''card\.area ~= G.jokers'''
+position = 'at'
+payload = """card.playing_card"""
+
 ### Fix Crimson Heart
 
 ## Blind:drawn_to_hand()

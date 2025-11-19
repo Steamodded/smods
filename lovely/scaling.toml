@@ -87,7 +87,8 @@ SMODS.scale_card(self, {
     ref_value = "mult",
     scalar_value = "extra",
     message_key = 'a_mult',
-    message_colour = G.C.RED
+    message_colour = G.C.RED,
+    message_delay = 0.45,
 })
 '''
 # Spare Trousers
@@ -383,7 +384,8 @@ SMODS.scale_card(self, {
     ref_value = "x_mult",
     scalar_value = "extra",
     message_key = 'a_xmult',
-    message_colour = G.C.RED
+    message_colour = G.C.RED,
+    message_delay = 0.45,
 })
 return nil, true
 '''
@@ -592,7 +594,8 @@ SMODS.scale_card(self, {
     scalar_value = "extra",
     operation = "-",
     message_key = 'a_xmult_minus',
-    colour = G.C.RED
+    colour = G.C.RED,
+    message_delay = 0.2,
 })
 return nil, true
 '''
@@ -619,7 +622,8 @@ SMODS.scale_card(self, {
     scalar_table = self.ability.extra,
     scalar_value = "xmult",
     message_key = 'a_xmult',
-    message_colour = G.C.RED
+    message_colour = G.C.RED,
+    message_delay = 0.2,
 })
 return nil, true
 '''
