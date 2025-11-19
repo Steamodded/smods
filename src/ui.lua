@@ -894,7 +894,7 @@ function buildModtag(mod)
     local tag_atlas, tag_pos, tag_message, specific_vars = getModtagInfo(mod)
 
     local tag_sprite_tab = nil
-    local units = SMODS.pixels_to_unit(34) * 2
+    local units = 1
     local animated = G.ANIMATION_ATLAS[tag_atlas] or nil
     local tag_sprite
     if animated then
@@ -2172,6 +2172,6 @@ G.FUNCS.hand_type_UI_set = function(e)
     G.GAME.current_round.current_hand[e.config.text] = new_mult_text
     e.config.object.scale = scale_number(G.GAME.current_round.current_hand[e.config.type], e.config.scale, 1000)
     e.config.object:update_text()
-    if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and G.GAME.current_round.current_hand[e.config.type] or 1)))) end
+    if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and math.abs(G.GAME.current_round.current_hand[e.config.type]) or 1)))) end
   end
 end

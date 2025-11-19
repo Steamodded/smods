@@ -1,0 +1,23 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Create custom card areas at appropriate timing via helper function
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+G.playing_cards = {}
+
+set_screen_positions()
+'''
+payload = '''
+for _, mod in ipairs(SMODS.mod_list) do
+    if mod.can_load and mod.custom_card_areas and type(mod.custom_card_areas) == "function" then
+        mod.custom_card_areas(self)
+    end
+end
+'''
