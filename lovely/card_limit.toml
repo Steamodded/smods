@@ -3,6 +3,20 @@ version = "1.0.0"
 dump_lua = true
 priority = -10
 
+# Reset SMODS.cards_to_draw on game start
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+local saveTable = args.savetext or nil
+'''
+payload = '''
+SMODS.cards_to_draw = nil
+'''
+
+
 # Set metatable
 [[patches]]
 [patches.pattern]
@@ -254,22 +268,21 @@ position = "at"
 payload = """local hand_space = e
 local cards_to_draw = {}
 local space_taken = 0
-    local limit = G.hand.config.card_limit - #G.hand.cards - (SMODS.cards_to_draw or 0)
-    local unfixed = not G.hand.config.fixed_limit
-    local n = 0
-    while n < #G.deck.cards do
-        local card = G.deck.cards[#G.deck.cards-n]
-        local mod = unfixed and (card.ability.card_limit - card.ability.extra_slots_used) or 0
-        if limit - 1 + mod < 0 then
-        else    
-            limit = limit - 1 + mod
-            table.insert(cards_to_draw, card)
-            space_taken = space_taken + (1 - mod)
-            if limit <= 0 then break end
-        end
-        n = n + 1
+local limit = G.hand.config.card_limit - #G.hand.cards - (SMODS.cards_to_draw or 0)
+local unfixed = not G.hand.config.fixed_limit
+local n = 0
+while n < #G.deck.cards and limit > 0 do
+    local card = G.deck.cards[#G.deck.cards-n]
+    local mod = unfixed and (card.ability.card_limit - card.ability.extra_slots_used) or 0
+    if limit - 1 + mod < 0 then
+    else    
+        limit = limit - 1 + mod
+        table.insert(cards_to_draw, card)
+        space_taken = space_taken + (1 - mod)
     end
-    hand_space = #cards_to_draw
+    n = n + 1
+end
+hand_space = #cards_to_draw
 """
 match_indent = true
 

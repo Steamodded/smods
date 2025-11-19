@@ -35,7 +35,7 @@ match_indent = true
 payload = '''
 function eval_card(card, context)
     context = context or {}
-    if not card:can_calculate(context.ignore_debuff, context.remove_playing_cards) then
+    if not card:can_calculate(context.ignore_debuff, context.remove_playing_cards or context.joker_type_destroyed) then
         if card.ability.rental then
             local ret = {}
             ret[SMODS.Stickers.rental] = card:calculate_sticker(context, 'rental')
