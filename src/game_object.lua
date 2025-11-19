@@ -1177,7 +1177,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
 
             localize(target)
-
             if res.main_end then
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
@@ -2248,9 +2247,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     end
                 }))
             end
-
             G.hand:change_size(-1)
-
             for i = 1, #G.hand.cards do
                 local percent = 0.85 + (i - 0.999) / (#G.hand.cards - 0.998) * 0.3
                 G.E_MANAGER:add_event(Event({
@@ -2293,7 +2290,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         }))
         return destroyed_cards
     end
-
     SMODS.Consumable:take_ownership('grim', {
         use = function(self, card, area, copier)
             local used_tarot = copier or card
@@ -2322,10 +2318,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     return true
                 end
             }))
-
             delay(0.3)
             SMODS.calculate_context({ remove_playing_cards = true, removed = destroyed_cards })
-        end
+        end,
     })
 
     SMODS.Consumable:take_ownership('familiar', {
@@ -2362,13 +2357,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     return true
                 end
             }))
-
             delay(0.3)
-
             SMODS.calculate_context({ remove_playing_cards = true, removed = destroyed_cards })
-        end
+        end,
     })
-
     SMODS.Consumable:take_ownership('incantation', {
         use = function(self, card, area, copier)
             local used_tarot = copier or card
@@ -2378,7 +2370,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 delay = 0.7,
                 func = function()
                     local cards = {}
-                    for i=1, card.ability.extra do
+                    for i = 1, card.ability.extra do
                         -- TODO preserve suit vanilla RNG
                         local numbers = {}
                         for _, v in ipairs(SMODS.Rank.obj_buffer) do
@@ -2403,12 +2395,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     return true
                 end
             }))
-
             delay(0.3)
             SMODS.calculate_context({ remove_playing_cards = true, removed = destroyed_cards })
-        end
+        end,
     })
-
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.DeckSkin
     -------------------------------------------------------------------------------------------------

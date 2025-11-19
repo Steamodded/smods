@@ -1376,7 +1376,6 @@ end
 
 -- Used to calculate a table of effects generated in evaluate_play
 SMODS.trigger_effects = function(effects, card)
-
     local ret = {}
     for _, effect_table in ipairs(effects) do
         -- note: these sections happen to be mutually exclusive:
@@ -1415,9 +1414,7 @@ SMODS.calculate_effect_table_key = function(effect_table, key, card, ret)
     local effect = effect_table[key]
     if key ~= 'smods' and type(effect) == 'table' then
         local calc = SMODS.calculate_effect(effect, effect.scored_card or card, key == 'edition')
-        for k, v in pairs(calc) do
-            ret[k] = type(ret[k]) == 'number' and ret[k] + v or v
-        end
+        for k, v in pairs(calc) do ret[k] = type(ret[k]) == 'number' and ret[k] + v or v end
     end
 end
 
@@ -1663,10 +1660,8 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 if SMODS.check_looping_context(_card) then
                     goto skip
                 end
-
                 SMODS.current_evaluated_object = _card
                 local eval, post = eval_card(_card, context)
-
                 if args and args.main_scoring and eval.jokers then
                     eval.jokers.juice_card = eval.jokers.juice_card or eval.jokers.card or _card
                     eval.jokers.message_card = eval.jokers.message_card or context.other_card
@@ -1674,7 +1669,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
 
                 local effects = {eval}
                 for _,v in ipairs(post) do effects[#effects+1] = v end
-
                 if context.other_joker then
                     for k, v in pairs(effects[1]) do
                         v.other_card = _card
@@ -1707,9 +1701,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     end
                 else
                     local f = SMODS.trigger_effects(effects, _card)
-                    for k,v in pairs(f) do
-                        flags[k] = v
-                    end
+                    for k,v in pairs(f) do flags[k] = v end
                     SMODS.update_context_flags(context, flags)
                 end
                 ::skip::
