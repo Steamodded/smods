@@ -136,6 +136,12 @@ return {
                     "{C:money}#1#{} if held at end of round",
                 },
             },
+            card_extra_repetitions = {
+                text = {
+                    "Retrigger this",
+                    "card {C:attention}#1#{} #2#",
+                },
+            },
             artist = {
                 text = {
                     "{C:inactive}Artist",
@@ -147,6 +153,42 @@ return {
                     "{E:1}#1#{}"
                 },
             },
+            generic_card_limit = {
+                name = "Card Limit",
+                text = {
+                    '{C:dark_edition}#1#{} area slot'
+                }
+            },
+            generic_card_limit_plural = {
+                name = "Card Limit",
+                text = {
+                    '{C:dark_edition}#1#{} area slots'
+                }
+            },
+            generic_card_limit_pc = {
+                name = "Hand Size",
+                text = {
+                    '{C:dark_edition}#1#{} hand size'
+                }
+            },
+            generic_card_limit_pc_plural = {
+                name = "Hand Size",
+                text = {
+                    '{C:dark_edition}#1#{} hand size'
+                }
+            },
+            generic_extra_slots = {
+                name = "Slots Used",
+                text = {
+                    'Fills {C:dark_edition}#1#{} slots'
+                }
+            },
+            generic_extra_slots_pc = {
+                name = "Hand Space",
+                text = {
+                    'Fills {C:dark_edition}#1#{} hand space'
+                }
+            }
         },
         Edition = {
             e_negative_playing_card = {
@@ -155,6 +197,12 @@ return {
                     "{C:dark_edition}+#1#{} hand size"
                 },
             },
+            e_negative_generic = {
+                name = "Negative",
+                text = {
+                    "{C:dark_edition}+#1#{} area slot"
+                },
+            }
         },
         Enhanced = {
             m_gold={
@@ -235,10 +283,12 @@ return {
                 'Enabled',
                 'Bypass Restrictions'
             },
-            b_deckskins_lc = 'Low Contrast Colors',
-            b_deckskins_hc = 'High Contrast Colors',
-            b_deckskins_def = 'Default Colors',
-            b_limit = 'Up to '
+            b_deckskins_lc = 'Low Contrast Colours',
+            b_deckskins_hc = 'High Contrast Colours',
+            b_deckskins_def = 'Default Colours',
+            b_limit = 'Up to ',
+            b_retrigger_single = 'time',
+            b_retrigger_plural = 'times'
 		},
 		v_dictionary = {
 			c_types = '#1# Types',

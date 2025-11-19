@@ -53,6 +53,13 @@ target = 'card.lua'
 pattern = '''self.T.scale = 0.95'''
 position = 'after'
 match_indent = true
+payload = '''self.original_T.scale = 0.95'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''self:set_ability(center, true)'''
+position = 'before'
+match_indent = true
 payload = '''self.original_T = copy_table(self.T)'''
 [[patches]]
 [patches.pattern]
@@ -63,7 +70,9 @@ pattern = '''
 local X, Y, W, H = self.T.x, self.T.y, self.T.w, self.T.h
 '''
 payload = '''
-for key, _ in pairs(self.T) do
-    self.T[key] = self.original_T[key]
+if delay_sprites ~= 'quantum' then
+    for key, _ in pairs(self.T) do
+        self.T[key] = self.original_T[key]
+    end
 end
 '''

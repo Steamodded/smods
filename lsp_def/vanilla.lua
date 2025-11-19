@@ -244,10 +244,84 @@ function get_straight(hand, min_length, skip, wrap) end
 --- Creates tally sprite UI. 
 function tally_sprite(pos, value, tooltip, suit) end
 
----@param _t table[]
+---@param _t table
 ---@param seed string
----@param args table|{starting_deck?: boolean, in_pool?: fun(center: SMODS.GameObject|table, args: table)}
----@return table
----@return string key
---- Sets the seed to `seed` and randomly selects a table within `_t`. 
+---@param args table|{starting_deck?: boolean, in_pool?: fun(v: any, args: table)}
+---@return any
+---@return string|number key
+--- Sets the seed to `seed` and randomly selects an element within `_t`.
+---
+--- First filters the elements of `_t` using `args.in_pool`,
+--- or else each element `v`'s `v.in_pool` field, if given.
 function pseudorandom_element(_t, seed, args) end
+
+--- Vanilla Pools
+
+---@alias Enhancements
+---| 'm_bonus'
+---| 'm_mult'
+---| 'm_wild'
+---| 'm_glass'
+---| 'm_steel'
+---| 'm_stone'
+---| 'm_gold'
+---| 'm_lucky'
+
+---@alias Editions
+---| 'e_foil'
+---| 'e_holo'
+---| 'e_polychrome'
+---| 'e_negative'
+
+---@alias Seals
+---| 'Red'
+---| 'Blue'
+---| 'Gold'
+---| 'Purple'
+
+---@alias Stickers
+---| 'perishable'
+---| 'eternal'
+---| 'rental'
+---| 'pinned'
+
+---@alias PokerHands
+---| 'Flush Five'
+---| 'Flush House'
+---| 'Five of a Kind'
+---| 'Straight Flush'
+---| 'Four of a Kind'
+---| 'Full House'
+---| 'Flush'
+---| 'Straight'
+---| 'Three of a Kind'
+---| 'Two Pair'
+---| 'Pair'
+---| 'High Card'
+
+---@alias Ranks
+---| '2'
+---| '3'
+---| '4'
+---| '5'
+---| '6'
+---| '7'
+---| '8'
+---| '9'
+---| '10'
+---| 'Jack'
+---| 'Queen'
+---| 'King'
+---| 'Ace'
+
+---@alias Suits
+---| 'Hearts'
+---| 'Diamonds'
+---| 'Clubs'
+---| 'Spades'
+
+---@alias Rarities
+---| 'Legendary'
+---| 'Rare'
+---| 'Uncommon'
+---| 'Common'

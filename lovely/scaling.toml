@@ -1,0 +1,708 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Ceremonial Dagger
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.ability.mult = self.ability.mult + sliced_card.sell_cost*2
+'''
+payload = '''
+'''
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type = 'variable', key = 'a_mult', vars = {self.ability.mult+2*sliced_card.sell_cost}}, colour = G.C.RED, no_juice = true})'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "mult",
+    scalar_table = sliced_card,
+    scalar_value = "sell_cost",
+    operation = function(ref_table, ref_value, initial, scaling)
+        ref_table[ref_value] = initial + 2*scaling
+    end,
+    scaling_message = {
+        message = localize{type = 'variable', key = 'a_mult', vars = {self.ability.mult+2*sliced_card.sell_cost}},
+        colour = G.C.RED,
+        no_juice = true
+    }
+})
+'''
+
+# Flash Card
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.ability.mult = self.ability.mult + self.ability.extra
+G.E_MANAGER:add_event(Event({
+    func = (function()
+        card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type = 'variable', key = 'a_mult', vars = {self.ability.mult}}, colour = G.C.MULT})
+    return true
+end)}))
+'''
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "mult",
+    scalar_value = "extra",
+    message_key = 'a_mult',
+    message_colour = G.C.RED
+})
+return nil, true
+'''
+# Red Card
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.ability.mult = self.ability.mult + self.ability.extra
+                G.E_MANAGER:add_event(Event({
+    func = function() 
+        card_eval_status_text(self, 'extra', nil, nil, nil, {
+            message = localize{type = 'variable', key = 'a_mult', vars = {self.ability.extra}},
+            colour = G.C.RED,
+            delay = 0.45, 
+            card = self
+        }) 
+        return true
+    end}))
+'''
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "mult",
+    scalar_value = "extra",
+    message_key = 'a_mult',
+    message_colour = G.C.RED,
+    message_delay = 0.45,
+})
+'''
+# Spare Trousers
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.ability.mult = self.ability.mult + self.ability.extra
+return {
+    message = localize('k_upgrade_ex'),
+    colour = G.C.RED,
+    card = self
+}
+'''
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "mult",
+    scalar_value = "extra",
+    message_colour = G.C.RED
+})
+return nil, true
+'''
+# Ride The Bus
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+else
+    self.ability.mult = self.ability.mult + self.ability.extra
+end
+'''
+payload = '''
+else
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "mult",
+        scalar_value = "extra",
+        no_message = true
+    })
+    return nil, true
+end
+'''
+
+# Egg
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra_value = self.ability.extra_value + self.ability.extra
+self:set_cost()
+return {
+    message = localize('k_val_up'),
+    colour = G.C.MONEY
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "extra_value",
+    scalar_value = "extra",
+    scaling_message = {
+        message = localize('k_val_up'),
+        colour = G.C.MONEY
+    }
+})
+self:set_cost()
+return nil, true
+'''
+
+# Runner/Square Joker
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra.chips = self.ability.extra.chips + self.ability.extra.chip_mod
+return {
+    message = localize('k_upgrade_ex'),
+    colour = G.C.CHIPS,
+    card = self
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability.extra,
+    ref_value = "chips",
+    scalar_value = "chip_mod",
+})
+return nil, true
+'''
+
+# Castle
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra.chips = self.ability.extra.chips + self.ability.extra.chip_mod
+                  
+return {
+    message = localize('k_upgrade_ex'),
+    card = self,
+    colour = G.C.CHIPS
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability.extra,
+    ref_value = "chips",
+    scalar_value = "chip_mod",
+})
+return nil, true
+'''
+
+# Wee Joker
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra.chips = self.ability.extra.chips + self.ability.extra.chip_mod
+
+return {
+    extra = {focus = self, message = localize('k_upgrade_ex')},
+    card = self,
+    colour = G.C.CHIPS
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability.extra,
+    ref_value = "chips",
+    scalar_value = "chip_mod",
+    no_message = true
+})
+return {
+    extra = {focus = self, message = localize('k_upgrade_ex')},
+    card = self
+}
+'''
+
+# Ice Cream
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra.chips = self.ability.extra.chips - self.ability.extra.chip_mod
+return {
+    message = localize{type='variable',key='a_chips_minus',vars={self.ability.extra.chip_mod}},
+    colour = G.C.CHIPS
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability.extra,
+    ref_value = "chips",
+    scalar_value = "chip_mod",
+    operation = "-",
+    message_key = 'a_chips_minus'
+})
+return nil, true
+'''
+
+# Madness
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Madness' and not context.blueprint and not context.blind.boss then
+    self.ability.x_mult = self.ability.x_mult + self.ability.extra
+'''
+position = 'at'
+match_indent = true
+payload = '''
+if self.ability.name == 'Madness' and not context.blueprint and not context.blind.boss then
+'''
+# Madness pt2
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if not (context.blueprint_card or self).getting_sliced then
+    card_eval_status_text((context.blueprint_card or self), 'extra', nil, nil, nil, {message = localize{type = 'variable', key = 'a_xmult', vars = {self.ability.x_mult}}})
+end
+'''
+payload = '''
+if not (context.blueprint_card or self).getting_sliced then
+    SMODS.scale_card(context.blueprint_card or self, {
+        ref_table = self.ability,
+        ref_value = "x_mult",
+        scalar_value = "extra",
+        message_key = 'a_xmult'
+    })
+end
+'''
+
+# Constellation
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Constellation' and not context.blueprint and context.consumeable.ability.set == 'Planet' then
+    self.ability.x_mult = self.ability.x_mult + self.ability.extra
+    G.E_MANAGER:add_event(Event({
+        func = function() card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type='variable',key='a_xmult',vars={self.ability.x_mult}}}); return true
+        end}))
+'''
+position = 'at'
+match_indent = true
+payload = '''
+if self.ability.name == 'Constellation' and not context.blueprint and context.consumeable.ability.set == 'Planet' then
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "x_mult",
+        scalar_value = "extra",
+        message_key = 'a_xmult'
+    })
+'''
+# Campfire
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + self.ability.extra
+G.E_MANAGER:add_event(Event({
+    func = function() card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize('k_upgrade_ex')}); return true
+    end}))
+'''
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "x_mult",
+    scalar_value = "extra",
+    message_colour = G.C.FILTER
+})
+return nil, true
+'''
+# Lucky Cat
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + self.ability.extra
+return {
+    extra = {focus = self, message = localize('k_upgrade_ex'), colour = G.C.MULT},
+    card = self
+}
+'''
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "x_mult",
+    scalar_value = "extra",
+    no_message = true
+})
+return {
+    extra = {focus = self, message = localize('k_upgrade_ex'), colour = G.C.MULT},
+    card = self
+}
+'''
+# Obelisk
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+else
+    self.ability.x_mult = self.ability.x_mult + self.ability.extra
+end
+'''
+payload = '''
+else
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "x_mult",
+        scalar_value = "extra",
+        no_message = true
+    })
+    return nil, true
+end
+'''
+
+# Hit the Road/Lucky Cat
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + self.ability.extra
+return {
+    message = localize{type='variable',key='a_xmult',vars={self.ability.x_mult}},
+        colour = G.C.RED,
+        delay = 0.45, 
+    card = self
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "x_mult",
+    scalar_value = "extra",
+    message_key = 'a_xmult',
+    message_colour = G.C.RED,
+    message_delay = 0.45,
+})
+return nil, true
+'''
+
+# Green Joker: Subtraction
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.mult = math.max(0, self.ability.mult - self.ability.extra.discard_sub)
+if self.ability.mult ~= prev_mult then 
+    return {
+        message = localize{type='variable',key='a_mult_minus',vars={self.ability.extra.discard_sub}},
+        colour = G.C.RED,
+        card = self
+    }
+end
+'''
+position = 'at'
+match_indent = true
+payload = '''
+if self.ability.mult ~= 0 then
+    SMODS.scale_card(self, {
+        ref_table = self.ability,
+        ref_value = "mult",
+        scalar_table = self.ability.extra,
+        scalar_value = "discard_sub",
+        operation = function(ref_table, ref_value, initial, change)
+            ref_table[ref_value] = math.max(0, initial - change)
+        end,
+        message_key = 'a_mult_minus',
+        message_colour = G.C.RED
+    })
+    return nil, true
+end
+'''
+
+# Green Joker: Addition
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.mult = self.ability.mult + self.ability.extra.hand_add
+return {
+    card = self,
+    message = localize{type='variable',key='a_mult',vars={self.ability.extra.hand_add}}
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "mult",
+    scalar_table = self.ability.extra,
+    scalar_value = "hand_add"
+})
+return nil, true
+'''
+
+# Vampire
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + self.ability.extra*#enhanced
+return {
+    message = localize{type='variable',key='a_xmult',vars={self.ability.x_mult}},
+    colour = G.C.MULT,
+    card = self
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "x_mult",
+    scalar_value = "extra",
+    message_key = 'a_xmult',
+    message_colour = G.C.MULT,
+    operation = function(ref_table, ref_value, initial, scaling)
+        ref_table[ref_value] = initial + scaling*#enhanced
+    end
+})
+return nil, true
+'''
+
+# Hologram
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + #context.cards*self.ability.extra
+card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type = 'variable', key = 'a_xmult', vars = {self.ability.x_mult}}})
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "x_mult",
+    scalar_value = "extra",
+    message_key = 'a_xmult',
+    operation = function(ref_table, ref_value, initial, scaling)
+        ref_table[ref_value] = initial + scaling*#context.cards
+    end
+})
+'''
+
+# Rocket
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra.dollars = self.ability.extra.dollars + self.ability.extra.increase
+return {
+    message = localize('k_upgrade_ex'),
+    colour = G.C.MONEY
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability.extra,
+    ref_value = "dollars",
+    scalar_value = "increase",
+    message_colour = G.C.MONEY
+})
+return nil, true
+'''
+
+# Turtle Bean
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra.h_size = self.ability.extra.h_size - self.ability.extra.h_mod
+G.hand:change_size(- self.ability.extra.h_mod)
+return {
+    message = localize{type='variable',key='a_handsize_minus',vars={self.ability.extra.h_mod}},
+    colour = G.C.FILTER
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability.extra,
+    ref_value = "h_size",
+    scalar_value = "h_mod",
+    message_key = 'a_handsize_minus',
+    operation = function(ref_table, ref_value, initial, change)
+        ref_table[ref_value] = initial - change
+        G.hand:change_size(- change)
+    end
+})
+return nil, true
+'''
+
+# Popcorn
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.mult = self.ability.mult - self.ability.extra
+return {
+    message = localize{type='variable',key='a_mult_minus',vars={self.ability.extra}},
+    colour = G.C.MULT
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "mult",
+    scalar_value = "extra",
+    message_key = 'a_mult_minus',
+    colour = G.C.MULT,
+    operation = '-'
+})
+return nil, true
+'''
+
+# Ramen
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult - self.ability.extra
+return {
+    delay = 0.2,
+    card = self,
+    message = localize{type='variable',key='a_xmult_minus',vars={self.ability.extra}},
+    colour = G.C.RED
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "x_mult",
+    scalar_value = "extra",
+    operation = "-",
+    message_key = 'a_xmult_minus',
+    colour = G.C.RED,
+    message_delay = 0.2,
+})
+return nil, true
+'''
+
+# Yorick
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.x_mult = self.ability.x_mult + self.ability.extra.xmult
+return {
+    card = self,
+    delay = 0.2,
+    message = localize{type='variable',key='a_xmult',vars={self.ability.x_mult}},
+    colour = G.C.RED
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = "x_mult",
+    scalar_table = self.ability.extra,
+    scalar_value = "xmult",
+    message_key = 'a_xmult',
+    message_colour = G.C.RED,
+    message_delay = 0.2,
+})
+return nil, true
+'''
+
+# Canio
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.ability.caino_xmult = self.ability.caino_xmult + face_cards*self.ability.extra
+G.E_MANAGER:add_event(Event({
+func = function() card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type = 'variable', key = 'a_xmult', vars = {self.ability.caino_xmult}}}); return true
+end}))
+'''
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = 'caino_xmult',
+    scalar_value = 'extra',
+    operation = function(ref_table, ref_value, initial, change)
+        ref_table[ref_value] = initial + face_cards*change
+    end,
+    message_key = 'a_xmult'
+})
+return nil, true
+'''
+
+# Glass Joker
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.E_MANAGER:add_event(Event({
+    func = function()
+        self.ability.x_mult = self.ability.x_mult + self.ability.extra*glass_cards
+    return true
+    end
+}))
+card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type = 'variable', key = 'a_xmult', vars = {self.ability.x_mult + self.ability.extra*glass_cards}}})
+'''
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability,
+    ref_value = 'x_mult',
+    scalar_value = 'extra',
+    operation = function(ref_table, ref_value, initial, change)
+        ref_table[ref_value] = initial + glass_cards*change
+    end,
+    message_key = 'a_xmult'
+})
+'''

@@ -1,0 +1,126 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = "if self.config.bump then letter.offset.y = (G.SETTINGS.reduced_motion and 0 or 1)*self.bump_amount*math.sqrt(self.scale)*7*math.max(0, (5+self.bump_rate)*math.sin(self.bump_rate*G.TIMERS.REAL+200*k) - 3 - self.bump_rate) end"
+position = "after"
+payload = '''if self.config.text_effect and SMODS.DynaTextEffects[self.config.text_effect] and type(SMODS.DynaTextEffects[self.config.text_effect].func) == "function" then
+    SMODS.DynaTextEffects[self.config.text_effect].func(self, k, letter) -- k is index
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = "          local _float, _silent, _pop_in, _bump, _spacing = nil, true, nil, nil, nil"
+position = "after"
+payload = '''local text_effects'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = "            _bump = true; _spacing = 1"
+position = "after"
+payload = '''elseif SMODS.DynaTextEffects[part.control.E] then
+    text_effects = part.control.E'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = "            spacing = _spacing,"
+position = "after"
+payload = '''text_effect = text_effects,'''
+match_indent = true
+
+
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = """        love.graphics.draw(
+            letter.letter,
+            0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.x,
+            0.5*(letter.dims.y - letter.offset.y)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.y, 
+            letter.r or 0,
+            real_pop_in*letter.scale*self.scale*self.font.FONTSCALE/G.TILESIZE,
+            real_pop_in*letter.scale*self.scale*self.font.FONTSCALE/G.TILESIZE,
+            0.5*letter.dims.x/(self.scale),
+            0.5*letter.dims.y/(self.scale)
+    )"""
+position = "before"
+payload = '''if self.config.text_effect and SMODS.DynaTextEffects[self.config.text_effect] and type(SMODS.DynaTextEffects[self.config.text_effect].draw_letter) == "function" then
+    SMODS.DynaTextEffects[self.config.text_effect].draw_letter(self, k, letter, false) -- actual text
+else'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = """        love.graphics.draw(
+            letter.letter,
+            0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.x,
+            0.5*(letter.dims.y - letter.offset.y)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.y, 
+            letter.r or 0,
+            real_pop_in*letter.scale*self.scale*self.font.FONTSCALE/G.TILESIZE,
+            real_pop_in*letter.scale*self.scale*self.font.FONTSCALE/G.TILESIZE,
+            0.5*letter.dims.x/(self.scale),
+            0.5*letter.dims.y/(self.scale)
+    )"""
+position = "after"
+payload = '''end'''
+match_indent = true
+
+
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = """            love.graphics.draw(
+                letter.letter,
+                0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE -self.shadow_parrallax.x*self.scale/(G.TILESIZE),
+                0.5*(letter.dims.y)*self.font.FONTSCALE/G.TILESIZE -self.shadow_parrallax.y*self.scale/(G.TILESIZE), 
+                letter.r or 0,
+                real_pop_in*self.scale*self.font.FONTSCALE/G.TILESIZE,
+                real_pop_in*self.scale*self.font.FONTSCALE/G.TILESIZE,
+                0.5*letter.dims.x/self.scale,
+                0.5*letter.dims.y/self.scale
+            )
+            love.graphics.translate(letter.dims.x*self.font.FONTSCALE/G.TILESIZE, 0)"""
+position = "before"
+payload = '''if self.config.text_effect and SMODS.DynaTextEffects[self.config.text_effect] and type(SMODS.DynaTextEffects[self.config.text_effect].draw_shadow) == "function" then
+    SMODS.DynaTextEffects[self.config.text_effect].draw_shadow(self, k, letter) -- shadow
+else'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = """            love.graphics.draw(
+                letter.letter,
+                0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE -self.shadow_parrallax.x*self.scale/(G.TILESIZE),
+                0.5*(letter.dims.y)*self.font.FONTSCALE/G.TILESIZE -self.shadow_parrallax.y*self.scale/(G.TILESIZE), 
+                letter.r or 0,
+                real_pop_in*self.scale*self.font.FONTSCALE/G.TILESIZE,
+                real_pop_in*self.scale*self.font.FONTSCALE/G.TILESIZE,
+                0.5*letter.dims.x/self.scale,
+                0.5*letter.dims.y/self.scale
+            )
+            love.graphics.translate(letter.dims.x*self.font.FONTSCALE/G.TILESIZE, 0)"""
+position = "after"
+payload = '''end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = """    if self.children.particle_effect then self.children.particle_effect:draw() end"""
+position = "before"
+payload = '''if self.config.text_effect and SMODS.DynaTextEffects[self.config.text_effect] and type(SMODS.DynaTextEffects[self.config.text_effect].draw_override) == "function" then
+    SMODS.DynaTextEffects[self.config.text_effect].draw_override(self)
+    return
+end'''
+match_indent = true

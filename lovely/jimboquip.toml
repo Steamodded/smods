@@ -1,0 +1,202 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Select custom win quips
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''Jimbo = Card_Character({x = 0, y = 5})
+local spot = G.OVERLAY_MENU:get_UIE_by_ID('jimbo_spot')
+spot.config.object:remove()
+spot.config.object = Jimbo
+Jimbo.ui_object_updated = true
+Jimbo:add_speech_bubble('wq_'..math.random(1,7), nil, {quip = true})
+Jimbo:say_stuff(5)
+'''
+position = "at"
+payload = '''
+local quip, extra = SMODS.quip("win")
+extra.x = 0
+extra.y = 5
+Jimbo = Card_Character(extra)
+local spot = G.OVERLAY_MENU:get_UIE_by_ID('jimbo_spot')
+spot.config.object:remove()
+spot.config.object = Jimbo
+Jimbo.ui_object_updated = true
+Jimbo:add_speech_bubble(quip, nil, {quip = true}, extra)
+Jimbo:say_stuff((extra and extra.times) or 5, false, quip)
+'''
+match_indent = true
+
+# Select custom loss quips
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''Jimbo = Card_Character({x = 0, y = 5})
+local spot = G.OVERLAY_MENU:get_UIE_by_ID('jimbo_spot')
+spot.config.object:remove()
+spot.config.object = Jimbo
+Jimbo.ui_object_updated = true
+Jimbo:add_speech_bubble('lq_'..math.random(1,10), nil, {quip = true})
+Jimbo:say_stuff(5)
+'''
+position = "at"
+payload = '''
+local quip, extra = SMODS.quip("loss")
+extra.x = 0
+extra.y = 5
+Jimbo = Card_Character(extra)
+local spot = G.OVERLAY_MENU:get_UIE_by_ID('jimbo_spot')
+spot.config.object:remove()
+spot.config.object = Jimbo
+Jimbo.ui_object_updated = true
+Jimbo:add_speech_bubble(quip, nil, {quip = true}, extra)
+Jimbo:say_stuff((extra and extra.times) or 5, false, quip)
+'''
+match_indent = true
+
+# Allow custom materialize colours
+[[patches]]
+[patches.pattern]
+target = "card_character.lua"
+pattern = '''self.children.card:start_materialize({G.C.BLUE, G.C.WHITE, G.C.RED})'''
+position = "at"
+payload = '''self.children.card:start_materialize({args.materialize_colours and args.materialize_colours[1] or G.C.BLUE, args.materialize_colours and args.materialize_colours[2] or G.C.WHITE, args.materialize_colours and args.materialize_colours[3] or G.C.RED})'''
+match_indent = true
+
+# Allow custom particle_colours
+[[patches]]
+[patches.pattern]
+target = "card_character.lua"
+pattern = '''colours = {G.C.RED, G.C.BLUE, G.C.ORANGE},'''
+position = "at"
+payload = '''colours = {args.particle_colours and args.particle_colours[1] or G.C.RED, args.particle_colours and args.particle_colours[2] or G.C.BLUE, args.particle_colours and args.particle_colours[3] or G.C.ORANGE},'''
+match_indent = true
+
+# Allow custom centers to be used for quips
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.children.card = Card(self.T.x, self.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, args.center or G.P_CENTERS.j_joker, {bypass_discovery_center = true})
+'''
+payload = '''
+self.children.card = Card(self.T.x, self.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, args.center and G.P_CENTERS[args.center] or G.P_CENTERS.j_joker, {bypass_discovery_center = true})
+'''
+
+# Pass args into add_speech_bubble
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+function Card_Character:add_speech_bubble(text_key, align, loc_vars)
+'''
+payload = '''
+function Card_Character:add_speech_bubble(text_key, align, loc_vars, quip_args)
+    if quip_args and quip_args.text_key then text_key = quip_args.text_key end
+'''
+
+
+
+
+# Pass extra table into say_stuff
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+pattern = '''
+function Card_Character:say_stuff(n, not_first)
+'''
+position = 'at'
+payload = '''
+function Card_Character:say_stuff(n, not_first, quip_key)
+    local quip = SMODS.JimboQuips[quip_key] or {}
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+pattern = '''
+self:say_stuff(n, true)
+'''
+position = 'at'
+payload = '''
+self:say_stuff(n, true, quip_key)
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+pattern = '''
+self:say_stuff(n-1, true)
+'''
+position = 'at'
+payload = '''
+self:say_stuff(n-1, true, quip_key)
+'''
+match_indent = true
+
+
+# Allow custom sounds to be used for the voice
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+pattern = '''
+play_sound('voice'..math.random(1, 11), G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+'''
+position = 'at'
+payload = '''
+if quip.play_sounds and type(quip.play_sounds) == 'function' then
+    quip:play_sounds(n)
+elseif quip.extra and quip.extra.sound then
+    local custom_pitch = quip.extra.pitch
+    if type(quip.extra.sound) == 'table' then
+        for k, v in pairs(quip.extra.sound) do
+            play_sound(v, custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+        end
+    elseif type(quip.extra.sound) == 'string' then
+        play_sound(quip.extra.sound, custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+    else
+        play_sound('voice'..math.random(1, 11), custom_pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+    end
+else
+    play_sound('voice'..math.random(1, 11), quip.extra and quip.extra.pitch or G.SPEEDFACTOR*(math.random()*0.2+1), 0.5)
+end
+'''
+match_indent = true
+
+
+# Allow custom delay between talking sounds
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+pattern = '''
+delay = 0.13,
+'''
+position = 'at'
+payload = '''
+delay = quip.extra and quip.extra.delay or 0.13,
+'''
+match_indent = true
+
+
+# Allow custom juice parameters
+[[patches]]
+[patches.pattern]
+target = 'card_character.lua'
+pattern = '''
+self.children.card:juice_up()
+'''
+position = 'at'
+payload = '''
+local juice_params = quip.extra and quip.extra.juice or {nil, nil}
+self.children.card:juice_up(juice_params[1], juice_params[2])
+'''
+match_indent = true

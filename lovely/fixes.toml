@@ -99,7 +99,7 @@ pattern = "bypass_lock = self.bypass_lock,"
 position = "after"
 payload = """
 unique_val = self.unique_val,
-unique_val__saved_ID = self.ID,
+unique_val__saved_ID = self.unique_val__saved_ID or self.ID,
 ignore_base_shader = self.ignore_base_shader,
 ignore_shadow = self.ignore_shadow,"""
 match_indent = true
@@ -112,6 +112,7 @@ pattern = "self.bypass_lock = cardTable.bypass_lock"
 position = "after"
 payload = """
 self.unique_val = cardTable.unique_val or self.unique_val
+self.unique_val__saved_ID = cardTable.unique_val__saved_ID or self.unique_val__saved_ID
 if cardTable.unique_val__saved_ID and G.ID <= cardTable.unique_val__saved_ID then
     G.ID = cardTable.unique_val__saved_ID + 1
 end
@@ -130,7 +131,8 @@ pattern = 'function generate_card_ui(_c, full_UI_table, specific_vars, card_type
 position = 'at'
 match_indent = true
 payload = '''function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end, card)
-    if _c.specific_vars then specific_vars = _c.specific_vars end'''
+    if _c.specific_vars then specific_vars = _c.specific_vars end
+'''
 
 [[patches]]
 [patches.pattern]
@@ -211,6 +213,12 @@ self.ability.extra_value = self.ability.extra_value or 0
 for k, v in pairs(new_ability) do
     self.ability[k] = v
 end
+
+-- handles card_limit/extra_slots_used changes
+self.ability.card_limit = self.ability.card_limit + (center.config.card_limit or 0)
+self.ability.extra_slots_used = self.ability.extra_slots_used + (center.config.extra_slots_used or 0)
+
+
 -- reset keys do not persist on ability change
 local reset_keys = {'name', 'effect', 'set', 'extra', 'played_this_ante', 'perma_debuff'}
 for _, mod in ipairs(SMODS.mod_list) do
@@ -237,6 +245,17 @@ payload = "self.label = center.label or self.config.card and self.config.card.la
 ### Fix Matador
 
 # These patches have been removed for altering vanilla behavior. Git blame this line to see what they were
+
+### Debuffing boss blinds and Verdant Leaf don't debuff things
+### that aren't a Joker or playing card
+
+## Blind:debuff_card
+[[patches]]
+[patches.regex]
+target = 'blind.lua'
+pattern = '''card\.area ~= G.jokers'''
+position = 'at'
+payload = """card.playing_card"""
 
 ### Fix Crimson Heart
 
@@ -386,7 +405,7 @@ target = "functions/misc_functions.lua"
 pattern = '''if win_ante and (win_ante >= 8) then'''
 match_indent = true
 position = "at"
-payload = '''if win_ante and (win_ante >= 8) or (v.in_pool and type(v.in_pool) == 'function' and not v:in_pool()) then'''
+payload = '''if win_ante and (win_ante >= 8) or not SMODS.add_to_pool(v) then'''
 
 #
 # Fix G.GAME.blind:set_blind(nil, true, nil)
@@ -625,6 +644,23 @@ if success then st = _st else sendWarnMessage(_st, "LuaSteam"); st = {} end"""
 overwrite = true
 match_indent = true
 
+# copy_card: Subtract from .ability.card_limit
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+position = 'before'
+match_indent = true
+pattern = 'if not strip_edition then'
+payload = '''
+if other.edition then
+    new_card.ability.card_limit = new_card.ability.card_limit - (other.edition.card_limit or 0)
+    new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.edition.extra_slots_used or 0)
+end
+if other.seal then
+    new_card.ability.card_limit = new_card.ability.card_limit - (other.ability.seal.card_limit or 0)
+    new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.ability.seal.extra_slots_used or 0)
+end'''
+
 # copy_card edition config
 [[patches]]
 [patches.pattern]
@@ -632,7 +668,8 @@ target = 'functions/common_events.lua'
 position = 'after'
 match_indent = true
 pattern = 'new_card:set_edition(other.edition or {}, nil, true)'
-payload = '''for k,v in pairs(other.edition or {}) do
+payload = '''
+for k,v in pairs(other.edition or {}) do
     if type(v) == 'table' then
         new_card.edition[k] = copy_table(v)
     else
@@ -713,7 +750,8 @@ match_indent = true
 target = "game.lua"
 pattern = 'function Game:delete_run()'
 position = 'after'
-payload = '    G.in_delete_run = true'
+payload = '''    G.in_delete_run = true
+    booster_obj = nil'''
 match_indent = true
 [[patches]]
 [patches.pattern]
@@ -749,3 +787,29 @@ payload = '''
 self:set_ranks()
 if not G.in_delete_run and self == G.deck then check_for_unlock({type = 'modify_deck', deck = self}) end'''
 match_indent = true
+
+# Assign `getting_sliced` to destruction events
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if v ~= chosen_joker then 
+'''
+payload = '''
+v.getting_sliced = true
+'''
+
+# Allow pseudoshuffle to take a string as a seed
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function pseudoshuffle(list, seed)
+'''
+payload = '''
+    if seed and type(seed) == "string" then seed = pseudoseed(seed) end
+'''
