@@ -747,3 +747,9 @@ function SMODS.check_looping_context(eval_object) end
 ---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
 ---@return boolean
 function SMODS.challenge_is_unlocked(challenge, k) end
+
+---@param cardareas table | nil a map of cardarea keys to access them from the global G table. Passing nil saves all global cardarea highights
+---@return table
+--- Saves highlighted cards for saved actions that require them
+--- Returns a table of sort_id maps, indexed by the keys of their cardareas
+function SMODS.save_action_highights(cardareas) end
