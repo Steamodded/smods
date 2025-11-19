@@ -2166,6 +2166,6 @@ G.FUNCS.hand_type_UI_set = function(e)
     G.GAME.current_round.current_hand[e.config.text] = new_mult_text
     e.config.object.scale = scale_number(G.GAME.current_round.current_hand[e.config.type], e.config.scale, 1000)
     e.config.object:update_text()
-    if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and G.GAME.current_round.current_hand[e.config.type] or 1)))) end
+    if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and math.abs(G.GAME.current_round.current_hand[e.config.type]) or 1)))) end
   end
 end
