@@ -169,3 +169,10 @@ pattern = 'number >= G\.E_SWITCH_POINT'
 position = "at"
 payload = "math.abs(number) >= (e_switch_point or G.E_SWITCH_POINT)"
 
+[[patches]]
+[patches.regex]
+target = "functions/button_callbacks.lua"
+pattern = 'number >= max'
+position = "at"
+payload = "math.abs(number) >= max"
+
