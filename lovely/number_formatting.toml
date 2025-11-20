@@ -176,3 +176,9 @@ pattern = 'number >= max'
 position = "at"
 payload = "math.abs(number) >= max"
 
+[[patches]]
+[patches.regex]
+target = "functions/button_callbacks.lua"
+pattern = 'math\.log(number*10, 10)'
+position = "at"
+payload = "math.log(math.abs(number)*10, 10)"
