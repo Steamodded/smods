@@ -224,3 +224,38 @@ if G.PROFILES[G.SETTINGS.profile].all_unlocked then max_stake = #G.P_CENTER_POOL
 G.viewed_stake = math.min(max_stake+1, G.viewed_stake)
 ]]--
 '''
+
+# Stake loc_vars
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if _stake_center then localize{type = 'descriptions', key = _stake_center.key, set = _stake_center.set, nodes = ret_nodes} end 
+'''
+payload = '''
+local t, res = {}, {}
+if _stake_center then
+  if _stake_center.loc_vars and type(_stake_center.loc_vars) == 'function' then
+    res = _stake_center:loc_vars() or {}
+  end
+  t.vars = res.vars or {}
+  t.key = res.key or _stake_center.key
+  t.set = res.set or _stake_center.set
+  localize{type = 'descriptions', key = t.key, set = t.set, nodes = ret_nodes, vars = t.vars}
+end
+'''
+
+# Stake loc_vars pt 2
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{n=G.UIT.T, config={text = localize{type = 'name_text', key = _stake_center.key, set = _stake_center.set}, scale = 0.35, colour = G.C.WHITE}}
+'''
+payload = '''
+{n=G.UIT.T, config={text = localize{type = 'name_text', key = t.key, set = t.set}, scale = 0.35, colour = G.C.WHITE}}
+'''
