@@ -2098,14 +2098,17 @@ function SMODS.blueprint_effect(copier, copied_card, context)
     local old_context_blueprint_card = context.blueprint_card
     context.blueprint_card = context.blueprint_card or copier
 
-    local old_context_blueprint_copier = context.blueprint_copier
-    context.blueprint_copier = copier
+    context.blueprint_copiers_stack = context.blueprint_copiers_stack or {}
+    context.blueprint_copiers_stack[#context.blueprint_copiers_stack + 1] = copier
+    context.blueprint_copier = context.blueprint_copiers_stack[#context.blueprint_copiers_stack]
 
     local eff_card = context.blueprint_card
     local other_joker_ret = copied_card:calculate_joker(context)
+
     context.blueprint = old_context_blueprint
     context.blueprint_card = old_context_blueprint_card
-    context.blueprint_copier = old_context_blueprint_copier
+    table.remove(context.blueprint_copiers_stack, #context.blueprint_copiers_stack)
+    context.blueprint_copier = context.blueprint_copiers_stack[#context.blueprint_copiers_stack]
 
     if other_joker_ret then
         other_joker_ret.card = eff_card
