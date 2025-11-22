@@ -22,3 +22,9 @@ sources = ["src/core.lua"]
 before = "main.lua"
 source = "version.lua"
 name = "SMODS.version"
+
+[[patches]]
+[patches.module]
+before = "main.lua"
+source = "release.lua"
+name = "SMODS.release"

@@ -73,7 +73,7 @@
 ---@field from_area? CardArea|table CardArea the card is being drawn from.
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand.
 ---@field drawing_cards? true `true` when cards are being drawn
----@field amount? number Used for in some contexts to specify a numerical amount. 
+---@field amount? number Used for in some contexts to specify a numerical amount.
 ---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
 ---@field display_name? PokerHands|'Royal Flush'|string Display name of the scoring poker hand.
 ---@field mod_probability? true Check if `true` for effects that make additive or multiplicative modifications to probabilities.
@@ -104,6 +104,13 @@
 ---@field from_shop? true Check if `true` if money changed during the shop.
 ---@field from_consumeable? true Check if `true` if money changed by a consumable.
 ---@field from_scoring? true Check if `true` if money changed during scoring.
+---@field modify_ante? number The amount the ante changes by, check for effects before the ante changes.
+---@field ante_change? true Check if `true` for effects when the ante changes.
+---@field ante_end? true Check if `true` for when the ante change is for reaching the end of the ante.
+---@field setting_ability? true Check if `true` for effects after a card has had it's ability set.
+---@field old? string Key of the old center after a card's ability is set.
+---@field new? string Key of the new center after a card's ability is set.
+---@field unchanged? boolean `true` if the key of the old center is the same as the new one after a card's ability is set.
 
 --- Util Functions
 
@@ -196,6 +203,7 @@ function SMODS.calculate_effect_table_key(effect_table, key, card, ret) end
 
 ---@param effects table
 ---@param card Card|table
+---@return table
 --- Used to calculate a table of effects generated in evaluate_play
 function SMODS.trigger_effects(effects, card) end
 
@@ -425,7 +433,7 @@ function SMODS.add_card(t) end
 ---@param card Card|table
 ---@param debuff boolean|"reset"|'prevent_debuff'?
 ---@param source string?
---- Debuffs provided `card`.
+--- Sets a flag that debuffs (or prevents debuff on) provided `card`.
 function SMODS.debuff_card(card, debuff, source) end
 
 ---@param card Card|table
@@ -529,7 +537,8 @@ function SMODS.get_next_vouchers(vouchers) end
 ---@param key string
 ---@return Card|table voucher
 --- Adds a Voucher with matching `key` to the shop.
-function SMODS.add_voucher_to_shop(key) end
+--- If dont_save is true the Voucher will not return in the next shop
+function SMODS.add_voucher_to_shop(key, dont_save) end
 
 ---@param mod number
 --- Modifies the Voucher shop limit by `mod`.
@@ -691,10 +700,50 @@ function SMODS.is_eternal(card, trigger) end
 --- Args must contain `ref_table`, `ref_value`, and `scalar_value`. It may optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
 function SMODS.scale_card(card, args) end
 
-
 ---@param prototype_obj SMODS.GameObject|table
 ---@param args table?
 ---@return boolean?, table?
 --- Checks whether an object should be added to the pool.
 --- i.e. the in_pool method doesn't exist or it returns `true`
 function SMODS.add_to_pool(prototype_obj, args) end
+
+---@param context CalcContext|table The context being pushed
+---@param func string|nil The function/file from which the call originates
+--- Pushes a context to the SMODS.context_stack. (Form: {context=context, count=[number of consecutive pushes]})
+function SMODS.push_to_context_stack(context, func) end
+
+---@param context CalcContext|table The context being popped
+---@param func string|nil The function/file from which the call originates
+--- Pop a context from the SMODS.context_stack. (Removes 1 from .count)
+function SMODS.pop_from_context_stack(context, func) end
+
+---@return CalcContext|table|nil
+--- Returns the second to last context from the SMODS.context_stack.
+--- Useful for Seals/Enhancements determining whether a playing card was being individually evaluated,
+--- when a Joker called (e.g.) SMODS.pseudorandom_probability().
+function SMODS.get_previous_context() end
+
+---@param context CalcContext|table The context to be updated
+---@param flags table The flags with which to update it (e.g. flags.numerator, flags.denominator, etc.)
+function SMODS.update_context_flags(context, flags) end
+
+---@param context CalcContext|table The context checked
+---@return string|false
+--- Either returns a getter context identifier string
+--- (e.g. "enhancement" for context.check_enhancement)
+--- or false if the [context] isn't a getter context.
+function SMODS.is_getter_context(context) end
+
+---@param eval_object SMODS.GameObject|table The object that will be evaluated next if this returns false
+---@return boolean
+--- This functions checks whether a previous getter context of the same type
+--- as the current context (last SMODS.context_stack context) has caused the
+--- [eval_object] to incite any getter context, if yes returns false,
+--- skipping the evaluation of the object and preventing an infinite loop.
+function SMODS.check_looping_context(eval_object) end
+
+---Check if `challenge` is unlocked.
+---@param challenge SMODS.Challenge
+---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
+---@return boolean
+function SMODS.challenge_is_unlocked(challenge, k) end

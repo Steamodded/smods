@@ -480,7 +480,11 @@ function create_UIBox_Other_GameObjects()
         {
             count = G.ACTIVE_MOD_UI and modsCollectionTally(SMODS.Stickers), --Returns nil outside of G.ACTIVE_MOD_UI but we don't use it anyways
             button = UIBox_button({button = 'your_collection_stickers', label = {localize('b_stickers')}, count = G.ACTIVE_MOD_UI and modsCollectionTally(SMODS.Stickers), minw = 5, id = 'your_collection_stickers'})
-        }
+        },
+        {
+            count = G.ACTIVE_MOD_UI and modsCollectionTally(SMODS.PokerHands, nil, true), 
+            button = UIBox_button({button = 'your_collection_poker_hands', label = {localize('b_poker_hands')}, count = G.ACTIVE_MOD_UI and modsCollectionTally(SMODS.PokerHands, nil, true), minw = 5, id = 'your_collection_poker_hands'})
+        },
     }
 
     if G.ACTIVE_MOD_UI then
@@ -814,7 +818,7 @@ G.FUNCS.achievments_tab_page = function(args)
 end
 
 -- TODO: Optimize this. 
-function modsCollectionTally(pool, set)
+function modsCollectionTally(pool, set, ignore_discovered)
     local set = set or nil
     local obj_tally = {tally = 0, of = 0}
 
@@ -823,13 +827,13 @@ function modsCollectionTally(pool, set)
             if set then
                 if v.set and v.set == set then
                     obj_tally.of = obj_tally.of+1
-                    if v.discovered then 
+                    if ignore_discovered or v.discovered then 
                         obj_tally.tally = obj_tally.tally+1
                     end
                 end
             else
                 obj_tally.of = obj_tally.of+1
-                if v.discovered then 
+                if ignore_discovered or v.discovered then 
                     obj_tally.tally = obj_tally.tally+1
                 end
             end
@@ -894,7 +898,7 @@ function buildModtag(mod)
     local tag_atlas, tag_pos, tag_message, specific_vars = getModtagInfo(mod)
 
     local tag_sprite_tab = nil
-    local units = SMODS.pixels_to_unit(34) * 2
+    local units = 1
     local animated = G.ANIMATION_ATLAS[tag_atlas] or nil
     local tag_sprite
     if animated then
@@ -2023,7 +2027,7 @@ G.FUNCS.your_collection_stickers = function(e)
 end
 
 create_UIBox_your_collection_stickers = function()
-    return SMODS.card_collection_UIBox(SMODS.Stickers, {5,5}, {
+    return SMODS.card_collection_UIBox(SMODS.Stickers, { 5, 5 }, {
         snap_back = true,
         hide_single_page = true,
         collapse_single_page = true,
@@ -2035,7 +2039,34 @@ create_UIBox_your_collection_stickers = function()
             center:apply(card, true)
         end,
     })
-end 
+end
+
+G.FUNCS.your_collection_poker_hands = function(e)
+    G.SETTINGS.paused = true
+    G.FUNCS.overlay_menu{
+      definition = create_UIBox_your_collection_poker_hands(),
+    }
+end
+
+create_UIBox_your_collection_poker_hands = function (args)
+    return create_UIBox_generic_options({
+        colour = G.ACTIVE_MOD_UI and
+        ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or (G.ACTIVE_MOD_UI.ui_config or {}).colour),
+        bg_colour = G.ACTIVE_MOD_UI and
+        ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour),
+        back_colour = G.ACTIVE_MOD_UI and
+        ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or (G.ACTIVE_MOD_UI.ui_config or {}).back_colour),
+        outline_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
+        back_func = (args and args.back_func) or G.ACTIVE_MOD_UI and "openModUI_" .. G.ACTIVE_MOD_UI.id or
+            'your_collection_other_gameobjects',
+        snap_back = args and args.snap_back,
+        infotip = args and args.infotip,
+        contents = {
+            create_UIBox_current_hands(nil, true)
+        }
+    })
+end
 
 -- warning for updating during run
 local igo = Game.init_game_object
@@ -2118,7 +2149,7 @@ end
 
 function SMODS.GUI.chips_container(scale)
     return
-    {n=G.UIT.C, config={align = 'cm', id = 'hand_chips'}, nodes = {
+    {n=G.UIT.C, config={align = 'cm', id = 'hand_chips_container'}, nodes = {
         SMODS.GUI.score_container({
             type = 'chips',
             text = 'chip_text',
@@ -2129,14 +2160,14 @@ end
 
 function SMODS.GUI.operator(scale)
     return
-    {n=G.UIT.C, config={align = "cm", id = 'hand_operator'}, nodes={
+    {n=G.UIT.C, config={align = "cm", id = 'hand_operator_container'}, nodes={
         {n=G.UIT.T, config={text = "X", lang = G.LANGUAGES['en-us'], scale = scale*2, colour = G.C.UI_MULT, shadow = true}},
     }}
 end
 
 function SMODS.GUI.mult_container(scale)
     return 
-    {n=G.UIT.C, config={align = 'cm', id = 'hand_mult'}, nodes = {
+    {n=G.UIT.C, config={align = 'cm', id = 'hand_mult_container'}, nodes = {
         SMODS.GUI.score_container({
             type = 'mult'
         })
@@ -2145,7 +2176,7 @@ end
 
 function SMODS.GUI.score_container(args)
     local scale = args.scale or 0.4
-    local type = args.type or 'mult'
+    local type = args.type
     local colour = args.colour or SMODS.Scoring_Parameters[type].colour
     local align = args.align or 'cl'
     local func = args.func or 'hand_type_UI_set'
@@ -2155,6 +2186,7 @@ function SMODS.GUI.score_container(args)
     return
     {n=G.UIT.R, config={align = align, minw = w, minh = h, r = 0.1, colour = colour, id = 'hand_'..type..'_area', emboss = 0.05}, nodes={
         {n=G.UIT.O, config={func = 'flame_handler', no_role = true, id = 'flame_'..type, object = Moveable(0,0,0,0), w = 0, h = 0, _w = w * 1.25, _h = h * 2.5}},
+        -- TODO padding should depend only on 2nd letter of alignment?
         align == 'cl' and {n=G.UIT.B, config={w = 0.1, h = 0.1}} or nil,
         {n=G.UIT.O, config={id = 'hand_'..type, func = func, text = text, type = type, scale = scale*2.3, object = DynaText({
             string = {{ref_table = G.GAME.current_round.current_hand, ref_value = text}},
@@ -2171,6 +2203,6 @@ G.FUNCS.hand_type_UI_set = function(e)
     G.GAME.current_round.current_hand[e.config.text] = new_mult_text
     e.config.object.scale = scale_number(G.GAME.current_round.current_hand[e.config.type], e.config.scale, 1000)
     e.config.object:update_text()
-    if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and G.GAME.current_round.current_hand[e.config.type] or 1)))) end
+    if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and math.abs(G.GAME.current_round.current_hand[e.config.type]) or 1)))) end
   end
 end
