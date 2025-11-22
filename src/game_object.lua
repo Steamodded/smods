@@ -276,7 +276,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Font
     -------------------------------------------------------------------------------------------------
-
     SMODS.Fonts = {}
     SMODS.Font = SMODS.GameObject:extend {
         obj_table = SMODS.Fonts,
@@ -311,7 +310,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ('Failed to collect file data for Font %s'):format(self.key))
             self.FONT = assert(love.graphics.newFont(file_data, self.render_scale or G.TILESIZE),
                 ('Failed to initialize font data for Font %s'):format(self.key))
-
         end,
         process_loc_text = function() end,
     }
@@ -319,7 +317,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.DynaTextEffect
     -------------------------------------------------------------------------------------------------
-
     SMODS.DynaTextEffects = {}
     SMODS.DynaTextEffect = SMODS.GameObject:extend {
         obj_table = SMODS.DynaTextEffects,
@@ -1176,7 +1173,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
 
             localize(target)
-
             if res.main_end then
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
@@ -2042,7 +2038,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 else
                     table.insert(self.obj_buffer, self.key)
                 end
-
             end
         end,
         process_loc_text = function(self)
@@ -3605,7 +3600,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         flame_handler = function(self)
             return {
-                id = 'flame_'..self.key,
+                id = 'flame_'..self.key, 
                 arg_tab = self.key..'_flames',
                 colour = self.colour,
                 accent = self.lick
@@ -3623,7 +3618,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if amount then
                 if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
                 self:modify(amount)
-                card_eval_status_text(scored_card, 'extra', nil, percent, nil,
+                card_eval_status_text(scored_card, 'extra', nil, percent, nil, 
                     {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, colour = self.colour})
                 return true
             end
@@ -3800,7 +3795,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "multiply",
         func = function(self, chips, mult, flames) return chips * mult end,
         text = 'X'
-    }
+    } 
 
     SMODS.Scoring_Calculation {
         key = "add",
