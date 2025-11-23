@@ -16,9 +16,7 @@ payload = '''
 args.AUT = args.AUT or {}
 args.AUT.box_colours = {}
 if (args.type == 'descriptions' or args.type == 'other') and type(loc_target.text) == 'table' and type(loc_target.text[1]) == 'table' then
-    if not args.is_info_queue then
-        args.AUT.multi_box = {} 
-    end
+    args.AUT.multi_box = args.AUT.multi_box or {} 
     for i, box in ipairs(loc_target.text_parsed) do
         for j, line in ipairs(box) do
             local final_line = SMODS.localize_box(line, args)

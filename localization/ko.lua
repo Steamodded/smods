@@ -65,11 +65,11 @@ return {
 			},
 
 			-- card perma bonuses
-			card_extra_chips = {
-				text = {
-					"추가 칩 {C:chips}#1#{}개",
-				},
-			},
+            card_extra_chips = {
+                text = {
+                    "추가 칩 {C:chips}#1#{}개",
+                },
+            },
 			card_x_chips = {
 				text = {
 					"칩 {X:chips,C:white}X#1#{}개",
@@ -145,18 +145,18 @@ return {
 			},
 		},
 		Enhanced = {
-			m_gold = {
-				name = "골드 카드",
-				text = {
-					"라운드 종료 시",
-					"이 카드가 손패에 남아 있으면",
-					"{C:money}$#1#{}를 획득합니다",
-				},
-			},
+            m_gold = {
+                name = "황금 카드",
+                text = {
+                    "라운드 종료 시",
+                    "이 카드가 손패에 남아 있으면",
+                    "{C:money}#1#{}를 획득합니다",
+                },
+            },
 			m_stone = {
 				name = "석재 카드",
 				text = {
-					"칩 {C:chips}+#1#{}개",
+					"칩 {C:chips}#1#{}개",
 					"랭크 또는 문양이 없습니다",
 				},
 			},
@@ -166,6 +166,15 @@ return {
 					"{C:mult}#1#{} 배수",
 				},
 			},
+            m_lucky = {
+                name = "행운 카드",
+                text = {
+                    "{C:green}#1#/#3#{} 확률로",
+                    "{C:mult}+#2#{} 배수를 획득합니다",
+                    "{C:green}#1#/#5#{} 확률로",
+                    "{C:money}$#4#{}를 획득합니다",
+                },
+            },
 		},
 	},
 	misc = {

@@ -260,11 +260,12 @@ if card.ability.consumeable then
     if (card.area == G.pack_cards and G.pack_cards) then
 '''
 payload = '''
-if card.ability.consumeable and card.area == G.pack_cards and booster_obj and booster_obj.select_card and card:selectable_from_pack(booster_obj) then
+if card.ability.consumeable and card.area == G.pack_cards and G.pack_cards and booster_obj and SMODS.card_select_area(card, booster_obj) and card:selectable_from_pack(booster_obj) then
     if (card.area == G.pack_cards and G.pack_cards) then
+        local select_button_text = SMODS.get_select_text(card, booster_obj) or localize('b_select')
         return {n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
                 {n=G.UIT.R, config={ref_table = card, r = 0.08, padding = 0.1, align = "bm", minw = 0.5*card.T.w - 0.15, maxw = 0.9*card.T.w - 0.15, minh = 0.3*card.T.h, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'use_card', func = 'can_select_from_booster'}, nodes={
-                {n=G.UIT.T, config={text = localize('b_select'),colour = G.C.UI.TEXT_LIGHT, scale = 0.45, shadow = true}}
+                {n=G.UIT.T, config={text = select_button_text, colour = G.C.UI.TEXT_LIGHT, scale = 0.45, shadow = true}}
                 }},
             }}
     end
@@ -337,7 +338,7 @@ match_indent = true
 position = 'at'
 pattern = "if e.config.ref_table.ability.set ~= 'Joker' or (e.config.ref_table.edition and e.config.ref_table.edition.negative) or #G.jokers.cards < G.jokers.config.card_limit then"
 payload = '''local card = e.config.ref_table
-local card_limit = card.ability.card_limit
+local card_limit = card.ability.card_limit - card.ability.extra_slots_used
 if card.ability.set ~= 'Joker' or #G.jokers.cards < G.jokers.config.card_limit + card_limit then'''
 
 # Card:redeem()

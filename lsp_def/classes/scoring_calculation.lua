@@ -16,7 +16,7 @@
 ---@field get_obj? fun(self: SMODS.Scoring_Calculation|table, key: string): SMODS.Scoring_Calculation|table? Returns an object if one matches the `key`.
 ---@field new? fun(self, config): SMODS.Scoring_Calculation Creates a new instance of this operator.
 ---@field key string Used to reference your calculation, mod_prefix is applied
----@field func fun(self, chips, mult, flames) Calculate your new score, flames respects animation timings
+---@field func fun(self, chips, mult, flames): number Calculate your new score, flames respects animation timings
 ---@field text? string Replaces the `X` in the UI
 ---@field colour? table HEX colour of the `text` in the UI
 ---@field replace_ui? fun(self) Return a UI node to replace the display
@@ -35,7 +35,6 @@ SMODS.Scoring_Calculations = {}
 
 --- Sets the current operator used on chips and mult.
 ---@param key string|SMODS.Scoring_Calculation The key of the scoring calculation you want to use.
----@param config table? The operator's config.
 function SMODS.set_scoring_calculation(key) end
 
 --- Calculates a final round score based on the current scoring calculation.
