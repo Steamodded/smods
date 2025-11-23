@@ -19,6 +19,24 @@ self.ANIMATION_ATLAS[self.animation_atli[i].name].atlas_table = "ANIMATION_ATLAS
 '''
 match_indent = true
 
+# Add custom FPS support
+[[patches]]
+[patches.pattern]
+target = 'engine/animatedsprite.lua'
+match_indent = true
+position = 'at'
+pattern = '''local new_frame = math.floor(G.ANIMATION_FPS*(G.TIMERS.REAL - self.offset_seconds))%self.current_animation.frames'''
+payload = '''local new_frame = math.floor(self.current_animation.FPS*(G.TIMERS.REAL - self.offset_seconds))%self.current_animation.frames'''
+[[patches]]
+[patches.pattern]
+target = 'engine/animatedsprite.lua'
+match_indent = true
+position = 'after'
+pattern = '''frames = self.animation.frames,'''
+payload = '''FPS = self.atlas.fps or G.ANIMATION_FPS,'''
+
+
+
 
 # Case: ..ATLAS[]
 # Blind:init()
