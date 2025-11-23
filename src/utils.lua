@@ -1363,8 +1363,8 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return key
     end
 
-    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or 
-        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'modify' then
+    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or
+        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'modify' or key == 'shop_create_flags'  then
         return { [key] = amount }
     end
     
@@ -1466,7 +1466,8 @@ SMODS.other_calculation_keys = {
     'modify',
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
-    'extra'
+    'shop_create_flags',
+    'extra',
 }
 SMODS.silent_calculation = {
     saved = true, effect = true, remove = true,
@@ -2091,14 +2092,25 @@ end
 function SMODS.blueprint_effect(copier, copied_card, context)
     if not copied_card or copied_card == copier or copied_card.debuff or context.no_blueprint or not copied_card.config.center.blueprint_compat then return end
     if (context.blueprint or 0) > #G.jokers.cards then return end
+
     local old_context_blueprint = context.blueprint
     context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
+    
     local old_context_blueprint_card = context.blueprint_card
     context.blueprint_card = context.blueprint_card or copier
+
+    context.blueprint_copiers_stack = context.blueprint_copiers_stack or {}
+    context.blueprint_copiers_stack[#context.blueprint_copiers_stack + 1] = copier
+    context.blueprint_copier = context.blueprint_copiers_stack[#context.blueprint_copiers_stack]
+
     local eff_card = context.blueprint_card
     local other_joker_ret = copied_card:calculate_joker(context)
+
     context.blueprint = old_context_blueprint
     context.blueprint_card = old_context_blueprint_card
+    table.remove(context.blueprint_copiers_stack, #context.blueprint_copiers_stack)
+    context.blueprint_copier = context.blueprint_copiers_stack[#context.blueprint_copiers_stack]
+
     if other_joker_ret then
         other_joker_ret.card = eff_card
         return other_joker_ret
@@ -3244,6 +3256,10 @@ function SMODS.create_sprite(...)
     end
     t[5] = SMODS.get_atlas(atlas_key)
     return SMODS.get_atlas_sprite_class(atlas_key)((table.unpack or unpack)(t))
+end
+
+function SMODS.is_active_blind(key, ignore_disabled)
+    return G.GAME and G.GAME.blind and G.GAME.facing_blind and (G.GAME.blind.name == key or G.GAME.blind.config.key == key) and (not G.GAME.blind.disabled or ignore_disabled)
 end
 
 -- Function used to determine whether the current blind modifies the number of cards drawn

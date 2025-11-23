@@ -754,6 +754,10 @@ function SMODS.get_atlas_sprite_class(atlas_key) end
 --- This function creates a Sprite or AnimatedSprite depending on the atlas passed
 function SMODS.create_sprite(...) end
 
+---@param key string The key or name of the Blind to check
+---@param ignore_disabled? boolean Whether to ignore the Blind being disabled
+function SMODS.is_active_blind(key, ignore_disabled) end
+
 ---Check if `challenge` is unlocked.
 ---@param challenge SMODS.Challenge
 ---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
