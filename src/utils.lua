@@ -3234,6 +3234,30 @@ function CardArea:handle_card_limit()
     end
 end
 
+
+function SMODS.get_atlas(atlas_key)
+    return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key]
+end
+
+function SMODS.get_atlas_sprite_class(atlas_key)
+    local atlas = SMODS.get_atlas(atlas_key) or {atlas_table = "ASSET_ATLAS"}
+    local class_map = {
+        ASSET_ATLAS = Sprite,
+        ANIMATION_ATLAS = AnimatedSprite,
+    }
+    return class_map[atlas.atlas_table] or Sprite
+end
+
+function SMODS.create_sprite(...)
+    local t = {...}
+    local atlas_key = (type(t[5]) == "string" and t[5]) or (type(t[5]) == "table" and (t[5].name or t[5].key))
+    if not atlas_key then
+        sendWarnMessage("SMODS.create_sprite called with invalid atlas key", "Utils")
+    end
+    t[5] = SMODS.get_atlas(atlas_key)
+    return SMODS.get_atlas_sprite_class(atlas_key)((table.unpack or unpack)(t))
+end
+
 function SMODS.is_active_blind(key, ignore_disabled)
     return G.GAME and G.GAME.blind and G.GAME.facing_blind and (G.GAME.blind.name == key or G.GAME.blind.config.key == key) and (not G.GAME.blind.disabled or ignore_disabled)
 end
