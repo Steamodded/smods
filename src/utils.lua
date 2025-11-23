@@ -3222,8 +3222,8 @@ function CardArea:handle_card_limit()
     end
 end
 
-function SMODS.is_active_blind(naey, ignore_disabled)
-    return G.GAME and G.GAME.blind and G.GAME.facing_blind and (G.GAME.blind.name == naey or G.GAME.blind.config.key == naey) and (not G.GAME.blind.disabled or ignore_disabled)
+function SMODS.is_active_blind(key, ignore_disabled)
+    return G.GAME and G.GAME.blind and G.GAME.facing_blind and (G.GAME.blind.name == key or G.GAME.blind.config.key == key) and (not G.GAME.blind.disabled or ignore_disabled)
 end
 
 -- Function used to determine whether the current blind modifies the number of cards drawn

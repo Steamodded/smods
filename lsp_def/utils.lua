@@ -742,9 +742,9 @@ function SMODS.is_getter_context(context) end
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
 
----@param naey string The hors- erm, name or key of the Blind to check
+---@param key string The key or name of the Blind to check
 ---@param ignore_disabled? boolean Whether to ignore the Blind being disabled
-function SMODS.is_active_blind(naey, ignore_disabled) end
+function SMODS.is_active_blind(key, ignore_disabled) end
 
 ---Check if `challenge` is unlocked.
 ---@param challenge SMODS.Challenge
