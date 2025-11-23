@@ -572,7 +572,7 @@ function G.UIDEF.stake_option(_type)
 	local stake_options = {}
 	local curr_options = {}
 	local deck_usage = G.PROFILES[G.SETTINGS.profile].deck_usage[G.GAME.viewed_back.effect.center.key]
-	G.viewed_stake = deck_usage and (deck_usage.wins_by_key[SMODS.stake_from_index(G.viewed_stake)] and G.viewed_stake or (get_deck_win_stake(G.GAME.viewed_back.effect.center.key) + 1)) or 1
+	G.viewed_stake = deck_usage and ((deck_usage.wins_by_key[SMODS.stake_from_index(G.viewed_stake)] or G.PROFILES[G.SETTINGS.profile].all_unlocked) and G.viewed_stake or (get_deck_win_stake(G.GAME.viewed_back.effect.center.key) + 1)) or 1
 	for i=1, #G.P_CENTER_POOLS.Stake do
 		if G.PROFILES[G.SETTINGS.profile].all_unlocked or SMODS.check_applied_stakes(G.P_CENTER_POOLS.Stake[i], deck_usage or {wins_by_key = {}}) then
 			stake_options[#stake_options + 1] = i
@@ -1536,24 +1536,37 @@ function G.FUNCS.get_poker_hand_info(_cards)
 	return text, loc_disp_text, poker_hands, scoring_hand, disp_text
 end
 
-function create_UIBox_current_hands(simple)
+function create_UIBox_current_hands(simple, in_collection)
 	G.current_hands = {}
-	local index = 0
-	for _, v in ipairs(G.handlist) do
-		local ui_element = create_UIBox_current_hand_row(v, simple)
-		G.current_hands[index + 1] = ui_element
-		if ui_element then
-			index = index + 1
-		end
-		if index >= 10 then
-			break
+
+	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
+	local handlist = in_collection and {} or nil
+	if _pool then
+		for _, v in ipairs(_pool) do
+			table.insert(handlist, v.key)
 		end
 	end
 
 	local visible_hands = {}
-	for _, v in ipairs(G.handlist) do
-		if SMODS.is_poker_hand_visible(v) then
-			table.insert(visible_hands, v)
+	if not handlist then
+		for _, v in ipairs(G.handlist) do
+			if SMODS.is_poker_hand_visible(v) then
+				table.insert(visible_hands, v)
+			end
+		end
+	else
+		visible_hands = handlist
+	end
+
+	local index = 0
+	for _, v in ipairs(handlist or G.handlist) do
+		local ui_element = create_UIBox_current_hand_row(v, simple, in_collection)
+		G.current_hands[index + 1] = ui_element
+		if ui_element then
+			index = index + 1
+		end
+		if index >= 10 and #visible_hands > 12 then -- keep pagination off until there's more than the vanilla max of 12 hands
+			break
 		end
 	end
 
@@ -1563,39 +1576,65 @@ function create_UIBox_current_hands(simple)
 			localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_hands / 10)))
 	end
 
-	local object = {n = G.UIT.ROOT, config = {align = "cm", colour = G.C.CLEAR}, nodes = {
-		{n = G.UIT.R, config = {align = "cm", padding = 0.04}, nodes =
-			G.current_hands},
-		{n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
-			create_option_cycle({
-				options = hand_options,
-				w = 4.5,
-				cycle_shoulders = true,
-				opt_callback = 'your_hands_page',
-				focus_args = { snap_to = true, nav = 'wide' },
-				current_option = 1,
-				colour = G.C.RED,
-				no_pips = true
-			})}}}}
+	local object = {
+		n = G.UIT.ROOT,
+		config = { align = "cm", colour = G.C.CLEAR },
+		nodes = {
+			{
+				n = G.UIT.R,
+				config = { align = "cm", padding = 0.04 },
+				nodes =
+					G.current_hands
+			},
+			-- UI consistency with vanilla
+			#visible_hands > 12 and {
+				n = G.UIT.R,
+				config = { align = "cm", padding = 0 },
+				nodes = {
+					create_option_cycle({
+						options = hand_options,
+						w = 4.5,
+						cycle_shoulders = true,
+						opt_callback = 'your_hands_page',
+						focus_args = { snap_to = true, nav = 'wide' },
+						current_option = 1,
+						colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or
+						G.C.RED,
+						no_pips = true,
+						in_collection = in_collection
+					}) }
+			} or nil } 
+	}
 
-	local t = {n = G.UIT.ROOT, config = {align = "cm", minw = 3, padding = 0.1, r = 0.1, colour = G.C.CLEAR}, nodes = {
-		{n = G.UIT.O, config = {
-				id = 'hand_list',
-				object = UIBox {
-					definition = object, config = {offset = { x = 0, y = 0 }, align = 'cm'}
-				}
-			}}}}
-	return t
+	local t = {
+		n = G.UIT.O,
+		config = {
+			id = 'hand_list',
+			object = UIBox {
+				definition = object, config = { offset = { x = 0, y = 0 }, align = 'cm' }
+			}
+		}
+	}
+	return not in_collection and
+	{ n = G.UIT.ROOT, config = { align = "cm", minw = 3, padding = 0.1, r = 0.1, colour = G.C.CLEAR }, nodes = { t } } or
+	t
 end
 
 G.FUNCS.your_hands_page = function(args)
 	if not args or not args.cycle_config then return end
 	G.current_hands = {}
-
+	local in_collection = args.cycle_config.in_collection
+	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
+	local handlist = in_collection and {} or nil
+	if _pool then
+		for _, v in ipairs(_pool) do
+			table.insert(handlist, v.key)
+		end
+	end
 
 	local index = 0
-	for _, v in ipairs(G.handlist) do
-		local ui_element = create_UIBox_current_hand_row(v, simple)
+	for _, v in ipairs(handlist or G.handlist) do
+		local ui_element = create_UIBox_current_hand_row(v, simple, in_collection)
 		if index >= (0 + 10 * (args.cycle_config.current_option - 1)) and index < 10 * args.cycle_config.current_option then
 			G.current_hands[index - (10 * (args.cycle_config.current_option - 1)) + 1] = ui_element
 		end
@@ -1610,10 +1649,14 @@ G.FUNCS.your_hands_page = function(args)
 	end
 
 	local visible_hands = {}
-	for _, v in ipairs(G.handlist) do
-		if SMODS.is_poker_hand_visible(v) then
-			table.insert(visible_hands, v)
+	if not handlist then
+		for _, v in ipairs(G.handlist) do
+			if SMODS.is_poker_hand_visible(v) then
+				table.insert(visible_hands, v)
+			end
 		end
+	else
+		visible_hands = handlist
 	end
 
 	local hand_options = {}
@@ -1622,10 +1665,16 @@ G.FUNCS.your_hands_page = function(args)
 			localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_hands / 10)))
 	end
 
-	local object = {n = G.UIT.ROOT, config = {align = "cm", colour = G.C.CLEAR }, nodes = {
-			{n = G.UIT.R, config = {align = "cm", padding = 0.04 }, nodes = G.current_hands
+	local object = {
+		n = G.UIT.ROOT,
+		config = { align = "cm", colour = G.C.CLEAR },
+		nodes = {
+			{ n = G.UIT.R, config = { align = "cm", padding = 0.04 }, nodes = G.current_hands
 			},
-			{n = G.UIT.R, config = {align = "cm", padding = 0 }, nodes = {
+			{
+				n = G.UIT.R,
+				config = { align = "cm", padding = 0 },
+				nodes = {
 					create_option_cycle({
 						options = hand_options,
 						w = 4.5,
@@ -1634,9 +1683,10 @@ G.FUNCS.your_hands_page = function(args)
 						'your_hands_page',
 						focus_args = { snap_to = true, nav = 'wide' },
 						current_option = args.cycle_config.current_option,
-						colour = G
-							.C.RED,
-						no_pips = true
+						colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or
+						G.C.RED,
+						no_pips = true,
+						in_collection = in_collection
 					})
 				}
 			}
@@ -1649,7 +1699,7 @@ G.FUNCS.your_hands_page = function(args)
 			hand_list.config.object:remove()
 		end
 		hand_list.config.object = UIBox {
-			definition = object, config = {offset = { x = 0, y = 0 }, align = 'cm', parent = hand_list }
+			definition = object, config = { offset = { x = 0, y = 0 }, align = 'cm', parent = hand_list }
 		}
 	end
 end
@@ -1711,7 +1761,7 @@ function Card:set_sprites(_center, _front)
 					G.j_undiscovered.pos
 				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
 			elseif _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' then
-				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[_center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set], self.config.center.pos)
+				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[_center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set], _center.pos or {x=0, y=0})
 			else
 				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[_center.atlas or 'centers'], _center.pos)
 			end
@@ -1807,7 +1857,6 @@ function Card:set_edition(edition, immediate, silent, delay)
 	if self.edition then
 		self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
 		self.ability.extra_slots_used = self.ability.extra_slots_used - (self.edition.extra_slots_used or 0)
-		if self.area then self.area:handle_card_limit(-1 * (self.edition.card_limit or 0), -1 * (self.edition.extra_slots_used or 0)) end
 	end
 
 	local old_edition = self.edition
@@ -1946,7 +1995,6 @@ function Card:set_edition(edition, immediate, silent, delay)
 
 	self.ability.card_limit = self.ability.card_limit + (self.edition.card_limit or 0)
 	self.ability.extra_slots_used = self.ability.extra_slots_used + (self.edition.extra_slots_used or 0)
-	if self.area then self.area:handle_card_limit(self.edition.card_limit, self.edition.extra_slots_used) end
 
 
 	if G.jokers and self.area == G.jokers then
@@ -2256,6 +2304,7 @@ end
 local defeat = Blind.defeat
 function Blind:defeat(silent)
 	defeat(self, silent)
+	G.hand.config.card_limits.blind_restriction = nil
 	SMODS.calculate_context({ blind_defeated = true })
 end
 
@@ -2403,7 +2452,18 @@ local set_ability = Card.set_ability
 function Card:set_ability(center, initial, delay_sprites)
 	local old_center = self.config.center
 	set_ability(self, center, initial, delay_sprites)
-	if not initial and G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT then
+	if not initial and (G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT) then
 		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
 	end
+end
+
+local add_tag_ref = add_tag
+function add_tag(_tag)
+	_tag = _tag or {}
+	_tag.key = _tag.key or 'unknown'
+	assert(G.P_TAGS[_tag.key], ("Could not find tag \"%s\"."):format(_tag.key))
+	if not (_tag.is and _tag:is(Tag)) then
+		_tag = Tag(_tag.key, nil, _tag.blind_type)
+	end
+	add_tag_ref(_tag)
 end

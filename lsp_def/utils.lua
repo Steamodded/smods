@@ -433,7 +433,7 @@ function SMODS.add_card(t) end
 ---@param card Card|table
 ---@param debuff boolean|"reset"|'prevent_debuff'?
 ---@param source string?
---- Debuffs provided `card`.
+--- Sets a flag that debuffs (or prevents debuff on) provided `card`.
 function SMODS.debuff_card(card, debuff, source) end
 
 ---@param card Card|table
@@ -741,3 +741,9 @@ function SMODS.is_getter_context(context) end
 --- [eval_object] to incite any getter context, if yes returns false,
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
+
+---Check if `challenge` is unlocked.
+---@param challenge SMODS.Challenge
+---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
+---@return boolean
+function SMODS.challenge_is_unlocked(challenge, k) end
