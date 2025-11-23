@@ -3248,14 +3248,11 @@ function SMODS.get_atlas_sprite_class(atlas_key)
     return class_map[atlas.atlas_table] or Sprite
 end
 
-function SMODS.create_sprite(...)
-    local t = {...}
-    local atlas_key = (type(t[5]) == "string" and t[5]) or (type(t[5]) == "table" and (t[5].name or t[5].key))
-    if not atlas_key then
-        sendWarnMessage("SMODS.create_sprite called with invalid atlas key", "Utils")
-    end
-    t[5] = SMODS.get_atlas(atlas_key)
-    return SMODS.get_atlas_sprite_class(atlas_key)((table.unpack or unpack)(t))
+function SMODS.create_sprite(X, Y, W, H, atlas, pos)
+    local atlas_key = (type(atlas) == "string" and atlas) or (type(atlas) == "table" and (atlas.key or atlas.name))
+    atlas = SMODS.get_atlas(atlas_key)
+    assert(atlas, "SMODS.create_sprite called with invalid atlas key: "..atlas_key)
+    return SMODS.get_atlas_sprite_class(atlas_key)(X, Y, W, H, atlas, pos)
 end
 
 function SMODS.is_active_blind(key, ignore_disabled)

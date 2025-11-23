@@ -752,7 +752,7 @@ function SMODS.get_atlas_sprite_class(atlas_key) end
 
 ---@param ... any The same parameters as Sprite() takes individually. The atlas may be an atlas_key instead.
 --- This function creates a Sprite or AnimatedSprite depending on the atlas passed
-function SMODS.create_sprite(...) end
+function SMODS.create_sprite(X, Y, W, H, atlas, pos) end
 
 ---@param key string The key or name of the Blind to check
 ---@param ignore_disabled? boolean Whether to ignore the Blind being disabled
