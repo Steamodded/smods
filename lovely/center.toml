@@ -631,3 +631,18 @@ payload = '''
         main_end = ret[3]
     end
     '''
+
+## Handle tracking cusotm consumable usage
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = '''
+elseif card.config.center.set == 'Spectral' then  G.GAME.consumeable_usage_total.spectral = G.GAME.consumeable_usage_total.spectral + 1
+'''
+position = 'after'
+payload = '''
+else 
+    G.GAME.consumeable_usage_total[card.config.center.set:lower()] = G.GAME.consumeable_usage_total[card.config.center.set:lower()] or 0
+    G.GAME.consumeable_usage_total[card.config.center.set:lower()] = G.GAME.consumeable_usage_total[card.config.center.set:lower()] + 1
+'''
+match_indent = true
