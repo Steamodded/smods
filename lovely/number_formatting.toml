@@ -165,16 +165,9 @@ match_indent = true
 [[patches]] 
 [patches.regex]
 target = "functions/button_callbacks.lua"
-pattern = 'number >= G\.E_SWITCH_POINT'
+pattern = 'number >='
 position = "at"
-payload = "math.abs(number) >= (e_switch_point or G.E_SWITCH_POINT)"
-
-[[patches]]
-[patches.regex]
-target = "functions/button_callbacks.lua"
-pattern = 'number >= max'
-position = "at"
-payload = "math.abs(number) >= max"
+payload = "math.abs(number) >="
 
 [[patches]]
 [patches.regex]
