@@ -276,7 +276,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Font
     -------------------------------------------------------------------------------------------------
-    
     SMODS.Fonts = {}
     SMODS.Font = SMODS.GameObject:extend {
         obj_table = SMODS.Fonts,
@@ -311,7 +310,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ('Failed to collect file data for Font %s'):format(self.key))
             self.FONT = assert(love.graphics.newFont(file_data, self.render_scale or G.TILESIZE),
                 ('Failed to initialize font data for Font %s'):format(self.key))
-            
         end,
         process_loc_text = function() end,
     }
@@ -319,7 +317,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.DynaTextEffect
     -------------------------------------------------------------------------------------------------
-    
     SMODS.DynaTextEffects = {}
     SMODS.DynaTextEffect = SMODS.GameObject:extend {
         obj_table = SMODS.DynaTextEffects,
@@ -328,7 +325,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         disable_mipmap = false,
         required_params = {
             'key',
-            'func',
         },
         func = function(dynatext, index, letter)
         end,
@@ -574,10 +570,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if replace_sound.args then
                 local args = replace_sound.args
                 if type(args) == 'function' then args = args(sound, { pitch = per, volume = vol }) end
-                play_sound(sound.sound_code, args.pitch, args.volume)
+                play_sound_ref(sound.sound_code, args.pitch, args.volume)
                 if not args.continue_base_sound then rt = true end
             else
-                play_sound(sound.sound_code, per, vol)
+                play_sound_ref(sound.sound_code, per, vol)
                 rt = true
             end
             if replace_sound.times > 0 then replace_sound.times = replace_sound.times - 1 end
@@ -637,8 +633,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 table.insert(G.P_CENTER_POOLS.Stake, self)
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
-                    G.shared_stickers[self.key:sub(7)] = Sprite(0, 0, G.CARD_W, G.CARD_H,
-                    G.ASSET_ATLAS[self.sticker_atlas] or G.ASSET_ATLAS["stickers"], self.sticker_pos)
+                    G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos)
                     G.sticker_map[self.key] = self.key:sub(7)
                 else
                     G.sticker_map[self.key] = nil
@@ -1123,7 +1118,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         delete = function(self)
             G.P_CENTERS[self.key] = nil
-            SMODS.remove_pool(G.P_CENTER_POOLS[self.set], self.key)
+            if not self.omit then SMODS.remove_pool(G.P_CENTER_POOLS[self.set], self.key) end
             for k, v in pairs(SMODS.ObjectTypes) do
                 if ((self.pools and self.pools[k]) or (v.cards and v.cards[self.key])) then
                     v:delete_card(self)
@@ -1153,7 +1148,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 vars =
                     specific_vars or {}
             }
-            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 res = self:loc_vars(info_queue, card) or {}
@@ -1178,7 +1172,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
 
             localize(target)
-            
             if res.main_end then
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
@@ -1394,7 +1387,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 AUT = full_UI_table,
                 vars = {}
             }
-            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 res = self:loc_vars(info_queue, card) or {}
@@ -1672,7 +1664,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
         inject = function(self)
             if self.overlay_pos then
-                self.overlay_sprite = Sprite(0, 0, G.CARD_W, G.CARD_H, G.ASSET_ATLAS[self.atlas], self.overlay_pos)
+                self.overlay_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.overlay_pos)
                 self.no_overlay = true
             end
         end,
@@ -1723,6 +1715,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 self.order = 30 + i
             end
             G.P_BLINDS[self.key] = self
+            if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
         end
     }
     SMODS.Blind:take_ownership('eye', {
@@ -1754,6 +1747,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         get_loc_debuff_text = function() return G.GAME.blind.loc_debuff_text end,
     })
 
+    SMODS.Blinds.modifies_draw = {
+        bl_serpent = true
+    }
+
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Seal
     -------------------------------------------------------------------------------------------------
@@ -1775,8 +1772,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         },
         inject = function(self)
             G.P_SEALS[self.key] = self
-            G.shared_seals[self.key] = Sprite(0, 0, G.CARD_W, G.CARD_H,
-                G.ASSET_ATLAS[self.atlas] or G.ASSET_ATLAS['centers'], self.pos)
+            G.shared_seals[self.key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas) or SMODS.get_atlas('centers'), self.pos)
             self.badge_to_key[self.key:lower() .. '_seal'] = self.key
             SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
             self.rng_buffer[#self.rng_buffer + 1] = self.key
@@ -1796,7 +1792,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 AUT = full_UI_table,
                 vars = specific_vars or {},
             }
-            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 res = self:loc_vars(info_queue, card) or {}
@@ -2041,7 +2036,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 else
                     table.insert(self.obj_buffer, self.key)
                 end
-                
             end
         end,
         process_loc_text = function(self)
@@ -2707,6 +2701,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         visible = true,
         played = 0,
         played_this_round = 0,
+        played_this_ante = 0,
         level = 1,
         set = 'PokerHand',
         process_loc_text = function(self)
@@ -2721,6 +2716,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 self.level = self.level
                 self.played = self.played
                 self.played_this_round = self.played_this_round
+                self.played_this_ante = self.played_this_ante
                 self.obj_table[self.key] = self
                 self.obj_buffer[#self.obj_buffer + 1] = self.key
             end
@@ -2914,7 +2910,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 AUT = full_UI_table,
                 vars = specific_vars
             }
-            if target.vars.is_info_queue then target.is_info_queue = true; target.vars.is_info_queue = nil end
             local res = {}
             if self.loc_vars and type(self.loc_vars) == 'function' then
                 -- card is actually a `Tag` here
@@ -2974,7 +2969,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.order = #self.obj_buffer
         end,
         inject = function(self)
-            self.sticker_sprite = Sprite(0, 0, G.CARD_W, G.CARD_H, G.ASSET_ATLAS[self.atlas], self.pos)
+            self.sticker_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.pos)
             G.shared_stickers[self.key] = self.sticker_sprite
         end,
         -- relocating sticker checks to here, so if the sticker has different checks than default
@@ -2999,6 +2994,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
         end,
         apply = function(self, card, val)
+            if not val and card.ability[self.key] and type(card.ability[self.key]) == 'table' then
+                if card.ability[self.key].card_limit then card.ability.card_limit = card.ability.card_limit - card.ability[self.key].card_limit end
+                if card.ability[self.key].extra_slots_used then card.ability.extra_slots_used = card.ability.extra_slots_used - card.ability[self.key].extra_slots_used end
+            end
             card.ability[self.key] = val
             if val and self.config and next(self.config) then
                 card.ability[self.key] = {}
@@ -3007,6 +3006,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                         card.ability[self.key][k] = copy_table(v)
                     else
                         card.ability[self.key][k] = v
+                        if k == 'card_limit' or k == 'extra_slots_used' then
+                            card.ability[k] = (card.ability[k] or 0) + v
+                        end
                     end
                 end
             end
@@ -3217,6 +3219,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.full_path = (self.mod and self.mod.path or SMODS.path) ..
                 'assets/shaders/' .. self.path
             local file = NFS.read(self.full_path)
+            local lovely_success, lovely = pcall(require, "lovely")
+            if lovely_success and lovely.apply_patches then
+                file = assert(lovely.apply_patches("=[SMODS " .. self.mod.id .. ' "' .. self.path .. '"]', file))
+            end
             love.filesystem.write(self.key .. "-temp.fs", file)
             G.SHADERS[self.key] = love.graphics.newShader(self.key .. "-temp.fs")
             love.filesystem.remove(self.key .. "-temp.fs")

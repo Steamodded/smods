@@ -13,7 +13,7 @@
 ---@field default_compat? boolean Default compatibility with cards. 
 ---@field compat_exceptions? string[] Array of keys to centers that are exceptions to `default_compat`. 
 ---@field sets? string[] Array of keys to pools that this sticker is allowed to be applied on. 
----@field needs_enabled_flag? boolean Sets whether the sticker requires `G.GAME.modifiers["enable_"..key]` to be `true` before it can be applied. 
+---@field needs_enable_flag? boolean Sets whether the sticker requires `G.GAME.modifiers["enable_"..key]` to be `true` before it can be applied. 
 ---@field sticker_sprite? Sprite|table Sprite object of the sticker. 
 ---@field __call? fun(self: SMODS.Sticker|table, o: SMODS.Sticker|table): nil|table|SMODS.Sticker
 ---@field extend? fun(self: SMODS.Sticker|table, o: SMODS.Sticker|table): table Primary method of creating a class. 
