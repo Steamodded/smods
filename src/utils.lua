@@ -3167,3 +3167,81 @@ function CardArea:handle_card_limit(card_limit, card_slots)
         end
     end
 end
+
+function SMODS.upgrade_poker_hands(args)
+    -- args.hands
+    -- args.parameters
+    -- args.func
+    -- args.level_up
+    -- args.from
+
+    local function get_keys(t)
+        local keys = {}
+        for k, _ in pairs(t) do
+            table.insert(keys, k)
+        end
+        return keys
+    end
+
+    args.hands = args.hands or get_keys(G.GAME.hands)
+    if type(args.hands) == 'string' then args.hands = {args.hands} end
+    args.parameters = args.parameters or get_keys(SMODS.Scoring_Parameters)
+    local instant = args.instant
+
+    if not args.func then
+        for _, hand in ipairs(args.hands) do
+            SMODS.smart_level_up_hand(args.from, hand, instant, args.level_up or 1)
+        end
+        return
+    end
+    
+    assert(type(args.func) == 'function', "Invalid func provided to SMODS.upgrade_hands")
+
+    local vals_after_level
+    if SMODS.displaying_scoring then
+        vals_after_level = copy_table(G.GAME.current_round.current_hand)
+        local text,disp_text,_,_,_ = G.FUNCS.get_poker_hand_info(G.play.cards)
+        vals_after_level.handname = disp_text or ''
+        vals_after_level.level = (G.GAME.hands[text] or {}).level or ''
+        for name, p in pairs(SMODS.Scoring_Parameters) do
+            vals_after_level[name] = p.current
+        end
+    end
+        
+    for _, hand in ipairs(args.hands) do
+        if not instant then
+            update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'), level=G.GAME.hands[hand].level})
+            for name, p in pairs(SMODS.Scoring_Parameters) do
+                p.current = G.GAME.hands[hand][name] or p.default_value
+                update_hand_text({nopulse = nil, delay = 0}, {[name] = p.current})
+            end
+        end
+        for _, parameter in ipairs(args.parameters) do
+            G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
+            if not instant then
+                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.9, func = function()
+                    play_sound('tarot1')
+                    if args.from then args.from:juice_up(0.8, 0.5) end
+                    G.TAROT_INTERRUPT_PULSE = true
+                    return true end }))
+                update_hand_text({delay = 0}, {[parameter] = G.GAME.hands[hand][parameter], StatusText = true})
+            end
+        end
+        if args.level_up then
+            G.GAME.hands[hand].level = G.GAME.hands[hand].level + (type(args.level_up) == 'number' and args.level_up or 1)
+            if not instant then
+                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.9, func = function()
+                    play_sound('tarot1')
+                    if args.from then args.from:juice_up(0.8, 0.5) end
+                    G.TAROT_INTERRUPT_PULSE = nil
+                    return true end }))
+                update_hand_text({sound = 'button', volume = 0.7, pitch = 0.9, delay = 0}, {level=G.GAME.hands[hand].level})
+            end
+        end
+        if not instant then delay(1.3) end
+    end
+
+    if not instant then
+        update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, vals_after_level or {mult = 0, chips = 0, handname = '', level = ''})
+    end
+end

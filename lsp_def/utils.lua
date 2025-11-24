@@ -741,3 +741,10 @@ function SMODS.is_getter_context(context) end
 --- [eval_object] to incite any getter context, if yes returns false,
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
+
+---@param args table|{hands?: table, parameters?: table, level_up?: number|boolean, func?: fun(base: number, hand: string, param: string), instant?: boolean}
+--- This functions handles upgrading poker hands in more complex ways. You can define
+--- a custom `func` to modify the values in specific ways. `hands` and `parameters` can
+--- be limited to specific ones, or default to using all of `G.GAME.hands` and `SMODS.Scoring_Parameters`.
+--- Use `level_up` to control whether the level of the hand is upgraded.
+    function SMODS.upgrade_poker_hands(args) end
