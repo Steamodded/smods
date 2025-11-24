@@ -15,7 +15,12 @@ payload = '''$1 SMODS.calculate_round_score() $2'''
 target = "functions/misc_functions.lua"
 pattern = "G.ARGS.score_intensity.earned_score = G.GAME.current_round.current_hand.chips*G.GAME.current_round.current_hand.mult"
 position = "at"
-payload = '''G.ARGS.score_intensity.earned_score = SMODS.calculate_round_score(true)'''
+payload = '''
+for name, parameter in pairs(SMODS.Scoring_Parameters) do
+    if type(G.GAME.current_round.current_hand[name]) ~= 'number' then G.ARGS.score_intensity.earned_score = "no" end
+end
+if G.ARGS.score_intensity ~= "no" then G.ARGS.score_intensity.earned_score = SMODS.calculate_round_score(true) end
+'''
 match_indent = true
 
 [[patches]]
@@ -203,16 +208,38 @@ payload = '''
 [patches.pattern]
 target = 'functions/common_events.lua'
 match_indent = true
-position = 'at'
+position = 'before'
 pattern = '''
+G.GAME.hands[hand].level = math.max(0, G.GAME.hands[hand].level + amount)
 G.GAME.hands[hand].mult = math.max(G.GAME.hands[hand].s_mult + G.GAME.hands[hand].l_mult*(G.GAME.hands[hand].level - 1), 1)
 G.GAME.hands[hand].chips = math.max(G.GAME.hands[hand].s_chips + G.GAME.hands[hand].l_chips*(G.GAME.hands[hand].level - 1), 0)
 '''
 payload = '''
-for name, parameter in pairs(SMODS.Scoring_Parameters) do
-    if G.GAME.hands[hand][name] then parameter:level_up_hand(amount, G.GAME.hands[hand]) end
-end
+SMODS.upgrade_poker_hands({
+    hands = hand,
+    func = function(base, hand, parameter)
+            return base + G.GAME.hands[hand]['l_' .. parameter] * amount
+    end,
+    level_up = amount,
+    from = card
+})
+--[[
 '''
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+G.E_MANAGER:add_event(Event({
+    trigger = 'immediate',
+    func = (function() check_for_unlock{type = 'upgrade_hand', hand = hand, level = G.GAME.hands[hand].level} return true end)
+}))
+'''
+payload = '''
+]]
+'''
+
 
 # Face down hands
 [[patches]]

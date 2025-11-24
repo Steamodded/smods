@@ -133,6 +133,7 @@ else
         scalar_value = "extra",
         no_message = true
     })
+    return nil, true
 end
 '''
 
@@ -164,7 +165,7 @@ self:set_cost()
 return nil, true
 '''
 
-# Runner/Square Joker/Castle
+# Runner/Square Joker
 [[patches]]
 [patches.pattern]
 target = "card.lua"
@@ -174,6 +175,30 @@ return {
     message = localize('k_upgrade_ex'),
     colour = G.C.CHIPS,
     card = self
+}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.scale_card(self, {
+    ref_table = self.ability.extra,
+    ref_value = "chips",
+    scalar_value = "chip_mod",
+})
+return nil, true
+'''
+
+# Castle
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.ability.extra.chips = self.ability.extra.chips + self.ability.extra.chip_mod
+                  
+return {
+    message = localize('k_upgrade_ex'),
+    card = self,
+    colour = G.C.CHIPS
 }
 '''
 position = 'at'
@@ -315,6 +340,7 @@ SMODS.scale_card(self, {
     scalar_value = "extra",
     message_colour = G.C.FILTER
 })
+return nil, true
 '''
 # Lucky Cat
 [[patches]]
@@ -360,10 +386,11 @@ else
         scalar_value = "extra",
         no_message = true
     })
+    return nil, true
 end
 '''
 
-# Hit the Road/Lucky Cat/Obelisk
+# Hit the Road/Lucky Cat
 [[patches]]
 [patches.pattern]
 target = "card.lua"
