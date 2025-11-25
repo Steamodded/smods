@@ -3260,6 +3260,8 @@ function SMODS.start_level_up_hand_animation(args)
     for _,param_key in ipairs(G.GAME.current_scoring_calculation.parameters) do
         if SMODS.scoring_parameter_is_upgradeable(param_key, hand) then
             init_hand_text[param_key] = parameter_text[param_key] or (hand and G.GAME.hands[hand][param_key]) or all_parameter_text
+        else
+            init_hand_text[param_key] = SMODS.Scoring_Parameters[param_key].default_value
         end
     end
     update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, init_hand_text)
