@@ -742,8 +742,31 @@ function SMODS.is_getter_context(context) end
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
 
+---@param atlas_key string The key of the atlas 
+--- This function gets an atlas from G.ASSET_ATLAS or G.ANIMATION_ATLAS
+function SMODS.get_atlas(atlas_key) end
+
+---@param atlas_key string The key of the atlas 
+--- This function returns the Sprite or the AnimatedSprite class depending on the atlas type
+function SMODS.get_atlas_sprite_class(atlas_key) end
+
+---@param ... any The same parameters as Sprite() takes individually. The atlas may be an atlas_key instead.
+--- This function creates a Sprite or AnimatedSprite depending on the atlas passed
+function SMODS.create_sprite(X, Y, W, H, atlas, pos) end
+
+---@param key string The key or name of the Blind to check
+---@param ignore_disabled? boolean Whether to ignore the Blind being disabled
+function SMODS.is_active_blind(key, ignore_disabled) end
+
 ---Check if `challenge` is unlocked.
 ---@param challenge SMODS.Challenge
 ---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
 ---@return boolean
 function SMODS.challenge_is_unlocked(challenge, k) end
+
+---@param args table|{hands?: table, parameters?: table, level_up?: number|boolean, func?: fun(base: number, hand: string, param: string), instant?: boolean}
+--- This functions handles upgrading poker hands in more complex ways. You can define
+--- a custom `func` to modify the values in specific ways. `hands` and `parameters` can
+--- be limited to specific ones, or default to using all of `G.GAME.hands` and `SMODS.Scoring_Parameters`.
+--- Use `level_up` to control whether the level of the hand is upgraded.
+    function SMODS.upgrade_poker_hands(args) end

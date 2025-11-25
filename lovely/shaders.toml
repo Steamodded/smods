@@ -1,0 +1,20 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Shader patching
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''self.SHADERS[shader_name] = love.graphics.newShader("resources/shaders/"..filename)'''
+position = "at"
+payload = '''
+local shader = "resources/shaders/"..filename
+local lovely_success, lovely = pcall(require, "lovely")
+if lovely_success and lovely.apply_patches then
+    shader = assert(lovely.apply_patches(filename, love.filesystem.read(shader)))
+end
+self.SHADERS[shader_name] = love.graphics.newShader(shader)
+'''
+match_indent = true

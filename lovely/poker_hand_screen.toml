@@ -33,9 +33,13 @@ match_indent = true
 [[patches]]
 [patches.pattern]
 target = "functions/UI_definitions.lua"
-pattern = '''return (G.GAME.hands[handname].visible) and'''
+pattern = '''
+function create_UIBox_current_hand_row(handname, simple)
+    return (G.GAME.hands[handname].visible) and
+'''
 position = "at"
 payload = '''
-return SMODS.is_poker_hand_visible(handname) and
+function create_UIBox_current_hand_row(handname, simple, in_collection)
+    return (in_collection or SMODS.is_poker_hand_visible(handname)) and
 '''
 match_indent = true
