@@ -527,3 +527,10 @@ target = "functions/state_events.lua"
 pattern = '''G\.GAME\.blind:get_type\(\) == 'Boss' '''
 position = "at"
 payload = '''G.GAME.blind:is_type("Boss") '''
+# game.lua : Game:init_game_object()
+[[patches]]
+[patches.regex]
+target = "game.lua"
+pattern = '''if v.boss then bosses_used[k] = 0 end'''
+position = "at"
+payload = '''if SMODS.get_blind_types(blind_obj).Boss then bosses_used[k] = 0 end'''

@@ -3824,7 +3824,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
 
     -------------------------------------------------------------------------------------------------
-    ------- API CODE SMODS.BlindTree AND RELATED
+    ------- API CODE SMODS.AntePath AND RELATED
     -------------------------------------------------------------------------------------------------
     
     ------- UI DEFS 
@@ -3834,16 +3834,20 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             
         else
             -- Needs to set G.blind_prompt_box
-            ui_out = {}
+            ui_out = {
+                n=G.UIT.ROOT,
+                config={},
+                nodes={}
+            }
         end
         return ui_out
     end
     
-    ------- API CODE SMODS.BlindTree 
-    SMODS.BlindTrees = {}
-    SMODS.BlindTree = SMODS.GameObject:extend {
-        set = 'BlindTree',
-        obj_table = SMODS.BlindTrees,
+    ------- API CODE SMODS.AntePath 
+    SMODS.AntePaths = {}
+    SMODS.AntePath = SMODS.GameObject:extend {
+        set = 'AntePath',
+        obj_table = SMODS.AntePaths,
         obj_buffer = {},
         required_parameters = {
             'key',
@@ -3859,45 +3863,45 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 key = "vanilla",
                 active_node = 1,
                 nodes = {
-                    SMODS.BTNode {
+                    SMODS.APNode {
                         index = 1,
                         hidden = true,
                         selected = true,
                     },
-                    SMODS.BTNode {
+                    SMODS.APNode {
                         index = 2,
                         callbacks = {
                             {key = "enter_blind", triggers = {selected = true}},
                             {key = "evaluate_round", triggers = {defeated = true}},
                             {key = "enter_shop", triggers = {cashed_out = true}},
-                            {key = "enter_blind_tree", triggers = {shop_ended = true}},
+                            {key = "enter_blind_select", triggers = {shop_ended = true}},
                             {key = "create_tag", triggers = {skipped = true}},
                         },
                         blinds = {"bl_small"},
                         tags = {get_next_tag_key()},
                         next_nodes_indices = {[3] = true}
                     },
-                    SMODS.BTNode {
+                    SMODS.APNode {
                         index = 3,
                         callbacks = {
                             {key = "enter_blind", triggers = {selected = true}},
                             {key = "evaluate_round", triggers = {defeated = true}},
                             {key = "enter_shop", triggers = {cashed_out = true}},
-                            {key = "enter_blind_tree", triggers = {shop_ended = true}},
+                            {key = "enter_blind_select", triggers = {shop_ended = true}},
                             {key = "create_tag", triggers = {skipped = true}},
                         },
                         blinds = {"bl_big"},
                         tags = {get_next_tag_key()},
                         next_nodes_indices = {[4] = true}
                     },
-                    SMODS.BTNode {
+                    SMODS.APNode {
                         index = 4,
                         callbacks = {
                             {key = "enter_blind", triggers = {selected = true}},
                             {key = "ante_up", triggers = {defeated = true}},
                             {key = "evaluate_round", triggers = {defeated = true}},
-                            {key = "enter_blind_tree", triggers = {shop_ended = true}},
-                            {key = "next_blind_tree", triggers = {cashed_out = true}},
+                            {key = "enter_blind_select", triggers = {shop_ended = true}},
+                            {key = "next_ante_path", triggers = {cashed_out = true}},
                             {key = "enter_shop", triggers = {cashed_out = true}},
                         },
                         blinds = {SMODS.get_new_blind({[boss_type] = true})},
@@ -3908,103 +3912,109 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         create_ui = function (self)
             -- Vanilla Blind select UI
-            local canvas_container = SMODS.CanvasContainer {
-                definition = SMODS.create_CanvasContainer_BlindSelect(),
-                config = {align="cm", offset = {x=0,y=G.ROOM.T.y + 29}, major = G.ROOM_ATTACH, bond = 'Weak'}
+            local canvas_container = UIBox {
+                definition = {n=G.UIT.ROOT, colour = G.C.CLEAR, padding = 0.2},
+                config = {align="cm", offset = {x=0,y=G.ROOM.T.y + 29}, major = G.ROOM_ATTACH, bond = 'Weak'},
+                nodes = {
+                    SMODS.create_CanvasContainer_BlindSelect()
+                }
             }
             return canvas_container
         end,
         create_run_info_ui = function (self)
             -- Vanilla Run Info Blind Tab UI
-            local canvas_container = SMODS.CanvasContainer {
-                definition = SMODS.create_CanvasContainer_BlindSelect(true),
-                config = {align="cm", offset = {x=0,y=0}, major = G.ROOM_ATTACH, bond = 'Weak'}
+            local canvas_container = UIBox {
+                definition = {n=G.UIT.ROOT, colour = G.C.CLEAR, padding = 0.2},
+                config = {align="cm", offset = {x=0,y=G.ROOM.T.y}, major = G.ROOM_ATTACH, bond = 'Weak'},
+                nodes = {
+                    SMODS.create_CanvasContainer_BlindSelect(true)
+                }
             }
             return canvas_container
         end,
-        create_callback_ui = function (self, cb_key, bt_node, bt_node_UIE)
-            if not cb_key or not SMODS.BTNodeCallbacks[cb_key] then return end
-            return SMODS.BTNodeCallbacks[cb_key]:create_ui(bt_node, bt_node_UIE)
+        create_callback_ui = function (self, cb_key, ap_node, ap_node_UIE)
+            if not cb_key or not SMODS.APNodeCallbacks[cb_key] then return end
+            return SMODS.APNodeCallbacks[cb_key]:create_ui(ap_node, ap_node_UIE)
         end
     }
 
-    SMODS.BlindTree {
+    SMODS.AntePath {
         key = "vanilla",
     }
 
-    function SMODS.get_blind_tree()
-        return SMODS.BLIND_TREE and SMODS.BlindTrees[SMODS.BLIND_TREE.key] or SMODS.BlindTrees["vanilla"]
+    function SMODS.get_ante_path()
+        return SMODS.ANTE_PATH and SMODS.AntePaths[SMODS.ANTE_PATH.key] or SMODS.AntePaths["vanilla"]
     end
 
-    function SMODS.get_bt_node(index)
-        return SMODS.BLIND_TREE and SMODS.BLIND_TREE.nodes and SMODS.BLIND_TREE.nodes[index]
+    function SMODS.get_ap_node(index)
+        return SMODS.ANTE_PATH and SMODS.ANTE_PATH.nodes and SMODS.ANTE_PATH.nodes[index]
     end
 
-    function SMODS.save_blind_tree()
-        if not SMODS.BLIND_TREE then return {} end
+    function SMODS.save_ante_path()
+        if not SMODS.ANTE_PATH then return {} end
         local nodes_table = {}
-        for _, bt_node in ipairs(SMODS.BLIND_TREE.nodes) do
-            table.insert(nodes_table, bt_node:save())
+        for _, ap_node in ipairs(SMODS.ANTE_PATH.nodes) do
+            table.insert(nodes_table, ap_node:save())
         end
-        local blind_tree_table = {
-            key = SMODS.BLIND_TREE.key,
-            active_node = SMODS.BLIND_TREE.active_node,
+        local ante_path_table = {
+            key = SMODS.ANTE_PATH.key,
+            active_node = SMODS.ANTE_PATH.active_node,
             nodes = nodes_table,
         }
-        return blind_tree_table
+        return ante_path_table
     end
 
-    function SMODS.load_blind_tree(blind_tree_table)
-        for i, bt_node_table in ipairs(blind_tree_table.nodes) do
-            blind_tree_table.nodes[i] = SMODS.BTNode{node_table = bt_node_table}
+    function SMODS.load_ante_path(ante_path_table)
+        for i, ap_node_table in ipairs(ante_path_table.nodes) do
+            ante_path_table.nodes[i] = SMODS.APNode{node_table = ap_node_table}
         end
-        SMODS.set_blind_tree(blind_tree_table)
+        SMODS.set_ante_path(ante_path_table)
     end
 
-    function SMODS.next_blind_tree()
-        SMODS.set_blind_tree(SMODS.get_blind_tree():create_data())
+    function SMODS.next_ante_path()
+        SMODS.set_ante_path(SMODS.get_ante_path():create_data())
     end
 
-    function SMODS.set_blind_tree(data)
-        SMODS.BLIND_TREE = data
+    function SMODS.set_ante_path(data)
+        SMODS.ANTE_PATH = data
     end
 
-    function SMODS.set_active_bt_node(bt_node)
-        if type(bt_node) == "number" then
-            SMODS.BLIND_TREE.active_node = bt_node
+    function SMODS.set_active_ap_node(ap_node)
+        if type(ap_node) == "number" then
+            SMODS.ANTE_PATH.active_node = ap_node
         else
-            SMODS.BLIND_TREE.active_node = bt_node.index
+            SMODS.ANTE_PATH.active_node = ap_node.index
         end
     end
 
-    function SMODS.get_active_bt_node()
-        return SMODS.get_bt_node(SMODS.BLIND_TREE.active_node)
+    function SMODS.get_active_ap_node()
+        return SMODS.get_ap_node(SMODS.ANTE_PATH.active_node)
     end
 
     local start_run_ref = Game.start_run
     function Game:start_run(args)
         start_run_ref(self, args)
         local saveTable = args.savetext
-        if saveTable and saveTable.BLIND_TREE then
-            SMODS.load_blind_tree(saveTable.BLIND_TREE)
+        if saveTable and saveTable.ANTE_PATH then
+            SMODS.load_ante_path(saveTable.ANTE_PATH)
         end
     end
 
     local save_run_ref = save_run
     function save_run()
         save_run_ref()
-        G.ARGS.save_run.BLIND_TREE = recursive_table_cull(SMODS.save_blind_tree())
+        G.ARGS.save_run.ANTE_PATH = recursive_table_cull(SMODS.save_ante_path())
     end
 
     local delete_run_ref = Game.delete_run
     function Game:delete_run()
         delete_run_ref(self)
-        SMODS.BLIND_TREE = nil
+        SMODS.ANTE_PATH = nil
     end
     
-    ------- API CODE Object.BTNode
-    SMODS.BTNode = Object:extend()
-    function SMODS.BTNode:init(...)
+    ------- API CODE Object.APNode
+    SMODS.APNode = Object:extend()
+    function SMODS.APNode:init(...)
         local args = {...}
 
         if args.node_table then
@@ -4023,7 +4033,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         self:set_next_nodes(args.next_nodes_indices or {})
     end
 
-    function SMODS.BTNode:set_callbacks(cbs)
+    function SMODS.APNode:set_callbacks(cbs)
         self.callbacks = {}
         for _, cb in ipairs(cbs) do
             table.insert(self.callbacks, {
@@ -4035,7 +4045,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     end
 
-    function SMODS.BTNode:set_blinds(blinds)
+    function SMODS.APNode:set_blinds(blinds)
         self.blinds = {}
         for _, blind_key in ipairs(blinds) do
             table.insert(self.blinds, {
@@ -4045,7 +4055,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     end
 
-    function SMODS.BTNode:set_tags(tags)
+    function SMODS.APNode:set_tags(tags)
         self.tags = {}
         for _, tag_key in ipairs(tags) do
             table.insert(self.tags, {
@@ -4055,11 +4065,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     end
 
-    function SMODS.BTNode:trigger_callbacks(trigger_type)
+    function SMODS.APNode:trigger_callbacks(trigger_type)
         if not trigger_type then return end
         local hold = false
         for _, cb in ipairs(self.callbacks) do
-            local callback = SMODS.BTNodeCallbacks[cb.key]
+            local callback = SMODS.APNodeCallbacks[cb.key]
             if not cb.called and (not hold or cb.ignore_hold) and cb.triggers[trigger_type] then
                 cb.called = true
                 hold = hold or callback:on_callback(self, cb, trigger_type)
@@ -4067,7 +4077,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     end
 
-    function SMODS.BTNode:get_blind(keep)
+    function SMODS.APNode:get_blind(keep)
         local blind_tuple
         for _, tup in ipairs(self.blinds) do
             if not tup.used then
@@ -4080,7 +4090,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         return blind
     end
 
-    function SMODS.BTNode:get_tag(keep)
+    function SMODS.APNode:get_tag(keep)
         local tag_tuple
         for _, tup in ipairs(self.tags) do
             if not tup.used then
@@ -4093,11 +4103,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         return tag
     end
 
-    function SMODS.BTNode:set_next_nodes(nni)
+    function SMODS.APNode:set_next_nodes(nni)
         self.next_nodes_indices = nni or {}
     end
 
-    function SMODS.BTNode:save()
+    function SMODS.APNode:save()
         local node_table = {
             index = self.index,
             hidden = self.hidden,
@@ -4110,7 +4120,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         return node_table
     end
 
-    function SMODS.BTNode:load(node_table)
+    function SMODS.APNode:load(node_table)
         self.index = node_table.index
         self.hidden = node_table.hidden
         self.callbacks = node_table.callbacks or {}
@@ -4120,11 +4130,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         self.next_nodes_indices = node_table.next_nodes_indices or {}
     end
 
-    ------- API CODE GameObject.BTNodeCallback
-    SMODS.BTNodeCallbacks = {}
-    SMODS.BTNodeCallback = SMODS.GameObject:extend {
-        set = 'BTNodeCallback',
-        obj_table = SMODS.BTNodeCallbacks,
+    ------- API CODE GameObject.APNodeCallback
+    SMODS.APNodeCallbacks = {}
+    SMODS.APNodeCallback = SMODS.GameObject:extend {
+        set = 'APNodeCallback',
+        obj_table = SMODS.APNodeCallbacks,
         obj_buffer = {},
         required_parameters = {
             'key',
@@ -4133,73 +4143,73 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         inject = function(self)
 
         end,
-        create_ui = function (self, bt_node, bt_node_UIE)
+        create_ui = function (self, ap_node, ap_node_UIE)
         end
     }
 
-    SMODS.BTNodeCallback {
+    SMODS.APNodeCallback {
         key = "enter_blind",
-        on_callback = function (self, bt_node, cb, trigger_type)
-            -- Change game state to bt_node:get_blind()
-            SMODS.enter_state(SMODS.STATES.BLIND, {key = bt_node:get_blind(), trigger_callbacks = true})
+        on_callback = function (self, ap_node, cb, trigger_type)
+            -- Change game state to ap_node:get_blind()
+            SMODS.enter_state(SMODS.STATES.BLIND, {key = ap_node:get_blind(), trigger_callbacks = true})
             return true
         end,
-        create_ui = function (self, bt_node, bt_node_UIE)
-            return SMODS.GUI.bt_callback_enter_blind(bt_node, bt_node_UIE)
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return SMODS.GUI.bt_callback_enter_blind(ap_node, ap_node_UIE)
         end
     }
 
-    function SMODS.GUI.bt_callback_enter_blind(bt_node, bt_node_UIE)
+    function SMODS.GUI.bt_callback_enter_blind(ap_node, ap_node_UIE)
         return {}
     end
 
-    SMODS.BTNodeCallback {
+    SMODS.APNodeCallback {
         key = "evaluate_round",
-        on_callback = function (self, bt_node, cb, trigger_type)
+        on_callback = function (self, ap_node, cb, trigger_type)
             -- Create cashout and evaluate round 
             SMODS.enter_state(SMODS.STATES.ROUND_EVAL, {trigger_callbacks = true})
             return true
         end,
-        create_ui = function (self, bt_node, bt_node_UIE)
-            return SMODS.GUI.bt_callback_evaluate_round(bt_node, bt_node_UIE)
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return SMODS.GUI.bt_callback_evaluate_round(ap_node, ap_node_UIE)
         end
     }
 
-    function SMODS.GUI.bt_callback_evaluate_round(bt_node, bt_node_UIE)
+    function SMODS.GUI.bt_callback_evaluate_round(ap_node, ap_node_UIE)
         return {}
     end
 
-    SMODS.BTNodeCallback {
+    SMODS.APNodeCallback {
         key = "enter_shop",
-        on_callback = function (self, bt_node, cb, trigger_type)
+        on_callback = function (self, ap_node, cb, trigger_type)
             -- Change game state to shop
             SMODS.enter_state(SMODS.STATES.SHOP, {trigger_callbacks = true})
             return true
         end,
-        create_ui = function (self, bt_node, bt_node_UIE)
-            return SMODS.GUI.bt_callback_enter_shop(bt_node, bt_node_UIE)
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return SMODS.GUI.bt_callback_enter_shop(ap_node, ap_node_UIE)
         end
     }
 
-    function SMODS.GUI.bt_callback_enter_shop(bt_node, bt_node_UIE)
+    function SMODS.GUI.bt_callback_enter_shop(ap_node, ap_node_UIE)
         return {}
     end
     
-    SMODS.BTNodeCallback {
-        key = "enter_blind_tree",
-        on_callback = function (self, bt_node, cb, trigger_type)
+    SMODS.APNodeCallback {
+        key = "enter_blind_select",
+        on_callback = function (self, ap_node, cb, trigger_type)
             -- Change game state to blind select
             SMODS.enter_state(SMODS.STATES.BLIND_SELECT)
             return true
         end,
-        create_ui = function (self, bt_node, bt_node_UIE)
+        create_ui = function (self, ap_node, ap_node_UIE)
             return nil
         end
     }
 
-    SMODS.BTNodeCallback {
+    SMODS.APNodeCallback {
         key = "ante_up",
-        on_callback = function (self, bt_node, cb, trigger_type)
+        on_callback = function (self, ap_node, cb, trigger_type)
             -- Ante up
             SMODS.ante_end = true
             ease_ante(1)
@@ -4209,53 +4219,53 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             ------
             return false
         end,
-        create_ui = function (self, bt_node, bt_node_UIE)
-            return SMODS.GUI.bt_callback_ante_up(bt_node, bt_node_UIE)
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return SMODS.GUI.bt_callback_ante_up(ap_node, ap_node_UIE)
         end
     }
 
-    function SMODS.GUI.bt_callback_ante_up(bt_node, bt_node_UIE)
+    function SMODS.GUI.bt_callback_ante_up(ap_node, ap_node_UIE)
         return {}
     end
 
-    SMODS.BTNodeCallback {
+    SMODS.APNodeCallback {
         key = "create_tag",
-        on_callback = function (self, bt_node, cb, trigger_type)
-            -- Create tag(s) from bt_node:get_tag()
-            add_tag(bt_node:get_tag())
+        on_callback = function (self, ap_node, cb, trigger_type)
+            -- Create tag(s) from ap_node:get_tag()
+            add_tag(ap_node:get_tag())
             return false
         end,
-        create_ui = function (self, bt_node, bt_node_UIE)
-            return SMODS.GUI.bt_callback_create_tag(bt_node, bt_node_UIE)
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return SMODS.GUI.bt_callback_create_tag(ap_node, ap_node_UIE)
         end
     }
 
-    function SMODS.GUI.bt_callback_create_tag(bt_node, bt_node_UIE)
+    function SMODS.GUI.bt_callback_create_tag(ap_node, ap_node_UIE)
         return {}
     end
 
-    SMODS.BTNodeCallback {
-        key = "next_blind_tree",
-        on_callback = function (self, bt_node, cb, trigger_type)
+    SMODS.APNodeCallback {
+        key = "next_ante_path",
+        on_callback = function (self, ap_node, cb, trigger_type)
             G.E_MANAGER:add_event(Event{
                 trigger = "immediate",
                 func = function ()
-                    SMODS.next_blind_tree()
+                    SMODS.next_ante_path()
                     return true
                 end
             })
             return false
         end,
-        create_ui = function (self, bt_node, bt_node_UIE)
+        create_ui = function (self, ap_node, ap_node_UIE)
             return nil
         end
     }
 
-    ------- API CODE GameObject.BTNodeButton
-    SMODS.BTNodeButtons = {}
-    SMODS.BTNodeButton = SMODS.GameObject:extend {
-        set = 'BTNodeButton',
-        obj_table = SMODS.BTNodeButtons,
+    ------- API CODE GameObject.APNodeButton
+    SMODS.APNodeButtons = {}
+    SMODS.APNodeButton = SMODS.GameObject:extend {
+        set = 'APNodeButton',
+        obj_table = SMODS.APNodeButtons,
         obj_buffer = {},
         required_parameters = {
             'key',
@@ -4263,36 +4273,36 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         },
         inject = function(self)
             if type(self.on_click) ~= "function" then
-                sendWarnMessage(("BTNodeButton injected with invalid function '%s'"):format(self.on_click))
+                sendWarnMessage(("APNodeButton injected with invalid function '%s'"):format(self.on_click))
             end
         end,
-        create_ui = function (self, bt_node, bt_node_UIE)
+        create_ui = function (self, ap_node, ap_node_UIE)
 
         end,
-        on_click = function (self, bt_node)
+        on_click = function (self, ap_node)
             
         end
     }
 
-    SMODS.BTNodeButton {
+    SMODS.APNodeButton {
         key = "select",
-        on_click = function (self, bt_node)
-            SMODS.set_active_bt_node(bt_node)
-            bt_node:trigger_callbacks("selected")
+        on_click = function (self, ap_node)
+            SMODS.set_active_ap_node(ap_node)
+            ap_node:trigger_callbacks("selected")
         end,
     }
 
-    SMODS.BTNodeButton {
+    SMODS.APNodeButton {
         key = "skip",
-        on_click = function (self, bt_node)
-            SMODS.set_active_bt_node(bt_node)
-            bt_node:trigger_callbacks("skipped")
+        on_click = function (self, ap_node)
+            SMODS.set_active_ap_node(ap_node)
+            ap_node:trigger_callbacks("skipped")
         end,
     }
 
-    SMODS.BTNodeButton {
+    SMODS.APNodeButton {
         key = "reroll",
-        on_click = function (self, bt_node)
+        on_click = function (self, ap_node)
             -- Reroll Blind
         end,
     }
@@ -4301,9 +4311,15 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
 
     --[[
-    Game:init_game_object()
-    Game:update(dt)
-    Game:start_run()
+    blind_states and loc_blind_states
+
+    Game:update(dt) -> This;
+        if G.prev_small_state ~= G.GAME.round_resets.blind_states.Small or
+        G.prev_large_state ~= G.GAME.round_resets.blind_states.Big or
+        G.prev_boss_state ~= G.GAME.round_resets.blind_states.Boss or G.RESET_BLIND_STATES then ...
+    can probably be ignored and replaced with own system
+        
+    Game:start_run() -> get_next_tag_key() is called, besides that; blind_states is set
     ]]
     function reset_blinds()
         G.GAME.round_resets.boss_rerolled = false
@@ -4327,6 +4343,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 end
             end
         end
+    end
+
+    function get_new_boss()
+        sendWarnMessage("get_new_boss() is deprecated; Call SMODS.get_new_blind() instead.", "utils")
     end
 
     function SMODS.get_new_blind(blind_types)
@@ -4420,7 +4440,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     -- Run Info Tab 
     function G.UIDEF.current_blinds()
-        return SMODS.get_blind_tree():create_run_info_ui()
+        return SMODS.get_ante_path():create_run_info_ui()
     end
 
     -- Blind Choice Handler
@@ -4428,10 +4448,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     end
 
-    -- Cash Out -> Functionality is handled by custom SMODS.GameStates and BTNodeCallbacks
+    -- Cash Out -> Functionality is handled by custom SMODS.GameStates and APNodeCallbacks
     function G.FUNCS.cash_out(e)
         if SMODS.get_current_state().args.trigger_callbacks then
-            SMODS.get_active_bt_node():trigger_callbacks("cashed_out")
+            SMODS.get_active_ap_node():trigger_callbacks("cashed_out")
         end
     end
 
@@ -4672,7 +4692,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                         delay = 0.3,
                         func = function()
                             if SMODS.get_current_state().args.trigger_callbacks then
-                                SMODS.get_active_bt_node():trigger_callbacks("defeated")
+                                SMODS.get_active_ap_node():trigger_callbacks("defeated")
                             end
                             G.STATE_COMPLETE = false
 
@@ -4719,10 +4739,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     
     end
 
-    -- Toggle Shop -> Functionality is handled by custom SMODS.GameStates and BTNodeCallbacks
+    -- Toggle Shop -> Functionality is handled by custom SMODS.GameStates and APNodeCallbacks
     function G.FUNCS.toggle_shop(e)
         if SMODS.get_current_state().args.trigger_callbacks then
-            SMODS.get_active_bt_node():trigger_callbacks("shop_ended")
+            SMODS.get_active_ap_node():trigger_callbacks("shop_ended")
         end
     end
 
@@ -5177,7 +5197,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                             trigger = 'immediate',
                             func = function()
                                 play_sound('cancel')
-                                G.blind_select = SMODS.get_blind_tree():create_ui()
+                                G.blind_select = SMODS.get_ante_path():create_ui()
                                 G.blind_select.alignment.offset.y = 0.8-(G.hand.T.y - G.jokers.T.y) + G.blind_select.T.h
                                 G.ROOM.jiggle = G.ROOM.jiggle + 3
                                 G.blind_select.alignment.offset.x = 0

@@ -2204,20 +2204,13 @@ end
 
 SMODS.CanvasContainer = UIBox:extend()
 
-local function inverted_collides_with_point(self, point)
-    return not self.parent:collides_with_point(point)
+local function clipped_collides_with_point(self, point)
+    return self.clipper:collides_with_point(point) and UIElement.collides_with_point(self, point)
 end
 function SMODS.CanvasContainer:init(args)
     UIBox.init(self, args)
     self.canvas = love.graphics.newCanvas(self.T.w, self.T.h, {type = '2d'})
     self.canvas:setFilter('linear', 'linear')
-    self.culler = Node()
-    self.culler.parent = self
-    self.culler.states.visible = false
-    self.culler.states.collide.can = true
-    self.culler.states.focus.can = true
-    self.culler.states.drag.can = false
-    self.culler.collides_with_point = inverted_collides_with_point
 end
 
 function SMODS.CanvasContainer:draw()
@@ -2242,8 +2235,6 @@ function SMODS.CanvasContainer:draw()
             if v.draw_children then v:draw_children() end
         end
     end
-
-    add_to_drawhash(self.culler)
 
     love.graphics.setCanvas(G.CANVAS)
     self:draw_canvas()
@@ -2291,6 +2282,8 @@ function SMODS.CanvasContainer:set_parent_child(node, parent)
         self.UIRoot = UIE 
         self.UIRoot.parent = self
     else
+        UIE.clipper = self.UIRoot
+        UIE.collides_with_point = clipped_collides_with_point
         table.insert(parent.children, UIE)
     end
     if node.config and node.config.mid then 
