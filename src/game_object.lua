@@ -625,8 +625,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if not self.injected then
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
-                    G.shared_stickers[self.key:sub(7)] = Sprite(0, 0, G.CARD_W, G.CARD_H,
-                    G.ASSET_ATLAS[self.sticker_atlas] or G.ASSET_ATLAS["stickers"], self.sticker_pos)
+                    G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos)
                     G.sticker_map[self.key] = self.key:sub(7)
                 else
                     G.sticker_map[self.key] = nil
@@ -1667,7 +1666,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
         inject = function(self)
             if self.overlay_pos then
-                self.overlay_sprite = Sprite(0, 0, G.CARD_W, G.CARD_H, G.ASSET_ATLAS[self.atlas], self.overlay_pos)
+                self.overlay_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.overlay_pos)
                 self.no_overlay = true
             end
         end,
@@ -1775,8 +1774,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         },
         inject = function(self)
             G.P_SEALS[self.key] = self
-            G.shared_seals[self.key] = Sprite(0, 0, G.CARD_W, G.CARD_H,
-                G.ASSET_ATLAS[self.atlas] or G.ASSET_ATLAS['centers'], self.pos)
+            G.shared_seals[self.key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas) or SMODS.get_atlas('centers'), self.pos)
             self.badge_to_key[self.key:lower() .. '_seal'] = self.key
             SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
             self.rng_buffer[#self.rng_buffer + 1] = self.key
@@ -2973,7 +2971,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.order = #self.obj_buffer
         end,
         inject = function(self)
-            self.sticker_sprite = Sprite(0, 0, G.CARD_W, G.CARD_H, G.ASSET_ATLAS[self.atlas], self.pos)
+            self.sticker_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.pos)
             G.shared_stickers[self.key] = self.sticker_sprite
         end,
         -- relocating sticker checks to here, so if the sticker has different checks than default
@@ -3616,8 +3614,15 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.current = self.current + amount
             update_hand_text({delay = 0}, {[self.key] = self.current})
         end,
-        level_up_hand = function(self, amount, hand)
-            hand[self.key] = math.max(hand['s_'..self.key] + hand['l_'..self.key]*(hand.level - 1), 0)
+        level_up_hand = function(self, amount, hand, behaviour)
+            if type(behaviour) == "function" then
+                hand[self.key] = math.max(behaviour(hand[self.key], amount), 0)
+            else
+                if behaviour then
+                    print("Warning - non-function behaviour " .. behaviour .. " passed to " .. self.key .. " level_up_hand")
+                end
+                hand[self.key] = math.max(hand[self.key] + amount, 0)
+            end
         end,
         calc_effect = function(self, effect, scored_card, key, amount, from_edition)
             if not SMODS.Calculation_Controls[self.key] then return end
