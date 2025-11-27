@@ -111,7 +111,7 @@ for name, parameter in pairs(SMODS.Scoring_Parameters) do
         end
         if type(vals[name]) == 'string' then delta = vals[name] end
         G.GAME.current_round.current_hand[name] = vals[name]
-        G.hand_text_area[name] = G.hand_text_area[name] or G.HUD:get_UIE_by_ID('hand_'..name..'_area')
+        G.hand_text_area[name] = G.hand_text_area[name] or G.HUD:get_UIE_by_ID('hand_'..name)
         if G.hand_text_area[name] then
             G.hand_text_area[name]:update(0)
             if vals.StatusText then 
