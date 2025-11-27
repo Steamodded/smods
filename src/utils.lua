@@ -2850,7 +2850,7 @@ end
 
 function SMODS.refresh_score_UI_list()
     for name, _ in pairs(SMODS.Scoring_Parameters) do
-        G.hand_text_area[name] = G.HUD:get_UIE_by_ID('hand_'..name..'_area')
+        G.hand_text_area[name] = G.HUD:get_UIE_by_ID('hand_'..name)
     end
 end
 
