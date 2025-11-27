@@ -2614,7 +2614,7 @@ function level_up_hand(card, hand, instant, amount)
         end
     end
 
-    if not instant then SMODS.level_up_hand_animation{hand = hand} end
+    if not instant then SMODS.level_up_hand_animation{hand = hand, card = card} end
 
     G.E_MANAGER:add_event(Event({
         trigger = 'immediate',
