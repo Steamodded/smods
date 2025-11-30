@@ -823,7 +823,7 @@ function SMODS.poll_rarity(_pool_key, _rand_key)
     local available_rarities = copy_table(SMODS.ObjectTypes[_pool_key].rarities) -- Table containing a list of rarities and their rates
     local vanilla_rarities = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
 
-	-- Check to see if all disabled rarities are empty
+	-- Check to see if any rarities are empty and should be disabled
     for _, v in ipairs(available_rarities) do
         local _pool = get_current_pool("Joker", v.key, false, nil)
         if SMODS.Rarities[v.key] and SMODS.Rarities[v.key].disable_if_empty and type(SMODS.Rarities[v.key].disable_if_empty) == "boolean" and SMODS.Rarities[v.key].disable_if_empty == true and #_pool == 1 and _pool[1] == "j_joker" then
