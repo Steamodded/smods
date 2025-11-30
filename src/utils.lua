@@ -826,7 +826,7 @@ function SMODS.poll_rarity(_pool_key, _rand_key)
 	-- Check to see if any rarities are empty and should be disabled
     for _, v in ipairs(available_rarities) do
         local _pool = get_current_pool("Joker", v.key, false, nil)
-        if SMODS.Rarities[v.key] and SMODS.Rarities[v.key].disable_if_empty and type(SMODS.Rarities[v.key].disable_if_empty) == "boolean" and SMODS.Rarities[v.key].disable_if_empty == true and #_pool == 1 and _pool[1] == "j_joker" then
+        if SMODS.Rarities[v.key] and SMODS.Rarities[v.key].disable_if_empty and #_pool == 1 and _pool[1] == "j_joker" then
             SMODS.remove_pool(available_rarities, v.key)
         end
     end
