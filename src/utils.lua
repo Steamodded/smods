@@ -3027,6 +3027,21 @@ function SMODS.all_royal(cards)
     return #cards > 0
 end
 
+function SMODS.lowest_and_highest_rank(cards)
+    local rank_tally, rank_to_cards = SMODS.get_rank_tally(cards)
+    local lowest
+    local highest
+    for rank, tally in pairs(rank_tally) do
+        if not lowest or rank.sort_nominal < lowest.sort_nominal then
+            lowest = {rank = rank, sort_nominal = rank.sort_nominal}
+        end
+        if not highest or rank.sort_nominal < highest.sort_nominal then
+            highest = {rank = rank, sort_nominal = rank.sort_nominal}
+        end
+    end
+    return {lowest = {rank = lowest.rank, cards = rank_to_cards[lowest.rank]}, highest = {rank = highest.rank, cards = rank_to_cards[highest.rank]}}
+end
+
 -- Scoring Calculation API
 function SMODS.set_scoring_calculation(key)
     G.GAME.current_scoring_calculation = SMODS.Scoring_Calculations[key]:new()

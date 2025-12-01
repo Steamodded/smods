@@ -717,6 +717,11 @@ function SMODS.get_rank_from_id(id) end
 ---@return table<SMODS.Rank, table<integer, Card>> rank_to_cards
 function SMODS.get_rank_tally(cards, flags) end
 
+
+---@param cards table<integer, Card>
+---@return table<"lowest"|"highest", table<"rank"|"cards", SMODS.Rank|table<integer, Card>>>
+function SMODS.lowest_and_highest_rank(cards) end
+
 ---@param card Card|table
 ---@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: string?}
 ---@return table? results

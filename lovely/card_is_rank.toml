@@ -6,10 +6,6 @@ priority = -10
 
 # Oh boy.
 
-# Excluded Jokers: 
-# Cloud Nine requires some kind of caching of ranks which I am NOT going to tackle :)
-
-
 # Help
 # [[patches]]
 # [patches.regex]
