@@ -1385,7 +1385,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     end
 
     if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or
-        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'ranks_changed' or key == 'ranks_fixed' or key == 'modify' then
+        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'ranks_changed' or key == 'ranks_fixed' or key == 'modify' or key == 'shop_create_flags' then
         return { [key] = amount }
     end
     
@@ -1487,7 +1487,8 @@ SMODS.other_calculation_keys = {
     'modify',
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
-    'extra'
+    'shop_create_flags',
+    'extra',
 }
 SMODS.silent_calculation = {
     saved = true, effect = true, remove = true,
@@ -2156,14 +2157,25 @@ end
 function SMODS.blueprint_effect(copier, copied_card, context)
     if not copied_card or copied_card == copier or copied_card.debuff or context.no_blueprint or not copied_card.config.center.blueprint_compat then return end
     if (context.blueprint or 0) > #G.jokers.cards then return end
+
     local old_context_blueprint = context.blueprint
     context.blueprint = (context.blueprint and (context.blueprint + 1)) or 1
+    
     local old_context_blueprint_card = context.blueprint_card
     context.blueprint_card = context.blueprint_card or copier
+
+    context.blueprint_copiers_stack = context.blueprint_copiers_stack or {}
+    context.blueprint_copiers_stack[#context.blueprint_copiers_stack + 1] = copier
+    context.blueprint_copier = context.blueprint_copiers_stack[#context.blueprint_copiers_stack]
+
     local eff_card = context.blueprint_card
     local other_joker_ret = copied_card:calculate_joker(context)
+
     context.blueprint = old_context_blueprint
     context.blueprint_card = old_context_blueprint_card
+    table.remove(context.blueprint_copiers_stack, #context.blueprint_copiers_stack)
+    context.blueprint_copier = context.blueprint_copiers_stack[#context.blueprint_copiers_stack]
+
     if other_joker_ret then
         other_joker_ret.card = eff_card
         return other_joker_ret
@@ -3483,7 +3495,109 @@ function SMODS.get_keys(t)
     return ret
 end
 
+function SMODS.get_atlas(atlas_key)
+    return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key]
+end
+
+function SMODS.get_atlas_sprite_class(atlas_key)
+    local atlas = SMODS.get_atlas(atlas_key) or {atlas_table = "ASSET_ATLAS"}
+    local class_map = {
+        ASSET_ATLAS = Sprite,
+        ANIMATION_ATLAS = AnimatedSprite,
+    }
+    return class_map[atlas.atlas_table] or Sprite
+end
+
+function SMODS.create_sprite(X, Y, W, H, atlas, pos)
+    local atlas_key = (type(atlas) == "string" and atlas) or (type(atlas) == "table" and (atlas.key or atlas.name))
+    atlas = SMODS.get_atlas(atlas_key)
+    assert(atlas, "SMODS.create_sprite called with invalid atlas key: "..atlas_key)
+    return SMODS.get_atlas_sprite_class(atlas_key)(X, Y, W, H, atlas, pos)
+end
+
+function SMODS.is_active_blind(key, ignore_disabled)
+    return G.GAME and G.GAME.blind and G.GAME.facing_blind and (G.GAME.blind.name == key or G.GAME.blind.config.key == key) and (not G.GAME.blind.disabled or ignore_disabled)
+end
+
 -- Function used to determine whether the current blind modifies the number of cards drawn
 function SMODS.blind_modifies_draw(key)
     if SMODS.Blinds.modifies_draw[key] then return true end
+end
+
+function SMODS.upgrade_poker_hands(args)
+    -- args.hands
+    -- args.parameters
+    -- args.func
+    -- args.level_up
+    -- args.from
+
+    local function get_keys(t)
+        local keys = {}
+        for k, _ in pairs(t) do
+            table.insert(keys, k)
+        end
+        return keys
+    end
+
+    args.hands = args.hands or get_keys(G.GAME.hands)
+    if type(args.hands) == 'string' then args.hands = {args.hands} end
+    args.parameters = args.parameters or get_keys(SMODS.Scoring_Parameters)
+    local instant = args.instant
+
+    if not args.func then
+        for _, hand in ipairs(args.hands) do
+            SMODS.smart_level_up_hand(args.from, hand, instant, args.level_up or 1)
+        end
+        return
+    end
+    
+    assert(type(args.func) == 'function', "Invalid func provided to SMODS.upgrade_hands")
+
+    local vals_after_level
+    if SMODS.displaying_scoring then
+        vals_after_level = copy_table(G.GAME.current_round.current_hand)
+        local text,disp_text,_,_,_ = G.FUNCS.get_poker_hand_info(G.play.cards)
+        vals_after_level.handname = disp_text or ''
+        vals_after_level.level = (G.GAME.hands[text] or {}).level or ''
+        for name, p in pairs(SMODS.Scoring_Parameters) do
+            vals_after_level[name] = p.current
+        end
+    end
+        
+    for _, hand in ipairs(args.hands) do
+        if not instant then
+            update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'), level=G.GAME.hands[hand].level})
+            for name, p in pairs(SMODS.Scoring_Parameters) do
+                p.current = G.GAME.hands[hand][name] or p.default_value
+                update_hand_text({nopulse = nil, delay = 0}, {[name] = p.current})
+            end
+        end
+        for _, parameter in ipairs(args.parameters) do
+            G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
+            if not instant then
+                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.9, func = function()
+                    play_sound('tarot1')
+                    if args.from then args.from:juice_up(0.8, 0.5) end
+                    G.TAROT_INTERRUPT_PULSE = true
+                    return true end }))
+                update_hand_text({delay = 0}, {[parameter] = G.GAME.hands[hand][parameter], StatusText = true})
+            end
+        end
+        if args.level_up then
+            G.GAME.hands[hand].level = G.GAME.hands[hand].level + (type(args.level_up) == 'number' and args.level_up or 1)
+            if not instant then
+                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.9, func = function()
+                    play_sound('tarot1')
+                    if args.from then args.from:juice_up(0.8, 0.5) end
+                    G.TAROT_INTERRUPT_PULSE = nil
+                    return true end }))
+                update_hand_text({sound = 'button', volume = 0.7, pitch = 0.9, delay = 0}, {level=G.GAME.hands[hand].level})
+            end
+        end
+        if not instant then delay(1.3) end
+    end
+
+    if not instant then
+        update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, vals_after_level or {mult = 0, chips = 0, handname = '', level = ''})
+    end
 end

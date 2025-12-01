@@ -47,7 +47,8 @@ position = 'before'
 match_indent = true
 payload = '''
 local obj = self.config.blind
-self.children.animatedSprite.atlas = G.ANIMATION_ATLAS[obj.atlas] or G.ANIMATION_ATLAS['blind_chips']'''
+self.children.animatedSprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, obj.atlas or 'blind_chips', obj.pos or G.P_BLINDS.bl_small.pos)
+'''
 
 [[patches]]
 [patches.pattern]
@@ -265,9 +266,8 @@ position = 'after'
 match_indent = true
 payload = '''
 if self.config.blind.atlas then
-    self.children.animatedSprite.atlas = G.ANIMATION_ATLAS[self.config.blind.atlas]
+    self.children.animatedSprite.atlas = SMODS.get_atlas(self.config.blind.atlas)
 end'''
-
 
 # create_UIBox_blind_choice()
 # create_UIBox_round_scores_row()
@@ -277,7 +277,7 @@ target = 'functions/UI_definitions.lua'
 pattern = "(?<indent>[\t ]*)blind_choice.animation = AnimatedSprite\\(0,0, 1.4, 1.4, (?<atlas>G.ANIMATION_ATLAS\\['blind_chips'\\]),  blind_choice.config.pos\\)"
 position = 'at'
 root_capture = 'atlas'
-payload = "G.ANIMATION_ATLAS[blind_choice.config.atlas] or G.ANIMATION_ATLAS['blind_chips']"
+payload = "SMODS.get_atlas(blind_choice.config.atlas) or G.ANIMATION_ATLAS['blind_chips']"
 
 # create_UIBox_your_collection_blinds()
 [[patches]]

@@ -1,0 +1,30 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Change CardArea's background colour
+# CardArea.draw
+[[patches]]
+[patches.pattern]
+target = "cardarea.lua"
+pattern = "{n=G.UIT.R, config={minw = self.T.w,minh = self.T.h,align = \"cm\", padding = 0.1, mid = true, r = 0.1, colour = self ~= G.shop_vouchers and {0,0,0,0.1} or nil, ref_table = self}, nodes={"
+position = 'at'
+match_indent = true
+payload = '''
+{n=G.UIT.R, config={minw = self.T.w,minh = self.T.h,align = "cm", padding = 0.1, mid = true, r = 0.1, colour = self.config.bg_colour or self ~= G.shop_vouchers and {0,0,0,0.1} or nil, ref_table = self}, nodes={
+'''
+
+# Remove CardArea count
+# CardArea.draw
+[[patches]]
+[patches.pattern]
+target = "cardarea.lua"
+pattern = '''
+local card_count = self ~= G.shop_vouchers and {n=G.UIT.R, config={align = self == G.jokers and 'cl' or self == G.hand and 'cm' or 'cr', padding = 0.03, no_fill = true}, nodes={
+'''
+position = 'at'
+match_indent = true
+payload = '''
+local card_count = not self.config.no_card_count and self ~= G.shop_vouchers and {n=G.UIT.R, config={align = self == G.jokers and 'cl' or self == G.hand and 'cm' or 'cr', padding = 0.03, no_fill = true}, nodes={
+'''

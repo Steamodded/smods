@@ -251,3 +251,21 @@ card:set_edition(edition)
 position = 'at'
 match_indent = true
 payload = '''card:set_edition(poll_edition('illusion', nil, true, true))'''
+
+
+# modify_shop_card context for allowing shop cards to be modified (duh)
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+local card = create_card(v.type, area, nil, nil, nil, nil, nil, 'sho')
+'''
+position = 'at'
+payload = '''
+local args = {set = v.type, area = area, key_append = 'sho'}
+local flags = SMODS.calculate_context({create_shop_card = true, set = v.type})
+local create_flags = SMODS.merge_defaults(flags.shop_create_flags or {}, args)
+local card = SMODS.create_card(create_flags)
+SMODS.calculate_context({modify_shop_card = true, card = card})
+'''
+match_indent = true

@@ -64,7 +64,7 @@ SMODS.calculate_round_score = function(flames) end
 ---@field hands? table[] Used to add custom values for different poker hands
 ---@field modify? fun(self: SMODS.Scoring_Parameter, amount: number) Alters the value of the parameter
 ---@field calc_effect? fun(self: SMODS.Scoring_Parameter, effect: table, scored_card: Card|table, key: string, amount: number, from_edition: boolean) Handle how this parameter is calculated when return from a calculate functon
----@field level_up_hand? fun(self: SMODS.Scoring_Parameter, amount: number, hand: table) Handle how to level up this parameter
+---@field level_up_hand? fun(self: SMODS.Scoring_Parameter, amount: number, hand: table, behaviour?: function) Handle how to upgrade this parameter's base value for a specific poker hand. If `behaviour` is included, it must take the current base value of the parameter and `amount` as arguments, in that order, and return the desired base value of the parameter.
 
 ---@type table<string, SMODS.Scoring_Parameter|table>
 SMODS.Scoring_Parameters = {}
