@@ -1912,7 +1912,7 @@ function create_UIBox_notify_alert(_achievement, _type)
     end
 
   if SMODS.Achievements[_achievement] then _c = SMODS.Achievements[_achievement]; _atlas = SMODS.get_atlas(_c.atlas) end
-  local t_s =  SMODS.create_sprite(0,0,1.5*(_atlas.px/_atlas.py),1.5, _atlas.key,  _c and _c.pos or {x=3, y=0})
+  local t_s =  SMODS.create_sprite(0,0,1.5*(_atlas.px/_atlas.py),1.5, _atlas.key or _atlas.name,  _c and _c.pos or {x=3, y=0})
 
   t_s.states.drag.can = false
   t_s.states.hover.can = false
