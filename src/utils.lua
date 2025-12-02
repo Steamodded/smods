@@ -2916,10 +2916,14 @@ function SMODS.scale_card(card, args)
 end
 
 function SMODS.additive_scaling(ref_table, ref_value, initial, modifier)
+    initial  = initial  or 0
+    modifier = modifier or 0
     ref_table[ref_value] = initial + modifier
 end
 
 function SMODS.multiplicative_scaling(ref_table, ref_value, initial, modifier)
+    initial  = initial  or 1
+    modifier = modifier or 1
     ref_table[ref_value] = initial * modifier
 end
 
