@@ -2563,16 +2563,38 @@ function SMODS.info_queue_desc_from_rows(desc_nodes, empty, maxw)
   }}
 end
 
-function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
+-- Private helper function, taken from vanilla Seltzer/etc. consumed animation
+-- For SMODS.destroy_cards only.
+function SMODS.pinch_anim(card)
+    play_sound('tarot1')
+    card.T.r = -0.2
+    card:juice_up(0.3, 0.4)
+    card.states.drag.is = true
+    card.children.center.pinch.x = true
+    G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
+        func = function()
+            G.jokers:remove_card(card)
+            card:remove()
+            card = nil
+            return true; end}))
+end
+
+function SMODS.destroy_cards(cards, bypass_eternal, immediate, pinch_anim)
     if not cards[1] then
         if Object.is(cards, Card) then
             cards = {cards}
-        else
-            return
         end
     end
+    local args = type(bypass_eternal) == 'table' and bypass_eternal or {}
+    if type(bypass_eternal) == 'table' then
+        bypass_eternal, immediate, pinch_anim =
+            bypass_eternal.bypass_eternal, bypass_eternal.immediate, bypass_eternal.pinch_anim
+    end
+    local args_delay = args.delay
+
     local glass_shattered = {}
     local playing_cards = {}
+    local destroyed, destroyed2 = {}, {}
     for _, card in ipairs(cards) do
         if bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
             card.getting_sliced = true
@@ -2585,34 +2607,59 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
             if card.base.name then
                 playing_cards[#playing_cards + 1] = card
             end
-            card.skip_destroy_animation = skip_anim
+            destroyed[#destroyed + 1] = card
+            destroyed2[#destroyed2 + 1] = card
         end
     end
-    
-    check_for_unlock{type = 'shatter', shattered = glass_shattered}
-    
-    if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
-    for i = 1, #cards do
-        if immediate or skip_anim then
-            if cards[i].shattered then
-                cards[i]:shatter()
-            elseif cards[i].destroyed then
-                cards[i]:start_dissolve()
+    check_for_unlock{type = 'shatter', shattered = glass_shattered}
+
+    local function destroy_f()
+        for i = 1, #destroyed do
+            if pinch_anim then
+                SMODS.pinch_anim(destroyed[i])
+            else
+                if destroyed[i].shattered then
+                    destroyed[i]:shatter()
+                elseif destroyed[i].destroyed then
+                    destroyed[i]:start_dissolve(nil, i ~= 1)
+                end
             end
+        end
+        return true
+    end
+
+    local function run_destroy()
+        if immediate then
+            destroy_f()
+            -- args_delay has no effect
         else
             G.E_MANAGER:add_event(Event({
-                func = function()
-                    if cards[i].shattered then
-                        cards[i]:shatter()
-                    elseif cards[i].destroyed then
-                        cards[i]:start_dissolve()
-                    end
-                    return true
-                end
+                func = destroy_f
             }))
+            if args_delay then delay(args_delay) end
         end
     end
+
+    local function run_calc()
+        if next(playing_cards) then
+            SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards})
+        end
+    end
+
+    if not args.no_run then
+        run_destroy()
+        run_calc()
+    end
+
+    local result = {
+        destroyed = destroyed2, -- return a copy to avoid weirdness with closures
+    }
+    if args.no_run then
+        result.run_destroy = run_destroy
+        result.run_calc = run_calc
+    end
+    return result
 end
 
 -- Hand Limit API
