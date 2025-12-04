@@ -19,6 +19,7 @@ function loadAPIs()
         return cls
     end
 
+    local key_unique = 0
     function SMODS.GameObject:__call(o)
         o = o or {}
         assert(o.mod == nil, "Created object should not have \"mod\" field defined.")
@@ -32,6 +33,19 @@ function loadAPIs()
         -- also updates o.prefix_config
         SMODS.add_prefixes(self, o)
         if o:check_duplicate_key() then return end
+        if self ~= SMODS.Atlas and (o.default_size or (o.px and o.py) or o.size) and o.path then
+            key_unique = key_unique + 1;
+            local size = o.size or o.default_size -- if a mod wants to override
+            local px, py = o.px or size.px, o.py or size.py
+            SMODS.Atlas {
+                key = "__autogen_atlas_" .. o.key .. "_" .. key_unique,
+                path = o.path,
+                px = px,
+                py = py,
+                raw_key = true,
+            }
+            o.atlas = "__autogen_atlas_" .. o.key .. "_" .. key_unique
+        end
         o:register()
         return o
     end
@@ -649,6 +663,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         atlas = 'chips',
         pos = { x = 0, y = 0 },
         injected = false,
+        default_size = {
+            px = 29,
+            py = 29
+        },
         required_params = {
             'key',
             'pos',
@@ -1134,7 +1152,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Center
     -------------------------------------------------------------------------------------------------
-
     SMODS.Centers = {}
     --- Shared class for center objects. Holds no default values; only register an object directly using this if it doesn't fit any subclass, creating one isn't justified and you know what you're doing.
     SMODS.Center = SMODS.GameObject:extend {
@@ -1241,6 +1258,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         required_params = {
             'key',
         },
+        default_size = {
+            px = 71,
+            py = 95,
+        },
         inject = function(self)
             -- call the parent function to ensure all pools are set
             SMODS.Center.inject(self)
@@ -1271,6 +1292,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         cost = 3,
         config = {},
         class_prefix = 'c',
+        default_size = { px = 71, py = 95 },
         required_params = {
             'set',
             'key',
@@ -1331,6 +1353,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         unlocked = true,
         available = true,
         pos = { x = 0, y = 0 },
+        default_size = {px = 71, py = 95},
         config = {},
         class_prefix = 'v',
         required_params = {
@@ -1363,6 +1386,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         unlocked = true,
         atlas = 'centers',
         pos = { x = 0, y = 0 },
+        default_size = { px = 71, py = 95 },
         config = {},
         omit = false,
         unlock_condition = {},
@@ -1406,6 +1430,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         set = "Booster",
         atlas = "Booster",
         pos = {x = 0, y = 0},
+        default_size = {px = 71, py = 95},
         loc_txt = {},
         discovered = false,
         weight = 1,
@@ -1702,6 +1727,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         obj_buffer = {},
         obj_table = SMODS.UndiscoveredSprites,
         set = 'Undiscovered Sprite',
+        default_size = {
+            px = 71,
+            py = 95
+        },
         -- this is more consistent and allows for extension
         process_loc_text = function() end,
         inject = function(self)
@@ -1737,6 +1766,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         debuff = {},
         vars = {},
         config = {},
+        default_size = {
+            px = 34,
+            py = 34
+        },
         dollars = 5,
         mult = 2,
         atlas = 'blind_chips',
@@ -1806,8 +1839,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         set = 'Seal',
         atlas = 'centers',
         pos = { x = 0, y = 0 },
+        default_size = {
+            px = 71,
+            py = 95
+        },
         discovered = false,
         badge_colour = HEX('FFFFFF'),
+        default_size = { px = 71, py = 95 },
         required_params = {
             'key',
             'pos',
@@ -2925,6 +2963,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         required_params = {
             'key',
         },
+        default_size = {
+            px = 34,
+            py = 34
+        },
         discovered = false,
         min_ante = nil,
         atlas = 'tags',
@@ -2993,6 +3035,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         rate = 0.3,
         atlas = 'stickers',
         pos = { x = 0, y = 0 },
+        default_size = {
+            px = 71,
+            py = 95
+        },
         badge_colour = HEX 'FFFFFF',
         default_compat = true,
         compat_exceptions = {},
@@ -3151,6 +3197,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             'key',
             -- table with keys `name` and `text`
         },
+        default_size = {
+            px = 71,
+            py = 95,
+        },
         -- other fields:
         -- replace_base_card
         -- if true, don't draw base card sprite and don't give base card's chips
@@ -3294,6 +3344,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         required_params = {
             'key',
             'shader' -- can be set to `false` for shaderless edition
+        },
+        default_size = {
+            px = 71,
+            py = 95,
         },
         -- optional fields:
         extra_cost = nil,
@@ -3549,6 +3603,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         required_params = {
             'key',
             'unlock_condition',
+        },
+        default_size = {
+            px = 66,
+            py = 66
         },
         set = 'Achievement',
         class_prefix = "ach",
