@@ -2603,6 +2603,25 @@ function Card:set_ability(center, initial, delay_sprites)
 	end
 end
 
+-- Override to properly update all scoring parameters during level up
+function level_up_hand(card, hand, instant, amount)
+    amount = amount or 1
+    G.GAME.hands[hand].level = math.max(0, G.GAME.hands[hand].level + amount)
+
+    for name, parameter in pairs(SMODS.Scoring_Parameters) do
+        if G.GAME.hands[hand][name] then
+            parameter:level_up_hand(amount, G.GAME.hands[hand])
+        end
+    end
+
+    if not instant then SMODS.level_up_hand_animation{hand = hand, card = card} end
+
+    G.E_MANAGER:add_event(Event({
+        trigger = 'immediate',
+        func = (function() check_for_unlock{type = 'upgrade_hand', hand = hand, level = G.GAME.hands[hand].level} return true end)
+    }))
+end
+
 local add_tag_ref = add_tag
 function add_tag(_tag)
 	_tag = _tag or {}
