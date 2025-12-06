@@ -1,0 +1,73 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+## Adds extra easings to the "ease" event type
+[[patches]]
+[patches.pattern]
+target = "engine/event.lua"
+pattern = "type = config.ease or 'lerp',"
+position = "at"
+payload = "type = config.ease and string.lower(config.ease) or 'lerp',"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "engine/event.lua"
+pattern = '''if self.ease.type == 'lerp' then
+                    self.ease.ref_table[self.ease.ref_value] = self.func(percent_done*self.ease.start_val + (1-percent_done)*self.ease.end_val)
+                end
+                if self.ease.type == 'elastic' then
+                    percent_done = -math.pow(2, 10 * percent_done - 10) * math.sin((percent_done * 10 - 10.75) * 2*math.pi/3);
+                    self.ease.ref_table[self.ease.ref_value] = self.func(percent_done*self.ease.start_val + (1-percent_done)*self.ease.end_val)
+                end
+                if self.ease.type == 'quad' then
+                    percent_done = percent_done * percent_done;
+                    self.ease.ref_table[self.ease.ref_value] = self.func(percent_done*self.ease.start_val + (1-percent_done)*self.ease.end_val)
+                end'''
+position = "at"
+payload = '''
+local c1 = 1.70158
+local c2 = c1 * 1.525
+local c3 = c1 + 1
+if self.ease.type == 'lerp' or self.ease.type == 'linear' then 
+elseif self.ease.type == 'insine' then
+    percent_done = 1 - math.cos((percent_done * math.pi) / 2)
+elseif self.ease.type == 'outsine' then
+    percent_done = math.cos((percent_done * math.pi) / 2)
+elseif self.ease.type == 'inoutsine' then
+    percent_done = -math.cos(percent_done * math.pi) - 1 / 2
+elseif self.ease.type == 'quad' or self.ease.type == 'inquad' then 
+    percent_done = percent_done * percent_done;
+elseif self.ease.type == 'outquad' then
+    percent_done = 1 - (1 - percent_done) * (1 - percent_done)
+elseif self.ease.type == 'inoutquad' then
+    percent_done = (percent_done < 0.5 and 2 * percent_done * percent_done or 1 - math.pow(-2 * percent_done + 2, 2) / 2)
+elseif self.ease.type == 'inexpo' then
+    percent_done = math.pow(2, 10 * percent_done - 10)
+elseif self.ease.type == 'outexpo' then
+    percent_done = 1 - math.pow(2, -10 * percent_done)
+elseif self.ease.type == 'inoutexpo' then
+    percent_done = (percent_done < 0.5 and math.pow(2, 20 * percent_done - 10) / 2 or 2 - math.pow(2, -20 * percent_done + 10) / 2)
+elseif self.ease.type == 'incirc' then
+    percent_done = 1 - math.sqrt(1 - math.pow(percent_done, 2))
+elseif self.ease.type == 'outcirc' then
+    percent_done = math.sqrt(1 - math.pow(percent_done - 1, 2))
+elseif self.ease.type == 'inoutcirc' then
+    percent_done = (percent_done < 0.5 and (1 - math.sqrt(1 - math.pow(2 * percent_done, 2))) / 2 or (math.sqrt(1 - math.pow(-2 * percent_done + 2, 2)) + 1) / 2)
+elseif self.ease.type == 'elastic' or self.ease.type == 'inelastic' then 
+    percent_done = -math.pow(2, 10 * percent_done - 10) * math.sin((percent_done * 10 - 10.75) * 2*math.pi/3);
+elseif self.ease.type == 'outelastic' then
+    percent_done = math.pow(2, -10 * percent_done) * math.sin((percent_done * 10 - 0.75) * (2 * math.pi) / 3) + 1
+elseif self.ease.type == 'inoutelastic' then
+    percent_done = (percent_done < 0.5 and -(math.pow(2, 20 * percent_done - 10) * math.sin((20 * percent_done - 11.125) * (2 * math.pi) / 4.5)) / 2 or (math.pow(2, -20 * percent_done - 10) * math.sin((20 * percent_done - 11.125) * (2 * math.pi) / 4.5)) / 2 + 1)
+elseif self.ease.type == 'inback' then
+    percent_done = c3 * percent_done * percent_done * percent_done - c1 * percent_done * percent_done
+elseif self.ease.type == 'outback' then
+    percent_done = 1 + c3 * math.pow(percent_done - 1, 3) + c1 * math.pow(percent_done - 1, 2)
+elseif self.ease.type == 'inoutback' then
+    percent_done = (percent_done < 0.5 and (math.pow(2 * percent_done, 2) * ((c2 + 1) * 2 * percent_done - c2)) / 2 or (math.pow(2 * percent_done - 2, 2) * ((c2 + 1) * (percent_done * 2 - 2) + c2) + 2) / 2)
+end
+self.ease.ref_table[self.ease.ref_value] = self.func(percent_done*self.ease.start_val + (1-percent_done)*self.ease.end_val)'''
+match_indent = true
