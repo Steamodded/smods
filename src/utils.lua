@@ -2767,10 +2767,8 @@ end
 function SMODS.is_eternal(card, trigger)
     if card == nil then
         local trace = debug.traceback("SMODS.is_eternal invoked with nil card", 2)
-        sendDebugMessage("[SMODS] NIL CARD DETECTED in is_eternal\n" .. trace)
-        return false
-    end
-
+        
+        -- Define the helper inside the block (or move it outside the function entirely)
         local function serialize(tbl)
             if type(tbl) ~= "table" then return tostring(tbl) end
             local out = {}
@@ -2780,6 +2778,7 @@ function SMODS.is_eternal(card, trigger)
             return "{" .. table.concat(out, ", ") .. "}"
         end
 
+        -- Send the single, combined debug message
         sendDebugMessage("[SMODS] NIL CARD DETECTED in is_eternal\nTraceback:\n" ..
             trace .. "\nTrigger:\n" .. serialize(trigger))
 
@@ -2793,7 +2792,7 @@ function SMODS.is_eternal(card, trigger)
     SMODS.calculate_context({check_eternal = true, other_card = card, trigger = trigger, no_blueprint = true,}, calc_return)
     for _,eff in pairs(calc_return) do
         for _,tab in pairs(eff) do
-            if tab.no_destroy then --Reuses key from context.joker_type_destroyed
+            if tab.no_destroy then 
                 ret = true
                 if type(tab.no_destroy) == 'table' then
                     if tab.no_destroy.override_compat then ovr_compat = true end
