@@ -2765,6 +2765,27 @@ function Card:should_hide_front()
 end
 
 function SMODS.is_eternal(card, trigger)
+    if card == nil then
+        local trace = debug.traceback("SMODS.is_eternal invoked with nil card", 2)
+        sendDebugMessage("[SMODS] NIL CARD DETECTED in is_eternal\n" .. trace)
+        return false
+    end
+
+        local function serialize(tbl)
+            if type(tbl) ~= "table" then return tostring(tbl) end
+            local out = {}
+            for k,v in pairs(tbl) do
+                out[#out+1] = tostring(k) .. "=" .. tostring(v)
+            end
+            return "{" .. table.concat(out, ", ") .. "}"
+        end
+
+        sendDebugMessage("[SMODS] NIL CARD DETECTED in is_eternal\nTraceback:\n" ..
+            trace .. "\nTrigger:\n" .. serialize(trigger))
+
+        return false
+    end
+
     local calc_return = {}
     local ovr_compat = false
     local ret = false
