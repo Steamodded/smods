@@ -764,9 +764,32 @@ function SMODS.is_active_blind(key, ignore_disabled) end
 ---@return boolean
 function SMODS.challenge_is_unlocked(challenge, k) end
 
+---Check if a scoring parameter can be upgraded in a hand.
+---@param param_key string
+---@param hand_key? string If not given, function returns true.
+---@return boolean
+function SMODS.scoring_parameter_is_upgradeable(param_key, hand_key) end
+
+---Begins the hand level-up animation by setting initial text for scoring parameters and the hand level.
+---@param args table|{hand: string?, hand_text: string?, parameter_text: table<string, string>?, all_parameter_text: string?, level_text: string}
+---@return nil
+function SMODS.start_level_up_hand_animation(args) end
+
+---Update the text of each scoring parameter one at a time\
+---(in the order of `G.GAME.current_scoring_calculation.parameters`),\
+---then update the text of the displayed hand level.
+---@param args table|{hand: string?, card: Card?, parameter_status_text: table<string, string>?, all_parameter_status_text: string?, level_text: string}
+---@return nil
+function SMODS.level_up_hand_animation(args) end
+
+---Ends the hand level-up animation by re-setting default values as displayed text for scoring parameters, and hiding the hand level.
+---@param args table
+---@return nil
+function SMODS.end_level_up_hand_animation(args) end
+
 ---@param args table|{hands?: table, parameters?: table, level_up?: number|boolean, func?: fun(base: number, hand: string, param: string), instant?: boolean}
 --- This functions handles upgrading poker hands in more complex ways. You can define
 --- a custom `func` to modify the values in specific ways. `hands` and `parameters` can
 --- be limited to specific ones, or default to using all of `G.GAME.hands` and `SMODS.Scoring_Parameters`.
 --- Use `level_up` to control whether the level of the hand is upgraded.
-    function SMODS.upgrade_poker_hands(args) end
+function SMODS.upgrade_poker_hands(args) end
