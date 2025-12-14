@@ -3302,10 +3302,10 @@ function SMODS.upgrade_poker_hands(args)
                 update_hand_text({nopulse = nil, delay = 0}, {[name] = p.current})
             end
         end
-        for _, parameter in ipairs(args.parameters) do
+        for i, parameter in ipairs(args.parameters) do
             G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
             if not instant then
-                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.9, func = function()
+                G.E_MANAGER:add_event(Event({trigger = 'after', delay = i == 1 and 0.2 or 0.9, func = function()
                     play_sound('tarot1')
                     if args.from then args.from:juice_up(0.8, 0.5) end
                     G.TAROT_INTERRUPT_PULSE = true
