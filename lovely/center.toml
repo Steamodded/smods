@@ -583,15 +583,6 @@ payload = '''
     end
 '''
 
-# no_blueprint check
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'at'
-pattern = 'if other_joker and other_joker ~= self then'
-payload = 'if other_joker and other_joker ~= self and not other_joker.debuff and not context.no_blueprint then'
-
 # extract joker loc_vars
 [[patches]]
 [patches.pattern]

@@ -221,7 +221,8 @@ SMODS.upgrade_poker_hands({
             return base + G.GAME.hands[hand]['l_' .. parameter] * amount
     end,
     level_up = amount,
-    from = card
+    from = card,
+    instant = instant
 })
 --[[
 '''

@@ -361,7 +361,7 @@ function SMODS.create_card(t)
     if not t.area and t.key and G.P_CENTERS[t.key] then
         t.area = G.P_CENTERS[t.key].consumeable and G.consumeables or G.P_CENTERS[t.key].set == 'Joker' and G.jokers
     end
-    if not t.area and not t.key and t.set and SMODS.ConsumableTypes[t.set] then
+    if not t.area and not t.key and t.set and SMODS.ConsumableTypes[t.set] or t.set == 'Consumeables' then
         t.area = G.consumeables
     end
     if not t.key and t.set == 'Playing Card' or t.set == 'Base' or t.set == 'Enhanced' or (not t.set and (t.front or t.rank or t.suit)) then
@@ -2631,7 +2631,7 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
                     if cards[i].shattered then
                         cards[i]:shatter()
                     elseif cards[i].destroyed then
-                        cards[i]:start_dissolve()
+                        cards[i]:start_dissolve(nil, i == #cards)
                     end
                     return true
                 end
@@ -3266,13 +3266,12 @@ end
 
 function CardArea:handle_card_limit()
     if SMODS.should_handle_limit(self) then
-        self.config.card_limits.old_slots = self.config.card_limits.total_slots or 0
         self.config.card_limits.extra_slots = self:count_property('card_limit')
         self.config.card_limits.total_slots = self.config.card_limits.extra_slots + (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
         self.config.card_limits.extra_slots_used = self:count_property('extra_slots_used')
         self.config.card_count = #self.cards + self.config.card_limits.extra_slots_used
         
-        if G.hand and self == G.hand and self.config.card_count + (SMODS.cards_to_draw or 0) < self.config.card_limits.total_slots then
+        if G.hand and self == G.hand and (self.config.card_count or 0) + (SMODS.cards_to_draw or 0) < (self.config.card_limits.total_slots or 0) then
             if G.STATE == G.STATES.DRAW_TO_HAND and not SMODS.blind_modifies_draw(G.GAME.blind.config.blind.key) and not SMODS.draw_queued then
                 SMODS.draw_queued = true
                 G.E_MANAGER:add_event(Event({
@@ -3295,6 +3294,9 @@ function CardArea:handle_card_limit()
                 if (self.config.card_limits.total_slots - self.config.card_limits.old_slots) > 0 then
                     G.FUNCS.draw_from_deck_to_hand((self.config.card_limits.total_slots - self.config.card_limits.old_slots))
                 end
+            end
+            if self == G.hand and G.STATE == G.STATES.SELECTING_HAND or G.STATE == G.STATES.DRAW_TO_HAND then 
+                self.config.card_limits.old_slots = self.config.card_limits.total_slots or 0
             end
             return
         end
@@ -3356,7 +3358,7 @@ function SMODS.upgrade_poker_hands(args)
 
     if not args.func then
         for _, hand in ipairs(args.hands) do
-            SMODS.smart_level_up_hand(args.from, hand, instant, args.level_up or 1)
+            level_up_hand(args.from, hand, instant, args.level_up or 1)
         end
         return
     end
@@ -3374,7 +3376,9 @@ function SMODS.upgrade_poker_hands(args)
         end
     end
         
+    local displayed = false
     for _, hand in ipairs(args.hands) do
+        displayed = hand == SMODS.displayed_hand
         if not instant then
             update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'), level=G.GAME.hands[hand].level})
             for name, p in pairs(SMODS.Scoring_Parameters) do
@@ -3407,7 +3411,7 @@ function SMODS.upgrade_poker_hands(args)
         if not instant then delay(1.3) end
     end
 
-    if not instant then
+    if not instant and not displayed then
         update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, vals_after_level or {mult = 0, chips = 0, handname = '', level = ''})
     end
 end
