@@ -96,8 +96,6 @@ position = 'at'
 payload = '''if G.CONTROLLER.text_input_hook and G.CONTROLLER.text_input_id == e.config.id:sub(1,string.len(G.CONTROLLER.text_input_id)) then'''
 match_indent = true
 
-
-
 # TRANSPOSE_TEXT_INPUT()
 [[patches]]
 [patches.pattern]
