@@ -3343,3 +3343,60 @@ function SMODS.upgrade_poker_hands(args)
         update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, vals_after_level or {mult = 0, chips = 0, handname = '', level = ''})
     end
 end
+
+SMODS.ease_types = {
+    lerp = function(percent_done) return percent_done end,
+    linear = function(percent_done) return percent_done end,
+    insine = function(percent_done) return 1 - math.cos((percent_done * math.pi) / 2) end,
+    outsine = function(percent_done) return math.cos((percent_done * math.pi) / 2) end,
+    inoutsine = function(percent_done) return -math.cos(percent_done * math.pi) - 1 / 2 end,
+    quad = function(percent_done) return percent_done * percent_done end,
+    inquad = function(percent_done) return percent_done * percent_done end,
+    outquad = function(percent_done) return 1 - (1 - percent_done) * (1 - percent_done) end,
+    inoutquad = function(percent_done) return (percent_done < 0.5 and 2 * percent_done * percent_done or 1 - math.pow(-2 * percent_done + 2, 2) / 2) end,
+    inexpo = function(percent_done) return math.pow(2, 10 * percent_done - 10) end,
+    outexpo = function(percent_done) return 1 - math.pow(2, -10 * percent_done) end,
+    inoutexpo = function(percent_done) return (percent_done < 0.5 and math.pow(2, 20 * percent_done - 10) / 2 or 2 - math.pow(2, -20 * percent_done + 10) / 2) end,
+    incirc = function(percent_done) return 1 - math.sqrt(1 - math.pow(percent_done, 2)) end,
+    outcirc = function(percent_done) return math.sqrt(1 - math.pow(percent_done - 1, 2)) end,
+    inoutcirc = function(percent_done) return (percent_done < 0.5 and (1 - math.sqrt(1 - math.pow(2 * percent_done, 2))) / 2 or (math.sqrt(1 - math.pow(-2 * percent_done + 2, 2)) + 1) / 2) end,
+    elastic = function(percent_done) return -math.pow(2, 10 * percent_done - 10) * math.sin((percent_done * 10 - 10.75) * 2*math.pi/3); end,
+    inelastic = function(percent_done) return -math.pow(2, 10 * percent_done - 10) * math.sin((percent_done * 10 - 10.75) * 2*math.pi/3); end,
+    outelastic = function(percent_done) return math.pow(2, -10 * percent_done) * math.sin((percent_done * 10 - 0.75) * (2 * math.pi) / 3) + 1 end,
+    inoutelastic = function(percent_done) return (percent_done < 0.5 and -(math.pow(2, 20 * percent_done - 10) * math.sin((20 * percent_done - 11.125) * (2 * math.pi) / 4.5)) / 2 or (math.pow(2, -20 * percent_done - 10) * math.sin((20 * percent_done - 11.125) * (2 * math.pi) / 4.5)) / 2 + 1) end,
+    inback = function(percent_done, c1, c2, c3) return c3 * percent_done * percent_done * percent_done - c1 * percent_done * percent_done end,
+    outback = function(percent_done, c1, c2, c3) return 1 + c3 * math.pow(percent_done - 1, 3) + c1 * math.pow(percent_done - 1, 2) end,
+    inoutback = function(percent_done, c1, c2, c3) return (percent_done < 0.5 and (math.pow(2 * percent_done, 2) * ((c2 + 1) * 2 * percent_done - c2)) / 2 or (math.pow(2 * percent_done - 2, 2) * ((c2 + 1) * (percent_done * 2 - 2) + c2) + 2) / 2) end,
+}
+
+-- Internal function used to provide more helpful crash messages when using assert
+function SMODS.log_crash_info(info, defined)
+    if not info then return end
+    local str = info.source:sub(3, -2)
+    local props = {}
+    local line = defined and info.linedefined or info.currentline
+    local line_message = defined and ' in function defined' or ''
+    -- Split by space
+    for v in string.gmatch(str, "[^%s]+") do
+        table.insert(props, v)
+    end
+    local source = table.remove(props, 1)
+    if source == "love" then
+        return string.format("\n\nError exists in LÖVE file in '%s'%s at line %d\r\n", table.concat(props, " "):sub(2, -2), line_message, line)
+    elseif source == "SMODS" then
+        local modID = table.remove(props, 1)
+        local fileName = table.concat(props, " ")
+        if modID == '_' then
+            return string.format("\n\nError exists in Steamodded in file '%s'%s at line %d\r\n", fileName:sub(2, -2), line_message, line)
+        else
+            return string.format("\n\nError exists in %s in file '%s'%s at line %d", SMODS.Mods[modID].name, fileName:sub(2, -2), line_message, line)
+        end
+    elseif source == "lovely" then
+        local module = table.remove(props, 1)
+        local fileName = table.concat(props, " ")
+        return string.format("\n\nError exists in file '%s' at line %d (from lovely module %s)\r\n",
+            fileName:sub(2, -2), line, module)
+    else
+        return string.format("\n\nError exists in %s at line %d\r\n", info.source, line)
+    end
+end
