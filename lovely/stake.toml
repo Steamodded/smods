@@ -260,7 +260,7 @@ payload = '''
 {n=G.UIT.T, config={text = localize{type = 'name_text', key = t.key, set = t.set}, scale = 0.35, colour = G.C.WHITE}}
 '''
 
-# Stake loc_vars pt 3 (Forgive me, I suck at scanning)
+# Stake loc_vars pt 3
 [[patches]]
 [patches.pattern]
 target = 'functions/UI_definitions.lua'
