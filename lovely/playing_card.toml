@@ -54,7 +54,7 @@ if self.GAME.selected_back_key.initial_deck then
     local _exclude = _id.exclude
     for i,_tab in ipairs({_id.Ranks, _id.Suits}) do
         local _create = not not _exclude
-        for _,_v in ipairs(_tab) do
+        for _,_v in ipairs(_tab or {}) do
             if (i==1 and v.value or v.suit) == _v then _create = not _exclude; break end
         end
         if not _create then
