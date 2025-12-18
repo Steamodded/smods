@@ -1072,25 +1072,6 @@ draw_card(G.deck,G.hand, i*100/hand_space,'up', true, cards_to_draw[i])
 '''
 
 
-# context.hand_space
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-if G.GAME.blind.name == 'The Serpent' and
-    not G.GAME.blind.disabled and
-    (G.GAME.current_round.hands_played > 0 or
-    G.GAME.current_round.discards_used > 0) then
-        hand_space = math.min(#G.deck.cards, 3)
-end
-'''
-payload = '''
-local flags = SMODS.calculate_context({drawing_cards = true, amount = hand_space})
-hand_space = math.min(#G.deck.cards, flags.cards_to_draw or flags.modify or hand_space)
-'''
-
 # Used to identify first hand of round
 # new_round
 [[patches]]
