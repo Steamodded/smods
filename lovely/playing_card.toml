@@ -45,6 +45,38 @@ end'''
 [[patches]]
 [patches.pattern]
 target = "game.lua"
+pattern = 'local _ = nil'
+position = 'before'
+match_indent = true
+payload = '''
+if self.GAME.selected_back_key.initial_deck then
+    local _create
+    local _id = self.GAME.selected_back_key.initial_deck
+    local function find_ranksuit(_tab,_comp,_exclude)
+        local _ret = not not _exclude
+        for _,_v in ipairs(_tab) do
+            if _comp == _v then _ret = not _exclude; break end
+        end
+        return _ret
+    end
+    local _ex = _id.exclude
+    if _id.Ranks then
+        _create = find_ranksuit(_id.Ranks, v.value, _ex)
+        if not _create then
+            goto continue
+        end
+    end
+    if _id.Suits then
+        _create = find_ranksuit(_id.Suits, v.suit, _ex)
+        if not _create then
+            goto continue
+        end
+    end
+end'''
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
 pattern = "if self.GAME.starting_params.erratic_suits_and_ranks then _, k = pseudorandom_element(G.P_CARDS, pseudoseed('erratic')) end"
 position = 'at'
 match_indent = true
