@@ -3819,6 +3819,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         text = '^'
     }
 
+    SMODS.level_up_hand_func = function(base, hand, parameter)
+        return base + G.GAME.hands[hand]['l_' .. parameter] * amount
+    end
+
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep

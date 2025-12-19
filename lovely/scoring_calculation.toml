@@ -217,9 +217,7 @@ G.GAME.hands[hand].chips = math.max(G.GAME.hands[hand].s_chips + G.GAME.hands[ha
 payload = '''
 SMODS.upgrade_poker_hands({
     hands = hand,
-    func = function(base, hand, parameter)
-            return base + G.GAME.hands[hand]['l_' .. parameter] * amount
-    end,
+    func = SMODS.level_up_hand_func,
     level_up = amount,
     from = card,
     instant = instant

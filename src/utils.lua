@@ -3340,6 +3340,15 @@ function SMODS.upgrade_poker_hands(args)
     end
 end
 
+function SMODS.get_default_level_up(poker_hand, _parameter)
+    return SMODS.level_up_hand_func
+end
+
+function SMODS.change_default_level_up(_func, poker_hand, _parameter)
+    if type(_func) ~= 'function' then return end
+    SMODS.level_up_hand_func = _func
+end
+
 SMODS.ease_types = {
     lerp = function(percent_done) return percent_done end,
     linear = function(percent_done) return percent_done end,
