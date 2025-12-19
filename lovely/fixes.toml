@@ -813,3 +813,31 @@ function pseudoshuffle(list, seed)
 payload = '''
     if seed and type(seed) == "string" then seed = pseudoseed(seed) end
 '''
+
+## Add initial playing cards to deck when starting run
+# card_from_control
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+local _card = Card(G.deck.T.x, G.deck.T.y, G.CARD_W, G.CARD_H, G.P_CARDS[control.s..'_'..control.r], G.P_CENTERS[control.e or 'c_base'], {playing_card = G.playing_card})
+if control.d then _card:set_edition({[control.d] = true}, true, true) end
+if control.g then _card:set_seal(control.g, true, true) end
+'''
+payload = '''
+_card:add_to_deck()
+'''
+## Add cards created by create_playing_card to deck
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+local card = Card(_area.T.x, _area.T.y, G.CARD_W, G.CARD_H, card_init.front, card_init.center, {playing_card = G.playing_card})
+'''
+payload = '''
+card:add_to_deck()
+'''

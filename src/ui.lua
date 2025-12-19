@@ -649,16 +649,20 @@ function buildAchievementsTab(mod, current_page)
     local achievement_matrix = {{},{}}
     local achievements_per_row = 3
     local achievements_pool = {}
-    for k, v in pairs(G.ACHIEVEMENTS) do
-        if v.mod and v.mod.id == mod.id then achievements_pool[#achievements_pool+1] = v end
+    local achievement_original_order = {}
+    for k, v in ipairs(SMODS.Achievement.obj_buffer) do
+        local ach = SMODS.Achievements[v]
+        if ach then 
+            if ach.mod and ach.mod.id == mod.id then achievements_pool[#achievements_pool+1] = ach end
+        end
     end
 
     local achievement_tab = {}
-    for k, v in pairs(achievements_pool) do
+    for k, v in ipairs(achievements_pool) do
+        achievement_original_order[v.key] = #achievement_tab
         achievement_tab[#achievement_tab+1] = v
     end
-    
-    table.sort(achievement_tab, function(a, b) return (a.order or 1) < (b.order or 1) end)
+    table.sort(achievement_tab, function(a, b) if a.order and b.order then return (a.order or 1) < (b.order or 1) else return achievement_original_order[a.key] < achievement_original_order[b.key] end end)
     
     local row = 1
     local max_lines = 2
