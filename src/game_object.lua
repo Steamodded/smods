@@ -2776,6 +2776,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 end
             )
             for i, v in ipairs(self.obj_buffer) do self.obj_table[v].order = i end
+        end,
+        level_up_hand = function(self, amount, parameter, behaviour)
+            if type(behaviour) == "function" then
+                return math.max(behaviour(self[parameter.key], self.key, parameter.key, amount), 0)
+            else
+                if behaviour then
+                    print("Warning - non-function behaviour " .. behaviour .. " passed to " .. self.key .. " level_up_hand")
+                end
+                return SMODS.hand_upgrade_func(self[parameter.key], self.key, parameter.key, amount)
+            end
         end
     }
 
@@ -2842,6 +2852,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         hand.key = v
         hand.evaluate = eval_functions[v]
         SMODS.PokerHand(hand)
+    end
+
+    SMODS.hand_upgrade_func = function(base, hand, parameter, amount)
+        return math.max(base + G.GAME.hands[hand]['l_' .. parameter] * amount, 0)
     end
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Challenge
@@ -3615,12 +3629,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         level_up_hand = function(self, amount, hand, behaviour)
             if type(behaviour) == "function" then
-                hand[self.key] = math.max(behaviour(hand[self.key], amount), 0)
+                return math.max(behaviour(hand[self.key], hand.key, self.key, amount), 0)
             else
                 if behaviour then
                     print("Warning - non-function behaviour " .. behaviour .. " passed to " .. self.key .. " level_up_hand")
                 end
-                hand[self.key] = math.max(hand[self.key] + amount, 0)
+                return SMODS.hand_upgrade_func(hand[self.key], hand.key, self.key, amount)
             end
         end,
         calc_effect = function(self, effect, scored_card, key, amount, from_edition)
@@ -3818,10 +3832,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         func = function(self, chips, mult, flames) return chips ^ mult end,
         text = '^'
     }
-
-    SMODS.level_up_hand_func = function(base, hand, parameter)
-        return base + G.GAME.hands[hand]['l_' .. parameter] * amount
-    end
 
 
     -------------------------------------------------------------------------------------------------

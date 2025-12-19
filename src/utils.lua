@@ -3281,8 +3281,16 @@ function SMODS.upgrade_poker_hands(args)
     local instant = args.instant
 
     if not args.func then
-        for _, hand in ipairs(args.hands) do
-            level_up_hand(args.from, hand, instant, args.level_up or 1)
+        local _hands = args.hands
+        local _parameters = args.parameters
+        for _, hand in ipairs(_hands) do
+            args.hands = hand
+            for __, parameter in ipairs(_parameters) do
+                args.parameters = parameter
+                args.func = SMODS.get_default_hand_upgrade_func(hand, parameter)
+                --Call function again with args.func defined
+                SMODS.upgrade_poker_hands(args)
+            end
         end
         return
     end
@@ -3311,7 +3319,7 @@ function SMODS.upgrade_poker_hands(args)
             end
         end
         for i, parameter in ipairs(args.parameters) do
-            G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
+            G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter, args.level_up)
             if not instant then
                 G.E_MANAGER:add_event(Event({trigger = 'after', delay = i == 1 and 0.2 or 0.9, func = function()
                     play_sound('tarot1')
@@ -3340,13 +3348,26 @@ function SMODS.upgrade_poker_hands(args)
     end
 end
 
-function SMODS.get_default_level_up(poker_hand, _parameter)
-    return SMODS.level_up_hand_func
+function SMODS.get_default_hand_upgrade_func(poker_hand, _parameter, behaviour)
+    if poker_hand and G.GAME.hands[poker_hand] and G.GAME.hands[poker_hand].level_up_hand
+    and type(G.GAME.hands[poker_hand].level_up_hand) == 'function' then
+        return function(base, hand, parameter, amount)
+            G.GAME.hands[poker_hand]:level_up_hand(amount, SMODS.Scoring_Parameters[parameter], behaviour)
+        end
+    end
+    if _parameter and SMODS.Scoring_Parameters[_parameter]
+    and SMODS.Scoring_Parameters[_parameter].level_up_hand
+    and type(SMODS.Scoring_Parameters[_parameter].level_up_hand) == 'function' then
+        return function(base, hand, parameter, amount)
+            return SMODS.Scoring_Parameters[parameter]:level_up_hand(amount, G.GAME.hands[hand], behaviour)
+        end
+    end
+    return SMODS.hand_upgrade_func
 end
 
-function SMODS.change_default_level_up(_func, poker_hand, _parameter)
-    if type(_func) ~= 'function' then return end
-    SMODS.level_up_hand_func = _func
+function SMODS.change_default_hand_upgrade_func(_func)
+    if type(_func) ~= 'function' then return end --Should it be left to modders to ensure correct function params?
+    SMODS.hand_upgrade_func = _func
 end
 
 SMODS.ease_types = {
