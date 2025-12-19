@@ -773,6 +773,6 @@ function SMODS.challenge_is_unlocked(challenge, k) end
 --- Returns a function that defines the behaviour of SMODS.upgrade_poker_hands
 ---@param poker_hand? string The key of the hand to pull level_up_hand from, takes priority over scoring parameters
 ---@param _parameter? string The key of the scoring parameter to pull level_up_hand from
----@param default? function The function to return instead of `SMODS.hand_upgrade_func` if no behaviour found from hands and scoring params
+---@param default? function The function to return instead of `SMODS.hand_upgrade_func` if no behaviour is found from hands and scoring params
 ---@return function
 function SMODS.get_default_hand_upgrade_func(poker_hand, _parameter, default) end
