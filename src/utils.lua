@@ -3348,21 +3348,21 @@ function SMODS.upgrade_poker_hands(args)
     end
 end
 
-function SMODS.get_default_hand_upgrade_func(poker_hand, _parameter, behaviour)
+function SMODS.get_default_hand_upgrade_func(poker_hand, _parameter, default)
     if poker_hand and G.GAME.hands[poker_hand] and G.GAME.hands[poker_hand].level_up_hand
     and type(G.GAME.hands[poker_hand].level_up_hand) == 'function' then
         return function(base, hand, parameter, amount)
-            G.GAME.hands[poker_hand]:level_up_hand(amount, SMODS.Scoring_Parameters[parameter], behaviour)
+            G.GAME.hands[poker_hand]:level_up_hand(amount, SMODS.Scoring_Parameters[parameter])
         end
     end
     if _parameter and SMODS.Scoring_Parameters[_parameter]
     and SMODS.Scoring_Parameters[_parameter].level_up_hand
     and type(SMODS.Scoring_Parameters[_parameter].level_up_hand) == 'function' then
         return function(base, hand, parameter, amount)
-            return SMODS.Scoring_Parameters[parameter]:level_up_hand(amount, G.GAME.hands[hand], behaviour)
+            return SMODS.Scoring_Parameters[parameter]:level_up_hand(amount, G.GAME.hands[hand])
         end
     end
-    return behaviour or SMODS.hand_upgrade_func
+    return default or SMODS.hand_upgrade_func
 end
 
 function SMODS.change_default_hand_upgrade_func(_func)
