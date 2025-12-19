@@ -1,0 +1,46 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Add support to attention text for UI nodes as a message
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{n=G.UIT.O, config={draw_layer = 1, object = DynaText({scale = args.scale, string = args.text, maxw = args.maxw, colours = {args.colour},float = true, shadow = true, silent = not args.noisy, args.scale, pop_in = 0, pop_in_rate = 6, rotate = args.rotate or nil})}},
+'''
+payload = '''
+type(args.text) == 'string' and {n=G.UIT.O, config={draw_layer = 1, object = DynaText({scale = args.scale, string = args.text, maxw = args.maxw, colours = {args.colour},float = true, shadow = true, silent = not args.noisy, args.scale, pop_in = 0, pop_in_rate = 6, rotate = args.rotate or nil})}} or
+args.text,
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+args.text = args.AT.UIRoot.children[1].config.object
+args.text:pulse(0.5)
+'''
+payload = '''
+if type(args.text) == 'string' then
+    args.text = args.AT.UIRoot.children[1].config.object
+    args.text:pulse(0.5)
+end
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+args.text:pop_out(3)
+'''
+payload = '''
+if Object.is(args.text, DynaText) then
+    args.text:pop_out(3)
+end
+'''

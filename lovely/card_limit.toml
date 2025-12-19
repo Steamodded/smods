@@ -229,7 +229,17 @@ pattern = '''
 payload = '''
 {card_limit = G.GAME.shop.joker_max, type = 'shop', highlight_limit = 1, negative_info = true})
 '''
-
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{card_limit = 5, type = 'play'})
+'''
+payload = '''
+{card_limit = 5, type = 'play', negative_info = true})
+'''
 
 # generate_card_ui()
 # Adds info queue tooltips for generic card limit and slots used
@@ -269,6 +279,8 @@ payload = """local hand_space = e
 local cards_to_draw = {}
 local space_taken = 0
 local limit = G.hand.config.card_limit - #G.hand.cards - (SMODS.cards_to_draw or 0)
+local flags = SMODS.calculate_context({drawing_cards = true, amount = limit})
+limit = flags.cards_to_draw or flags.modify or limit
 local unfixed = not G.hand.config.fixed_limit
 local n = 0
 while n < #G.deck.cards and limit > 0 do
