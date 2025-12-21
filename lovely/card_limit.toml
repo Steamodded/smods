@@ -229,7 +229,17 @@ pattern = '''
 payload = '''
 {card_limit = G.GAME.shop.joker_max, type = 'shop', highlight_limit = 1, negative_info = true})
 '''
-
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{card_limit = 5, type = 'play'})
+'''
+payload = '''
+{card_limit = 5, type = 'play', negative_info = true})
+'''
 
 # generate_card_ui()
 # Adds info queue tooltips for generic card limit and slots used
@@ -269,6 +279,8 @@ payload = """local hand_space = e
 local cards_to_draw = {}
 local space_taken = 0
 local limit = G.hand.config.card_limit - #G.hand.cards - (SMODS.cards_to_draw or 0)
+local flags = SMODS.calculate_context({drawing_cards = true, amount = limit})
+limit = flags.cards_to_draw or flags.modify or limit
 local unfixed = not G.hand.config.fixed_limit
 local n = 0
 while n < #G.deck.cards and limit > 0 do
@@ -320,3 +332,36 @@ pattern = "if args.type == 'min_hand_size' and G.hand and G.hand.config.card_lim
 position = "at"
 payload = "if args.type == 'min_hand_size' and G.hand and G.hand.config.true_card_limit <= card.unlock_condition.extra then"
 match_indent = true
+
+# Challenge UI tooltip support
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+card_w = joker_size*G.CARD_W, type = 'title_2', highlight_limit = 0})
+'''
+payload = '''
+negative_info = 'joker',
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+card_w = joker_size*G.CARD_W, type = 'title_2', spread = true, highlight_limit = 0})
+'''
+payload = '''
+negative_info = 'consumable',
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{card_limit = #SUITS[suit_map[j]], type = 'title_2', view_deck = true, highlight_limit = 0, card_w = G.CARD_W*0.5, draw_layers = {'card'}})'''
+payload = '''
+{card_limit = #SUITS[suit_map[j]], type = 'title_2', view_deck = true, highlight_limit = 0, card_w = G.CARD_W*0.5, draw_layers = {'card'}, negative_info = 'playing_card'})'''

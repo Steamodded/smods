@@ -259,3 +259,23 @@ pattern = '''
 payload = '''
 {n=G.UIT.T, config={text = localize{type = 'name_text', key = t.key, set = t.set}, scale = 0.35, colour = G.C.WHITE}}
 '''
+
+# Stake loc_vars pt 3
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+localize{type = 'descriptions', key = _stake_center.key, set = _stake_center.set, nodes = _stake_desc}
+'''
+payload = '''
+local t, res = {}, {}
+if _stake_center.loc_vars and type(_stake_center.loc_vars) == 'function' then
+  res = _stake_center:loc_vars() or {}
+end
+t.vars = res.vars or {}
+t.key = res.key or _stake_center.key
+t.set = res.set or _stake_center.set
+localize{type = 'descriptions', key = t.key, set = t.set, nodes = _stake_desc, vars = t.vars}
+'''

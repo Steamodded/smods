@@ -104,7 +104,7 @@ payload = '''
 elseif _c.generate_ui and type(_c.generate_ui) == 'function' then
     local specific_vars = specific_vars or {}
     _c:generate_ui(info_queue, card, desc_nodes, specific_vars, full_UI_table)
-    if desc_nodes ~= full_UI_table.main then
+    if desc_nodes ~= full_UI_table.main and not desc_nodes.name then
         -- TODO should be moved into generate_ui;
         -- also the multiple generate_ui cases should be refactored
         -- to work off a base implementation

@@ -682,7 +682,7 @@ function injectStackTrace()
         end
 
         if not V then
-            table.insert(err, '\nA bad lovely patch has resulted in this crash.\n')
+            table.insert(err, '\nA mod you have installed has caused a syntax error through patching. Please share this crash with the mod developer.\n')
         end
 
         local success, msg = pcall(getDebugInfoForCrash)
