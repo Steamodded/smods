@@ -3305,7 +3305,7 @@ function SMODS.upgrade_poker_hands(args)
         if not args.func then
             for i, parameter in ipairs(args.parameters) do
                 local level_up_func = SMODS.get_default_hand_upgrade_func(hand, parameter)
-                G.GAME.hands[hand][parameter] = level_up_func(G.GAME.hands[hand][parameter], hand, parameter, args.level_up)
+                level_up_func(G.GAME.hands[hand][parameter], hand, parameter, args.level_up)
                 if not instant then
                     G.E_MANAGER:add_event(Event({trigger = 'after', delay = i == 1 and 0.2 or 0.9, func = function()
                         play_sound('tarot1')
@@ -3352,14 +3352,14 @@ function SMODS.get_default_hand_upgrade_func(poker_hand, _parameter, default)
     if poker_hand and G.GAME.hands[poker_hand] and G.GAME.hands[poker_hand].level_up_hand
     and type(G.GAME.hands[poker_hand].level_up_hand) == 'function' then
         return function(base, hand, parameter, amount)
-            return G.GAME.hands[poker_hand]:level_up_hand(amount, SMODS.Scoring_Parameters[parameter])
+            G.GAME.hands[poker_hand]:level_up_hand(amount, SMODS.Scoring_Parameters[parameter])
         end
     end
     if _parameter and SMODS.Scoring_Parameters[_parameter]
     and SMODS.Scoring_Parameters[_parameter].level_up_hand
     and type(SMODS.Scoring_Parameters[_parameter].level_up_hand) == 'function' then
         return function(base, hand, parameter, amount)
-            return SMODS.Scoring_Parameters[parameter]:level_up_hand(amount, G.GAME.hands[hand])
+            SMODS.Scoring_Parameters[parameter]:level_up_hand(amount, G.GAME.hands[hand])
         end
     end
     return default or SMODS.hand_upgrade_func
