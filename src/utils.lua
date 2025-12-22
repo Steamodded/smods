@@ -3284,16 +3284,8 @@ function SMODS.upgrade_poker_hands(args)
     args.hands = args.hands or get_keys(G.GAME.hands)
     if type(args.hands) == 'string' then args.hands = {args.hands} end
     args.parameters = args.parameters or get_keys(SMODS.Scoring_Parameters)
+    if type(args.parameters) == 'string' then args.parameters = {args.parameters} end
     local instant = args.instant
-
-    if not args.func then
-        for _, hand in ipairs(args.hands) do
-            level_up_hand(args.from, hand, instant, args.level_up or 1)
-        end
-        return
-    end
-    
-    assert(type(args.func) == 'function', "Invalid func provided to SMODS.upgrade_hands")
 
     local vals_after_level
     if SMODS.displaying_scoring then
@@ -3316,15 +3308,31 @@ function SMODS.upgrade_poker_hands(args)
                 update_hand_text({nopulse = nil, delay = 0}, {[name] = p.current})
             end
         end
-        for i, parameter in ipairs(args.parameters) do
-            G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
-            if not instant then
-                G.E_MANAGER:add_event(Event({trigger = 'after', delay = i == 1 and 0.2 or 0.9, func = function()
-                    play_sound('tarot1')
-                    if args.from then args.from:juice_up(0.8, 0.5) end
-                    G.TAROT_INTERRUPT_PULSE = true
-                    return true end }))
-                update_hand_text({delay = 0}, {[parameter] = G.GAME.hands[hand][parameter], StatusText = true})
+        if not args.func then
+            for i, parameter in ipairs(args.parameters) do
+                local level_up_func = SMODS.get_default_hand_upgrade_func(hand, parameter)
+                level_up_func(G.GAME.hands[hand][parameter], hand, parameter, args.level_up)
+                if not instant then
+                    G.E_MANAGER:add_event(Event({trigger = 'after', delay = i == 1 and 0.2 or 0.9, func = function()
+                        play_sound('tarot1')
+                        if args.from then args.from:juice_up(0.8, 0.5) end
+                        G.TAROT_INTERRUPT_PULSE = true
+                        return true end }))
+                    update_hand_text({delay = 0}, {[parameter] = G.GAME.hands[hand][parameter], StatusText = true})
+                end
+            end
+        else
+            assert(type(args.func) == 'function', "Invalid func provided to SMODS.upgrade_hands")
+            for i, parameter in ipairs(args.parameters) do
+                G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter, args.level_up)
+                if not instant then
+                    G.E_MANAGER:add_event(Event({trigger = 'after', delay = i == 1 and 0.2 or 0.9, func = function()
+                        play_sound('tarot1')
+                        if args.from then args.from:juice_up(0.8, 0.5) end
+                        G.TAROT_INTERRUPT_PULSE = true
+                        return true end }))
+                    update_hand_text({delay = 0}, {[parameter] = G.GAME.hands[hand][parameter], StatusText = true})
+                end
             end
         end
         if args.level_up then
@@ -3344,6 +3352,28 @@ function SMODS.upgrade_poker_hands(args)
     if not instant and not displayed then
         update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, vals_after_level or {mult = 0, chips = 0, handname = '', level = ''})
     end
+end
+
+function SMODS.get_default_hand_upgrade_func(poker_hand, _parameter, default)
+    if poker_hand and G.GAME.hands[poker_hand] and G.GAME.hands[poker_hand].level_up_hand
+    and type(G.GAME.hands[poker_hand].level_up_hand) == 'function' then
+        return function(base, hand, parameter, amount)
+            G.GAME.hands[poker_hand]:level_up_hand(amount, SMODS.Scoring_Parameters[parameter])
+        end
+    end
+    if _parameter and SMODS.Scoring_Parameters[_parameter]
+    and SMODS.Scoring_Parameters[_parameter].level_up_hand
+    and type(SMODS.Scoring_Parameters[_parameter].level_up_hand) == 'function' then
+        return function(base, hand, parameter, amount)
+            SMODS.Scoring_Parameters[parameter]:level_up_hand(amount, G.GAME.hands[hand])
+        end
+    end
+    return default or SMODS.hand_upgrade_func
+end
+
+function SMODS.change_default_hand_upgrade_func(_func)
+    if type(_func) ~= 'function' then return end --Should it be left to modders to ensure correct function params?
+    SMODS.hand_upgrade_func = _func
 end
 
 SMODS.ease_types = {

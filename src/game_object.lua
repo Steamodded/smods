@@ -3615,12 +3615,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         level_up_hand = function(self, amount, hand, behaviour)
             if type(behaviour) == "function" then
-                hand[self.key] = math.max(behaviour(hand[self.key], amount), 0)
+                hand[self.key] = math.max(behaviour(hand[self.key], hand.key, self.key, amount), 0)
             else
                 if behaviour then
                     print("Warning - non-function behaviour " .. behaviour .. " passed to " .. self.key .. " level_up_hand")
                 end
-                hand[self.key] = math.max(hand[self.key] + amount, 0)
+                hand[self.key] = math.max(SMODS.hand_upgrade_func(hand[self.key], hand.key, self.key, amount), 0)
             end
         end,
         calc_effect = function(self, effect, scored_card, key, amount, from_edition)
@@ -3818,6 +3818,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         func = function(self, chips, mult, flames) return chips ^ mult end,
         text = '^'
     }
+
+    SMODS.hand_upgrade_func = function(base, hand, parameter, amount)
+        G.GAME.hands[hand][parameter] = math.max(base + G.GAME.hands[hand]['l_' .. parameter] * amount, 0)
+    end
 
 
     -------------------------------------------------------------------------------------------------
