@@ -9,14 +9,18 @@ target = "functions/state_events.lua"
 pattern = "^(.*)hand_chips\\s*\\*\\s*mult(.*)$"
 position = "at"
 payload = '''$1 SMODS.calculate_round_score() $2'''
-match_indent = true
 
 [[patches]]
 [patches.pattern]
 target = "functions/misc_functions.lua"
 pattern = "G.ARGS.score_intensity.earned_score = G.GAME.current_round.current_hand.chips*G.GAME.current_round.current_hand.mult"
 position = "at"
-payload = '''G.ARGS.score_intensity.earned_score = SMODS.calculate_round_score(true)'''
+payload = '''
+for name, parameter in pairs(SMODS.Scoring_Parameters) do
+    if type(G.GAME.current_round.current_hand[name]) ~= 'number' then G.ARGS.score_intensity.earned_score = "no" end
+end
+if G.ARGS.score_intensity ~= "no" then G.ARGS.score_intensity.earned_score = SMODS.calculate_round_score(true) end
+'''
 match_indent = true
 
 [[patches]]
@@ -94,7 +98,6 @@ end
 [[patches]]
 [patches.regex]
 target = 'functions/common_events.lua'
-match_indent = true
 position = 'at'
 line_prepend = '$indent'
 pattern = '''(?<indent>[\t ]*)if vals\.[A-z0-9\n\t .~=()'\-+,<;>:{}]+mult:juice_up\(\) end\n[\t ]+end'''
@@ -205,15 +208,65 @@ payload = '''
 [patches.pattern]
 target = 'functions/common_events.lua'
 match_indent = true
-position = 'at'
+position = 'before'
 pattern = '''
+G.GAME.hands[hand].level = math.max(0, G.GAME.hands[hand].level + amount)
 G.GAME.hands[hand].mult = math.max(G.GAME.hands[hand].s_mult + G.GAME.hands[hand].l_mult*(G.GAME.hands[hand].level - 1), 1)
 G.GAME.hands[hand].chips = math.max(G.GAME.hands[hand].s_chips + G.GAME.hands[hand].l_chips*(G.GAME.hands[hand].level - 1), 0)
 '''
 payload = '''
-for name, parameter in pairs(SMODS.Scoring_Parameters) do
-    if G.GAME.hands[hand][name] then parameter:level_up_hand(amount, G.GAME.hands[hand]) end
-end
+SMODS.upgrade_poker_hands({
+    hands = hand,
+    func = function(base, hand, parameter)
+            return base + G.GAME.hands[hand]['l_' .. parameter] * amount
+    end,
+    level_up = amount,
+    from = card,
+    instant = instant
+})
+--[[
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+G.E_MANAGER:add_event(Event({
+    trigger = 'immediate',
+    func = (function() check_for_unlock{type = 'upgrade_hand', hand = hand, level = G.GAME.hands[hand].level} return true end)
+}))
+'''
+payload = '''
+]]
+'''
+
+# Remove update_hand_text duplicates
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(self.ability.consumeable.hand_type, 'poker_hands'),chips = G.GAME.hands[self.ability.consumeable.hand_type].chips, mult = G.GAME.hands[self.ability.consumeable.hand_type].mult, level=G.GAME.hands[self.ability.consumeable.hand_type].level})
+level_up_hand(used_tarot, self.ability.consumeable.hand_type)
+update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, {mult = 0, chips = 0, handname = '', level = ''})
+'''
+payload = '''
+level_up_hand(used_tarot, self.ability.consumeable.hand_type)
+'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(text, 'poker_hands'),chips = G.GAME.hands[text].chips, mult = G.GAME.hands[text].mult, level=G.GAME.hands[text].level})
+level_up_hand(context.blueprint_card or self, text, nil, 1)
+update_hand_text({sound = 'button', volume = 0.7, pitch = 1.1, delay = 0}, {mult = 0, chips = 0, handname = '', level = ''})
+'''
+payload = '''
+level_up_hand(context.blueprint_card or self, text, nil, 1)
 '''
 
 # Face down hands

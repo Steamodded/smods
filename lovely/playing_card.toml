@@ -236,6 +236,14 @@ local rank = SMODS.Ranks[self.base.value]
 if not id then return end
 if (id > 0 and rank and rank.face) or next(find_joker("Pareidolia")) then'''
 
+# Card:load()
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''self.VT.h = self.T.H'''
+position = "at"
+payload = '''self.VT.h = self.T.h'''
+match_indent = true
 
 # tally_sprite()
 [[patches]]

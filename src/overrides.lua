@@ -51,8 +51,8 @@ function create_UIBox_your_collection_blinds(exit)
 		if i > 1 then
 			ante_amounts[#ante_amounts + 1] = { n = G.UIT.R, config = { minh = spacing }, nodes = {} }
 		end
-		local blind_chip = Sprite(0, 0, 0.2, 0.2, G.ASSET_ATLAS["ui_" .. (G.SETTINGS.colourblind_option and 2 or 1)],
-			{ x = 0, y = 0 })
+		local atlas_key = "ui_" .. (G.SETTINGS.colourblind_option and 2 or 1)
+		local blind_chip = SMODS.create_sprite(0, 0, 0.2, 0.2, atlas_key, { x = 0, y = 0 })
 		blind_chip.states.drag.can = false
 		ante_amounts[#ante_amounts + 1] = {
 			n = G.UIT.R,
@@ -119,8 +119,8 @@ function create_UIBox_your_collection_blinds(exit)
 	local blinds_to_be_alerted = {}
 	local row, col = 1, 1
 	for k, v in ipairs(blind_tab) do
-		local temp_blind = AnimatedSprite(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, G.ANIMATION_ATLAS[v.discovered and v.atlas or 'blind_chips'],
-			v.discovered and v.pos or G.b_undiscovered.pos)
+		local atlas_key = v.discovered and v.atlas or 'blind_chips'
+		local temp_blind = SMODS.create_sprite(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, atlas_key, v.discovered and v.pos or G.b_undiscovered.pos)
 		temp_blind.states.click.can = false
 		temp_blind.states.drag.can = false
 		temp_blind.states.hover.can = true
@@ -309,8 +309,8 @@ function G.FUNCS.your_collection_blinds_page(args)
 	local blinds_to_be_alerted = {}
 	local row, col = 1, 1
 	for k, v in ipairs(blind_tab) do
-		local temp_blind = AnimatedSprite(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, G.ANIMATION_ATLAS[v.discovered and v.atlas or 'blind_chips'],
-			v.discovered and v.pos or G.b_undiscovered.pos)
+		local atlas_key = v.discovered and v.atlas or 'blind_chips'
+		local temp_blind = SMODS.create_sprite(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, atlas_key, v.discovered and v.pos or G.b_undiscovered.pos)
 		temp_blind.states.click.can = false
 		temp_blind.states.drag.can = false
 		temp_blind.states.hover.can = true
@@ -517,7 +517,14 @@ function SMODS.applied_stakes_UI(i, stake_desc_rows, num_added)
 					local i = G.P_STAKES[v].stake_level
 					local _stake_desc = {}
 					local _stake_center = G.P_CENTER_POOLS.Stake[i]
-					localize { type = 'descriptions', key = _stake_center.key, set = _stake_center.set, nodes = _stake_desc }
+					local t, res = {}, {}
+					if _stake_center.loc_vars and type(_stake_center.loc_vars) == 'function' then
+						res = _stake_center:loc_vars() or {}
+					end
+					t.vars = res.vars or {}
+					t.key = res.key or _stake_center.key
+					t.set = res.set or _stake_center.set
+					localize { type = 'descriptions', key = t.key, set = t.set, nodes = _stake_desc, vars = t.vars }
 					local _full_desc = {}
 					for k, v in ipairs(_stake_desc) do
 						_full_desc[#_full_desc + 1] = {n = G.UIT.R, config = {align = "cm"}, nodes = v}
@@ -572,7 +579,7 @@ function G.UIDEF.stake_option(_type)
 	local stake_options = {}
 	local curr_options = {}
 	local deck_usage = G.PROFILES[G.SETTINGS.profile].deck_usage[G.GAME.viewed_back.effect.center.key]
-	G.viewed_stake = deck_usage and (deck_usage.wins_by_key[SMODS.stake_from_index(G.viewed_stake)] and G.viewed_stake or (get_deck_win_stake(G.GAME.viewed_back.effect.center.key) + 1)) or 1
+	G.viewed_stake = deck_usage and ((deck_usage.wins_by_key[SMODS.stake_from_index(G.viewed_stake)] or G.PROFILES[G.SETTINGS.profile].all_unlocked) and G.viewed_stake or (get_deck_win_stake(G.GAME.viewed_back.effect.center.key) + 1)) or 1
 	for i=1, #G.P_CENTER_POOLS.Stake do
 		if G.PROFILES[G.SETTINGS.profile].all_unlocked or SMODS.check_applied_stakes(G.P_CENTER_POOLS.Stake[i], deck_usage or {wins_by_key = {}}) then
 			stake_options[#stake_options + 1] = i
@@ -785,14 +792,16 @@ function G.UIDEF.deck_preview(args)
 			local t_s
 			if palette and palette.suit_icon and palette.suit_icon.atlas then
 				local _x = (v == 'Spades' and 3) or (v == 'Hearts' and 0) or (v == 'Clubs' and 2) or (v == 'Diamonds' and 1)
-				t_s = Sprite(0,0,0.3,0.3,G.ASSET_ATLAS[palette.suit_icon.atlas or 'ui_1'], (type(palette.suit_icon.pos) == "number" and {x=_x, y=palette.suit_icon.pos}) or palette.suit_icon.pos or {x=_x, y=0})
+				local atlas_key = palette.suit_icon.atlas or 'ui_1'
+				t_s = SMODS.create_sprite(0, 0, 0.3, 0.3, atlas_key, (type(palette.suit_icon.pos) == "number" and {x=_x, y=palette.suit_icon.pos}) or palette.suit_icon.pos or {x=_x, y=0})
 			elseif G.SETTINGS.colour_palettes[v] == 'lc' or G.SETTINGS.colour_palettes[v] == 'hc' then
-				t_s = Sprite(0, 0, 0.3, 0.3,
-						G.ASSET_ATLAS[SMODS.Suits[v][G.SETTINGS.colour_palettes[v] == 'hc' and "hc_ui_atlas" or G.SETTINGS.colour_palettes[v] == 'lc' and "lc_ui_atlas"]] or
-						G.ASSET_ATLAS[("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[v].ui_pos)
+				local atlas_key_1 = SMODS.Suits[v][G.SETTINGS.colour_palettes[v] == 'hc' and "hc_ui_atlas" or G.SETTINGS.colour_palettes[v] == 'lc' and "lc_ui_atlas"]
+				local atlas_key_2 = ("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))
+				local atlas = SMODS.get_atlas(atlas_key_1) or SMODS.get_atlas(atlas_key_2)
+				t_s = SMODS.create_sprite(0, 0, 0.3, 0.3, atlas, SMODS.Suits[v].ui_pos)
 			else
-				local atlas = G.SETTINGS.colour_palettes[v] == "hc" and SMODS.Suits[v].hc_ui_atlas or SMODS.Suits[v].lc_ui_atlas
-				t_s = Sprite(0, 0, 0.3, 0.3, G.ASSET_ATLAS[atlas and atlas or ("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[v].ui_pos)
+				local atlas_key = G.SETTINGS.colour_palettes[v] == "hc" and SMODS.Suits[v].hc_ui_atlas or SMODS.Suits[v].lc_ui_atlas or ("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))
+				t_s = SMODS.create_sprite(0, 0, 0.3, 0.3, atlas_key, SMODS.Suits[v].ui_pos)
 			end
 
 			t_s.states.drag.can = false
@@ -845,13 +854,18 @@ function tally_sprite(pos, value, tooltip, suit)
 	local t_s
 	if palette and palette.suit_icon and palette.suit_icon.atlas then
 		local _x = (suit == 'Spades' and 3) or (suit == 'Hearts' and 0) or (suit == 'Clubs' and 2) or (suit == 'Diamonds' and 1)
-		t_s = Sprite(0,0,0.3,0.3,G.ASSET_ATLAS[palette.suit_icon.atlas or 'ui_1'], (type(palette.suit_icon.pos) == "number" and {x=_x, y=palette.suit_icon.pos}) or palette.suit_icon.pos or {x=_x, y=0})
+		local atlas_key = palette.suit_icon.atlas or 'ui_1'
+		t_s = SMODS.create_sprite(0, 0, 0.3, 0.3, atlas_key, (type(palette.suit_icon.pos) == "number" and {x=_x, y=palette.suit_icon.pos}) or palette.suit_icon.pos or {x=_x, y=0})
 	elseif suit and (G.SETTINGS.colour_palettes[suit] == 'lc' or G.SETTINGS.colour_palettes[suit] == 'hc') then
-		t_s = Sprite(0, 0, 0.3, 0.3,
-				G.ASSET_ATLAS[SMODS.Suits[suit][G.SETTINGS.colour_palettes[suit] == 'hc' and "hc_ui_atlas" or G.SETTINGS.colour_palettes[suit] == 'lc' and "lc_ui_atlas"]] or
-				G.ASSET_ATLAS[("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))], SMODS.Suits[suit].ui_pos)
-	else
-		t_s = Sprite(0,0,0.5,0.5, suit and G.ASSET_ATLAS[SMODS.Suits[suit][G.SETTINGS.colourblind_option and "hc_ui_atlas" or "lc_ui_atlas"]] or G.ASSET_ATLAS[("ui_"..(G.SETTINGS.colourblind_option and "2" or "1"))], {x=pos.x or 0, y=pos.y or 0})
+		local atlas_key_1 = SMODS.Suits[suit][G.SETTINGS.colour_palettes[suit] == 'hc' and "hc_ui_atlas" or G.SETTINGS.colour_palettes[suit] == 'lc' and "lc_ui_atlas"]
+		local atlas_key_2 = ("ui_" .. (G.SETTINGS.colourblind_option and "2" or "1"))
+		local atlas = SMODS.get_atlas(atlas_key_1) or SMODS.get_atlas(atlas_key_2)
+		t_s = SMODS.create_sprite(0, 0, 0.3, 0.3, atlas, SMODS.Suits[suit].ui_pos)
+	else 
+		local atlas_key_1 = suit and SMODS.Suits[suit][G.SETTINGS.colourblind_option and "hc_ui_atlas" or "lc_ui_atlas"]
+		local atlas_key_2 = ("ui_"..(G.SETTINGS.colourblind_option and "2" or "1"))
+		local atlas = SMODS.get_atlas(atlas_key_1) or SMODS.get_atlas(atlas_key_2)
+		t_s = SMODS.create_sprite(0, 0, 0.5, 0.5, atlas, {x=pos.x or 0, y=pos.y or 0})
 	end
 	t_s.states.drag.can = false
 	t_s.states.hover.can = false
@@ -1492,7 +1506,7 @@ function Game:init_game_object()
             -- are fine.
             -- In fact, the check should just warn you if you have a key that
             -- can't be serialized.
-			if type(v) == 'number' or type(v) == 'boolean' or k == 'example' then
+			if type(v) == 'number' or type(v) == 'boolean' or k == 'example' or k == 'key' then
 				t.hands[key][k] = v
 			end
 		end
@@ -1536,19 +1550,31 @@ function G.FUNCS.get_poker_hand_info(_cards)
 	return text, loc_disp_text, poker_hands, scoring_hand, disp_text
 end
 
-function create_UIBox_current_hands(simple)
+function create_UIBox_current_hands(simple, in_collection)
 	G.current_hands = {}
 
-	local visible_hands = {}
-	for _, v in ipairs(G.handlist) do
-		if SMODS.is_poker_hand_visible(v) then
-			table.insert(visible_hands, v)
+	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
+	local handlist = in_collection and {} or nil
+	if _pool then
+		for _, v in ipairs(_pool) do
+			table.insert(handlist, v.key)
 		end
 	end
 
+	local visible_hands = {}
+	if not handlist then
+		for _, v in ipairs(G.handlist) do
+			if SMODS.is_poker_hand_visible(v) then
+				table.insert(visible_hands, v)
+			end
+		end
+	else
+		visible_hands = handlist
+	end
+
 	local index = 0
-	for _, v in ipairs(G.handlist) do
-		local ui_element = create_UIBox_current_hand_row(v, simple)
+	for _, v in ipairs(handlist or G.handlist) do
+		local ui_element = create_UIBox_current_hand_row(v, simple, in_collection)
 		G.current_hands[index + 1] = ui_element
 		if ui_element then
 			index = index + 1
@@ -1558,48 +1584,71 @@ function create_UIBox_current_hands(simple)
 		end
 	end
 
-	
 	local hand_options = {}
 	for i = 1, math.ceil(#visible_hands / 10) do
 		table.insert(hand_options,
 			localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_hands / 10)))
 	end
 
-	local object = {n = G.UIT.ROOT, config = {align = "cm", colour = G.C.CLEAR}, nodes = {
-		{n = G.UIT.R, config = {align = "cm", padding = 0.04}, nodes =
-			G.current_hands},
-		-- UI consistency with vanilla 
-		#visible_hands > 12 and {n = G.UIT.R, config = {align = "cm", padding = 0}, nodes = {
-			create_option_cycle({
-				options = hand_options,
-				w = 4.5,
-				cycle_shoulders = true,
-				opt_callback = 'your_hands_page',
-				focus_args = { snap_to = true, nav = 'wide' },
-				current_option = 1,
-				colour = G.C.RED,
-				no_pips = true
-			})}} or nil,
-		}}
+	local object = {
+		n = G.UIT.ROOT,
+		config = { align = "cm", colour = G.C.CLEAR },
+		nodes = {
+			{
+				n = G.UIT.R,
+				config = { align = "cm", padding = 0.04 },
+				nodes =
+					G.current_hands
+			},
+			-- UI consistency with vanilla
+			#visible_hands > 12 and {
+				n = G.UIT.R,
+				config = { align = "cm", padding = 0 },
+				nodes = {
+					create_option_cycle({
+						options = hand_options,
+						w = 4.5,
+						cycle_shoulders = true,
+						opt_callback = 'your_hands_page',
+						focus_args = { snap_to = true, nav = 'wide' },
+						current_option = 1,
+						colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or
+						G.C.RED,
+						no_pips = true,
+						in_collection = in_collection
+					}) }
+			} or nil } 
+	}
 
-	local t = {n = G.UIT.ROOT, config = {align = "cm", minw = 3, padding = 0.1, r = 0.1, colour = G.C.CLEAR}, nodes = {
-		{n = G.UIT.O, config = {
-				id = 'hand_list',
-				object = UIBox {
-					definition = object, config = {offset = { x = 0, y = 0 }, align = 'cm'}
-				}
-			}}}}
-	return t
+	local t = {
+		n = G.UIT.O,
+		config = {
+			id = 'hand_list',
+			object = UIBox {
+				definition = object, config = { offset = { x = 0, y = 0 }, align = 'cm' }
+			}
+		}
+	}
+	return not in_collection and
+	{ n = G.UIT.ROOT, config = { align = "cm", minw = 3, padding = 0.1, r = 0.1, colour = G.C.CLEAR }, nodes = { t } } or
+	t
 end
 
 G.FUNCS.your_hands_page = function(args)
 	if not args or not args.cycle_config then return end
 	G.current_hands = {}
-
+	local in_collection = args.cycle_config.in_collection
+	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
+	local handlist = in_collection and {} or nil
+	if _pool then
+		for _, v in ipairs(_pool) do
+			table.insert(handlist, v.key)
+		end
+	end
 
 	local index = 0
-	for _, v in ipairs(G.handlist) do
-		local ui_element = create_UIBox_current_hand_row(v, simple)
+	for _, v in ipairs(handlist or G.handlist) do
+		local ui_element = create_UIBox_current_hand_row(v, simple, in_collection)
 		if index >= (0 + 10 * (args.cycle_config.current_option - 1)) and index < 10 * args.cycle_config.current_option then
 			G.current_hands[index - (10 * (args.cycle_config.current_option - 1)) + 1] = ui_element
 		end
@@ -1614,10 +1663,14 @@ G.FUNCS.your_hands_page = function(args)
 	end
 
 	local visible_hands = {}
-	for _, v in ipairs(G.handlist) do
-		if SMODS.is_poker_hand_visible(v) then
-			table.insert(visible_hands, v)
+	if not handlist then
+		for _, v in ipairs(G.handlist) do
+			if SMODS.is_poker_hand_visible(v) then
+				table.insert(visible_hands, v)
+			end
 		end
+	else
+		visible_hands = handlist
 	end
 
 	local hand_options = {}
@@ -1626,10 +1679,16 @@ G.FUNCS.your_hands_page = function(args)
 			localize('k_page') .. ' ' .. tostring(i) .. '/' .. tostring(math.ceil(#visible_hands / 10)))
 	end
 
-	local object = {n = G.UIT.ROOT, config = {align = "cm", colour = G.C.CLEAR }, nodes = {
-			{n = G.UIT.R, config = {align = "cm", padding = 0.04 }, nodes = G.current_hands
+	local object = {
+		n = G.UIT.ROOT,
+		config = { align = "cm", colour = G.C.CLEAR },
+		nodes = {
+			{ n = G.UIT.R, config = { align = "cm", padding = 0.04 }, nodes = G.current_hands
 			},
-			{n = G.UIT.R, config = {align = "cm", padding = 0 }, nodes = {
+			{
+				n = G.UIT.R,
+				config = { align = "cm", padding = 0 },
+				nodes = {
 					create_option_cycle({
 						options = hand_options,
 						w = 4.5,
@@ -1638,9 +1697,10 @@ G.FUNCS.your_hands_page = function(args)
 						'your_hands_page',
 						focus_args = { snap_to = true, nav = 'wide' },
 						current_option = args.cycle_config.current_option,
-						colour = G
-							.C.RED,
-						no_pips = true
+						colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or
+						G.C.RED,
+						no_pips = true,
+						in_collection = in_collection
 					})
 				}
 			}
@@ -1653,7 +1713,7 @@ G.FUNCS.your_hands_page = function(args)
 			hand_list.config.object:remove()
 		end
 		hand_list.config.object = UIBox {
-			definition = object, config = {offset = { x = 0, y = 0 }, align = 'cm', parent = hand_list }
+			definition = object, config = { offset = { x = 0, y = 0 }, align = 'cm', parent = hand_list }
 		}
 	end
 end
@@ -1681,7 +1741,7 @@ function Card:set_sprites(_center, _front)
     if _front then
         local _atlas, _pos = get_front_spriteinfo(_front)
         if self.children.front then self.children.front:remove() end
-		self.children.front = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, _atlas, _pos)
+		self.children.front = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, _atlas, _pos)
 		self.children.front.states.hover = self.states.hover
 		self.children.front.states.click = self.states.click
 		self.children.front.states.drag = self.states.drag
@@ -1692,13 +1752,13 @@ function Card:set_sprites(_center, _front)
         if _center.set then
             if self.children.center then self.children.center:remove() end
 			if _center.set == 'Joker' and not _center.unlocked and not self.params.bypass_discovery_center then
-				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["Joker"], G.j_locked.pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Joker", G.j_locked.pos)
 			elseif self.config.center.set == 'Voucher' and not self.config.center.unlocked and not self.params.bypass_discovery_center then
-				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["Voucher"], G.v_locked.pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Voucher", G.v_locked.pos)
 			elseif self.config.center.consumeable and self.config.center.demo then
-				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS["Tarot"], G.c_locked.pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Tarot", G.c_locked.pos)
 			elseif not self.params.bypass_discovery_center and (_center.set == 'Edition' or _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' or _center.set == 'Booster') and not _center.discovered then
-				local atlas = G.ASSET_ATLAS[
+				local atlas = SMODS.get_atlas(
 					(_center.undiscovered and
 						(_center.undiscovered[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
 						_center.undiscovered.atlas)
@@ -1709,15 +1769,16 @@ function Card:set_sprites(_center, _front)
 						SMODS.UndiscoveredSprites[_center.set].atlas)
 					) or
 					_center.set
-				] or G.ASSET_ATLAS["Joker"]
+				) or SMODS.get_atlas("Joker")
 				local pos = (_center.undiscovered and _center.undiscovered.pos) or
 					(SMODS.UndiscoveredSprites[_center.set] and SMODS.UndiscoveredSprites[_center.set].pos) or
 					G.j_undiscovered.pos
-				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
 			elseif _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' then
-				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[_center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set], self.config.center.pos)
+				local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, _center.pos or {x=0, y=0})
 			else
-				self.children.center = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[_center.atlas or 'centers'], _center.pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, _center.atlas or 'centers', _center.pos)
 			end
 			self.children.center.states.hover = self.states.hover
 			self.children.center.states.click = self.states.click
@@ -1743,14 +1804,16 @@ function Card:set_sprites(_center, _front)
 
         if _center.soul_pos then
 			if self.children.floating_sprite then self.children.floating_sprite:remove() end
-            self.children.floating_sprite = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[_center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set], self.config.center.soul_pos)
+			local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
+            self.children.floating_sprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.config.center.soul_pos)
             self.children.floating_sprite.role.draw_major = self
             self.children.floating_sprite.states.hover.can = false
             self.children.floating_sprite.states.click.can = false
         end
 
         if self.children.back then self.children.back:remove() end
-		self.children.back = Sprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ASSET_ATLAS[(G.GAME.viewed_back or G.GAME.selected_back) and ((G.GAME.viewed_back or G.GAME.selected_back)[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or (G.GAME.viewed_back or G.GAME.selected_back).atlas) or 'centers'], self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos))
+		local atlas_key = (G.GAME.viewed_back or G.GAME.selected_back) and ((G.GAME.viewed_back or G.GAME.selected_back)[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or (G.GAME.viewed_back or G.GAME.selected_back).atlas) or 'centers'
+		self.children.back = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos))
 		self.children.back.states.hover = self.states.hover
 		self.children.back.states.click = self.states.click
 		self.children.back.states.drag = self.states.drag
@@ -1760,6 +1823,142 @@ function Card:set_sprites(_center, _front)
             _center:set_sprites(self, _front)
         end
     end
+end
+
+function get_front_spriteinfo(_front)
+	if _front and _front.suit and G.SETTINGS.CUSTOM_DECK and G.SETTINGS.CUSTOM_DECK.Collabs then
+		local collab = G.SETTINGS.CUSTOM_DECK.Collabs[_front.suit]
+		if collab then
+			local deckSkin = SMODS.DeckSkins[collab]
+			if deckSkin then
+				if deckSkin.outdated then
+					local hasRank = false
+					for i = 1, #deckSkin.ranks do
+						if deckSkin.ranks[i] == _front.value then hasRank = true break end
+					end
+					if hasRank then
+						local atlas = SMODS.get_atlas(G.SETTINGS.colour_palettes[_front.suit] == 'hc' and deckSkin.hc_atlas or deckSkin.lc_atlas)
+						if atlas then
+							if deckSkin.pos_style == 'collab' then
+								return atlas, G.COLLABS.pos[_front.value]
+							elseif deckSkin.pos_style == 'suit' then
+								return atlas, { x = _front.pos.x, y = 0}
+							elseif deckSkin.pos_style == 'deck' then
+								return atlas, _front.pos
+							elseif deckSkin.pos_style == 'ranks' or nil then
+								for i, rank in ipairs(deckSkin.ranks) do
+									if rank == _front.value then
+										return atlas, { x = i - 1, y = 0}
+									end
+								end
+							end
+						end
+					end
+					return SMODS.get_atlas(G.SETTINGS.colour_palettes[_front.suit] == 'hc' and _front.hc_atlas or _front.lc_atlas or {}) or SMODS.get_atlas(_front.atlas) or SMODS.get_atlas("cards_"..(G.SETTINGS.colour_palettes[_front.suit] == 'hc' and 2 or 1)), _front.pos
+				else
+					local palette = deckSkin.palette_map and deckSkin.palette_map[G.SETTINGS.colour_palettes[_front.suit] or ''] or (deckSkin.palettes or {})[1]
+					local hasRank = false
+					for i = 1, #palette.ranks do
+						if palette.ranks[i] == _front.value then hasRank = true break end
+					end
+					if hasRank then
+						local atlas = SMODS.get_atlas(palette.atlas)
+						if type(palette.pos_style) == "table" then
+							if palette.pos_style[_front.value] then
+								if palette.pos_style[_front.value].atlas then
+									atlas = SMODS.get_atlas(palette.pos_style[_front.value].atlas)
+								end
+								if palette.pos_style[_front.value].pos then
+									return atlas, palette.pos_style[_front.value].pos
+								end
+							elseif palette.pos_style.fallback_style then
+								if palette.pos_style.fallback_style == 'collab' then
+									return atlas, G.COLLABS.pos[_front.value]
+								elseif palette.pos_style.fallback_style == 'suit' then
+									return atlas, { x = _front.pos.x, y = 0}
+								elseif palette.pos_style.fallback_style == 'deck' then
+									return atlas, _front.pos
+								end
+							end
+						elseif palette.pos_style == 'collab' then
+							return atlas, G.COLLABS.pos[_front.value]
+						elseif palette.pos_style == 'suit' then
+							return atlas, { x = _front.pos.x, y = 0}
+						elseif palette.pos_style == 'deck' then
+							return atlas, _front.pos
+						elseif palette.pos_style == 'ranks' or nil then
+							for i, rank in ipairs(palette.ranks) do
+								if rank == _front.value then
+									return atlas, { x = i - 1, y = 0}
+								end
+							end
+						end
+					end
+					return SMODS.get_atlas(palette.hc_default and _front.hc_atlas or _front.lc_atlas or {}) or SMODS.get_atlas(_front.atlas) or SMODS.get_atlas("cards_"..(palette.hc_default and 2 or 1)), _front.pos
+				end
+			end
+		end
+	end
+
+	return SMODS.get_atlas(G.SETTINGS.colourblind_option and _front.hc_atlas or _front.lc_atlas or {}) or SMODS.get_atlas(_front.atlas) or SMODS.get_atlas("cards_"..(G.SETTINGS.colourblind_option and 2 or 1)), _front.pos
+end
+
+
+function create_UIBox_notify_alert(_achievement, _type)
+  local _c, _atlas = G.P_CENTERS[_achievement],
+    _type == 'Joker' and SMODS.get_atlas("Joker") or
+    _type == 'Voucher' and SMODS.get_atlas("Voucher") or
+    _type == 'Back' and SMODS.get_atlas("centers") or
+    SMODS.get_atlas("icons")
+    local _smods_atlas = _c and ((G.SETTINGS.colourblind_option and _c.hc_atlas or _c.lc_atlas) or _c.atlas)
+    if _smods_atlas then
+        _atlas = SMODS.get_atlas(_smods_atlas) or _atlas
+    end
+
+  if SMODS.Achievements[_achievement] then _c = SMODS.Achievements[_achievement]; _atlas = SMODS.get_atlas(_c.atlas) end
+  local t_s =  SMODS.create_sprite(0,0,1.5*(_atlas.px/_atlas.py),1.5, _atlas.key or _atlas.name,  _c and _c.pos or {x=3, y=0})
+
+  t_s.states.drag.can = false
+  t_s.states.hover.can = false
+  t_s.states.collide.can = false
+ 
+  local subtext = _type == 'achievement' and localize(G.F_TROPHIES and 'k_trophy' or 'k_achievement') or
+    _type == 'Joker' and localize('k_joker') or 
+    _type == 'Voucher' and localize('k_voucher') or
+    _type == 'Back' and localize('k_deck') or 'ERROR'
+
+  if _achievement == 'b_challenge' then subtext = localize('k_challenges') end
+  local name = _type == 'achievement' and localize(_achievement, 'achievement_names') or 'ERROR'
+
+    local t = {n=G.UIT.ROOT, config = {align = 'cl', r = 0.1, padding = 0.06, colour = G.C.UI.TRANSPARENT_DARK}, nodes={
+    {n=G.UIT.R, config={align = "cl", padding = 0.2, minw = 20, r = 0.1, colour = G.C.BLACK, outline = 1.5, outline_colour = G.C.GREY}, nodes={
+      {n=G.UIT.R, config={align = "cm", r = 0.1}, nodes={
+        {n=G.UIT.R, config={align = "cm", r = 0.1}, nodes={
+          {n=G.UIT.O, config={object = t_s}},
+        }},
+        _type ~= 'achievement' and {n=G.UIT.R, config={align = "cm", padding = 0.04}, nodes={
+          {n=G.UIT.R, config={align = "cm", maxw = 3.4}, nodes={
+            {n=G.UIT.T, config={text = subtext, scale = 0.5, colour = G.C.FILTER, shadow = true}},
+          }},
+          {n=G.UIT.R, config={align = "cm", maxw = 3.4}, nodes={
+            {n=G.UIT.T, config={text = localize('k_unlocked_ex'), scale = 0.35, colour = G.C.FILTER, shadow = true}},
+          }}
+        }}
+        or {n=G.UIT.R, config={align = "cm", padding = 0.04}, nodes={
+          {n=G.UIT.R, config={align = "cm", maxw = 3.4, padding = 0.1}, nodes={
+            {n=G.UIT.T, config={text = name, scale = 0.4, colour = G.C.UI.TEXT_LIGHT, shadow = true}},
+          }},
+          {n=G.UIT.R, config={align = "cm", maxw = 3.4}, nodes={
+            {n=G.UIT.T, config={text = subtext, scale = 0.3, colour = G.C.FILTER, shadow = true}},
+          }},
+          {n=G.UIT.R, config={align = "cm", maxw = 3.4}, nodes={
+            {n=G.UIT.T, config={text = localize('k_unlocked_ex'), scale = 0.35, colour = G.C.FILTER, shadow = true}},
+          }}
+        }}
+      }}
+    }}
+  }}
+  return t
 end
 
 -- Init custom card parameters.
@@ -1811,7 +2010,6 @@ function Card:set_edition(edition, immediate, silent, delay)
 	if self.edition then
 		self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
 		self.ability.extra_slots_used = self.ability.extra_slots_used - (self.edition.extra_slots_used or 0)
-		if self.area then self.area:handle_card_limit(-1 * (self.edition.card_limit or 0), -1 * (self.edition.extra_slots_used or 0)) end
 	end
 
 	local old_edition = self.edition
@@ -1950,7 +2148,6 @@ function Card:set_edition(edition, immediate, silent, delay)
 
 	self.ability.card_limit = self.ability.card_limit + (self.edition.card_limit or 0)
 	self.ability.extra_slots_used = self.ability.extra_slots_used + (self.edition.extra_slots_used or 0)
-	if self.area then self.area:handle_card_limit(self.edition.card_limit, self.edition.extra_slots_used) end
 
 
 	if G.jokers and self.area == G.jokers then
@@ -2260,6 +2457,7 @@ end
 local defeat = Blind.defeat
 function Blind:defeat(silent)
 	defeat(self, silent)
+	G.hand.config.card_limits.blind_restriction = nil
 	SMODS.calculate_context({ blind_defeated = true })
 end
 
@@ -2407,7 +2605,18 @@ local set_ability = Card.set_ability
 function Card:set_ability(center, initial, delay_sprites)
 	local old_center = self.config.center
 	set_ability(self, center, initial, delay_sprites)
-	if not initial and G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT then
+	if not initial and (G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT) then
 		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
 	end
+end
+
+local add_tag_ref = add_tag
+function add_tag(_tag)
+	_tag = _tag or {}
+	_tag.key = _tag.key or 'unknown'
+	assert(G.P_TAGS[_tag.key], ("Could not find tag \"%s\"."):format(_tag.key))
+	if not (_tag.is and _tag:is(Tag)) then
+		_tag = Tag(_tag.key, nil, _tag.blind_type)
+	end
+	add_tag_ref(_tag)
 end

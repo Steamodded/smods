@@ -8,6 +8,7 @@
 ---@field pools? table Table with a list of ObjectTypes keys this rarity should be added to.
 ---@field badge_colour? table HEX color the rarity badge uses. 
 ---@field default_weight? number Default weight of the rarity. When referenced in ObjectTypes with just the key, this value is used as the default. 
+---@field disable_if_empty? boolean Disables polling of the rarity if set to `true` if there are no available objects.
 ---@field __call? fun(self: SMODS.Rarity|table, o: SMODS.Rarity|table): nil|table|SMODS.Rarity
 ---@field extend? fun(self: SMODS.Rarity|table, o: SMODS.Rarity|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Rarity|table): boolean? Ensures objects already registered will not register. 

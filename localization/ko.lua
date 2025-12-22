@@ -53,7 +53,7 @@ return {
 				text = {
 					"{C:attention}메인 파일이 없습니다!{}",
 					"이 모드의 메인 파일을",
-					"찾을수가 없습니다.",
+					"찾을 수 없습니다.",
 					"({C:attention}#1#{})",
 				},
 			},
@@ -63,6 +63,7 @@ return {
 					"{C:attention}비활성화{} 됐습니다!",
 				},
 			},
+
 
 			-- card perma bonuses
 			card_extra_chips = {
@@ -135,28 +136,69 @@ return {
 					"라운드 종료 시 {C:money}#1#{}",
 				},
 			},
+            card_extra_repetitions = {
+                text = {
+                    "이 카드를 {C:attention}#1#{}#2#",
+                    "다시 발동합니다",
+                },
+            },
+            artist = {
+                text = {
+                    "{C:inactive}아티스트",
+                },
+            },
+            artist_credit = {
+                name = "아티스트",
+                text = {
+                    "{E:1}#1#{}"
+                },
+            },
+            generic_card_limit = {
+                name = "카드 제한",
+                text = {
+                    '영역 슬롯 {C:dark_edition}#1#{}개'
+                }
+            },
+            generic_card_limit_plural = {
+                name = "카드 제한",
+                text = {
+                    '영역 슬롯 {C:dark_edition}#1#{}개'
+                }
+            },
+            generic_extra_slots = {
+                name = "슬롯 사용",
+                text = {
+                    '{C:dark_edition}#1#{} 슬롯 크기'
+                }
+            }
 		},
 		Edition = {
 			e_negative_playing_card = {
 				name = "네거티브",
 				text = {
-					"핸드 크기 {C:dark_edition}+#1#{}장",
+					"핸드 크기 {C:dark_edition}#1#{}장",
 				},
 			},
+            e_negative_generic = {
+                name = "네거티브",
+                text = {
+                    "영역 슬롯 {C:dark_edition}#1#{}개"
+                },
+            }
 		},
 		Enhanced = {
-			m_gold = {
-				name = "골드 카드",
-				text = {
-					"라운드 종료 시",
-					"이 카드가 손패에 남아 있으면",
-					"{C:money}$#1#{}를 획득합니다",
-				},
-			},
+            m_gold = {
+                name = "황금 카드",
+                text = {
+                    "라운드 종료 시",
+                    "이 카드가 손패에 남아 있으면",
+                    "{C:money}#1#{}를 획득합니다",
+                },
+            },
 			m_stone = {
 				name = "석재 카드",
 				text = {
-					"칩 {C:chips}+#1#{}개",
+					"칩 {C:chips}#1#{}개",
 					"랭크 또는 문양이 없습니다",
 				},
 			},
@@ -166,6 +208,15 @@ return {
 					"{C:mult}#1#{} 배수",
 				},
 			},
+            m_lucky = {
+                name = "행운 카드",
+                text = {
+                    "{C:green}#1#/#3#{} 확률로",
+                    "{C:mult}+#2#{} 배수를 획득합니다",
+                    "{C:green}#1#/#5#{} 확률로",
+                    "{C:money}$#4#{}를 획득합니다",
+                },
+            },
 		},
 	},
 	misc = {
@@ -196,6 +247,7 @@ return {
 			b_unknown = "불명",
 			b_lovely_mod = "(Lovely Mod)",
 			b_by = " By: ",
+            b_priority = '우선도: ',
 			b_config = "설정",
 			b_additions = "추가",
 			b_stickers = "스티커",
@@ -203,11 +255,11 @@ return {
 			b_applies_stakes_1 = "적용: ",
 			b_applies_stakes_2 = "",
 			b_graphics_mipmap_level = "밉맵 레벨",
-			b_browse = "Browse", -- Unused? Not sure what the context for this is
+			b_browse = "열기",
 			b_search_prompt = "모드 검색",
 			b_search_button = "검색",
 			b_seeded_unlocks = "시드런 언락",
-			b_seeded_unlocks_info = "시드런에서도 해금을 할수있습니다",
+			b_seeded_unlocks_info = "시드런에서도 해금이 가능해집니다",
 			ml_achievement_settings = {
 				"비활성화",
 				"활성화",
@@ -216,6 +268,9 @@ return {
 			b_deckskins_lc = "저대비 색상",
 			b_deckskins_hc = "고대비 색상",
 			b_deckskins_def = "기본 색상",
+            b_limit = '최대 ',
+            b_retrigger_single = '번',
+            b_retrigger_plural = '번'
 		},
 		v_dictionary = {
 			c_types = "#1# 종류",
