@@ -3313,8 +3313,11 @@ function SMODS.upgrade_poker_hands(args)
     end
         
     local displayed = false
+    ---@type CalcContext
+    local context = {card = args.from, poker_hand_changed = true}
     for _, hand in ipairs(args.hands) do
         displayed = hand == SMODS.displayed_hand
+        context.scoring_name = hand
         if not instant then
             update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'), level=G.GAME.hands[hand].level})
             for name, p in pairs(SMODS.Scoring_Parameters) do
@@ -3322,9 +3325,13 @@ function SMODS.upgrade_poker_hands(args)
                 update_hand_text({nopulse = nil, delay = 0}, {[name] = p.current})
             end
         end
+        context.old_parameters = {}
+        context.new_parameters = {}
         for i, parameter in ipairs(args.parameters) do
             if G.GAME.hands[hand][parameter] then
+                context.old_parameters[parameter] = G.GAME.hands[hand][parameter]
                 G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
+                context.new_parameters[parameter] = G.GAME.hands[hand][parameter]
                 if not instant then
                     G.E_MANAGER:add_event(Event({trigger = 'after', delay = i == 1 and 0.2 or 0.9, func = function()
                         play_sound('tarot1')
@@ -3336,7 +3343,9 @@ function SMODS.upgrade_poker_hands(args)
             end
         end
         if args.level_up then
+            context.old_level = G.GAME.hands[hand].level
             G.GAME.hands[hand].level = G.GAME.hands[hand].level + (type(args.level_up) == 'number' and args.level_up or 1)
+            context.new_level = G.GAME.hands[hand].level
             if not instant then
                 G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.9, func = function()
                     play_sound('tarot1')
@@ -3347,6 +3356,7 @@ function SMODS.upgrade_poker_hands(args)
             end
         end
         if not instant then delay(1.3) end
+        SMODS.calculate_context(context)
     end
 
     if not instant and not displayed then
