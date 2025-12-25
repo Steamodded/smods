@@ -1925,7 +1925,9 @@ function create_UIBox_notify_alert(_achievement, _type)
   local subtext = _type == 'achievement' and localize(G.F_TROPHIES and 'k_trophy' or 'k_achievement') or
     _type == 'Joker' and localize('k_joker') or 
     _type == 'Voucher' and localize('k_voucher') or
-    _type == 'Back' and localize('k_deck') or 'ERROR'
+	_type == 'Back' and localize('k_deck') or
+	_c.set and localize('k_' .. _c.set:lower()) or
+	'ERROR'
 
   if _achievement == 'b_challenge' then subtext = localize('k_challenges') end
   local name = _type == 'achievement' and localize(_achievement, 'achievement_names') or 'ERROR'
