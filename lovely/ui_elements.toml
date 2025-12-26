@@ -150,3 +150,79 @@ if deck_center.check_for_unlock and type(deck_center.check_for_unlock) == "funct
 end
 """
 match_indent = true
+
+## UIBox shaders
+# UIElement:draw_pixellated_rect()
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+pattern = '''love.graphics.polygon((_type == 'line' or _type == 'line_emboss') and 'line' or "fill", self.pixellated_rect[_type].vertices)'''
+position = "at"
+payload = '''
+    local function _draw()
+        -- don't duplicate the line
+        love.graphics.polygon((_type == 'line' or _type == 'line_emboss') and 'line' or "fill", self.pixellated_rect[_type].vertices)
+    end
+
+    local function _draw_layer(shader, send)
+        local args = {
+            G.TIMERS.REAL/28,
+            G.TIMERS.REAL
+        }
+        
+        if shader == "none" or shader == "dissolve" then
+            _draw()
+            return
+        elseif send then
+            for _, v in ipairs(send) do
+                local val = v.val or (v.func and v.func(self)) or v.ref_table[v.ref_value]
+                -- TARGET: Convert v.val to a number if your mod adds an alternate number data type (ala Talisman)
+
+                G.SHADERS[shader]:send(v.name, val)
+            end
+        elseif shader == "vortex" then
+            G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
+        else
+            local key = SMODS.Shaders[shader].original_key
+            local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
+
+            -- actually supported
+            G.SHADERS[shader]:send(key, args)
+            G.SHADERS[shader]:send("uibox_size", {self.VT.w * tile_scale, self.VT.h * tile_scale})
+            G.SHADERS[shader]:send("uibox_pos", {self.T.x * tile_scale, self.T.y * tile_scale})
+        end
+
+        love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
+        _draw()
+        love.graphics.setShader()
+    end
+
+    if self.config.shader then
+        -- simple single shader
+        if type(self.config.shader) == "string" then
+            _draw_layer(self.config.shader)
+
+        -- more complex shader calls
+        elseif type(self.config.shader) == "table" then
+            -- one shader pass with a custom send
+            if self.config.shader.shader then
+                _draw_layer(self.config.shader.shader, self.config.shader.send)
+
+            -- list of shaders
+            elseif #shader > 0 then
+                for _, v in ipairs(self.config.shader) do
+                    if type(v) == "string" then
+                        _draw_layer(v.shader)
+                    elseif type(v) == "table" then
+                        _draw_layer(v.shader, v.send)
+                    end
+                end
+            end
+        end
+
+    -- no shader
+    else
+        _draw()
+    end
+'''
+match_indent = true
