@@ -50,8 +50,10 @@ local function find_self(directory, target_filename, target_line, depth)
         local file_path = directory .. "/" .. filename
         local file_type = NFS.getInfo(file_path).type
         if file_type == 'directory' or file_type == 'symlink' then
-            local f = find_self(file_path, target_filename, target_line, depth+1)
-            if f then return f end
+            if not NFS.getInfo(file_path.."/.lovelyignore") then
+                local f = find_self(file_path, target_filename, target_line, depth+1)
+                if f then return f end
+            end
         elseif filename == target_filename then
             local first_line = NFS.read(file_path):match('^(.-)\n')
             if first_line == target_line then
