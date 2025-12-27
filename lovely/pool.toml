@@ -140,6 +140,14 @@ payload = '''elseif not (G.GAME.used_jokers[v.key] and not pool_opts.allow_dupli
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
+pattern = 'if not G.GAME.used_vouchers[v.key] then '
+match_indent = true
+position = 'at'
+payload = '''if not (G.GAME.used_vouchers[v.key] and not pool_opts.allow_duplicates and not SMODS.voucherman(v.key) then'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
 pattern = "if add and not G.GAME.banned_keys[v.key] then"
 match_indent = true
 position = 'before'
