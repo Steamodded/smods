@@ -3413,10 +3413,11 @@ end
 
 function SMODS.get_clean_pool(_type, _rarity, _legendary, _append)
     local pool = get_current_pool(_type, _rarity, _legendary, _append)
+    local clean_pool = {}
     for i, v in ipairs(pool) do
-        if v == 'UNAVAILABLE' then
-            pool[i] = nil
+        if v ~= 'UNAVAILABLE' then
+            table.insert(clean_pool, v)
         end
     end
-    return pool
+    return clean_pool
 end
