@@ -3410,3 +3410,13 @@ function SMODS.log_crash_info(info, defined)
         return string.format("\n\nError exists in %s at line %d\r\n", info.source, line)
     end
 end
+
+function SMODS.get_clean_pool(_type, _rarity, _legendary, _append)
+    local pool = get_current_pool(_type, _rarity, _legendary, _append)
+    for i, v in ipairs(pool) do
+        if v == 'UNAVAILABLE' then
+            pool[i] = nil
+        end
+    end
+    return pool
+end
