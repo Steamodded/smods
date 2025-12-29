@@ -2778,7 +2778,7 @@ function SMODS.is_eternal(card, trigger)
         end
     end
     if card.ability.eternal then ret = true end
-    if not card.config.center.eternal_compat and not ovr_compat then ret = false end
+    if card.config.center.eternal_compat == false and not ovr_compat then ret = false end
     return ret
 end
 
