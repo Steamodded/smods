@@ -1349,6 +1349,10 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return key
     end
 
+    if key == 'blind_amt' then
+        SMODS.blind_amt = amount
+    end
+
     if key == 'effect' then
         return true
     end
@@ -1358,7 +1362,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     end
 
     if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or
-        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'modify' or key == 'shop_create_flags'  then
+        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'modify' or key == 'shop_create_flags' then
         return { [key] = amount }
     end
     
@@ -1461,6 +1465,7 @@ SMODS.other_calculation_keys = {
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
     'shop_create_flags',
+    'blind_amt',
     'extra',
 }
 SMODS.silent_calculation = {
