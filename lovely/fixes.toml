@@ -430,6 +430,15 @@ position = "before"
 payload = "G.GAME.blind.in_blind = false"
 match_indent = true
 
+# Allow winning game if winning ante is skipped
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "if G.GAME.round_resets.ante == G.GAME.win_ante and G.GAME.blind:get_type() == 'Boss' then"
+position = "at"
+payload = "if not G.GAME.won and G.GAME.round_resets.ante >= G.GAME.win_ante and G.GAME.blind:get_type() == 'Boss' then"
+match_indent = true
+
 
 
 # Make sure new param is loaded
