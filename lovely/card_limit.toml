@@ -231,14 +231,14 @@ payload = '''
 '''
 [[patches]]
 [patches.pattern]
-target = 'functions/UI_definitions.lua'
+target = 'game.lua'
 match_indent = true
 position = 'at'
 pattern = '''
 {card_limit = 5, type = 'play'})
 '''
 payload = '''
-{card_limit = 5, type = 'play', negative_info = true})
+{card_limit = 5, type = 'play', negative_info = 'playing_card'})
 '''
 
 # generate_card_ui()

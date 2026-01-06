@@ -3326,6 +3326,12 @@ function SMODS.create_sprite(X, Y, W, H, atlas, pos)
     return SMODS.get_atlas_sprite_class(atlas_key)(X, Y, W, H, atlas, pos)
 end
 
+local animate = AnimatedSprite.animate
+function AnimatedSprite:animate()
+    if not self.current_animation.frames then return end
+    animate(self)
+end
+
 function SMODS.is_active_blind(key, ignore_disabled)
     return G.GAME and G.GAME.blind and G.GAME.facing_blind and (G.GAME.blind.name == key or G.GAME.blind.config.key == key) and (not G.GAME.blind.disabled or ignore_disabled)
 end
@@ -3387,14 +3393,16 @@ function SMODS.upgrade_poker_hands(args)
             end
         end
         for i, parameter in ipairs(args.parameters) do
-            G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
-            if not instant then
-                G.E_MANAGER:add_event(Event({trigger = 'after', delay = i == 1 and 0.2 or 0.9, func = function()
-                    play_sound('tarot1')
-                    if args.from then args.from:juice_up(0.8, 0.5) end
-                    G.TAROT_INTERRUPT_PULSE = true
-                    return true end }))
-                update_hand_text({delay = 0}, {[parameter] = G.GAME.hands[hand][parameter], StatusText = true})
+            if G.GAME.hands[hand][parameter] then
+                G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
+                if not instant then
+                    G.E_MANAGER:add_event(Event({trigger = 'after', delay = i == 1 and 0.2 or 0.9, func = function()
+                        play_sound('tarot1')
+                        if args.from then args.from:juice_up(0.8, 0.5) end
+                        G.TAROT_INTERRUPT_PULSE = true
+                        return true end }))
+                    update_hand_text({delay = 0}, {[parameter] = G.GAME.hands[hand][parameter], StatusText = true})
+                end
             end
         end
         if args.level_up then
