@@ -36,6 +36,7 @@ self.config = setmetatable({card_limits = {card_limit}}, {
     __newindex = function(t, key, value)
         if key == 'card_limit' then
             if not t.card_limits.base then rawset(t.card_limits, 'base', value) end
+            if not t.card_limits.total_slots then rawset(t.card_limits, 'total_slots', value) end
             rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0))
         else
             rawset(t, key, value)
@@ -100,7 +101,7 @@ pattern = '''
 if self == G.deck and self.config.card_limit > #G.playing_cards then self.config.card_limit = #G.playing_cards end
 '''
 payload = '''
-if self == G.deck and (self.config.card_limit ~= #G.playing_cards or self.config.total_slots ~= #G.playing_cards) then
+if self == G.deck and self.config.card_limit ~= #G.playing_cards then
     self.config.card_limit = #G.playing_cards
     self.config.card_limits.total_slots = #G.playing_cards
 end
@@ -231,14 +232,14 @@ payload = '''
 '''
 [[patches]]
 [patches.pattern]
-target = 'functions/UI_definitions.lua'
+target = 'game.lua'
 match_indent = true
 position = 'at'
 pattern = '''
 {card_limit = 5, type = 'play'})
 '''
 payload = '''
-{card_limit = 5, type = 'play', negative_info = true})
+{card_limit = 5, type = 'play', negative_info = 'playing_card'})
 '''
 
 # generate_card_ui()
@@ -332,3 +333,58 @@ pattern = "if args.type == 'min_hand_size' and G.hand and G.hand.config.card_lim
 position = "at"
 payload = "if args.type == 'min_hand_size' and G.hand and G.hand.config.true_card_limit <= card.unlock_condition.extra then"
 match_indent = true
+
+# Challenge UI tooltip support
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+card_w = joker_size*G.CARD_W, type = 'title_2', highlight_limit = 0})
+'''
+payload = '''
+negative_info = 'joker',
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+card_w = joker_size*G.CARD_W, type = 'title_2', spread = true, highlight_limit = 0})
+'''
+payload = '''
+negative_info = 'consumable',
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{card_limit = #SUITS[suit_map[j]], type = 'title_2', view_deck = true, highlight_limit = 0, card_w = G.CARD_W*0.5, draw_layers = {'card'}})'''
+payload = '''
+{card_limit = #SUITS[suit_map[j]], type = 'title_2', view_deck = true, highlight_limit = 0, card_w = G.CARD_W*0.5, draw_layers = {'card'}, negative_info = 'playing_card'})'''
+
+# Stop updating during run initialisation
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if #self.cards > self.config.card_limit then
+    if self == G.deck then
+        self.config.card_limit = #self.cards
+    end
+end
+'''
+payload = '''
+if #self.cards > self.config.card_limit then
+    if self == G.deck and G.GAME.blind then
+        print('Setting here to '..#self.cards)
+        self.config.card_limit = #self.cards
+    end
+end
+'''

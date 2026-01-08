@@ -29,6 +29,7 @@ if (not blocked or not v[i].blockable) then v[i]:handle(results) end
 position = 'before'
 payload = '''
 self.append_count = 0
+self.append_queue = k
 '''
 match_indent = true
 
@@ -56,6 +57,8 @@ if front then
 '''
 position = 'after'
 payload = '''
-self.append_count = self.append_count + 1
+if self.append_queue == queue then
+    self.append_count = self.append_count + 1
+end
 '''
 match_indent = true

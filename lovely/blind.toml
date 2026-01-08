@@ -48,6 +48,7 @@ match_indent = true
 payload = '''
 local obj = self.config.blind
 self.children.animatedSprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, obj.atlas or 'blind_chips', obj.pos or G.P_BLINDS.bl_small.pos)
+self.children.animatedSprite.states = self.states
 '''
 
 [[patches]]

@@ -16,10 +16,11 @@ target = "functions/misc_functions.lua"
 pattern = "G.ARGS.score_intensity.earned_score = G.GAME.current_round.current_hand.chips*G.GAME.current_round.current_hand.mult"
 position = "at"
 payload = '''
+local all_numbers = true
 for name, parameter in pairs(SMODS.Scoring_Parameters) do
-    if type(G.GAME.current_round.current_hand[name]) ~= 'number' then G.ARGS.score_intensity.earned_score = "no" end
+    if type(G.GAME.current_round.current_hand[name]) ~= 'number' then all_numbers = false end
 end
-if G.ARGS.score_intensity ~= "no" then G.ARGS.score_intensity.earned_score = SMODS.calculate_round_score(true) end
+G.ARGS.score_intensity.earned_score = all_numbers and SMODS.calculate_round_score(true) or 0
 '''
 match_indent = true
 
@@ -146,6 +147,21 @@ for name, parameter in pairs(SMODS.Scoring_Parameters) do
     update_hand_text({immediate = true, nopulse = true, delay = 0}, {[name] = parameter.default_value})
 end
 '''
+# Reset when discard
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+update_hand_text({immediate = true, nopulse = true, delay = 0}, {mult = 0, chips = 0, level = '', handname = ''})
+'''
+payload = '''
+for name, parameter in pairs(SMODS.Scoring_Parameters) do
+    update_hand_text({immediate = true, nopulse = true, delay = 0}, {[name] = parameter.default_value})
+end
+'''
+
 
 # Reset display after hand played
 [[patches]]
@@ -230,7 +246,7 @@ SMODS.upgrade_poker_hands({
 [patches.pattern]
 target = 'functions/common_events.lua'
 match_indent = true
-position = 'after'
+position = 'before'
 pattern = '''
 G.E_MANAGER:add_event(Event({
     trigger = 'immediate',
