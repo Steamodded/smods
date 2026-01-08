@@ -43,3 +43,12 @@ function create_UIBox_current_hand_row(handname, simple, in_collection)
     return (in_collection or SMODS.is_poker_hand_visible(handname)) and
 '''
 match_indent = true
+
+# Display total played count in collection
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''{n=G.UIT.T, config={text = G.GAME.hands[handname].played, scale = 0.45, colour = G.C.FILTER, shadow = true}},'''
+position = "at"
+payload = '''{n=G.UIT.O, config={object = DynaText({string = {tostring(in_collection and G.PROFILES[G.SETTINGS.profile].hand_usage[string.gsub(handname, " ", "")] and G.PROFILES[G.SETTINGS.profile].hand_usage[string.gsub(handname, " ", "")].count or G.GAME.hands[handname].played)}, maxw = 0.9, scale = 0.45, colours = {G.C.FILTER}, shadow = true})}},'''
+match_indent = true
