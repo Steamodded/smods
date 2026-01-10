@@ -2173,7 +2173,7 @@ end
 function Blind:calculate(context)
     local obj = self.config.blind
     if type(obj.calculate) == 'function' then
-        return obj:calculate(context)
+        return obj:calculate(self, context)
     end
 end
 

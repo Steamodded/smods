@@ -33,8 +33,8 @@ for i, v in ipairs(G.COLLABS.colour_palettes[deckskin_key]) do
 end
 
 table.insert(t,
-    {n=G.UIT.R, config={align = "cm", id = 'palette_selector'}, nodes={
-      create_option_cycle({options = palette_loc_options, w = 5.5, cycle_shoulders = false, curr_suit = _suit, curr_skin = deckskin_key, opt_callback = 'change_colour_palette', current_option = selected_palette, colour = G.C.ORANGE, focus_args = {snap_to = true, nav = 'wide'}}),
+    {n=G.UIT.R, config={align = "cm", id = 'palette_selector', minh = 1.05}, nodes={
+      #palette_loc_options > 1 and create_option_cycle({options = palette_loc_options, w = 5.5, cycle_shoulders = false, curr_suit = _suit, curr_skin = deckskin_key, opt_callback = 'change_colour_palette', current_option = selected_palette, colour = G.C.ORANGE, focus_args = {snap_to = true, nav = 'wide'}}) or nil,
     }}
   )
 '''
