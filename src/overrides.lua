@@ -2419,18 +2419,17 @@ G.FUNCS.change_collab = function(args)
 	G.FUNCS.update_collab_cards(args.to_key, args.cycle_config.curr_suit)
 
 	local swap_node = G.OVERLAY_MENU:get_UIE_by_ID('palette_selector')
+	for i=1, #swap_node.children do
+		swap_node.children[i]:remove()
+		swap_node.children[i] = nil
+	end
     if #palette_loc_options > 1 then
-        if swap_node then
-            local new_palette_selector = {n=G.UIT.R, config={align = "cm", id = 'palette_selector'}, nodes={
-                create_option_cycle({options = palette_loc_options, w = 5.5, cycle_shoulders = false, curr_suit = args.cycle_config.curr_suit, curr_skin = deckskin_key, opt_callback = 'change_colour_palette', current_option = selected_palette, colour = G.C.ORANGE, focus_args = {snap_to = true, nav = 'wide'}}),
-            }}
-            swap_node.UIBox:add_child(new_palette_selector, swap_node)
-        end
-    else
-        for i=1, #swap_node.children do
-            swap_node.children[i]:remove()
-            swap_node.children[i] = nil
-        end
+		local opt_cycle = create_option_cycle({options = palette_loc_options, w = 4.5, h = 0.5, text_scale = 0.3, cycle_shoulders = false, curr_suit = args.cycle_config.curr_suit, curr_skin = deckskin_key, opt_callback = 'change_colour_palette', current_option = selected_palette, colour = G.C.ORANGE, focus_args = {snap_to = true, nav = 'wide'}})
+		opt_cycle.nodes[1].config.padding = 0
+		local new_palette_selector = {n=G.UIT.R, config={align = "cm", id = 'palette_selector', minh = 0.85}, nodes={
+			opt_cycle
+		}}
+		swap_node.UIBox:add_child(new_palette_selector, swap_node)
     end
 
 	for k, v in pairs(G.I.CARD) do
