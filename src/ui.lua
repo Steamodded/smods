@@ -2263,7 +2263,7 @@ function G.UIDEF.custom_deck_tab(_suit)
 
     local collab_cycle = create_option_cycle({options = loc_options, w = 5.5, cycle_shoulders = true, curr_suit = _suit, opt_callback = 'change_collab', current_option = current_option, colour = G.C.RED, focus_args = {snap_to = true, nav = 'wide'}})
     collab_cycle.nodes[2].config.padding = 0
-    collab_cycle.nodes[2].nodes[1].config.padding = 0.075
+    collab_cycle.nodes[2].nodes[1].config.padding = 0.085
 
     table.insert(r.nodes, {n=G.UIT.R, config={align = "cm"}, nodes={
         collab_cycle
@@ -2279,7 +2279,7 @@ function G.UIDEF.custom_deck_tab(_suit)
     end
 
     local palette_cycle =  #palette_loc_options > 1 and create_option_cycle({options = palette_loc_options, w = 4.5, h = 0.5, text_scale = 0.3, cycle_shoulders = false, curr_suit = _suit, curr_skin = deckskin_key, opt_callback = 'change_colour_palette', current_option = selected_palette, colour = G.C.ORANGE, focus_args = {snap_to = true, nav = 'wide'}}) or nil
-    if palette_cycle then palette_cycle.nodes[1].config.padding = 0.075 end
+    if palette_cycle then palette_cycle.nodes[1].config.padding = 0.085 end
 
     table.insert(r.nodes, {n=G.UIT.R, config={align = "cm", id = 'palette_selector', minh = 0.85}, nodes={
         palette_cycle
