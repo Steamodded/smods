@@ -709,7 +709,7 @@ end
 
 function SMODS.poll_edition(args)
     args = args or {}
-    return poll_edition(args.key or 'editiongeneric', args.mod, args.no_negative, args.guaranteed, args.options)
+    return poll_edition(args.key or 'edition_generic', args.mod, args.no_negative, args.guaranteed, args.options)
 end
 
 function SMODS.poll_seal(args)
@@ -728,7 +728,7 @@ function SMODS.poll_seal(args)
             local seal_option = {}
             if type(v) == 'string' then
                 assert(G.P_SEALS[v], ("Could not find seal \"%s\"."):format(v))
-                seal_option = { key = v, weight = G.P_SEALS[v].weight or 5 } -- default weight set to 5 to replicate base game weighting
+                seal_option = { key = v, weight = G.P_SEALS[v].weight or 10 } -- default weight set to 5 to replicate base game weighting
             elseif type(v) == 'table' then
                 assert(G.P_SEALS[v.key], ("Could not find seal \"%s\"."):format(v.key))
                 seal_option = { key = v.key, weight = v.weight }

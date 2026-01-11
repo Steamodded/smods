@@ -1,0 +1,72 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+
+# Escape get_new_boss early for SMODS.poll_object
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+local _, boss = pseudorandom_element(eligible_bosses, pseudoseed('boss'))
+'''
+payload = '''
+if early_return then 
+    local boss_keys = {}
+    for k, _ in pairs(eligible_bosses) do table.insert(boss_keys, k) end
+    return boss_keys
+end
+
+'''
+
+# Add early_return argument to get_new_boss
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+function get_new_boss()
+'''
+payload = '''
+function get_new_boss(early_return)
+'''
+
+# Adjust vanilla blinds max ante property
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+self.b_undiscovered = {name = 'Undiscovered', debuff_text = 'Defeat this blind to discover', pos = {x=0,y=30}}
+'''
+payload = '''
+for key, blind in pairs(self.P_BLINDS) do
+    if blind.boss and blind.boss.max then
+        blind.boss.max = nil
+        if blind.boss.showdown then
+            blind.boss.min = nil
+        end
+    end
+    if key == 'bl_small' then blind.small = {min = 1} end
+    if key == 'bl_big' then blind.big = {min = 1} end
+end
+'''
+
+# Add custom small/big blinds to `G.GAME.bosses_used`
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if v.boss then bosses_used[k] = 0 end
+'''
+payload = '''
+if v.small or v.big then bosses_used[k] = 0 end
+'''
+
