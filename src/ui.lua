@@ -93,6 +93,55 @@ function Game:main_menu(change_context)
             major = G.ROOM_ATTACH
         }
     })
+
+    math.randomseed(os.time()) -- for creating a random card from a set
+    for i, v in pairs(SMODS.Mods) do
+        if not v.disabled and v.menu_cards then
+            local tbl = v.menu_cards()
+            if tbl.set or tbl.key then tbl = { tbl }; tbl.func = tbl[1].func end
+            if not tbl[1] and not tbl.func then
+                print(("Invalid return for %s.menu_cards(), ignoring"):format(i)); tbl = {}
+            end
+
+            for _, w in ipairs(tbl) do
+                w.area = G.title_top
+                w.bypass_discovery_center = true
+                w.skip_materialize = true
+                if not w.edition then w.no_edition = true end
+
+                if w.set then
+                  w.key = pseudorandom_element(G.P_CENTER_POOLS[w.set]).key
+                  w.set = nil
+                end
+                local card = SMODS.create_card(w)
+                -- the magic incantation
+                G.title_top.T.w = G.title_top.T.w + (1.7675 / #G.title_top.cards)
+                G.title_top.T.x = G.title_top.T.x - (0.885 / #G.title_top.cards) -- everyone who used -0.8 was WRONG
+                card.T.w = card.T.w * 1.1 * 1.2
+                card.T.h = card.T.h * 1.1 * 1.2
+                G.title_top:emplace(card)
+                card.no_ui = true
+                card.states.visible = false
+
+                G.E_MANAGER:add_event(Event({
+                    trigger = "after",
+                    delay = 0,
+                    blockable = false,
+                    blocking = false,
+                    func = function()
+                        card.states.visible = true
+                        if change_context == "splash" then
+                            card:start_materialize({ G.C.WHITE, G.C.WHITE }, true, 2.5)
+                        else
+                            card:start_materialize({ G.C.WHITE, G.C.WHITE }, nil, 1.2)
+                        end
+                        return true
+                    end
+                }))
+            end
+            if tbl.func then tbl.func() end
+        end
+    end
 end
 
 local gameUpdateRef = Game.update
