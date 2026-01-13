@@ -95,10 +95,12 @@ function Game:main_menu(change_context)
     })
 
     math.randomseed(os.time()) -- for creating a random card from a set
+    local funcs = {}
     for i, v in pairs(SMODS.Mods) do
         if not v.disabled and v.menu_cards then
             local tbl = v.menu_cards()
-            if tbl.set or tbl.key then tbl = { tbl }; tbl.func = tbl[1].func end
+            if tbl.func then funcs[#funcs + 1] = tbl.func end
+            if tbl.set or tbl.key then tbl = { tbl } end
             if not tbl[1] and not tbl.func then
                 print(("Invalid return for %s.menu_cards(), ignoring"):format(i)); tbl = {}
             end
@@ -139,9 +141,9 @@ function Game:main_menu(change_context)
                     end
                 }))
             end
-            if tbl.func then tbl.func() end
         end
     end
+    for i, v in ipairs(funcs) do v() end
 end
 
 local gameUpdateRef = Game.update
