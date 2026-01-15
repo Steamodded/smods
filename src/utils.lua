@@ -1257,6 +1257,16 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         })
         return true
     end
+    if (key == 'xscore' or key == 'h_xscore' or key == 'x_score' or key == 'h_x_score') and amount ~= 1 then
+        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+        SMODS.mod_score({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus })
+        return true
+    end
+    if (key == 'score' or key == 'h_score' or key == 'add_score' or key == 'h_add_score') and amount ~= 0 then
+        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+        SMODS.mod_score({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus })
+        return true
+    end
 
     if key == 'message' and not SMODS.no_resolve then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
@@ -1448,6 +1458,8 @@ SMODS.scoring_parameter_keys = {
 }
 SMODS.other_calculation_keys = {
     'p_dollars', 'dollars', 'h_dollars',
+    'score', 'add_score', 'h_score', 'h_add_score',
+    'xscore', 'x_score', 'h_x_score', 'h_xscore',
     'swap', 'balance',
     'saved', 'effect', 'remove',
     'debuff', 'prevent_debuff', 'debuff_text',
@@ -3038,6 +3050,18 @@ function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
     if specific_vars and specific_vars.bonus_h_dollars then
         localize{type = 'other', key = 'card_extra_h_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_h_dollars)}}
     end
+    if specific_vars and specific_vars.perma_score then
+        localize{type = 'other', key = 'card_extra_score', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.perma_score)}}
+    end
+    if specific_vars and specific_vars.perma_h_score then
+        localize{type = 'other', key = 'card_extra_h_score', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.perma_h_score)}}
+    end
+    if specific_vars and specific_vars.perma_x_score then
+        localize{type = 'other', key = 'card_extra_x_score', nodes = desc_nodes, vars = {(specific_vars.perma_x_score)}}
+    end
+    if specific_vars and specific_vars.perma_h_x_score then
+        localize{type = 'other', key = 'card_extra_h_x_score', nodes = desc_nodes, vars = {(specific_vars.perma_h_x_score)}}
+    end
     if specific_vars and specific_vars.bonus_repetitions then
         localize{type = 'other', key = 'card_extra_repetitions', nodes = desc_nodes, vars = {specific_vars.bonus_repetitions, localize(specific_vars.bonus_repetitions > 1 and 'b_retrigger_plural' or 'b_retrigger_single')}}
     end
@@ -3409,4 +3433,40 @@ function SMODS.log_crash_info(info, defined)
     else
         return string.format("\n\nError exists in %s at line %d\r\n", info.source, line)
     end
+end
+
+-- function to modify score: normally accepts add and mult argument and additionally card argument
+SMODS.mod_score = function(score_mod)
+    score_mod = score_mod or {}
+    local score_fx = {}
+    local score_cal = score_mod.set or G.GAME.chips
+    local old = G.GAME.chips
+    G.SCORE_DISPLAY_QUEUE = G.SCORE_DISPLAY_QUEUE or {}
+    -- TARGET: higher priority score operation
+    if score_mod.mult then
+        local absoluted = math.abs(score_mod.mult)
+        score_cal = score_cal * score_mod.mult
+        table.insert(G.SCORE_DISPLAY_QUEUE, old)
+        table.insert(score_fx, {score_mod.mult < 0 and "a_score_x_minus" or "a_score_x", absoluted, "xscore"})
+    end
+    if score_mod.add and score_mod.add ~= 0 then
+        local absoluted = math.abs(score_mod.add)
+        score_cal = score_cal + score_mod.add
+        table.insert(G.SCORE_DISPLAY_QUEUE, old)
+        table.insert(score_fx, {"a_score", score_mod.add, "gong"})
+    end
+    -- TARGET: lower priority score operation
+    G.GAME.chips = score_cal
+    if score_mod.card then
+        for _, values in ipairs(score_fx) do
+            card_eval_status_text(score_mod.card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= values[1],vars={values[2]}}, update_score = true, volume = 0.5, sound_override = values[3], colour =  G.C.PURPLE})
+            -- this check is in case some skip animation mods is there, may be removed in the future
+            if G.CARD_EVAL_TRIGGERED then
+                G.SCORE_DISPLAY_QUEUE = nil
+            end
+        end
+    else
+        G.SCORE_DISPLAY_QUEUE = nil
+    end
+    delay(0.2)
 end
