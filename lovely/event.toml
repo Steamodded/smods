@@ -1,0 +1,64 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# These 4 patches fix a bug when appending events to the queue while it's processing an event
+# Initalize a count in the class
+# EventManager:init()
+[[patches]]
+[patches.pattern]
+target = 'event.lua'
+pattern = '''
+self.queue_last_processed = G.TIMERS.REAL
+'''
+position = 'after'
+payload = '''
+self.append_count = 0
+'''
+match_indent = true
+
+# Reset the count for use
+# EventManager:update(dt, forced)
+[[patches]]
+[patches.pattern]
+target = 'engine/event.lua'
+pattern = '''
+if (not blocked or not v[i].blockable) then v[i]:handle(results) end
+'''
+position = 'before'
+payload = '''
+self.append_count = 0
+self.append_queue = k
+'''
+match_indent = true
+
+# Increment i to fix our place in the queue
+# EventManager:update(dt, forced)
+[[patches]]
+[patches.pattern]
+target = 'engine/event.lua'
+pattern = '''
+if (not blocked or not v[i].blockable) then v[i]:handle(results) end
+'''
+position = 'after'
+payload = '''
+i = i + self.append_count
+'''
+match_indent = true
+
+# Increment the count when an event is added to the front
+# EventManager:add_event(event, queue, front)
+[[patches]]
+[patches.pattern]
+target = 'engine/event.lua'
+pattern = '''
+if front then
+'''
+position = 'after'
+payload = '''
+if self.append_queue == queue then
+    self.append_count = self.append_count + 1
+end
+'''
+match_indent = true

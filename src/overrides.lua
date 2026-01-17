@@ -2520,6 +2520,9 @@ function Blind:stay_flipped(to_area, card, from_area)
 	local self_eval, self_post = eval_card(card, { to_area = to_area, from_area = from_area, other_card = card, stay_flipped = true })
 	local self_flags = SMODS.trigger_effects({ self_eval, self_post })
 	for k,v in pairs(self_flags) do flags[k] = flags[k] or v end
+	if flags.modify and flags.modify.to_area then
+		SMODS.to_area = flags.modify.to_area
+	end
 	if flags.prevent_stay_flipped then return false end
 	if flags.stay_flipped then return true end
 	return ret

@@ -929,7 +929,7 @@ pattern = '''
 position = 'at'
 match_indent = true
 payload = '''
-SMODS.calculate_context({open_booster = true, card = self})
+SMODS.calculate_context({open_booster = true, card = self, booster = booster_obj})
 '''
 
 # context.buying_card
