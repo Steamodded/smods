@@ -114,6 +114,14 @@ if context.cardarea == G.play and context.main_scoring then
         ret.playing_card.x_chips = x_chips
     end
 
+    local add_score = card:get_bonus_add_score()
+    if add_score ~= 0 then
+        ret.playing_card.add_score = add_score
+    end
+    local x_score = card:get_bonus_x_score()
+    if x_score ~= 1 then
+        ret.playing_card.x_score = x_score
+    end
     -- TARGET: main scoring on played cards
 end
 if context.end_of_round and context.cardarea == G.hand and context.playing_card_end_of_round then
@@ -166,6 +174,15 @@ if context.cardarea == G.hand and context.main_scoring then
     local h_x_chips = card:get_chip_h_x_bonus()
     if h_x_chips > 0 then
         ret.playing_card.x_chips = h_x_chips
+    end
+
+    local h_add_score = card:get_bonus_h_add_score()
+    if h_add_score ~= 0 then
+        ret.playing_card.add_score = h_add_score
+    end
+    local h_x_score = card:get_bonus_h_x_score()
+    if h_x_score ~= 1 then
+        ret.playing_card.h_x_score = h_x_score
     end
 
     -- TARGET: main scoring on held cards
