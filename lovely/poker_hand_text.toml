@@ -1,0 +1,34 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+# Allow custom StatusText values in update_hand_text
+[[patches]]
+[patches.regex]
+target = 'functions/common_events.lua'
+position = 'at'
+line_prepend = '$indent'
+pattern = '''(?<indent>[\t ]*)if vals\.StatusText[A-z0-9\n\t .~=()'\-+,<;>:{}]+config\.align\n[\t ]+\}\)\n[\t ]+end'''
+payload = '''
+if vals.StatusText then
+    local StatusText = {
+        text = delta,
+        scale = 0.8, 
+        hold = 1,
+        cover = G.hand_text_area[name].parent,
+        cover_colour = mix_colours(parameter.colour, col, 0.1),
+        emboss = 0.05,
+        align = 'cm',
+        cover_align = G.hand_text_area[name].parent.config.align
+    }
+    if type(vals.StatusText) == 'string' then StatusText.text = vals.StatusText end
+    if type(vals.StatusText) == 'table' then
+        for k,v in pairs(vals.StatusText) do
+            StatusText[k] = v
+        end
+    end
+    attention_text(StatusText)
+end
+'''
+match_indent = true

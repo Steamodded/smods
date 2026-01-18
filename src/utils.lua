@@ -3278,6 +3278,7 @@ function SMODS.upgrade_poker_hands(args)
     -- args.level_up
     -- args.instant
     -- args.from
+    -- args.StatusText
 
     local function get_keys(t)
         local keys = {}
@@ -3326,12 +3327,17 @@ function SMODS.upgrade_poker_hands(args)
             if G.GAME.hands[hand][parameter] then
                 G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
                 if not instant then
+                    local StatusText = true
+                    if args.StatusText ~= nil then
+                        if type(args.StatusText) == 'table' and args.StatusText[parameter] ~= nil then StatusText = args.StatusText[parameter]
+                        else StatusText = args.StatusText end
+                    end
                     G.E_MANAGER:add_event(Event({trigger = 'after', delay = i == 1 and 0.2 or 0.9, func = function()
                         play_sound('tarot1')
                         if args.from then args.from:juice_up(0.8, 0.5) end
                         G.TAROT_INTERRUPT_PULSE = true
                         return true end }))
-                    update_hand_text({delay = 0}, {[parameter] = G.GAME.hands[hand][parameter], StatusText = true})
+                    update_hand_text({delay = 0}, {[parameter] = G.GAME.hands[hand][parameter], StatusText = StatusText})
                 end
             end
         end
