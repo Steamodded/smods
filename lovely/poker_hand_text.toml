@@ -31,4 +31,3 @@ if vals.StatusText then
     attention_text(StatusText)
 end
 '''
-match_indent = true
