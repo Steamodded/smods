@@ -1,7 +1,7 @@
 [manifest]
 version = "1.0.0"
 dump_lua = true
-priority = 0
+priority = -5
 
 # i think prio 0 is correct. idk if this patch builds off of any other patches
 
