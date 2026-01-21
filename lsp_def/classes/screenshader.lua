@@ -3,8 +3,8 @@
 ---@class SMODS.ScreenShader: SMODS.GameObject
 ---@field obj_table? table<string, SMODS.ScreenShader|table> Table of objects registered to this class. 
 ---@field super? SMODS.GameObject|table Parent class. 
----@field key? string Unique string to reference this object.
----@field shader? string Key of the shader to apply to the screen, shader must already exist to use this.
+---@field key string Unique string to reference this object.
+---@field shader? string Key of the shader to apply to the screen, shader must already exist to use this. Either this or `path` must be used
 ---@field path? string Name of the shader file to use if `shader` is not provided.
 ---@field __call? fun(self: SMODS.ScreenShader|table, o: SMODS.ScreenShader|table): nil|table|SMODS.ScreenShader
 ---@field extend? fun(self: SMODS.ScreenShader|table, o: SMODS.ScreenShader|table): table Primary method of creating a class. 
