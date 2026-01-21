@@ -1,0 +1,76 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 0
+
+# i think prio 0 is correct. idk if this patch builds off of any other patches
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''
+if G.AA_CANVAS then 
+    love.graphics.push()
+        love.graphics.scale(1/G.CANV_SCALE)
+        love.graphics.draw(G.AA_CANVAS, 0, 0)
+    love.graphics.pop()
+end
+'''
+position = "before"
+payload = '''
+local last_canvas = self.CANVAS
+for key, shader in pairs(SMODS.ScreenShaders) do
+	if (shader.should_apply and shader:should_apply()) or (not shader.should_apply) then
+		assert(G.SHADERS[shader.shader], "Shader " .. key .. " not found in G.SHADERS")
+		
+		if not shader.canvas then
+            -- this is kind of spaghetti but eh
+            local canvas = love.graphics.newCanvas(love.window.fromPixels(love.graphics.getWidth()) * G.CANV_SCALE, love.window.fromPixels(love.graphics.getHeight()) * G.CANV_SCALE, { type = '2d', readable = true })
+            canvas:setFilter('linear', 'linear')
+			shader.canvas = canvas
+		end
+
+        if shader.send_vars then
+            local vars = shader:send_vars()
+            for k,v in pairs(vars) do
+                G.SHADERS[shader.shader]:send(k, v)
+            end
+
+        end
+		
+		love.graphics.setCanvas(shader.canvas)
+		love.graphics.setShader(G.SHADERS[shader.shader])
+		love.graphics.draw(last_canvas, 0, 0)
+        love.graphics.setShader()
+
+        last_canvas = shader.canvas
+	end
+end
+-- i don't like having this out here but id rather not run it when i don't have to
+love.graphics.setCanvas() 
+if last_canvas then
+    love.graphics.draw(last_canvas, 0, 0)
+end
+'''
+match_indent = true
+
+
+
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = '''
+G.CANVAS = love.graphics.newCanvas(w*G.CANV_SCALE, h*G.CANV_SCALE, {type = '2d', readable = true})
+G.CANVAS:setFilter('linear', 'linear')
+'''
+position = "after"
+payload = '''
+if not SMODS.ScreenShaders then return end
+for key,shader in pairs(SMODS.ScreenShaders) do
+    local canvas = love.graphics.newCanvas(love.window.fromPixels(love.graphics.getWidth()) * G.CANV_SCALE, love.window.fromPixels(love.graphics.getHeight()) * G.CANV_SCALE, { type = '2d', readable = true })
+    canvas:setFilter('linear', 'linear')
+    shader.canvas = canvas
+    -- fixes issues with resizing the window
+end
+'''
+match_indent = true

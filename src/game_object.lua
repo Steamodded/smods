@@ -3274,6 +3274,51 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.ScreenShader
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.ScreenShaders = {}
+    SMODS.ScreenShader = SMODS.GameObject:extend {
+        obj_table = SMODS.ScreenShaders,
+        obj_buffer = {},
+        required_params = {
+            "key",
+        },
+        set = "ScreenShader",
+        send_vars = nil, -- same as Shader.send_vars
+        should_apply = nil, -- function to determine if the shader should be drawn. defaults to true if not specified
+        inject = function(self)
+            assert(self.shader or self.path, "ScreenShader " .. self.key .. " not given shader key or path")
+            if self.path and (not self.shader) then
+                SMODS.Shader.inject(self)
+                self.shader = self.key
+            end
+        end
+    }
+
+    SMODS.ScreenShader {
+        key = "CRT",
+        shader = "CRT",
+        send_vars = function(self)
+            local crt = G.SETTINGS.GRAPHICS.crt
+            return {
+                ['distortion_fac'] = {1.0 + 0.07*crt/100, 1.0 + 0.1*crt/100},
+                ['scale_fac'] = {1.0 - 0.008*crt/100, 1.0 - 0.008*crt/100},
+                ['feather_fac'] = 0.01,
+                ['bloom_fac'] = G.SETTINGS.GRAPHICS.bloom - 1,
+                ['time'] = 400 + G.TIMERS.REAL,
+                ['noise_fac'] = 0.001*crt/100,
+                ['crt_intensity'] = 0.16*crt/100,
+                ['glitch_intensity'] = 0,
+                ['scanlines'] = G.CANVAS:getPixelHeight()*0.75/G.CANV_SCALE,
+                ['mouse_screen_pos'] = G.video_control and {love.graphics.getWidth( )/2, love.graphics.getHeight( )/2} or {G.ARGS.eased_cursor_pos.sx, G.ARGS.eased_cursor_pos.sy},
+                ['screen_scale'] = G.TILESCALE*G.TILESIZE,
+                ['hovering'] = 1,
+            }
+        end
+    }
+
+    -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Edition
     -------------------------------------------------------------------------------------------------
 
