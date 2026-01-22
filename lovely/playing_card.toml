@@ -45,6 +45,29 @@ end'''
 [[patches]]
 [patches.pattern]
 target = "game.lua"
+pattern = 'local _ = nil'
+position = 'before'
+match_indent = true
+payload = '''
+if self.GAME.selected_back_key.initial_deck then
+    local _id = self.GAME.selected_back_key.initial_deck
+    local _exclude = _id.exclude
+    for i,_tab in ipairs({_id.Ranks or _id.exclude and {} or SMODS.Rank.obj_buffer, _id.Suits}) do
+        if _tab ~= nil then
+            local _create = not not _exclude
+            for _,_v in ipairs(_tab) do
+                if (i==1 and v.value or v.suit) == _v then _create = not _exclude; break end
+            end
+            if not _create then
+                goto continue
+            end
+        end
+    end
+end'''
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
 pattern = "if self.GAME.starting_params.erratic_suits_and_ranks then _, k = pseudorandom_element(G.P_CARDS, pseudoseed('erratic')) end"
 position = 'at'
 match_indent = true
