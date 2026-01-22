@@ -3320,7 +3320,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ['hovering'] = 1,
             }
         end,
-        order = -10, --should probably draw first most of the time
+        order = 0, -- not necessary, but explicitly set in this example for clarity
     }
 
     -------------------------------------------------------------------------------------------------

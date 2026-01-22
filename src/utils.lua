@@ -3410,3 +3410,10 @@ function SMODS.log_crash_info(info, defined)
         return string.format("\n\nError exists in %s at line %d\r\n", info.source, line)
     end
 end
+
+-- Used for SMODS.ScreenShader, just to save lines re-creating canvases when relevant
+function SMODS.create_canvas()
+    local canvas = love.graphics.newCanvas(love.window.fromPixels(love.graphics.getWidth()) * G.CANV_SCALE, love.window.fromPixels(love.graphics.getHeight()) * G.CANV_SCALE, { type = '2d', readable = true })
+    canvas:setFilter('linear', 'linear')
+    return canvas
+end

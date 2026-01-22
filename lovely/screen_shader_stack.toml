@@ -19,38 +19,40 @@ end
 position = "before"
 payload = '''
 local last_canvas = self.CANVAS
+G.SHADER_CANVAS_A = G.SHADER_CANVAS_A or SMODS.create_canvas()
+G.SHADER_CANVAS_B = G.SHADER_CANVAS_B or SMODS.create_canvas()
 for index, key in ipairs(SMODS.ScreenShader.obj_buffer) do
     local shader = SMODS.ScreenShaders[key]
 	if (shader.should_apply and shader:should_apply()) or (not shader.should_apply) then
-		assert(G.SHADERS[shader.shader], "Shader " .. shader.key .. " not found in G.SHADERS")
-		
-		if not shader.canvas then
-            -- this is kind of spaghetti but eh
-            local canvas = love.graphics.newCanvas(love.window.fromPixels(love.graphics.getWidth()) * G.CANV_SCALE, love.window.fromPixels(love.graphics.getHeight()) * G.CANV_SCALE, { type = '2d', readable = true })
-            canvas:setFilter('linear', 'linear')
-			shader.canvas = canvas
-		end
+        --hypothetically less table accesses
+        local shader_object = G.SHADERS[shader.shader]
+		assert(shader_object, "Shader " .. shader.key .. " not found in G.SHADERS")
+
+        -- effectively swaps between A and B
+        local current_canvas = (last_canvas == G.SHADER_CANVAS_A) and G.SHADER_CANVAS_B or G.SHADER_CANVAS_A
 
         if shader.send_vars then
             local vars = shader:send_vars()
             for k,v in pairs(vars) do
-                G.SHADERS[shader.shader]:send(k, v)
+                shader_object:send(k, v)
             end
 
         end
 		
-		love.graphics.setCanvas(shader.canvas)
-		love.graphics.setShader(G.SHADERS[shader.shader])
+		love.graphics.setCanvas(current_canvas)
+		love.graphics.setShader(shader_object)
 		love.graphics.draw(last_canvas, 0, 0)
-        love.graphics.setShader()
 
-        last_canvas = shader.canvas
+        last_canvas = current_canvas
 	end
 end
--- i don't like having this out here but id rather not run it when i don't have to
-love.graphics.setCanvas() 
+-- I don't like having this out here but id rather not run it when i don't have to
+-- also less setcanvas and setshader means it should run a smidge faster
+love.graphics.setCanvas()
+love.graphics.setShader()
 if last_canvas then
     love.graphics.draw(last_canvas, 0, 0)
+    -- Draw everything we just did to the main canvas (what the player actually sees)
 end
 '''
 match_indent = true
@@ -66,12 +68,7 @@ G.CANVAS:setFilter('linear', 'linear')
 '''
 position = "after"
 payload = '''
-if not SMODS.ScreenShaders then return end
-for key,shader in pairs(SMODS.ScreenShaders) do --order unimportant, thus not using obj_buffer
-    local canvas = love.graphics.newCanvas(love.window.fromPixels(love.graphics.getWidth()) * G.CANV_SCALE, love.window.fromPixels(love.graphics.getHeight()) * G.CANV_SCALE, { type = '2d', readable = true })
-    canvas:setFilter('linear', 'linear')
-    shader.canvas = canvas
-    -- fixes issues with resizing the window
-end
+G.SHADER_CANVAS_A = SMODS.create_canvas()
+G.SHADER_CANVAS_B = SMODS.create_canvas()
 '''
 match_indent = true
