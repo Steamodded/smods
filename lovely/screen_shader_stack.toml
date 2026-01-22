@@ -19,9 +19,10 @@ end
 position = "before"
 payload = '''
 local last_canvas = self.CANVAS
-for key, shader in pairs(SMODS.ScreenShaders) do
+for index, key in ipairs(SMODS.ScreenShader.obj_buffer) do
+    local shader = SMODS.ScreenShaders[key]
 	if (shader.should_apply and shader:should_apply()) or (not shader.should_apply) then
-		assert(G.SHADERS[shader.shader], "Shader " .. key .. " not found in G.SHADERS")
+		assert(G.SHADERS[shader.shader], "Shader " .. shader.key .. " not found in G.SHADERS")
 		
 		if not shader.canvas then
             -- this is kind of spaghetti but eh
@@ -66,7 +67,7 @@ G.CANVAS:setFilter('linear', 'linear')
 position = "after"
 payload = '''
 if not SMODS.ScreenShaders then return end
-for key,shader in pairs(SMODS.ScreenShaders) do
+for key,shader in pairs(SMODS.ScreenShaders) do --order unimportant, thus not using obj_buffer
     local canvas = love.graphics.newCanvas(love.window.fromPixels(love.graphics.getWidth()) * G.CANV_SCALE, love.window.fromPixels(love.graphics.getHeight()) * G.CANV_SCALE, { type = '2d', readable = true })
     canvas:setFilter('linear', 'linear')
     shader.canvas = canvas

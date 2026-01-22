@@ -3285,6 +3285,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             "key",
         },
         set = "ScreenShader",
+        order = 0,
         send_vars = nil, -- same as Shader.send_vars
         should_apply = nil, -- function to determine if the shader should be drawn. defaults to true if not specified
         inject = function(self)
@@ -3293,7 +3294,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 SMODS.Shader.inject(self)
                 self.shader = self.key
             end
-        end
+        end,
+        post_inject_class = function(self)
+            table.sort(self.obj_buffer, function(_self, _other) return self.obj_table[_self].order < self.obj_table[_other].order end)
+        end,
     }
 
     SMODS.ScreenShader {
@@ -3315,7 +3319,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ['screen_scale'] = G.TILESCALE*G.TILESIZE,
                 ['hovering'] = 1,
             }
-        end
+        end,
+        order = -10, --should probably draw first most of the time
     }
 
     -------------------------------------------------------------------------------------------------
