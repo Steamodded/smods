@@ -769,3 +769,12 @@ function SMODS.challenge_is_unlocked(challenge, k) end
 --- be limited to specific ones, or default to using all of `G.GAME.hands` and `SMODS.Scoring_Parameters`.
 --- Use `level_up` to control whether the level of the hand is upgraded.
     function SMODS.upgrade_poker_hands(args) end
+
+---Check if `challenge` is unlocked.
+---@param mod_score Score_Mod_Parameter Score modification parameter
+function SMODS.mod_score(mod_score) end
+
+---@class Score_Mod_Parameter
+---@field add? number Add score by this number
+---@field mult? number Multiply score by this number
+---@field card? Card Card responsible for score modification action, crucial for score display to work properly

@@ -99,6 +99,10 @@ bonus_h_x_mult = self.ability.perma_h_x_mult ~= 0 and (self.ability.perma_h_x_mu
 bonus_p_dollars = self.ability.perma_p_dollars ~= 0 and self.ability.perma_p_dollars or nil,
 bonus_h_dollars = self.ability.perma_h_dollars ~= 0 and self.ability.perma_h_dollars or nil,
 total_h_dollars = total_h_dollars ~= 0 and total_h_dollars or nil,
+perma_score = self.ability.perma_score ~= 0 and (self.ability.perma_score) or nil,
+perma_h_score = self.ability.perma_h_score ~= 0 and (self.ability.perma_h_score) or nil,
+perma_x_score = self.ability.perma_x_score ~= 1 and (self.ability.perma_x_score) or nil,
+perma_h_x_score = self.ability.perma_h_x_score ~= 1 and (self.ability.perma_h_x_score) or nil,
 bonus_chips = bonus_chips ~= 0 and bonus_chips or nil,
 bonus_repetitions = self.ability.perma_repetitions ~= 0 and self.ability.perma_repetitions or nil,'''
 match_indent = true
@@ -140,6 +144,10 @@ perma_h_dollars = self.ability and self.ability.perma_h_dollars or 0,
 perma_repetitions = self.ability and self.ability.perma_repetitions or 0,
 card_limit = self.ability and self.ability.card_limit or 0,
 extra_slots_used = self.ability and self.ability.extra_slots_used or 0,
+perma_score = self.ability and self.ability.perma_score or 0,
+perma_h_score = self.ability and self.ability.perma_h_score or 0,
+perma_x_score = self.ability and self.ability.perma_x_score or 1,
+perma_h_x_score = self.ability and self.ability.perma_h_x_score or 1,
 '''
 match_indent = true
 overwrite = false
@@ -255,6 +263,34 @@ function Card:get_h_dollars()
     if self.debuff then return 0 end
     local ret = (self.ability.h_dollars or 0) + ((not self.ability.extra_enhancement and self.ability.perma_h_dollars) or 0)
     -- TARGET: get_h_dollars
+    return ret
+end
+
+function Card:get_bonus_add_score()
+    if self.debuff then return 0 end
+    local ret = (self.ability.perma_add_score or 0)
+    -- TARGET: get_bonus_add_score
+    return ret
+end
+
+function Card:get_bonus_x_score()
+    if self.debuff then return 1 end
+    local ret = (self.ability.perma_x_score or 1)
+    -- TARGET: get_bonus_x_score
+    return ret
+end
+
+function Card:get_bonus_h_add_score()
+    if self.debuff then return 0 end
+    local ret = (self.ability.perma_h_add_score or 0)
+    -- TARGET: get_bonus_h_add_score
+    return ret
+end
+
+function Card:get_bonus_h_x_score()
+    if self.debuff then return 1 end
+    local ret = (self.ability.perma_h_x_score or 1)
+    -- TARGET: get_bonus_h_x_score
     return ret
 end
 '''

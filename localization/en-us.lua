@@ -142,6 +142,46 @@ return {
                     "card {C:attention}#1#{} #2#",
                 },
             },
+            card_score = {
+                text = {
+                    "{C:purple}#1#{} Score",
+                },
+            },
+            card_h_score = {
+                text = {
+                    "{C:purple}#1#{} Score when held",
+                },
+            },
+            card_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} Score",
+                },
+            },
+            card_h_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} Score when held",
+                },
+            },
+            card_extra_score = {
+                text = {
+                    "{C:purple}#1#{} extra Score",
+                },
+            },
+            card_extra_h_score = {
+                text = {
+                    "{C:purple}#1#{} extra Score when held",
+                },
+            },
+            card_extra_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} extra Score",
+                },
+            },
+            card_extra_h_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} extra Score when held",
+                },
+            },
             artist = {
                 text = {
                     "{C:inactive}Artist",
@@ -295,6 +335,9 @@ return {
 			cashout_hidden = '...and #1# more',
             a_xchips = "X#1# Chips",
             a_xchips_minus = "-X#1# Chips",
+            a_score="#1# Score",
+            a_score_x="X#1# Score",
+            a_score_x_minus="-X#1# Score",
             smods_version_mismatch = {
                 "Your Steamodded version has changed",
                 "since this run was started!",
