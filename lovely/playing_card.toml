@@ -114,7 +114,7 @@ payload = '''
     for _, v in ipairs(SMODS.Gradient.obj_buffer) do
         G.ARGS.LOC_COLOURS[v:lower()] = SMODS.Gradients[v]
     end
-    for _, v in ipairs(SMODS.ConsumableType.ctype_buffer) do
+    for _, v in ipairs(SMODS.ConsumableType.obj_buffer) do
         G.ARGS.LOC_COLOURS[v:lower()] = G.C.SECONDARY_SET[v]
     end
     for _, v in ipairs(SMODS.Suit.obj_buffer) do

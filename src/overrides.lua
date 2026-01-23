@@ -562,13 +562,17 @@ function G.UIDEF.deck_stake_column(_deck_key)
 end
 
 function SMODS.check_applied_stakes(stake, deck)
-	if next(stake.applied_stakes) then
-		for _, applied_stake in ipairs(stake.applied_stakes) do
-			if not deck.wins_by_key[applied_stake] then return false end
-		end
-	end
-	return true
+    local applied = stake and stake.applied_stakes
+    if type(applied) == "table" and next(applied) ~= nil then
+        for _, applied_stake in ipairs(applied) do
+            if not (deck and deck.wins_by_key and deck.wins_by_key[applied_stake]) then
+                return false
+            end
+        end
+    end
+    return true
 end
+
 
 function G.UIDEF.stake_option(_type)
 	
