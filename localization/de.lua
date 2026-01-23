@@ -43,23 +43,23 @@ return {
             },
             load_failure_p = {
                 text = {
-                    '{C:attention}Präfix Konflikt!{}',
-                    'Präfix dieses Mods ist',
-                    'der Gleiche wie ein anderer Mod.',
+                    '{C:attention}Präfix-Konflikt!{}',
+                    'Präfix dieser Mod wird',
+                    'von einer anderen Mod verwendet.',
                     '({C:attention}#1#{})'
                 }
             },
             load_failure_m = {
                 text = {
                     '{C:attention}Main File Nicht Gefunden!{}',
-                    'Main File dieses Mods',
+                    'Main File dieser Mod',
                     'konnte nicht gefunden werden.',
                     '({C:attention}#1#{})'
                 }
             },
             load_disabled = {
                 text = {
-                    'Dieser Mod wurde',
+                    'Diese Mod wurde',
                     '{C:attention}deaktiviert!{}'
                 }
             },
@@ -68,7 +68,7 @@ return {
             -- card perma bonuses
             card_extra_chips={
                 text={
-                    "{C:chips}#1#{} extra Chips",
+                    "{C:chips}#1#{} Extra-Chips",
                 },
             },
             card_x_chips = {
@@ -78,12 +78,12 @@ return {
             },
             card_extra_x_chips = {
                 text = {
-                    "{X:chips,C:white}X#1#{} extra Chips"
+                    "{X:chips,C:white}X#1#{} Extra-Chips"
                 }
             },
             card_extra_mult = {
                 text = {
-                    "{C:mult}#1#{} extra Mult"
+                    "{C:mult}#1#{} Extra-Mult"
                 }
             },
             card_x_mult = {
@@ -93,47 +93,61 @@ return {
             },
             card_extra_x_mult = {
                 text = {
-                    "{X:mult,C:white}X#1#{} extra Mult"
+                    "{X:mult,C:white}X#1#{} Extra-Mult"
                 }
             },
             card_extra_p_dollars = {
                 text = {
-                    "{C:money}#1#{} wenn gewertet",
+                    "{C:money}#1#{} wenn gezählt",
                 }
             },
             card_extra_h_chips = {
                 text = {
-                    "{C:chips}#1#{} Chips wenn in der Hand",
+                    "{C:chips}#1#{} Chips",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
                 }
             },
             card_h_x_chips = {
                 text = {
-                    "{X:chips,C:white}X#1#{} Chips wenn in der Hand",
+                    "{X:chips,C:white}X#1#{} Chips",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
                 }
             },
             card_extra_h_x_chips = {
                 text = {
-                    "{X:chips,C:white}X#1#{} extra Chips wenn in der Hand",
+                    "{X:chips,C:white}X#1#{} Extra-Chips",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
                 }
             },
             card_extra_h_mult = {
                 text = {
-                    "{C:mult}#1#{} extra Mult wenn in der Hand",
+                    "{C:mult}#1#{} Extra-Mult",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
                 }
             },
             card_h_x_mult = {
                 text = {
-                    "{X:mult,C:white}X#1#{} Mult wenn in der Hand",
+                    "{X:mult,C:white}X#1#{} Mult",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
                 }
             },
             card_extra_h_x_mult = {
                 text = {
-                    "{X:mult,C:white}X#1#{} extra Mult wenn in der Hand",
+                    "{X:mult,C:white}X#1#{} Extra-Mult",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
                 }
             },
             card_extra_h_dollars = {
                 text = {
-                    "{C:money}#1#{} wenn in der Hand am Ende der Runde",
+                    "{C:money}#1# ${}, wenn diese Karte",
+                    "zum Ende der Runde",
+                    "auf der Hand ist",
                 },
             },
             artist = {
@@ -158,7 +172,7 @@ return {
         },
         Enhanced = {
             m_gold={
-                name="Goldene Karte",
+                name="Gold-Karte",
                 text={
                     "{C:money}#1#{} wenn diese",
                     "Karte in der Hand",
@@ -166,14 +180,14 @@ return {
                 },
             },
             m_stone={
-                name="Steinkarte",
+                name="Stein-Karte",
                 text={
-                    "{C:chips}#1#{} Chips",
-                    "Kein Rank oder Farbe",
+                    "{C:chips}#1#{} Chips,",
+                    "kein Rang oder Farbe",
                 },
             },
             m_mult={
-                name="Mult Karte",
+                name="Mult-Karte",
                 text={
                     "{C:mult}#1#{} Mult",
                 },
@@ -196,26 +210,26 @@ return {
             b_open_mods_dir = 'Öffne Mod-Verzeichnis',
             b_no_mods = 'Keine Mods entdeckt...',
             b_mod_list = 'Liste aktivierter Mods',
-            b_mod_loader = 'Mod Loader',
+            b_mod_loader = 'Mod-Loader',
             b_developed_by = 'entwickelt von ',
             b_rewrite_by = 'überarbeitet von ',
-            b_github_project = 'Github Projekt',
-            b_github_bugs_1 = 'Hier kannst du Fehler melden und Beiträge einreichen.',
-            b_github_bugs_2 = '(Unterstützt aber vielleicht kein Deutsch)',
-            b_disable_mod_badges = 'Deaktiviere Mod Badges',
+            b_github_project = 'Github-Projekt',
+            b_github_bugs_1 = 'Hier kannst du Fehler melden',
+            b_github_bugs_2 = 'und Beiträge einreichen.',
+            b_disable_mod_badges = 'Deaktiviere Mod-Badges',
             b_author = 'Autor',
             b_authors = 'Autoren',
             b_unknown = 'Unbekannt',
-            b_lovely_mod = '(Lovely Mod) ',
+            b_lovely_mod = '(Lovely-Mod) ',
             b_by = ' Von: ',
             b_priority = 'Priorität: ',
 			b_config = "Einstellungen",
 			b_additions = 'Änderungen',
       		b_stickers = 'Sticker',
 			b_achievements = "Erfolge",
-      		b_applies_stakes_1 = 'Applies ', --TODO where is this used?
-			b_applies_stakes_2 = '',
-			b_graphics_mipmap_level = "Mipmap Level",
+      		b_applies_stakes_1 = 'Wendet ', --TODO where is this used?
+			b_applies_stakes_2 = ' an',
+			b_graphics_mipmap_level = "Mipmap-Level",
 			b_browse = 'Durchsuchen',
 			b_search_prompt = 'Suche nach Mods',
 			b_search_button = 'Suche',
@@ -226,8 +240,8 @@ return {
                 'Aktiviert',
                 'Umgehe Beschränkungen'
             },
-            b_deckskins_lc = 'Niedrigkontrast Farben',
-            b_deckskins_hc = 'Hochkontrast Farben',
+            b_deckskins_lc = 'Niedrigkontrast-Farben',
+            b_deckskins_hc = 'Hochkontrast-Farben',
             b_deckskins_def = 'Standardfarben',
             b_limit = 'Bis zu '
 		},
