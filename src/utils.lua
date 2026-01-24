@@ -3429,3 +3429,10 @@ function SMODS.get_clean_pool(_type, _rarity, _legendary, _append)
     end
     return clean_pool
 end
+
+function SMODS.should_keep_on_use(card)
+    local obj = card.config.center
+    if type(obj.keep_on_use) == "function" then
+        return obj:keep_on_use(card)
+    end
+end
