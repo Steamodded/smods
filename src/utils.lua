@@ -3435,4 +3435,5 @@ function SMODS.should_keep_on_use(card)
     if type(obj.keep_on_use) == "function" then
         return obj:keep_on_use(card)
     end
+    return false
 end
