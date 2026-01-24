@@ -622,12 +622,20 @@ V_MT = {
         (betaWildcard or a.beta == b.beta)
     end,
     __le = function(a, b)
-        local b = {
+        b = {
             major = b.major + (b.minor == -2 and 1 or 0),
             minor = b.minor == -2 and 0 or (b.minor + (b.patch == -2 and 1 or 0)),
             patch = b.patch == -2 and 0 or b.patch,
             beta = b.beta,
             rev = b.rev,
+        }
+        -- yes, i'm leaving the comparison of two wildcards as undefined behavior
+        a = {
+            major = a.major + (a.minor == -2 and 1 or 0),
+            minor = a.minor == -2 and 0 or (a.minor + (a.patch == -2 and 1 or 0)),
+            patch = a.patch == -2 and 0 or a.patch,
+            beta = a.beta,
+            rev = a.rev,
         }
         if a.major ~= b.major then return a.major < b.major end
         if a.minor ~= b.minor then return a.minor < b.minor end
@@ -3411,9 +3419,21 @@ function SMODS.log_crash_info(info, defined)
     end
 end
 
+
 -- Used for SMODS.ScreenShader, just to save lines re-creating canvases when relevant
 function SMODS.create_canvas()
     local canvas = love.graphics.newCanvas(love.window.fromPixels(love.graphics.getWidth()) * G.CANV_SCALE, love.window.fromPixels(love.graphics.getHeight()) * G.CANV_SCALE, { type = '2d', readable = true })
     canvas:setFilter('linear', 'linear')
     return canvas
+end
+
+function SMODS.get_clean_pool(_type, _rarity, _legendary, _append)
+    local pool = get_current_pool(_type, _rarity, _legendary, _append)
+    local clean_pool = {}
+    for i, v in ipairs(pool) do
+        if v ~= 'UNAVAILABLE' then
+            table.insert(clean_pool, v)
+        end
+    end
+    return clean_pool
 end
