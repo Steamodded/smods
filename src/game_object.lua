@@ -3304,7 +3304,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         key = "CRT",
         shader = "CRT",
         send_vars = function(self)
-            local crt = G.SETTINGS.GRAPHICS.crt
+            local crt = G.SETTINGS.GRAPHICS.crt * 0.3
             return {
                 ['distortion_fac'] = {1.0 + 0.07*crt/100, 1.0 + 0.1*crt/100},
                 ['scale_fac'] = {1.0 - 0.008*crt/100, 1.0 - 0.008*crt/100},
