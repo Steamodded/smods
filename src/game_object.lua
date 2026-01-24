@@ -121,10 +121,27 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         return false
     end
 
+    function SMODS.GameObject:__internal_register(obj, class_to_compare)
+        -- only add the object to each unique table/buffer once
+        if self.obj_table ~= class_to_compare.obj_table then
+            self.obj_table[obj.key] = obj
+        end
+        if self.obj_buffer ~= class_to_compare.obj_buffer then
+            self.obj_buffer[#self.obj_buffer+1] = obj.key
+        end
+    end
+
     function SMODS.GameObject:register()
         if self:check_dependencies() then
-            self.obj_table[self.key] = self
-            self.obj_buffer[#self.obj_buffer + 1] = self.key
+            -- start with this class and propagate up to all parent classes that can have objects
+            self:__internal_register(self, {})
+            local parent = self.super or {}
+            local child = self
+            while parent.obj_buffer and parent.obj_table do
+                parent:__internal_register(self, child)
+                parent = parent.super or {}
+                child = child.super
+            end
             self.registered = true
         end
     end
@@ -1033,10 +1050,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
     ------- API CODE GameObject.ConsumableType
     -------------------------------------------------------------------------------------------------
-
+    local ctype_buffer = {}
     SMODS.ConsumableTypes = {}
     SMODS.ConsumableType = SMODS.ObjectType:extend {
-        ctype_buffer = {},
+        obj_table = SMODS.ConsumableTypes,
+        obj_buffer = ctype_buffer,
+        --DEPRECATED
+        ctype_buffer = ctype_buffer,
         visible_buffer = {},
         set = 'ConsumableType',
         required_params = {
@@ -1056,13 +1076,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         register = function(self)
             SMODS.ConsumableType.super.register(self)
             if self:check_dependencies() then
-                SMODS.ConsumableType.ctype_buffer[#SMODS.ConsumableType.ctype_buffer+1] = self.key
+                -- this is duplicate information but it's more convenient to keep
                 if not self.no_collection then SMODS.ConsumableType.visible_buffer[#SMODS.ConsumableType.visible_buffer + 1] = self.key end
             end
         end,
         inject = function(self)
             SMODS.ObjectType.inject(self)
-            SMODS.ConsumableTypes[self.key] = self
             G.localization.descriptions[self.key] = G.localization.descriptions[self.key] or {}
             G.C.SET[self.key] = self.primary_colour
             G.C.SECONDARY_SET[self.key] = self.secondary_colour

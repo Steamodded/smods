@@ -209,6 +209,7 @@ payload = '''
 local new_ability = $2
 self.ability = self.ability or {}
 new_ability.extra_value = nil
+new_ability.debuff_sources = {}
 self.ability.extra_value = self.ability.extra_value or 0
 for k, v in pairs(new_ability) do
     self.ability[k] = v

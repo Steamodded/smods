@@ -305,7 +305,7 @@ pattern = "(?<indent>[\t ]*)for _, v in pairs\\(G.DISCOVER_TALLIES\\) do"
 line_prepend = '$indent'
 position = 'before'
 payload = '''
-for _, v in ipairs(SMODS.ConsumableType.ctype_buffer) do
+for _, v in ipairs(SMODS.ConsumableType.obj_buffer) do
     G.DISCOVER_TALLIES[v:lower()..'s'] = {tally = 0, of = 0}
 end'''
 
@@ -359,7 +359,7 @@ match_indent = true
 position = 'at'
 payload = '''
 local total_rate = G.GAME.joker_rate + G.GAME.playing_card_rate
-for _,v in ipairs(SMODS.ConsumableType.ctype_buffer) do
+for _,v in ipairs(SMODS.ConsumableType.obj_buffer) do
     total_rate = total_rate + G.GAME[v:lower()..'_rate']
 end'''
 
@@ -372,7 +372,7 @@ position = 'at'
 payload = '''
 -- need to preserve order to leave RNG unchanged
 local rates = $li
-for _, v in ipairs(SMODS.ConsumableType.ctype_buffer) do
+for _, v in ipairs(SMODS.ConsumableType.obj_buffer) do
     if not (v == 'Tarot' or v == 'Planet' or v == 'Spectral') then
         table.insert(rates, { type = v, val = G.GAME[v:lower()..'_rate'] })
     end
