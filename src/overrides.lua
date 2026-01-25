@@ -1056,11 +1056,11 @@ function G.UIDEF.view_deck(unplayed_only)
     end
 
     if #temp_cols > 0 then
-        table.insert(rank_cols, {
+        rank_cols[#rank_cols + 1] = {
             n = G.UIT.C,
             config = { align = "cm" },
             nodes = temp_cols
-        })
+        }
     end
 
 	local tally_ui = {
