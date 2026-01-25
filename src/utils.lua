@@ -622,12 +622,20 @@ V_MT = {
         (betaWildcard or a.beta == b.beta)
     end,
     __le = function(a, b)
-        local b = {
+        b = {
             major = b.major + (b.minor == -2 and 1 or 0),
             minor = b.minor == -2 and 0 or (b.minor + (b.patch == -2 and 1 or 0)),
             patch = b.patch == -2 and 0 or b.patch,
             beta = b.beta,
             rev = b.rev,
+        }
+        -- yes, i'm leaving the comparison of two wildcards as undefined behavior
+        a = {
+            major = a.major + (a.minor == -2 and 1 or 0),
+            minor = a.minor == -2 and 0 or (a.minor + (a.patch == -2 and 1 or 0)),
+            patch = a.patch == -2 and 0 or a.patch,
+            beta = a.beta,
+            rev = a.rev,
         }
         if a.major ~= b.major then return a.major < b.major end
         if a.minor ~= b.minor then return a.minor < b.minor end
@@ -2803,7 +2811,7 @@ function SMODS.is_eternal(card, trigger)
         end
     end
     if card.ability.eternal then ret = true end
-    if not card.config.center.eternal_compat and not ovr_compat then ret = false end
+    if card.config.center.eternal_compat == false and not ovr_compat then ret = false end
     return ret
 end
 
@@ -3479,4 +3487,15 @@ function SMODS.log_crash_info(info, defined)
     else
         return string.format("\n\nError exists in %s at line %d\r\n", info.source, line)
     end
+end
+
+function SMODS.get_clean_pool(_type, _rarity, _legendary, _append)
+    local pool = get_current_pool(_type, _rarity, _legendary, _append)
+    local clean_pool = {}
+    for i, v in ipairs(pool) do
+        if v ~= 'UNAVAILABLE' then
+            table.insert(clean_pool, v)
+        end
+    end
+    return clean_pool
 end

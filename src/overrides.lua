@@ -562,13 +562,17 @@ function G.UIDEF.deck_stake_column(_deck_key)
 end
 
 function SMODS.check_applied_stakes(stake, deck)
-	if next(stake.applied_stakes) then
-		for _, applied_stake in ipairs(stake.applied_stakes) do
-			if not deck.wins_by_key[applied_stake] then return false end
-		end
-	end
-	return true
+    local applied = stake and stake.applied_stakes
+    if type(applied) == "table" and next(applied) ~= nil then
+        for _, applied_stake in ipairs(applied) do
+            if not (deck and deck.wins_by_key and deck.wins_by_key[applied_stake]) then
+                return false
+            end
+        end
+    end
+    return true
 end
+
 
 function G.UIDEF.stake_option(_type)
 	
@@ -1928,7 +1932,9 @@ function create_UIBox_notify_alert(_achievement, _type)
   local subtext = _type == 'achievement' and localize(G.F_TROPHIES and 'k_trophy' or 'k_achievement') or
     _type == 'Joker' and localize('k_joker') or 
     _type == 'Voucher' and localize('k_voucher') or
-    _type == 'Back' and localize('k_deck') or 'ERROR'
+	_type == 'Back' and localize('k_deck') or
+	_c.set and localize('k_' .. _c.set:lower()) or
+	'ERROR'
 
   if _achievement == 'b_challenge' then subtext = localize('k_challenges') end
   local name = _type == 'achievement' and localize(_achievement, 'achievement_names') or 'ERROR'
@@ -2523,6 +2529,9 @@ function Blind:stay_flipped(to_area, card, from_area)
 	local self_eval, self_post = eval_card(card, { to_area = to_area, from_area = from_area, other_card = card, stay_flipped = true })
 	local self_flags = SMODS.trigger_effects({ self_eval, self_post })
 	for k,v in pairs(self_flags) do flags[k] = flags[k] or v end
+	if flags.modify and flags.modify.to_area then
+		SMODS.to_area = flags.modify.to_area
+	end
 	if flags.prevent_stay_flipped then return false end
 	if flags.stay_flipped then return true end
 	return ret

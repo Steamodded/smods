@@ -246,7 +246,7 @@ SMODS.upgrade_poker_hands({
 [patches.pattern]
 target = 'functions/common_events.lua'
 match_indent = true
-position = 'after'
+position = 'before'
 pattern = '''
 G.E_MANAGER:add_event(Event({
     trigger = 'immediate',

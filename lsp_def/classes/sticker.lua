@@ -31,7 +31,7 @@
 ---@field get_obj? fun(self: SMODS.Sticker|table, key: string): SMODS.Sticker|table? Returns an object if one matches the `key`. 
 ---@field loc_vars? fun(self: SMODS.Sticker|table, info_queue: table, card: Card|table): table? Provides control over displaying descriptions and tooltips of the sticker's tooltip. See [SMODS.Sticker `loc_vars` implementation](https://github.com/Steamodded/smods/wiki/SMODS.Sticker#api-methods) documentation for details. 
 ---@field calculate? fun(self: SMODS.Sticker|table, card: Card|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
----@field should_apply? boolean|fun(self: SMODS.Sticker|table, card: Card, center: table, area: CardArea, bypass_reroll?: boolean): boolean Determines if the sticker applies onto the card. If `bypass_reroll` is true, ignore RNG check. 
+---@field should_apply? boolean|fun(self: SMODS.Sticker|table, card: Card, center: table, area: CardArea, bypass_roll?: boolean): boolean Determines if the sticker applies onto the card. If `bypass_roll` is true, ignore RNG check. 
 ---@field apply? fun(self: SMODS.Sticker|table, card: Card|table, val: any) Handles applying and removing the sticker. By default, sets `card.ability[self.key] = val`. 
 ---@field draw? fun(self: SMODS.Sticker|table, card: Card|table, layer: string) Draws the sprite and shader of the sticker. 
 ---@overload fun(self: SMODS.Sticker): SMODS.Sticker

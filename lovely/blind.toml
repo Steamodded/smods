@@ -149,7 +149,8 @@ target = 'cardarea.lua'
 pattern = "local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(self, card)"
 position = 'at'
 match_indent = true
-payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(self, card, area)'''
+payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(self, card, area)
+if SMODS.to_area then to = SMODS.to_area; SMODS.to_area = nil end'''
 
 [[patches]]
 [patches.pattern]
@@ -157,7 +158,9 @@ target = 'functions/common_events.lua'
 pattern = "local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(to, card)"
 position = 'at'
 match_indent = true
-payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(to, card, from)'''
+payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(to, card, from)
+if SMODS.to_area then to = SMODS.to_area; SMODS.to_area = nil end
+'''
 
 # Blind:drawn_to_hand()
 [[patches]]
