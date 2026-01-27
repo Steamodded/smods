@@ -21,7 +21,7 @@
 ---@field take_ownership? fun(self: SMODS.ScreenShader|table, key: string, obj: SMODS.ScreenShader|table, silent?: boolean): nil|table|SMODS.ScreenShader Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.ScreenShader|table, key: string): SMODS.ScreenShader|table? Returns an object if one matches the `key`. 
 ---@field send_vars? fun(self: SMODS.ScreenShader|table): table? Used to send extra args to the shader via `Shader:send(key, value)`. 
----@field should_apply fun(self: SMODS.ScreenShader|table): boolean? Used to control if the ScreenShader should apply on the screen per-frame
+---@field should_apply? fun(self: SMODS.ScreenShader|table): boolean? Used to control if the ScreenShader should apply on the screen per-frame
 ---@overload fun(self: SMODS.ScreenShader): SMODS.ScreenShader
 SMODS.ScreenShader = setmetatable({}, {
     __call = function(self)
