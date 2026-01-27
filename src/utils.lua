@@ -2088,16 +2088,16 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
             end
             cards_destroyed[#cards_destroyed+1] = card
         end
-		--cull destroyed cards from last_hand
-		if SMODS.last_hand then	
-			local scoring = {}
-			local full = {}
-			for i, v in pairs(SMODS.last_hand.scoring_hand) do if not v.getting_sliced then scoring[#scoring+1] = v end end
-			for i, v in pairs(SMODS.last_hand.full_hand) do if not v.getting_sliced then full[#full+1] = v end end
-			SMODS.last_hand.scoring_hand = scoring
-			SMODS.last_hand.full_hand = full
-		end
     end
+	--cull destroyed cards from last_hand
+	if SMODS.last_hand then	
+		local scoring = {}
+		local full = {}
+		for i, v in pairs(SMODS.last_hand.scoring_hand) do if not v.getting_sliced then scoring[#scoring+1] = v end end
+		for i, v in pairs(SMODS.last_hand.full_hand) do if not v.getting_sliced then full[#full+1] = v end end
+		SMODS.last_hand.scoring_hand = scoring
+		SMODS.last_hand.full_hand = full
+	end
 end
 
 function SMODS.blueprint_effect(copier, copied_card, context)
