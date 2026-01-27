@@ -586,6 +586,7 @@ match_indent = true
 position = "at"
 payload = '''
 -- context.before calculations
+SMODS.last_hand = {scoring_hand = scoring_hand, scoring_name = text, full_hand = cards}
 SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, before = true})
 
 -- TARGET: effects before scoring starts
@@ -740,7 +741,6 @@ payload = '''
 -- context.after calculations
 local cards = {}
 for i, v in pairs(G.play.cards) do cards[#cards+1] = v end
-SMODS.last_hand = {scoring_hand = scoring_hand, scoring_name = text, full_hand = cards}
 SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, after = true})
 
 -- TARGET: effects after hand evaluation'''
