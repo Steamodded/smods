@@ -3,6 +3,15 @@ version = "1.0.0"
 dump_lua = true
 priority = -5
 
+# statustext parameter in level_up_hand
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = 'function level_up_hand(card, hand, instant, amount)'
+position = 'at'
+match_indent = true
+payload = 'function level_up_hand(card, hand, instant, amount, statustext)'
+
 # Allow custom StatusText values in update_hand_text
 [[patches]]
 [patches.regex]
@@ -22,10 +31,10 @@ if vals.StatusText then
         align = 'cm',
         cover_align = G.hand_text_area[name].parent.config.align
     }
-    if type(vals.StatusText) == 'string' then StatusText.text = vals.StatusText end
-    if type(vals.StatusText) == 'table' then
+    if type(vals.StatusText) == 'string' then StatusText.text = vals.StatusText
+    elseif type(vals.StatusText) == 'table' then
         for k,v in pairs(vals.StatusText) do
-            StatusText[k] = v
+            if v ~= nil then StatusText[k] = v end
         end
     end
     attention_text(StatusText)
