@@ -30,4 +30,4 @@ SMODS.ScreenShader = setmetatable({}, {
 })
 
 ---@type table<string, SMODS.ScreenShader|table>
-SMODS.ScreenShader = {}
+SMODS.ScreenShaders = {}
