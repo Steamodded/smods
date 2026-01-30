@@ -43,7 +43,7 @@ function eval_card(card, context)
         end
         return {}, {}
     end
-	if context.other_card and context.other_card.can_calculate and not context.other_card:can_calculate(context.ignore_other_debuff or context.ignore_debuff) and not card.ability.set == 'Joker' then return {}, {} end
+	if context.other_card and context.other_card.can_calculate and not context.other_card:can_calculate(context.ignore_other_debuff or context.ignore_debuff) and not card.ability.set == 'Joker' then context.other_debuff = true end
     local ret = {}
 '''
 
@@ -299,6 +299,7 @@ if card.area and area_set[card.area] then
         end
     end
 end
+context.other_debuff = nil
 
 return ret, post_trig
 """
