@@ -350,6 +350,39 @@ SMODS.DrawStep {
 }
 
 SMODS.DrawStep {
+    key = 'canvas_text',
+    order = 45,
+    func = function(self, layer)
+        if self.canvas_text then
+            for _, sprite in ipairs(self.canvas_text[1] and self.canvas_text or {self.canvas_text}) do
+                love.graphics.push()
+                love.graphics.origin()
+                sprite.canvas:renderTo(love.graphics.clear, 0, 0, 0, 0)
+                local text = love.graphics.newText(sprite.font, {sprite.text_colour or G.C.UI.TEXT_LIGHT, sprite.ref_table and sprite.ref_table[sprite.ref_value] or sprite.text})
+                local scale_fac = math.min((sprite.text_width or sprite.canvasW)/text:getWidth(), (sprite.text_height or sprite.canvasH)/text:getHeight()) * sprite.canvasScale
+                if text then 
+                    local x,y,r,sx,sy,ox,oy = unpack(sprite.text_transform or {
+                            (0 + sprite.text_offset.x) * sprite.canvasScale,
+                            (0 + sprite.text_offset.y) * sprite.canvasScale,
+                            0,
+                            scale_fac, scale_fac,
+                            text:getWidth()/2, text:getHeight()/2
+                        })
+                    sprite.canvas:renderTo(love.graphics.draw,
+                        text,
+                        x, y, r, sx, sy, ox, oy
+                    )
+                end
+                love.graphics.pop()
+                sprite.role.draw_major = self
+                sprite:draw_shader('dissolve', nil, nil, nil, self.children.center)
+            end
+        end
+    end,
+    conditions = { vortex = false, facing = 'front' },
+}
+
+SMODS.DrawStep {
     key = 'soul',
     order = 50,
     func = function(self)
