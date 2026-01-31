@@ -2001,3 +2001,34 @@ if ret then
     return ret
 end
 '''
+
+# Adds modify_blind_amt context
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+local blind_amt = get_blind_amount(G.GAME.round_resets.blind_ante)*blind_choice.config.mult*G.GAME.starting_params.ante_scaling
+'''
+position = "after"
+payload = '''
+SMODS.blind_amt = blind_amt
+SMODS.calculate_context({modify_blind_amt = true, blind_multiplier = blind_choice.config.mult})
+blind_amt = SMODS.blind_amt
+SMODS.blind_amt = nil
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+pattern = '''
+self.chips = get_blind_amount(G.GAME.round_resets.ante)*self.mult*G.GAME.starting_params.ante_scaling
+'''
+position = "after"
+payload = '''
+SMODS.blind_amt = self.chips
+SMODS.calculate_context({modify_blind_amt = true, blind_multiplier = self.mult})
+self.chips = SMODS.blind_amt
+SMODS.blind_amt = nil
+'''
+match_indent = true
