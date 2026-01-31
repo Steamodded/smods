@@ -2,13 +2,18 @@
 SMODS.CanvasSprite = Sprite:extend()
 
 -- init: create a canvas for the sprite
-function SMODS.CanvasSprite:init(X, Y, W, H, canvasW, canvasH, canvasScale)
-  self.canvasW = canvasW or 71
-  self.canvasH = canvasH or 95
-  self.canvasScale = canvasScale or 1
-  self.canvas = love.graphics.newCanvas(canvasW * canvasScale, canvasH * canvasScale)
-  Sprite.init(self, X, Y, W, H, { name = "dummy", px = canvasW * canvasScale, py = canvasH * canvasScale, image = self.canvas }, { x = 0, y = 0 })
-  self.canvas:renderTo(love.graphics.clear, 0, 0, 0, 0)
+function SMODS.CanvasSprite:init(args)
+    self.canvasW = 71
+    self.canvasH = 95
+    self.canvasScale = 10
+    self.text = ""
+    self.text_offset = {x = 0, y = 0}
+    for k, v in pairs(args) do self[k] = v end
+    self.canvas = love.graphics.newCanvas(self.canvasW * self.canvasScale, self.canvasH * self.canvasScale)
+    self.font = (SMODS.Fonts[self.text_font] or G.FONTS[self.text_font] or G.FONTS[1]).FONT
+
+    Sprite.init(self, self.X or 0, self.Y or 0, self.W or G.CARD_W, self.H or G.CARD_H, { name = "dummy", px = self.canvasW * self.canvasScale, py = self.canvasH * self.canvasScale, image = self.canvas }, { x = 0, y = 0 })
+    self.canvas:renderTo(love.graphics.clear, 0, 0, 0, 0)
 end
 
 -- draw_from: draw the sprite on another object
