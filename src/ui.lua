@@ -99,7 +99,7 @@ function Game:main_menu(change_context)
     local remove_original = false
     for i, v in pairs(SMODS.Mods) do
         if not v.disabled and v.menu_cards then
-            local tbl = v.menu_cards()
+            local tbl = v.menu_cards() or {}
             if tbl.func then funcs[#funcs + 1] = tbl.func end
             if tbl.remove_original then remove_original = true end
             if tbl.set or tbl.key then tbl = { tbl } end
@@ -134,7 +134,7 @@ function Game:main_menu(change_context)
                 
                 G.E_MANAGER:add_event(Event({
                     trigger = "after",
-                    delay = 0,
+                    delay = change_context == 'game' and 1.5 or 0,
                     blockable = false,
                     blocking = false,
                     func = function()
