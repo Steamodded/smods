@@ -93,13 +93,79 @@ function Game:main_menu(change_context)
             major = G.ROOM_ATTACH
         }
     })
+
+    math.randomseed(os.time()) -- for creating a random card from a set
+    local funcs = {}
+    local remove_original = false
+    for i, v in pairs(SMODS.Mods) do
+        if not v.disabled and v.menu_cards then
+            local tbl = v.menu_cards()
+            if tbl.func then funcs[#funcs + 1] = tbl.func end
+            if tbl.remove_original then remove_original = true end
+            if tbl.set or tbl.key then tbl = { tbl } end
+            if not tbl[1] and not tbl.func then
+                print(("Invalid return for %s.menu_cards(), ignoring"):format(i)); tbl = {}
+            end
+            
+            for _, w in ipairs(tbl) do
+                w.area = G.title_top
+                w.bypass_discovery_center = true
+                w.skip_materialize = true
+                if not w.edition then w.no_edition = true end
+                
+                if w.set then
+                    w.key = pseudorandom_element(G.P_CENTER_POOLS[w.set]).key
+                    w.set = nil
+                end
+                local card = SMODS.create_card(w)
+                card.mod_flag = i
+                -- the magic incantation
+                G.title_top.T.w = G.title_top.T.w + (1.7675 / math.max(#G.title_top.cards, 1))
+                G.title_top.T.x = G.title_top.T.x - (0.885 / math.max(#G.title_top.cards, 1)) -- everyone who used -0.8 was WRONG
+                card.T.w = card.T.w * 1.1 * 1.2
+                card.T.h = card.T.h * 1.1 * 1.2
+                -- card:hard_set_T(card.VT.x, card.VT.y, card.T.w * 1.32, card.T.h * 1.32)
+                remove_all(card.children)
+                card:set_sprites(card.config.center, card.base.id and card.config.card)
+                
+                G.title_top:emplace(card)
+                card.no_ui = true
+                card.states.visible = false
+                
+                G.E_MANAGER:add_event(Event({
+                    trigger = "after",
+                    delay = 0,
+                    blockable = false,
+                    blocking = false,
+                    func = function()
+                        card.states.visible = true
+                        if change_context == "splash" then
+                            card:start_materialize({ G.C.WHITE, G.C.WHITE }, true, 2.5)
+                        else
+                            card:start_materialize({ G.C.WHITE, G.C.WHITE }, nil, 1.2)
+                        end
+                        return true
+                    end
+                }))
+            end
+
+        end
+    end
+    if remove_original then
+        if not G.title_top.cards[1].mod_flag then 
+            G.title_top.cards[1]:remove()
+            G.title_top.T.w = G.title_top.T.w - (1.7675 / math.max(#G.title_top.cards, 1))
+            G.title_top.T.x = G.title_top.T.x + (0.885 / math.max(#G.title_top.cards, 1))
+        end
+    end
+    for i, v in ipairs(funcs) do v() end
 end
 
 local gameUpdateRef = Game.update
 function Game:update(dt)
     if G.STATE ~= G.STATES.SPLASH and G.MAIN_MENU_UI then
         local node = G.MAIN_MENU_UI:get_UIE_by_ID("main_menu_play")
-
+        
         if node and not node.children.alert then
             node.children.alert = UIBox({
                 definition = create_UIBox_card_alert({
