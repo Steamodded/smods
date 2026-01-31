@@ -3428,6 +3428,14 @@ function SMODS.log_crash_info(info, defined)
     end
 end
 
+
+-- Used for SMODS.ScreenShader, just to save lines re-creating canvases when relevant
+function SMODS.create_canvas()
+    local canvas = love.graphics.newCanvas(love.window.fromPixels(love.graphics.getWidth()) * G.CANV_SCALE, love.window.fromPixels(love.graphics.getHeight()) * G.CANV_SCALE, { type = '2d', readable = true })
+    canvas:setFilter('linear', 'linear')
+    return canvas
+end
+
 function SMODS.get_clean_pool(_type, _rarity, _legendary, _append)
     local pool = get_current_pool(_type, _rarity, _legendary, _append)
     local clean_pool = {}
