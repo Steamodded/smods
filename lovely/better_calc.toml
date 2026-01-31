@@ -586,9 +586,14 @@ match_indent = true
 position = "at"
 payload = '''
 -- context.before calculations
-local cards = {}
-for i, v in pairs(G.play.cards) do cards[#cards+1] = v end
-SMODS.last_hand = {scoring_hand = scoring_hand, scoring_name = text, full_hand = cards}
+if SMODS.last_hand then
+    for _, v in ipairs({'scoring_hand', 'full_hand'}) do
+        for _, _c in ipairs(SMODS.last_hand[v]) do
+            _c.ability['SMODS_'..v] = nil
+        end
+    end
+end
+SMODS.last_hand = {scoring_hand = scoring_hand, scoring_name = text, full_hand = G.play.cards}
 SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, before = true})
 
 -- TARGET: effects before scoring starts
@@ -2003,5 +2008,30 @@ local ret = SMODS.blueprint_effect(self, other_joker, context)
 if ret then
     ret.colour = G.C.RED
     return ret
+end
+'''
+
+# Reload SMODS.last_hand
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+table.sort(G.playing_cards, function (a, b) return a.playing_card > b.playing_card end )
+'''
+payload = '''
+if saveTable then
+    if saveTable.SMODS then
+        SMODS.last_hand = {scoring_hand = {}, full_hand = {}, scoring_name = saveTable.SMODS.last_hand.scoring_name}
+        print(#G.playing_cards)
+        for _, v in ipairs({'scoring_hand','full_hand'}) do
+            for _, card in ipairs(G.playing_cards) do
+                if card.ability['SMODS_'..v] then
+                    SMODS.last_hand[v][card.ability['SMODS_'..v]] = card
+                end
+            end
+        end
+	end
 end
 '''

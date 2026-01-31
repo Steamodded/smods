@@ -3438,3 +3438,24 @@ function SMODS.get_clean_pool(_type, _rarity, _legendary, _append)
     end
     return clean_pool
 end
+
+local smods_hook_save_run = save_run
+function save_run()
+    if SMODS.last_hand then
+        for _, v in ipairs({'scoring_hand','full_hand'}) do
+            for i, card in ipairs(SMODS.last_hand[v]) do
+                card.ability['SMODS_'..v] = i
+            end
+        end
+    end
+    smods_hook_save_run()
+    if SMODS.last_hand then
+        G.culled_table.SMODS = {
+        last_hand = {
+                scoring_name = SMODS.last_hand.scoring_name,
+                scoring_hand = {},
+                full_hand = {}
+            }
+        }
+    end
+end
