@@ -1227,14 +1227,14 @@ G.FUNCS.update_suit_colours = function(suit, skin, palette_num)
     G.C.SUITS[suit] = new_colour_proto
 end
 
-SMODS.smart_level_up_hand = function(card, hand, instant, amount)
+SMODS.smart_level_up_hand = function(card, hand, instant, amount, statustext)
     -- Cases:
     -- Level ups in context.before on the played hand
     --     -> direct level_up_hand(), keep displaying
     -- Level ups in context.before on another hand AND any level up during scoring
     --     -> restore the current chips/mult
     -- Level ups outside anything -> always update to empty chips/mult
-    level_up_hand(card, hand, instant, (type(amount) == 'number' or type(amount) == 'table') and amount or 1)
+    level_up_hand(card, hand, instant, (type(amount) == 'number' or type(amount) == 'table') and amount or 1, statustext)
 end
 
 -- This function handles the calculation of each effect returned to evaluate play.
@@ -3295,6 +3295,7 @@ function SMODS.upgrade_poker_hands(args)
     -- args.level_up
     -- args.instant
     -- args.from
+    -- args.StatusText
 
     local function get_keys(t)
         local keys = {}
@@ -3311,7 +3312,7 @@ function SMODS.upgrade_poker_hands(args)
 
     if not args.func then
         for _, hand in ipairs(args.hands) do
-            level_up_hand(args.from, hand, instant, args.level_up or 1)
+            level_up_hand(args.from, hand, instant, args.level_up or 1, args.StatusText)
         end
         return
     end
@@ -3343,12 +3344,21 @@ function SMODS.upgrade_poker_hands(args)
             if G.GAME.hands[hand][parameter] then
                 G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
                 if not instant then
+                    local StatusText = true
+                    if args.StatusText ~= nil then
+                        if type(args.StatusText) == 'function' then
+                            local NewStatusText = args.StatusText(hand, parameter)
+                            if NewStatusText ~= nil then StatusText = NewStatusText end
+                        else
+                            StatusText = args.StatusText
+                        end
+                    end
                     G.E_MANAGER:add_event(Event({trigger = 'after', delay = i == 1 and 0.2 or 0.9, func = function()
                         play_sound('tarot1')
                         if args.from then args.from:juice_up(0.8, 0.5) end
                         G.TAROT_INTERRUPT_PULSE = true
                         return true end }))
-                    update_hand_text({delay = 0}, {[parameter] = G.GAME.hands[hand][parameter], StatusText = true})
+                    update_hand_text({delay = 0}, {[parameter] = G.GAME.hands[hand][parameter], StatusText = StatusText})
                 end
             end
         end
