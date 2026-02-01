@@ -763,9 +763,13 @@ function SMODS.is_active_blind(key, ignore_disabled) end
 ---@return boolean
 function SMODS.challenge_is_unlocked(challenge, k) end
 
----@param args table|{hands?: table, parameters?: table, level_up?: number|boolean, func?: fun(base: number, hand: string, param: string), instant?: boolean}
+---@param args table|{hands?: table, parameters?: table, level_up?: number|boolean, func?: fun(base: number, hand: string, param: string), instant?: boolean, StatusText?: boolean|string|table|fun(hand: string, parameter: string)}
 --- This functions handles upgrading poker hands in more complex ways. You can define
 --- a custom `func` to modify the values in specific ways. `hands` and `parameters` can
 --- be limited to specific ones, or default to using all of `G.GAME.hands` and `SMODS.Scoring_Parameters`.
 --- Use `level_up` to control whether the level of the hand is upgraded.
+--- Use `StatusText` to control the text that appears when a parameter is upgraded, it can be:
+--- a string, which changes the displayed text, a boolean, which disables StatusText when set to `false`,
+--- a table, which defines the `attention_text` function settings, or a function that takes the key of
+--- the hand and scoring parameter being upgraded as arguments and returns a boolean, string or table
     function SMODS.upgrade_poker_hands(args) end

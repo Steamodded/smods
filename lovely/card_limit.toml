@@ -383,7 +383,6 @@ end
 payload = '''
 if #self.cards > self.config.card_limit then
     if self == G.deck and G.GAME.blind then
-        print('Setting here to '..#self.cards)
         self.config.card_limit = #self.cards
     end
 end

@@ -1,3 +1,43 @@
+-- CanvasSprite: a Sprite that draws from a Love2D canvas
+SMODS.CanvasSprite = Sprite:extend()
+
+-- init: create a canvas for the sprite
+function SMODS.CanvasSprite:init(args)
+    self.canvasW = 71
+    self.canvasH = 95
+    self.canvasScale = 10
+    self.text = ""
+    self.text_offset = {x = 0, y = 0}
+    for k, v in pairs(args) do self[k] = v end
+    self.canvas = love.graphics.newCanvas(self.canvasW * self.canvasScale, self.canvasH * self.canvasScale)
+    self.font = (SMODS.Fonts[self.text_font] or G.FONTS[self.text_font] or G.FONTS[1]).FONT
+
+    Sprite.init(self, self.X or 0, self.Y or 0, self.W or G.CARD_W, self.H or G.CARD_H, { name = "dummy", px = self.canvasW * self.canvasScale, py = self.canvasH * self.canvasScale, image = self.canvas }, { x = 0, y = 0 })
+    self.canvas:renderTo(love.graphics.clear, 0, 0, 0, 0)
+end
+
+-- draw_from: draw the sprite on another object
+-- code mostly borrowed from vanilla
+function SMODS.CanvasSprite:draw_from(other_obj, ms, mr, mx, my)
+    self.ARGS.draw_from_offset = self.ARGS.draw_from_offset or {}
+    self.ARGS.draw_from_offset.x = mx or 0
+    self.ARGS.draw_from_offset.y = my or 0
+    prep_draw(other_obj, (1 + (ms or 0)), (mr or 0), self.ARGS.draw_from_offset, true)
+    love.graphics.scale(1/(other_obj.scale_mag or other_obj.VT.scale))
+    love.graphics.setColor(G.BRUTE_OVERLAY or G.C.WHITE)
+    love.graphics.draw(
+        self.canvas,
+        self.sprite,
+        -(other_obj.T.w/2 -other_obj.VT.w/2)*10,
+        0,
+        0,
+        other_obj.VT.w/(other_obj.T.w)/(self.canvasScale),
+        other_obj.VT.h/(other_obj.T.h)/(self.canvasScale)
+    )
+    self:draw_boundingrect()
+    love.graphics.pop()
+end
+
 SMODS.DrawSteps = {}
 SMODS.DrawStep = SMODS.GameObject:extend {
     obj_table = SMODS.DrawSteps,
@@ -310,6 +350,39 @@ SMODS.DrawStep {
 }
 
 SMODS.DrawStep {
+    key = 'canvas_text',
+    order = 45,
+    func = function(self, layer)
+        if self.children.canvas_text then
+            for _, sprite in ipairs(self.children.canvas_text[1] and self.children.canvas_text or {self.children.canvas_text}) do
+                love.graphics.push()
+                love.graphics.origin()
+                sprite.canvas:renderTo(love.graphics.clear, 0, 0, 0, 0)
+                local text = love.graphics.newText(sprite.font, {sprite.text_colour or G.C.UI.TEXT_LIGHT, sprite.ref_table and sprite.ref_table[sprite.ref_value] or sprite.text})
+                local scale_fac = math.min((sprite.text_width or sprite.canvasW)/text:getWidth(), (sprite.text_height or sprite.canvasH)/text:getHeight()) * sprite.canvasScale
+                if text then 
+                    local x,y,r,sx,sy,ox,oy = unpack(sprite.text_transform or {
+                            (0 + sprite.text_offset.x) * sprite.canvasScale,
+                            (0 + sprite.text_offset.y) * sprite.canvasScale,
+                            0,
+                            scale_fac, scale_fac,
+                            text:getWidth()/2, text:getHeight()/2
+                        })
+                    sprite.canvas:renderTo(love.graphics.draw,
+                        text,
+                        x, y, r, sx, sy, ox, oy
+                    )
+                end
+                love.graphics.pop()
+                sprite.role.draw_major = self
+                sprite:draw_shader('dissolve', nil, nil, nil, self.children.center)
+            end
+        end
+    end,
+    conditions = { vortex = false, facing = 'front' },
+}
+
+SMODS.DrawStep {
     key = 'soul',
     order = 50,
     func = function(self)
@@ -424,7 +497,7 @@ SMODS.DrawStep {
 
 -- All keys in this table will not be automatically drawn with a default `draw()` call in the "others" DrawStep.
 SMODS.draw_ignore_keys = {
-    focused_ui = true, front = true, back = true, soul_parts = true, center = true, floating_sprite = true, shadow = true, use_button = true, buy_button = true, buy_and_use_button = true, debuff = true, price = true, particles = true, h_popup = true
+    focused_ui = true, front = true, back = true, soul_parts = true, center = true, floating_sprite = true, shadow = true, use_button = true, buy_button = true, buy_and_use_button = true, debuff = true, price = true, particles = true, h_popup = true, canvas_text = true
 }
 SMODS.DrawStep {
     key = 'others',

@@ -1,0 +1,42 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+# statustext parameter in level_up_hand
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = 'function level_up_hand(card, hand, instant, amount)'
+position = 'at'
+match_indent = true
+payload = 'function level_up_hand(card, hand, instant, amount, statustext)'
+
+# Allow custom StatusText values in update_hand_text
+[[patches]]
+[patches.regex]
+target = 'functions/common_events.lua'
+position = 'at'
+line_prepend = '$indent'
+pattern = '''(?<indent>[\t ]*)if vals\.StatusText[A-z0-9\n\t .~=()'\-+,<;>:{}]+config\.align\n[\t ]+\}\)\n[\t ]+end'''
+payload = '''
+if vals.StatusText then
+    local StatusText = {
+        text = delta,
+        scale = 0.8, 
+        hold = 1,
+        cover = G.hand_text_area[name].parent,
+        cover_colour = mix_colours(parameter.colour, col, 0.1),
+        emboss = 0.05,
+        align = 'cm',
+        cover_align = G.hand_text_area[name].parent.config.align
+    }
+    if type(vals.StatusText) == 'string' then StatusText.text = vals.StatusText
+    elseif type(vals.StatusText) == 'table' then
+        for k,v in pairs(vals.StatusText) do
+            if v ~= nil then StatusText[k] = v end
+        end
+    end
+    attention_text(StatusText)
+end
+'''
