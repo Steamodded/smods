@@ -1,0 +1,74 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -4 #latest priority, since lovely dump was used as reference for patch targets.
+
+## used_vouchers entry should be a number to allow for checking voucher count easily
+# back.lua
+[[patches]]
+[patches.pattern]
+target = "back.lua"
+pattern = "G.GAME.used_vouchers[self.effect.config.voucher] = true"
+position = "at"
+payload = "G.GAME.used_vouchers[self.effect.config.voucher] = (G.GAME.used_vouchers[self.effect.config.voucher] or 0) + 1"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "back.lua"
+pattern = "G.GAME.used_vouchers[v ] = true"
+position = "at"
+payload = "G.GAME.used_vouchers[v] = (G.GAME.used_vouchers[v] or 0) + 1"
+match_indent = true
+
+# card.lua
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "G.GAME.used_vouchers[self.config.center_key] = true"
+position = "at"
+payload = "G.GAME.used_vouchers[self.config.center_key] = (G.GAME.used_vouchers[self.config.center.key] or 0) + 1"
+match_indent = true
+
+# game.lua
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = "G.GAME.used_vouchers[v.id] = true"
+position = "at"
+payload = "G.GAME.used_vouchers[v.id] = (G.GAME.used_vouchers[v.id] or 0) + 1"
+match_indent = true
+
+## unlocks should count duplicate vouchers
+# common_events.lua
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+for k, v in pairs(G.GAME.used_vouchers) do
+    _v = _v + 1
+end
+'''
+position = "at"
+payload = '''
+for k, v in pairs(G.GAME.used_vouchers) do
+    _v = _v + (type(v) == "number" and v or 1)
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+for k, v in pairs(G.GAME.used_vouchers) do
+    vouchers_redeemed = vouchers_redeemed + 1
+end
+'''
+position = "at"
+payload = '''
+for k, v in pairs(G.GAME.used_vouchers) do
+    vouchers_redeemed = vouchers_redeemed + (type(v) == "number" and v or 1)
+end
+'''
+match_indent = true

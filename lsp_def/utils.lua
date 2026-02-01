@@ -769,3 +769,9 @@ function SMODS.challenge_is_unlocked(challenge, k) end
 --- be limited to specific ones, or default to using all of `G.GAME.hands` and `SMODS.Scoring_Parameters`.
 --- Use `level_up` to control whether the level of the hand is upgraded.
     function SMODS.upgrade_poker_hands(args) end
+
+---@param voucher_key string The key of the voucher being checked
+---@return boolean
+--- Similar to SMODS.showman, but works for duplicate voucher spawning.
+--- Returns `true` if duplicates of the voucher with the given key should spawn.
+function SMODS.voucherman(voucher_key) end
