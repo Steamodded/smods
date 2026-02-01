@@ -353,8 +353,8 @@ SMODS.DrawStep {
     key = 'canvas_text',
     order = 45,
     func = function(self, layer)
-        if self.canvas_text then
-            for _, sprite in ipairs(self.canvas_text[1] and self.canvas_text or {self.canvas_text}) do
+        if self.children.canvas_text then
+            for _, sprite in ipairs(self.children.canvas_text[1] and self.children.canvas_text or {self.children.canvas_text}) do
                 love.graphics.push()
                 love.graphics.origin()
                 sprite.canvas:renderTo(love.graphics.clear, 0, 0, 0, 0)
@@ -497,7 +497,7 @@ SMODS.DrawStep {
 
 -- All keys in this table will not be automatically drawn with a default `draw()` call in the "others" DrawStep.
 SMODS.draw_ignore_keys = {
-    focused_ui = true, front = true, back = true, soul_parts = true, center = true, floating_sprite = true, shadow = true, use_button = true, buy_button = true, buy_and_use_button = true, debuff = true, price = true, particles = true, h_popup = true
+    focused_ui = true, front = true, back = true, soul_parts = true, center = true, floating_sprite = true, shadow = true, use_button = true, buy_button = true, buy_and_use_button = true, debuff = true, price = true, particles = true, h_popup = true, canvas_text = true
 }
 SMODS.DrawStep {
     key = 'others',
