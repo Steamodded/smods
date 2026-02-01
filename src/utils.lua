@@ -3469,3 +3469,7 @@ function save_run()
         }
     end
 end
+
+SMODS.custom_debuff_handling = {
+    'j_shoot_the_moon', 'j_baron', 'j_reserved_parking', 'j_raised_fist'
+}
