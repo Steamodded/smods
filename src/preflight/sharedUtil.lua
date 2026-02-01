@@ -39,6 +39,14 @@ v_mt = {
             beta = b.beta,
             rev = b.rev,
         }
+        -- yes, i'm leaving the comparison of two wildcards as undefined behavior
+        a = {
+            major = a.major + (a.minor == -2 and 1 or 0),
+            minor = a.minor == -2 and 0 or (a.minor + (a.patch == -2 and 1 or 0)),
+            patch = a.patch == -2 and 0 or a.patch,
+            beta = a.beta,
+            rev = a.rev,
+        }
         if a.major ~= b.major then return a.major < b.major end
         if a.minor ~= b.minor then return a.minor < b.minor end
         if a.patch ~= b.patch then return a.patch < b.patch end
