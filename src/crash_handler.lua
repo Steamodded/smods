@@ -803,13 +803,21 @@ function injectStackTrace()
 
             for e, a, b, c in love.event.poll() do
                 if e == "quit" then
-                    return 1
+                    return a or 0
                 elseif e == "keypressed" and a == "escape" then
                     return 1
                 elseif e == "keypressed" and a == "c" and love.keyboard.isDown("lctrl", "rctrl") then
                     copyToClipboard()
                 elseif e == "keypressed" and a == "r" then
-                    SMODS.restart_game()
+                    if SMODS and SMODS.restart_game then
+                        SMODS.restart_game()
+                    else
+                        local test, msg = pcall(function() 
+                            require"lovely".reload_patches()
+                        end)
+                        if not test then sendErrorMessage("Failed to reload patches... " .. tostring(msg), "StackTrace") end
+                        return "restart"
+                    end
                 elseif e == "keypressed" and a == "down" then
                     scrollDown()
                 elseif e == "keypressed" and a == "up" then

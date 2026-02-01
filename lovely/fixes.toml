@@ -613,8 +613,8 @@ target = 'main.lua'
 match_indent = true
 position = 'after'
 pattern = '--To control when steam communication happens, make sure to send updates to steam as little as possible'
-payload = '''local cwd = NFS.getWorkingDirectory()
-NFS.setWorkingDirectory(love.filesystem.getSourceBaseDirectory())
+payload = '''local cwd = SMODS.NFS.getWorkingDirectory()
+SMODS.NFS.setWorkingDirectory(love.filesystem.getSourceBaseDirectory())
 '''
 
 [[patches]]
@@ -623,7 +623,7 @@ target = 'main.lua'
 match_indent = true
 position = 'before'
 pattern = '--Set up the render window and the stage for the splash screen, then enter the gameloop with :update'
-payload = '''NFS.setWorkingDirectory(cwd)
+payload = '''SMODS.NFS.setWorkingDirectory(cwd)
 '''
 
 [[patches]]

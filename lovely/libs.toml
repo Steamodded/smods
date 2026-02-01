@@ -6,29 +6,27 @@ priority = -5
 [[patches]]
 [patches.module]
 source = "libs/json/json.lua"
-before = "main.lua"
 name = "json" 
 
 [[patches]]
 [patches.module]
 source = "libs/nativefs/nativefs.lua"
-before = "main.lua"
 name = "nativefs"
+
+# We use our own module because we modifed it
+# and other mods may vendor their own which doesn't
+# have our patches
+[[patches]]
+[patches.module]
+source = "libs/nativefs/nativefs.lua"
+name = "SMODS.nativefs"
 
 [[patches]]
 [patches.module]
 source = "libs/https/luajit-curl.lua"
-before = "main.lua"
-name = "luajit-curl"
-
-[[patches]] # Ensure the thread can also load this
-[patches.module]
-source = "libs/https/luajit-curl.lua"
-before = '=[SMODS _ "smods-https-thread.lua"]'
 name = "luajit-curl"
 
 [[patches]]
 [patches.module]
 source = "libs/https/smods-https.lua"
-before = "main.lua"
 name = "SMODS.https"
