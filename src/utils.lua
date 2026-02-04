@@ -669,22 +669,24 @@ function SMODS.poll_soul(args)
     local modded_souls = {}
 
     for _, v in ipairs(SMODS.Consumable.legendaries) do
-        local can_repeat = SMODS.showman(v.key) or v.can_repeat_soul or args.allow_duplicates
-        local is_soul_set = set == v.type.key
-        if not is_soul_set and v.soul_set then
-            local consumable_soul_sets = type(v.soul_set) == "table" and v.soul_set or { v.soul_set }
-            for _, soul_set in ipairs(consumable_soul_sets) do
-                is_soul_set = set == soul_set
-                if is_soul_set then break end
+        if not G.GAME.banned_keys[v.key] then
+            local can_repeat = SMODS.showman(v.key) or v.can_repeat_soul or args.allow_duplicates
+            local is_soul_set = set == v.type.key
+            if not is_soul_set and v.soul_set then
+                local consumable_soul_sets = type(v.soul_set) == "table" and v.soul_set or { v.soul_set }
+                for _, soul_set in ipairs(consumable_soul_sets) do
+                    is_soul_set = set == soul_set
+                    if is_soul_set then break end
+                end
             end
-        end
-        if is_soul_set and not (G.GAME.used_jokers[v.key] and not can_repeat) and SMODS.add_to_pool(v) then
-            local soul_rate = SMODS.get_soul_rate(v, set) * (args.mod or 1)
-            v.temp_soul_rate = soul_rate -- to ensure it doesn't change and so it isn't calculated twice
-            soul_total_rate = soul_total_rate + soul_rate
-            non_soul_rate = non_soul_rate * (1 - soul_rate)
-            non_soul_rate = math.max(non_soul_rate, 0)
-            table.insert(modded_souls, v)
+            if is_soul_set and not (G.GAME.used_jokers[v.key] and not can_repeat) and SMODS.add_to_pool(v) then
+                local soul_rate = SMODS.get_soul_rate(v, set) * (args.mod or 1)
+                v.temp_soul_rate = soul_rate -- to ensure it doesn't change and so it isn't calculated twice
+                soul_total_rate = soul_total_rate + soul_rate
+                non_soul_rate = non_soul_rate * (1 - soul_rate)
+                non_soul_rate = math.max(non_soul_rate, 0)
+                table.insert(modded_souls, v)
+            end
         end
     end
     local roll = pseudorandom(args.key or ('soul_smods_' .. set .. G.GAME.round_resets.ante))
