@@ -3,8 +3,8 @@
 ---@class SMODS.Consumable: SMODS.Center
 ---@field super? SMODS.Center|table Parent class. 
 ---@field hidden? boolean Sets if this consumable is considered "legendary" (e.x. behaves like "The Soul"). 
----@field soul_set? string Key to the ConsumableType set this consumable can replace. Requires `hidden` to be true.
----@field soul_rate? number Chance this card replaces a consumable. Requires `hidden` to be true.
+---@field soul_set? string|table Key(s) to the ConsumableType set(s) this consumable can replace. Requires `hidden` to be true.
+---@field soul_rate? number|fun(set: string):number Chance this card replaces a consumable. Requires `hidden` to be true.
 ---@field type? SMODS.ConsumableType|table ConsumableType this center belongs to. 
 ---@field legendaries? (SMODS.Consumable|table)[] All injected "legendary" consumables. 
 ---@field __call? fun(self: SMODS.Consumable|table, o: SMODS.Consumable|table): nil|table|SMODS.Consumable
@@ -31,3 +31,14 @@ SMODS.Consumable = setmetatable({}, {
         return self
     end
 })
+
+---@param args table|{set: string, key?: string, mod?: number, guaranteed?: boolean, allow_duplicates?: boolean, ignore_vanilla?: boolean}
+---@return string?
+--- Polls hidden consumables. 
+function SMODS.poll_soul(args) end
+
+---@param consumable SMODS.Consumable|table|string
+---@param set string
+---@return number
+--- Gets soul rate of a consumable. 
+function SMODS.get_soul_rate(consumable, set) end
