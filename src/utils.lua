@@ -702,13 +702,13 @@ function SMODS.poll_soul(args)
     if not G.GAME.banned_keys['c_soul'] and not args.ignore_vanilla then
         if (set == 'Tarot' or set == 'Spectral' or set == 'Tarot_Planet') and
             not (G.GAME.used_jokers['c_soul'] and not SMODS.showman('c_soul')) then
-            if pseudorandom(args.key or ('soul_' .. set .. G.GAME.round_resets.ante)) > 0.997 - (0.003 * ((G.GAME.soul_mod or 1) * (args.mod or 1) - 1)) then
+            if (not forced_key and args.guaranteed) or pseudorandom(args.key or ('soul_' .. set .. G.GAME.round_resets.ante)) > 0.997 - (0.003 * ((G.GAME.soul_mod or 1) * (args.mod or 1) - 1)) then
                 forced_key = 'c_soul'
             end
         end
         if (set == 'Planet' or set == 'Spectral') and
             not (G.GAME.used_jokers['c_black_hole'] and not SMODS.showman('c_black_hole')) then
-            if pseudorandom(args.key or ('soul_' .. set .. G.GAME.round_resets.ante)) > 0.997 - (0.003 * ((G.GAME.soul_mod or 1) * (args.mod or 1) - 1)) then
+            if ((not forced_key or forced_key == 'c_soul') and args.guaranteed) or pseudorandom(args.key or ('soul_' .. set .. G.GAME.round_resets.ante)) > 0.997 - (0.003 * ((G.GAME.soul_mod or 1) * (args.mod or 1) - 1)) then
                 forced_key = 'c_black_hole'
             end
         end
