@@ -39,6 +39,7 @@ function SMODS.poll_soul(args) end
 
 ---@param consumable SMODS.Consumable|table|string
 ---@param set string
----@return number
+---@return number?
+---@return string
 --- Gets soul rate of a consumable. 
 function SMODS.get_soul_rate(consumable, set) end
