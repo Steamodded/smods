@@ -19,9 +19,14 @@ G.FUNCS.HUD_blind_debuff = function(e)
 	end
 	e.config.padding = padding
 	if num_lines > #e.children then
-		for i = #e.children+1, num_lines do
-			local node_def = {n = G.UIT.R, config = {align = "cm", minh = 0.3, maxw = 4.2}, nodes = {
+        for i = #e.children + 1, num_lines do
+			local node_def 
+			if type(G.GAME.blind.loc_debuff_lines[i]) == "string" then
+				node_def = {n = G.UIT.R, config = {align = "cm", minh = 0.3, maxw = 4.2}, nodes = {
 				{n = G.UIT.T, config = {ref_table = G.GAME.blind.loc_debuff_lines, ref_value = i, scale = scale * 0.9, colour = G.C.UI.TEXT_LIGHT}}}}
+			else
+				node_def = {n = G.UIT.R, config = {align = "cm", minh = 0.3, maxw = 4.2}, nodes = SMODS.localize_box(G.GAME.blind.loc_debuff_lines[i], {default_col = G.GAME.blind.loc_debuff_lines.text_colour or G.C.UI.TEXT_LIGHT, scale = 1.125 * (G.GAME.blind.loc_debuff_lines.scale or 1), vars = G.GAME.blind.loc_debuff_lines.vars or {}})}
+			end
 			e.UIBox:set_parent_child(node_def, e)
 		end
 	elseif num_lines < #e.children then
