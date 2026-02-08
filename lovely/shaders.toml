@@ -11,10 +11,8 @@ pattern = '''self.SHADERS[shader_name] = love.graphics.newShader("resources/shad
 position = "at"
 payload = '''
 local shader = "resources/shaders/"..filename
-local lovely_success, lovely = pcall(require, "lovely")
-if lovely_success and lovely.apply_patches then
-    shader = assert(lovely.apply_patches(filename, love.filesystem.read(shader)))
-end
+local lovely = require "lovely"
+shader = assert(lovely.apply_patches(filename, love.filesystem.read(shader)))
 self.SHADERS[shader_name] = love.graphics.newShader(shader)
 '''
 match_indent = true

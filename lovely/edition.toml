@@ -143,7 +143,7 @@ pattern = "    not (card.ability.consumeable and #G.consumeables.cards < G.consu
 position = "at"
 match_indent = true
 payload = '''
-    not (card.ability.consumeable and #G.consumeables.cards < G.consumeables.config.card_limit + card.ability.card_limit - card.ability.extra_slots_used) then
+    not (card.ability.consumeable and #G.consumeables.cards + (1 + card.ability.extra_slots_used) <= G.consumeables.config.card_limit + card.ability.card_limit) then
 '''
 times = 1
 
@@ -155,7 +155,7 @@ pattern = "not (card.ability.set == 'Joker' and #G.jokers.cards < G.jokers.confi
 position = "at"
 match_indent = true
 payload = '''
-    not (card.ability.set == 'Joker' and #G.jokers.cards < G.jokers.config.card_limit + card.ability.card_limit - card.ability.extra_slots_used) and
+    not (card.ability.set == 'Joker' and #G.jokers.cards + (1 + card.ability.extra_slots_used) <= G.jokers.config.card_limit + card.ability.card_limit) and
 '''
 times = 1
 

@@ -15,9 +15,37 @@ G.playing_cards = {}
 set_screen_positions()
 '''
 payload = '''
+-- Add align config to existing areas that should use it
+self.jokers.config.align_buttons = true
+self.consumeables.config.align_buttons = true
+
 for _, mod in ipairs(SMODS.mod_list) do
     if mod.can_load and mod.custom_card_areas and type(mod.custom_card_areas) == "function" then
         mod.custom_card_areas(self)
     end
 end
+'''
+
+# Check area.config.align_buttons if an area should align buttons like normal
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+((self.area == G.jokers) or (self.area == G.consumeables)) and "cr" or
+'''
+payload = '''
+self.area.config.align_buttons and "cr" or
+'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+((self.area == G.jokers) or (self.area == G.consumeables)) and {x=x_off - 0.4,y=0} or
+'''
+payload = '''
+self.area.config.align_buttons and {x=x_off - 0.4,y=0} or
 '''

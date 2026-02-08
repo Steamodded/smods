@@ -8,13 +8,12 @@ priority = -10
 [patches.pattern]
 target = 'functions/UI_definitions.lua'
 match_indent = true
-position = 'at'
+position = 'before'
 pattern = '''
 {n=G.UIT.O, config={draw_layer = 1, object = DynaText({scale = args.scale, string = args.text, maxw = args.maxw, colours = {args.colour},float = true, shadow = true, silent = not args.noisy, args.scale, pop_in = 0, pop_in_rate = 6, rotate = args.rotate or nil})}},
 '''
 payload = '''
-type(args.text) == 'string' and {n=G.UIT.O, config={draw_layer = 1, object = DynaText({scale = args.scale, string = args.text, maxw = args.maxw, colours = {args.colour},float = true, shadow = true, silent = not args.noisy, args.scale, pop_in = 0, pop_in_rate = 6, rotate = args.rotate or nil})}} or
-args.text,
+type(args.text) == "table" and args.text.n and args.text or
 '''
 [[patches]]
 [patches.pattern]

@@ -1,0 +1,47 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -11
+
+[[patches]]
+[patches.module]
+source = "src/preflight/sharedUtil.lua"
+name = "SMODS.preflight.sharedUtil" 
+
+[[patches]]
+[patches.module]
+source = "src/preflight/logging.lua"
+name = "SMODS.preflight.logging" 
+
+[[patches]]
+[patches.module]
+source = "src/preflight/loader.lua"
+name = "SMODS.preflight.loader" 
+
+[[patches]]
+[patches.module]
+source = "src/preflight/sharedUI.lua"
+name = "SMODS.preflight.sharedUI" 
+
+[[patches]]
+[patches.module]
+source = "src/preflight/core.lua"
+before = "main.lua"
+load_now = true
+name = "SMODS.preflight.core" 
+
+[[patches]]
+[patches.pattern]
+target = '=[lovely SMODS.preflight.core "src/preflight/core.lua"]'
+pattern = "local lovely_path = false -- This line is patched, don't edit it"
+position = "at"
+payload = """local lovely_path = [[{{lovely_hack:patch_dir}}/]]"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = "if (love.system.getOS() == 'OS X' ) and (jit.arch == 'arm64' or jit.arch == 'arm') then jit.off() end"
+position = "before"
+payload = """if SMODS and SMODS.preflight_force_quit then if SMODS.preflight_quit_before then SMODS.preflight_quit_before() end return end"""
+match_indent = true

@@ -209,6 +209,7 @@ payload = '''
 local new_ability = $2
 self.ability = self.ability or {}
 new_ability.extra_value = nil
+new_ability.debuff_sources = {}
 self.ability.extra_value = self.ability.extra_value or 0
 for k, v in pairs(new_ability) do
     self.ability[k] = v
@@ -430,6 +431,15 @@ position = "before"
 payload = "G.GAME.blind.in_blind = false"
 match_indent = true
 
+# Allow winning game if winning ante is skipped
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "if G.GAME.round_resets.ante == G.GAME.win_ante and G.GAME.blind:get_type() == 'Boss' then"
+position = "at"
+payload = "if not G.GAME.won and G.GAME.round_resets.ante >= G.GAME.win_ante and G.GAME.blind:get_type() == 'Boss' then"
+match_indent = true
+
 
 
 # Make sure new param is loaded
@@ -603,8 +613,8 @@ target = 'main.lua'
 match_indent = true
 position = 'after'
 pattern = '--To control when steam communication happens, make sure to send updates to steam as little as possible'
-payload = '''local cwd = NFS.getWorkingDirectory()
-NFS.setWorkingDirectory(love.filesystem.getSourceBaseDirectory())
+payload = '''local cwd = SMODS.NFS.getWorkingDirectory()
+SMODS.NFS.setWorkingDirectory(love.filesystem.getSourceBaseDirectory())
 '''
 
 [[patches]]
@@ -613,7 +623,7 @@ target = 'main.lua'
 match_indent = true
 position = 'before'
 pattern = '--Set up the render window and the stage for the splash screen, then enter the gameloop with :update'
-payload = '''NFS.setWorkingDirectory(cwd)
+payload = '''SMODS.NFS.setWorkingDirectory(cwd)
 '''
 
 [[patches]]

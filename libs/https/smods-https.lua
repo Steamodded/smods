@@ -240,7 +240,7 @@ if not isThread then -- In main thread
 		if threadContent then
 			return threadContent
 		end
-		local file = assert(NFS.read(SMODS.path.."/libs/https/smods-https.lua"))
+		local file = assert(SMODS.NFS.read(SMODS.path.."/libs/https/smods-https.lua"))
 		local data = love.filesystem.newFileData(file, '=[SMODS _ "smods-https-thread.lua"]') -- name is a silly hack to get lovely to register the curl module
 		threadContent = data
 		return data

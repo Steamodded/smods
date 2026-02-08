@@ -8,7 +8,7 @@ priority = -5
 target = "game.lua"
 pattern = "self.SPEEDFACTOR = 1"
 position = "after"
-payload = "initSteamodded()"
+payload = 'require "SMODS.preflight.loader".initSteamodded()'
 match_indent = true
 
 [[patches]]
@@ -19,12 +19,10 @@ sources = ["src/core.lua"]
 
 [[patches]]
 [patches.module]
-before = "main.lua"
 source = "version.lua"
 name = "SMODS.version"
 
 [[patches]]
 [patches.module]
-before = "main.lua"
 source = "release.lua"
 name = "SMODS.release"
