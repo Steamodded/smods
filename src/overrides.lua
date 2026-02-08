@@ -516,10 +516,10 @@ function SMODS.applied_stakes_UI(i, stake_desc_rows, num_added)
 	if num_added == nil then num_added = { val = 0 } end
 	if G.P_CENTER_POOLS['Stake'][i].applied_stakes then
 		for _, v in pairs(G.P_CENTER_POOLS['Stake'][i].applied_stakes) do
-			if v ~= "white" then
+			if v ~= "white" and v ~= "stake_white" then
 				--todo: manage this with pages
 				if num_added.val < 8 then
-					local i = G.P_STAKES[v].stake_level
+					local i = G.P_STAKES[v].order
 					local _stake_desc = {}
 					local _stake_center = G.P_CENTER_POOLS.Stake[i]
 					local t, res = {}, {}
@@ -543,7 +543,7 @@ function SMODS.applied_stakes_UI(i, stake_desc_rows, num_added)
 							_full_desc},}}
 				end
 				num_added.val = num_added.val + 1
-				num_added.val = SMODS.applied_stakes_UI(G.P_STAKES[v].stake_level, stake_desc_rows,
+				SMODS.applied_stakes_UI(G.P_STAKES[v].order, stake_desc_rows,
 					num_added)
 			end
 		end
@@ -588,7 +588,10 @@ function G.UIDEF.stake_option(_type)
 	local stake_options = {}
 	local curr_options = {}
 	local deck_usage = G.PROFILES[G.SETTINGS.profile].deck_usage[G.GAME.viewed_back.effect.center.key]
-	G.viewed_stake = deck_usage and ((deck_usage.wins_by_key[SMODS.stake_from_index(G.viewed_stake)] or G.PROFILES[G.SETTINGS.profile].all_unlocked) and G.viewed_stake or (get_deck_win_stake(G.GAME.viewed_back.effect.center.key) + 1)) or 1
+	local deck_key = G.GAME.viewed_back.effect.center.key
+	local last_viewed_stake = SMODS.stake_from_index(G.viewed_stake)
+	local next_stake_index = G.P_STAKES[SMODS.next_stake(SMODS.stake_from_index(get_deck_win_stake(deck_key)), deck_key)].order
+	G.viewed_stake = ((SMODS.stake_is_unlocked(last_viewed_stake, deck_key) or G.PROFILES[G.SETTINGS.profile].all_unlocked) and G.viewed_stake or next_stake_index) or 1
 	for i=1, #G.P_CENTER_POOLS.Stake do
 		if G.PROFILES[G.SETTINGS.profile].all_unlocked or SMODS.check_applied_stakes(G.P_CENTER_POOLS.Stake[i], deck_usage or {wins_by_key = {}}) then
 			stake_options[#stake_options + 1] = i
@@ -2308,7 +2311,7 @@ function get_joker_win_sticker(_center, index)
 			if applied[v.order] then
 				_count = _count+1
 				if (v.stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
-					_stake = v.key
+					_stake = G.sticker_map[v.key] and v.key or _stake
 				end
 			end
 		end
@@ -2356,7 +2359,7 @@ function get_deck_win_sticker(_center)
 		local _stake = nil
 		for key, _ in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage[_center.key].wins_by_key) do
 			if (G.P_STAKES[key] and G.P_STAKES[key].stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
-				_stake = key
+				_stake = G.sticker_map[key] and key or _stake
 			end
 		end
 		if _stake then return G.sticker_map[_stake] end
