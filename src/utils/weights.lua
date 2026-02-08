@@ -13,41 +13,43 @@ function SMODS.poll_object(args)
     local total_weight = 0
     local modded_weight = 0
     local chance = args.guaranteed and 1 or args.chance or SMODS.base_rate_percentage[args.type] or 1
-    local poll_key = args.guaranteed and 1 or pseudorandom(pseudoseed(args.seed or SMODS.get_poll_key(args.type)))
-
-    for _, label in ipairs(types) do
-        local temp_pool = {}
-        for i=1, #(args.rarities or {true}) do
-            local _p = label == 'Blind' and get_new_boss(true) or get_current_pool(label, args.rarities and args.rarities[i])
-            if label == 'Edition' then
-                local _options = {}
-                for _, edition in ipairs(_p) do
-                    if G.P_CENTERS[edition] and G.P_CENTERS[edition].vanilla then
-                        table.insert(_options, 1, edition)
-                    elseif G.P_CENTERS[edition] then
-                        table.insert(_options, edition)
+    local poll_key = pseudorandom(pseudoseed(args.seed or SMODS.get_poll_key(args.type)))
+    if not args.pool then
+        for _, label in ipairs(types) do
+            local temp_pool = {}
+            for i=1, #(args.rarities or {true}) do
+                local _p = label == 'Blind' and get_new_boss(true) or get_current_pool(label, args.rarities and args.rarities[i])
+                if label == 'Edition' then
+                    local _options = {}
+                    for _, edition in ipairs(_p) do
+                        if G.P_CENTERS[edition] and G.P_CENTERS[edition].vanilla then
+                            table.insert(_options, 1, edition)
+                        elseif G.P_CENTERS[edition] then
+                            table.insert(_options, edition)
+                        end
                     end
+                    _p = _options
                 end
-                _p = _options
+                temp_pool = SMODS.merge_lists({temp_pool, _p})
             end
-            temp_pool = SMODS.merge_lists({temp_pool, _p})
-        end
-        for _, v in ipairs(temp_pool) do
-            if G[SMODS.game_table_from_type[label] or 'P_CENTERS'][v] then table.insert(pool, {key = v, type = label}) end
+            for _, v in ipairs(temp_pool) do
+                if G[SMODS.game_table_from_type[label] or 'P_CENTERS'][v] then table.insert(pool, {key = v, type = label}) end
+            end
         end
     end
-
+    
+    if args.filter then pool = args.filter(pool) end
+    
     -- Check pool has valid options
     assert(#pool > 0, "SMODS.poll_object called with an empty pool."..SMODS.log_crash_info(debug.getinfo(2)))
-    
     
     local final_pool = {}
     for _, key in ipairs(pool) do
         local weight_table = {}
         
-        local w, m_w = SMODS.get_weight_of_object(G[SMODS.game_table_from_type[key.type] or 'P_CENTERS'][key.key], key.weight)
+        local w, m_w = SMODS.get_weight_of_object(G[SMODS.game_table_from_type[key.type] or 'P_CENTERS'][key.key or key], key.weight)
         modded_weight = modded_weight + m_w
-        weight_table = {key = key.key, weight = w, mod_weight = modded_weight}
+        weight_table = {key = key.key or key, weight = w, mod_weight = modded_weight}
         
         total_weight = total_weight + weight_table.weight
         table.insert(final_pool, weight_table)
