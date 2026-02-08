@@ -770,16 +770,28 @@ position = 'at'
 match_indent = true
 payload = '''
 local i = 0
+local function add_joker_row(ret, _card)
+    i = i+1
+    add_round_eval_row({dollars = ret, bonus = true, name='joker'..i, pitch = pitch, card = _card})
+    pitch = pitch + 0.06
+    dollars = dollars + ret
+end
 for _, area in ipairs(SMODS.get_card_areas('jokers')) do
-        for _, _card in ipairs(area.cards) do
+    for _, _card in ipairs(area.cards) do
         local ret = _card:calculate_dollar_bonus()
 
         -- TARGET: calc_dollar_bonus per card
         if ret then
-            i = i+1
-            add_round_eval_row({dollars = ret, bonus = true, name='joker'..i, pitch = pitch, card = _card})
-            pitch = pitch + 0.06
-            dollars = dollars + ret
+            add_joker_row(ret, _card)
+            if SMODS.optional_features.retrigger_joker_cashout then
+                local retriggers = SMODS.calculate_retriggers(_card, {cashout_retrigger = true}, ret)
+                for _,rep in ipairs(retriggers) do
+                    for _=1,rep.repetitions do
+                        SMODS.calculate_effect(rep)
+                        add_joker_row(ret, _card)
+                    end
+                end
+            end
         end
     end
 end
