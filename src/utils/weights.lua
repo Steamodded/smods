@@ -4,7 +4,7 @@
 -- Returns a `key` of the polled object type
 ---@param args table|{type: string?, labels: table[string]?, pool: table[string]?, seed: string?, chance: number?, guaranteed: boolean?}
 function SMODS.poll_object(args)
-    assert(args, "SMODS.poll_object called with args."..SMODS.log_crash_info(debug.getinfo(2)))
+    assert(args, "SMODS.poll_object called with no args."..SMODS.log_crash_info(debug.getinfo(2)))
     assert((args.type or (args.labels and type(args.labels) == 'table') or (args.pool and type(args.pool) == 'table')), "SMODS.poll_object called without a pool source." .. SMODS.log_crash_info(debug.getinfo(2)))
 
     -- Prepare pool

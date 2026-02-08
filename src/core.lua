@@ -6,7 +6,6 @@ for _, path in ipairs {
     "src/overrides.lua",
     "src/game_object.lua",
     "src/compat_0_9_8.lua",
-    "src/loader.lua",
     "src/utils/weights.lua"
 } do
     assert(load(SMODS.NFS.read(SMODS.path..path), ('=[SMODS _ "%s"]'):format(path)))()
