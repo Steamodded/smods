@@ -1,0 +1,55 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+### Sprite API
+
+# Game:set_render_settings()
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = "G:set_render_settings()"
+position = 'at'
+match_indent = true
+payload = "SMODS.injectObjects(SMODS.Atlas)"
+
+
+## Set ability resizing fix
+[[patches]]
+[patches.pattern]
+target = 'engine/moveable.lua'
+pattern = '''Node.init(self, args)'''
+position = 'after'
+match_indent = true
+payload = '''self.original_T = copy_table(self.T)'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''self.T.scale = 0.95'''
+position = 'after'
+match_indent = true
+payload = '''self.original_T.scale = 0.95'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''self:set_ability(center, true)'''
+position = 'before'
+match_indent = true
+payload = '''self.original_T = copy_table(self.T)'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+local X, Y, W, H = self.T.x, self.T.y, self.T.w, self.T.h
+'''
+payload = '''
+if delay_sprites ~= 'quantum' then
+    for key, _ in pairs(self.T) do
+        self.T[key] = self.original_T[key]
+    end
+end
+'''
+

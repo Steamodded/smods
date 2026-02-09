@@ -1,0 +1,281 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Fix areas where highest stake is hardcoded as Gold Stake
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "if G.PROFILES[G.SETTINGS.profile].all_unlocked then max_stake = 8 end"
+position = "at"
+payload = "if G.PROFILES[G.SETTINGS.profile].all_unlocked then max_stake = #G.P_CENTER_POOLS['Stake'] end"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "for i = 1, math.min(max_stake+1, 8) do"
+position = "at"
+payload = "for i = 1, math.min(max_stake+1, #G.P_CENTER_POOLS['Stake']) do"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "if G.GAME.stake >= 8 then"
+position = "at"
+payload = "if G.GAME.stake >= #G.P_CENTER_POOLS['Stake'] then"
+match_indent = true
+
+# Stake modifier API
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = "if self.GAME.stake >= 2 then"
+position = "before"
+payload = "if false then"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = "if self.GAME.stake >= 8 then self.GAME.modifiers.enable_rentals_in_shop = true end"
+position = "after"
+payload = "end SMODS.setup_stake(self.GAME.stake)"
+match_indent = true
+
+# Stake shininess API
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "if _stake == 8 then"
+position = "at"
+payload = "if G.P_CENTER_POOLS['Stake'][_stake].shiny then"
+match_indent = true
+
+# Override stake listing to make room for our recursive version
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "for i = G.GAME.stake-1, 2, -1 do"
+position = "before"
+payload = "if false then"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = 'other_col = {n=G.UIT.R, config={align = "cm", padding = 0.05, r = 0.1, colour = G.C.L_BLACK}, nodes=stake_desc_rows}'
+position = "before"
+payload = "end SMODS.applied_stakes_UI(G.GAME.stake, stake_desc_rows)"
+match_indent = true
+
+# Set win stake to that specified in unlocked stake
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = 'for i = 1, G.GAME.stake do'
+position = "at"
+payload = '''for i = 1,
+(G.P_CENTER_POOLS["Stake"][G.GAME.stake].unlocked_stake) and 
+(G.P_STAKES[G.P_CENTER_POOLS["Stake"][G.GAME.stake].unlocked_stake].stake_level-1) or (G.GAME.stake-1)
+do'''
+match_indent = true
+
+# Stake Sprites
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = 'local stake_sprite = Sprite(0,0,_scale*1,_scale*1,G.ASSET_ATLAS["chips"], G.P_CENTER_POOLS.Stake[_stake].pos)'
+position = "at"
+payload = 'local stake_sprite = Sprite(0,0,_scale*1,_scale*1,G.ASSET_ATLAS[G.P_CENTER_POOLS.Stake[_stake].atlas], G.P_CENTER_POOLS.Stake[_stake].pos)'
+match_indent = true
+
+# Achievements and unlocks
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = 'if highest_win >= 2 then'
+position = "at"
+payload = 'if highest_win >= G.P_STAKES["stake_red"].stake_level then'
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = 'if highest_win >= 4 then'
+position = "at"
+payload = 'if highest_win >= G.P_STAKES["stake_black"].stake_level then'
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = 'if highest_win >= 8 then'
+position = "at"
+payload = 'if highest_win >= G.P_STAKES["stake_gold"].stake_level then'
+match_indent = true
+
+# get_blind_amount
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = 'function get_blind_amount(ante)'
+position = "after"
+payload = '''if G.GAME.modifiers.scaling and (G.GAME.modifiers.scaling ~= 1 and G.GAME.modifiers.scaling ~= 2 and G.GAME.modifiers.scaling ~= 3) then return SMODS.get_blind_amount(ante) end'''
+match_indent = true
+
+# set_joker_usage
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = 'G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key] = {count = 1, order = v.config.center.order, wins = {}, losses = {}}'
+position = "at"
+payload = 'G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key] = {count = 1, order = v.config.center.order, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {}}'
+match_indent = true
+
+# set_joker_win
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = 'G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key] = G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key] or {count = 1, order = v.config.center.order, wins = {}, losses = {}}'
+position = "at"
+payload = 'G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key] = G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key] or {count = 1, order = v.config.center.order, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {}}'
+match_indent = true
+
+#set_joker_win
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = 'G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key].wins[G.GAME.stake] = (G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key].wins[G.GAME.stake] or 0) + 1'
+position = "after"
+payload = 'G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key].wins_by_key[SMODS.stake_from_index(G.GAME.stake)] = (G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key].wins_by_key[SMODS.stake_from_index(G.GAME.stake)] or 0) + 1'
+match_indent = true
+
+#set_joker_loss
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = 'G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key].losses[G.GAME.stake] = (G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key].losses[G.GAME.stake] or 0) + 1'
+position = "after"
+payload = 'G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key].losses_by_key[SMODS.stake_from_index(G.GAME.stake)] = (G.PROFILES[G.SETTINGS.profile].joker_usage[v.config.center_key].losses_by_key[SMODS.stake_from_index(G.GAME.stake)] or 0) + 1'
+match_indent = true
+
+# set_deck_usage
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = 'G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key] = {count = 1, order = G.GAME.selected_back.effect.center.order, wins = {}, losses = {}}'
+position = "at"
+payload = 'G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key] = {count = 1, order = G.GAME.selected_back.effect.center.order, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {}}'
+match_indent = true
+
+# set_deck_loss
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = 'if not G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key] then G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key] = {count = 1, order = G.GAME.selected_back.effect.center.order, wins = {}, losses = {}} end'
+position = "at"
+payload = 'if not G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key] then G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key] = {count = 1, order = G.GAME.selected_back.effect.center.order, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {}} end'
+match_indent = true
+
+# G.UIDEF.viewed_stake_option
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = 'G.viewed_stake = math.min(max_stake+1, G.viewed_stake)'
+position = "after"
+payload = '''if G.viewed_stake > #G.P_CENTER_POOLS.Stake then G.viewed_stake = #G.P_CENTER_POOLS.Stake end'''
+match_indent = true
+
+# Fix stake select in run start
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+local max_stake = get_deck_win_stake(G.GAME.viewed_back.effect.center.key) or 0
+G.viewed_stake = math.min(G.viewed_stake, max_stake + 1)
+'''
+payload = '''
+-- local max_stake = get_deck_win_stake(G.GAME.viewed_back.effect.center.key) or 0
+-- G.viewed_stake = math.min(G.viewed_stake, max_stake + 1)
+'''
+
+# pt 2
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+local max_stake = get_deck_win_stake(G.GAME.viewed_back.effect.center.key)
+if G.PROFILES[G.SETTINGS.profile].all_unlocked then max_stake = #G.P_CENTER_POOLS['Stake'] end
+
+G.viewed_stake = math.min(max_stake+1, G.viewed_stake)
+'''
+payload = '''
+--[[
+local max_stake = get_deck_win_stake(G.GAME.viewed_back.effect.center.key)
+if G.PROFILES[G.SETTINGS.profile].all_unlocked then max_stake = #G.P_CENTER_POOLS['Stake'] end
+  
+G.viewed_stake = math.min(max_stake+1, G.viewed_stake)
+]]--
+'''
+
+# Stake loc_vars
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if _stake_center then localize{type = 'descriptions', key = _stake_center.key, set = _stake_center.set, nodes = ret_nodes} end 
+'''
+payload = '''
+local t, res = {}, {}
+if _stake_center then
+  if _stake_center.loc_vars and type(_stake_center.loc_vars) == 'function' then
+    res = _stake_center:loc_vars() or {}
+  end
+  t.vars = res.vars or {}
+  t.key = res.key or _stake_center.key
+  t.set = res.set or _stake_center.set
+  localize{type = 'descriptions', key = t.key, set = t.set, nodes = ret_nodes, vars = t.vars}
+end
+'''
+
+# Stake loc_vars pt 2
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{n=G.UIT.T, config={text = localize{type = 'name_text', key = _stake_center.key, set = _stake_center.set}, scale = 0.35, colour = G.C.WHITE}}
+'''
+payload = '''
+{n=G.UIT.T, config={text = localize{type = 'name_text', key = t.key, set = t.set}, scale = 0.35, colour = G.C.WHITE}}
+'''
+
+# Stake loc_vars pt 3
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+localize{type = 'descriptions', key = _stake_center.key, set = _stake_center.set, nodes = _stake_desc}
+'''
+payload = '''
+local t, res = {}, {}
+if _stake_center.loc_vars and type(_stake_center.loc_vars) == 'function' then
+  res = _stake_center:loc_vars() or {}
+end
+t.vars = res.vars or {}
+t.key = res.key or _stake_center.key
+t.set = res.set or _stake_center.set
+localize{type = 'descriptions', key = t.key, set = t.set, nodes = _stake_desc, vars = t.vars}
+'''

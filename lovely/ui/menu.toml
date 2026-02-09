@@ -1,0 +1,60 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''local main_menu = nil'''
+position = "after"
+payload = '''local mods = nil'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''main_menu = UIBox_button{ label = {localize('b_main_menu')}, button = "go_to_menu", minw = 5}'''
+position = "after"
+payload = '''mods = UIBox_button{ id = "mods_button", label = {localize('b_mods')}, button = "mods_button", minw = 5}'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''G.ARGS.set_alerts_alertables[11].should_alert = alert_booster'''
+position = "after"
+payload = '''table.insert(G.ARGS.set_alerts_alertables, {id = 'mods_button', alert_uibox_name = 'mods_button_alert', should_alert = SMODS.mod_button_alert})'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''main_menu,'''
+position = "after"
+payload = '''mods,'''
+match_indent = true
+
+
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''self.ASSET_ATLAS[self.asset_atli[i].name].image = love.graphics.newImage(self.asset_atli[i].path, {mipmaps = true, dpiscale = self.SETTINGS.GRAPHICS.texture_scaling})'''
+position = 'after'
+payload = '''
+local mipmap_level = SMODS.config.graphics_mipmap_level_options[SMODS.config.graphics_mipmap_level]
+if mipmap_level and mipmap_level > 0 then
+    self.ASSET_ATLAS[self.asset_atli[i].name].image:setMipmapFilter('linear', mipmap_level)
+end'''
+match_indent = true
+
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''create_option_cycle({w = 4,scale = 0.8, label = localize("b_set_CRT_bloom"),options = localize('ml_bloom_opt'), opt_callback = 'change_crt_bloom', current_option = G.SETTINGS.GRAPHICS.bloom}),'''
+position = 'after'
+payload = '''
+create_option_cycle({label = localize('b_graphics_mipmap_level'),scale = 0.8, options = SMODS.config.graphics_mipmap_level_options, opt_callback = 'SMODS_change_mipmap', current_option = SMODS.config.graphics_mipmap_level}),'''
+match_indent = true
+

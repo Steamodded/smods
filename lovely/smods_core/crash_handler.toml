@@ -1,0 +1,32 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = "function love.errhand(msg)"
+position = "at"
+payload = "if false then"
+match_indent = true
+
+[[patches]]
+[patches.copy]
+target = "main.lua"
+position = "prepend"
+sources = [
+    "src/crash_handler.lua",
+]
+
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+local saveTable = args.savetext or nil
+'''
+payload = '''
+if G.SAVED_GAME then SMODS.save_game = G.SAVED_GAME.GAME.smods_version else SMODS.save_game = nil end
+'''

@@ -1,0 +1,28 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = "self.SPEEDFACTOR = 1"
+position = "after"
+payload = 'require "SMODS.preflight.loader".initSteamodded()'
+match_indent = true
+
+[[patches]]
+[patches.copy]
+target = "main.lua"
+position = "append"
+sources = ["src/core.lua"]
+
+[[patches]]
+[patches.module]
+source = "version.lua"
+name = "SMODS.version"
+
+[[patches]]
+[patches.module]
+source = "release.lua"
+name = "SMODS.release"

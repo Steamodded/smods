@@ -1,0 +1,219 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Fix debug mode edition cycling
+[[patches]]
+[patches.regex]
+target = "engine/controller.lua"
+pattern = '''
+(?<indent>[\t ]*)local _edition = \{
+[\t ]*foil = not _card\.edition,
+[\t ]*holo = _card\.edition and _card\.edition\.foil,
+[\t ]*polychrome = _card\.edition and _card\.edition\.holo,
+[\t ]*negative = _card\.edition and _card\.edition\.polychrome,
+[\t ]*\}'''
+position = "at"
+payload = '''
+local found_index = 1
+if _card.edition then
+    for i, v in ipairs(G.P_CENTER_POOLS.Edition) do
+        if v.key == _card.edition.key then
+            found_index = i
+            break
+        end
+    end
+end
+found_index = found_index + 1
+if found_index > #G.P_CENTER_POOLS.Edition then found_index = found_index - #G.P_CENTER_POOLS.Edition end
+local _edition = G.P_CENTER_POOLS.Edition[found_index].key'''
+line_prepend = "$indent"
+
+
+# Sort P_CENTER_POOLS["Editions"]
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = 'table.sort(self.P_CENTER_POOLS["Enhanced"], function (a, b) return a.order < b.order end)'
+position = 'after'
+payload = 'table.sort(self.P_CENTER_POOLS["Edition"], function (a, b) return a.order < b.order end)'
+match_indent = true
+
+
+# generate_card_ui()
+# Adds tooltips for all editions
+[[patches]]
+[patches.regex]
+target = 'functions/common_events.lua'
+pattern = '''
+(?<indent>[\t ]*)if v == 'foil' then info_queue\[#info_queue\+1\] = G\.P_CENTERS\['e_foil'\] end
+[\t ]*if v == 'holographic' then info_queue\[#info_queue\+1\] = G\.P_CENTERS\['e_holo'\] end
+[\t ]*if v == 'polychrome' then info_queue\[#info_queue\+1\] = G\.P_CENTERS\['e_polychrome'\] end
+[\t ]*if v == 'negative' then info_queue\[#info_queue\+1\] = G\.P_CENTERS\['e_negative'\] end
+[\t ]*if v == 'negative_consumable' then info_queue\[#info_queue\+1\] = \{key = 'e_negative_consumable', set = 'Edition', config = \{extra = 1\}\} end'''
+position = 'at'
+payload = '''
+v = (v == 'holographic' and 'holo' or v)
+local ed_key = v
+if v:sub(v:len()-14) == '_SMODS_INTERNAL' then
+    if v:sub(1, 9) == 'negative_' then ed_key = 'negative' else ed_key = v:sub(1, v:find('_', v:find('_')+1)-1) end
+    v = v:sub(1, v:len()-15)
+end
+
+if G.P_CENTERS[ed_key] and G.P_CENTERS[ed_key].set == 'Edition' then
+    info_queue[#info_queue + 1] = G.P_CENTERS[ed_key]
+end
+if G.P_CENTERS['e_'..ed_key] and G.P_CENTERS['e_'..ed_key].set == 'Edition' then
+    local t = {key = 'e_'..v, set = 'Edition', config = {}}
+    if localize(SMODS.merge_defaults(t, {type = 'name_text'})) == 'ERROR' then t.key = 'e_'..ed_key end
+    info_queue[#info_queue + 1] = t
+    if G.P_CENTERS['e_'..ed_key].loc_vars and type(G.P_CENTERS['e_'..ed_key].loc_vars) == 'function' then
+        local res = G.P_CENTERS['e_'..ed_key]:loc_vars(info_queue, card) or {}
+        t.vars = res.vars
+        t.key = res.key or t.key
+        t.set = res.set or t.set
+    end
+end'''
+line_prepend = "$indent"
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''localize{type = 'descriptions', key = _c.key, set = _c.set, nodes = desc_nodes, vars = loc_vars}'''
+position = 'at'
+match_indent = true
+payload = '''localize{type = 'descriptions', key = _c.key, set = _c.set, nodes = desc_nodes, vars = _c.vars or loc_vars}'''
+
+
+# get_badge_colour()
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = 'return G.BADGE_COL[key] or {1, 0, 0, 1}'
+position = 'before'
+match_indent = true
+payload = '''
+for _, v in ipairs(G.P_CENTER_POOLS.Edition) do
+	G.BADGE_COL[v.key:sub(3)] = v.badge_colour
+end'''
+
+# Remove prefix from shader key when calling send()
+[[patches]]
+[patches.pattern]
+target = "engine/sprite.lua"
+pattern = "if _send then G.SHADERS[_shader or 'dissolve']:send(_shader,_send) end"
+position = "at"
+payload = '''
+if _send then
+    G.SHADERS[_shader or 'dissolve']:send((SMODS.Shaders[_shader or 'dissolve'] and SMODS.Shaders[_shader or 'dissolve'].original_key) or _shader,_send)
+end'''
+match_indent = true
+
+# Inject change to edition cost in shop
+[[patches]]
+[patches.regex]
+target = "card.lua"
+pattern = '(?<indent>[\t ]*)self.ex([a-z._\s=+(0-9)]*)\n([\t ]*)([a-z._\s=+(0-9)]*)or 0\)'
+position = "at"
+payload = '''
+for k, v in pairs(G.P_CENTER_POOLS.Edition) do
+    if self.edition[v.key:sub(3)] then
+        if v.extra_cost then
+            self.extra_cost = self.extra_cost + v.extra_cost
+        end
+    end
+end'''
+line_prepend = "$indent"
+
+# Card:save()
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "added_to_deck = self.added_to_deck,"
+position = "after"
+payload = "joker_added_to_deck_but_debuffed = self.joker_added_to_deck_but_debuffed,"
+match_indent = true
+
+## Buying card_limit cards fix
+# G.FUNCS.check_for_buy_space
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "    not (card.ability.consumeable and #G.consumeables.cards < G.consumeables.config.card_limit + ((card.edition and card.edition.negative) and 1 or 0)) then"
+position = "at"
+match_indent = true
+payload = '''
+    not (card.ability.consumeable and #G.consumeables.cards + (1 + card.ability.extra_slots_used) <= G.consumeables.config.card_limit + card.ability.card_limit) then
+'''
+times = 1
+
+# G.FUNCS.check_for_buy_space
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "not (card.ability.set == 'Joker' and #G.jokers.cards < G.jokers.config.card_limit + ((card.edition and card.edition.negative) and 1 or 0)) and"
+position = "at"
+match_indent = true
+payload = '''
+    not (card.ability.set == 'Joker' and #G.jokers.cards + (1 + card.ability.extra_slots_used) <= G.jokers.config.card_limit + card.ability.card_limit) and
+'''
+times = 1
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.edition.type == 'negative' and self.ability.consumeable then
+    badges[#badges + 1] = 'negative_consumable'
+'''
+position = "at"
+payload = """
+if self.edition.card_limit then
+    badges[#badges + 1] = SMODS.Edition.get_card_limit_key(self)
+"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "engine/sprite.lua"
+pattern = "love.graphics.setShader( G.SHADERS[_shader or 'dissolve'],  G.SHADERS[_shader or 'dissolve'])"
+position = "before"
+payload = '''
+local p_shader = SMODS.Shader.obj_table[_shader or 'dissolve']
+if p_shader and type(p_shader.send_vars) == "function" then
+    local sh = G.SHADERS[_shader or 'dissolve']
+    local parent_card = self.role.major and self.role.major:is(Card) and self.role.major
+    local send_vars = p_shader.send_vars(self, parent_card)
+
+    if type(send_vars) == "table" then
+        for key, value in pairs(send_vars) do
+            sh:send(key, value)
+        end
+    end
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "if v == 'negative_consumable' then v = 'negative' end"
+position = "at"
+payload = '''
+if v:sub(v:len()-14) == '_SMODS_INTERNAL' then
+    if v:sub(1, 9) == 'negative_' then v = 'negative' else v = v:sub(1, v:find('_', v:find('_')+1)-1) end
+end
+'''
+match_indent = true
+
+#
+[[patches]]
+[patches.regex]
+target = 'functions/common_events.lua'
+pattern = '''(?<indent>[\t ]*)(?<edi>local edition = poll_edition\('edi'\.\.\(key_append or ''\)\.\.G\.GAME\.round_resets\.ante\)(\n.*){2})'''
+position = 'at'
+line_prepend = '$indent'
+payload = '''
+if not SMODS.bypass_create_card_edition and not card.edition then
+    $edi
+end'''

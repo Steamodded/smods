@@ -1,0 +1,405 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+### Addition Tab
+
+## Decks tab
+# create_UIBox_your_collection_decks()
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''G.GAME.viewed_back = Back(G.P_CENTERS.b_red)'''
+position = "at"
+payload = '''
+local deck_pool = SMODS.collection_pool(G.P_CENTER_POOLS.Back)
+G.GAME.viewed_back = Back(G.ACTIVE_MOD_UI and deck_pool[1] or G.P_CENTERS.b_red)'''
+match_indent = true
+
+# create_UIBox_your_collection_decks()
+[[patches]]
+[patches.regex]
+target = 'functions/UI_definitions.lua'
+pattern = '''(?<indent>[\t ]*)for k, v in ipairs\(G\.P_CENTER_POOLS\.Back\) do\n[\s\S]{4}ordered_names\[#ordered_names\+1\] = v\.name\n[\s\S]{2}end'''
+position = 'at'
+payload = '''
+for k, v in ipairs(deck_pool) do
+    ordered_names[#ordered_names+1] = v.key
+end'''
+line_prepend = '$indent'
+
+# create_UIBox_your_collection_decks()
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''local t = create_UIBox_generic_options({ back_func = 'your_collection', contents = {'''
+position = "at"
+payload = '''local t = create_UIBox_generic_options({ 
+colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).colour),
+bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour),
+back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).back_colour),
+outline_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+    (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
+back_func = G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', contents = {'''
+match_indent = true
+
+# create_UIBox_your_collection_decks()
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''create_option_cycle({options = ordered_names, opt_callback = 'change_viewed_back', current_option = 1, colour = G.C.RED, w = 4.5, focus_args = {snap_to = true}, mid = '''
+position = "at"
+payload = '''create_option_cycle({options = ordered_names, opt_callback = 'change_viewed_back', current_option = 1, colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED, w = 4.5, focus_args = {snap_to = true}, mid = '''
+match_indent = true
+
+# G.FUNCS.your_collection_deck_page
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = '''G.GAME.viewed_back:change_to(G.P_CENTER_POOLS.Back[args.to_key])'''
+position = "at"
+payload = '''
+local deck_pool = SMODS.collection_pool(G.P_CENTER_POOLS.Back)
+G.GAME.viewed_back:change_to(deck_pool[args.to_key])'''
+match_indent = true
+
+# create_UIBox_your_collection()
+[[patches]]
+[patches.regex]
+target = 'functions/UI_definitions.lua'
+pattern = '''(?<indent>[\t ]*)UIBox_button\(\{button = 'your_collection_blinds', label = \{localize\('b_blinds'\)\}, count = G\.DISCOVER_TALLIES\.blinds, minw = 5, minh = 2.0, id = 'your_collection_blinds', focus_args = \{snap_to = true\}\}\),'''
+position = 'after'
+payload = '''UIBox_button({button = 'your_collection_other_gameobjects', label = {localize('k_other')}, minw = 5, id = 'your_collection_other_gameobjects', focus_args = {snap_to = true}}),'''
+
+# Fix UIElement.config.chosen being overriden if choice=true is set
+# UIElement:click()
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+match_indent = true
+position = "after"
+pattern = "if self.config.choice then"
+payload = "    local chosen_temp = self.config.chosen"
+
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+match_indent = true
+position = "at"
+pattern = "self.config.chosen = true"
+payload = "self.config.chosen = chosen_temp or true"
+
+# Escape from mod menu saves config
+# Needs to be before all checks
+[[patches]]
+[patches.pattern]
+target = 'engine/controller.lua'
+pattern = "function Controller:key_press_update(key, dt)"
+position = "after"
+payload = '''
+    if key == "escape" and (G.ACTIVE_MOD_UI or SMODS.IN_MODS_TAB) then
+        G.FUNCS.exit_mods()
+    end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = "config = {offset = {x=-0.03,y=0}, align = 'cl', parent = e}"
+payload = """config = (not e.config.ref_table or not e.config.ref_table[1].config.card_pos or e.config.ref_table[1].config.card_pos > G.ROOM.T.w*0.4) and
+    {offset = {x=-0.03,y=0}, align = 'cl', parent = e} or
+    {offset = {x=0.03,y=0}, align = 'cr', parent = e}"""
+
+[[patches]]
+[patches.pattern]
+target = 'tag.lua'
+match_indent = true
+position = 'at'
+pattern = "_self.config.h_popup_config ={align = 'cl', offset = {x=-0.1,y=0},parent = _self}"
+payload = """_self.config.h_popup_config = (_self.T.x > G.ROOM.T.w*0.4) and
+    {align =  'cl', offset = {x=-0.1,y=0},parent = _self} or
+    {align =  'cr', offset = {x=0.1,y=0},parent = _self}"""
+    
+# desc_from_rows
+[[patches]]
+[patches.regex]
+target = 'functions/UI_definitions.lua'
+position = 'at'
+pattern = 'colour = empty and G\.C\.CLEAR or G\.C\.UI\.BACKGROUND_WHITE'
+payload = 'colour = desc_nodes.background_colour or empty and G.C.CLEAR or G.C.UI.BACKGROUND_WHITE'
+
+# info_tip_from_rows
+[[patches]]
+[patches.regex]
+target = 'functions/UI_definitions.lua'
+position = 'at'
+pattern = 'padding = 0\.05, colour = G\.C\.WHITE\}'
+payload = 'padding = 0.05, colour = desc_nodes.background_colour or G.C.WHITE}'
+
+# localize
+[[patches]]
+[patches.regex]
+target = 'functions/misc_functions.lua'
+position = 'after'
+pattern = '\(part\.control\.C and loc_colour\(part\.control\.C\)\)'
+payload = ' or args.text_colour'
+
+[[patches]]
+[patches.regex]
+target = 'functions/misc_functions.lua'
+position = 'at'
+pattern = 'loc_colour\(part\.control\.C or nil, args\.default_col\)'
+payload = 'not part.control.C and args.text_colour or loc_colour(part.control.C or nil, args.default_col)'
+
+[[patches]]
+[patches.regex]
+target = 'functions/misc_functions.lua'
+position = 'after'
+pattern = 'part\.control\.s and tonumber\(part\.control\.s\)'
+payload = ' or args.scale '
+
+# set_discover_tallies()
+# exclude no_collection objects
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = "if not v.omit then"
+payload = "if not v.omit and not v.no_collection then"
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "if v.set == 'Joker' then"
+position = "at"
+payload = "if v.set == 'Joker' and not v.no_collection and not v.omit then "
+match_indent = true
+times = 1
+
+[[patches]]
+[patches.regex]
+target = 'functions/misc_functions.lua'
+line_prepend = '$indent'
+position = 'at'
+pattern = '(?<indent>[\t ]*)(?<start>for _, v in pairs\(G\.P_[BT].*)(?<rest>(\n.*){7})'
+payload = '''$start
+    if not v.no_collection then
+    $rest
+end
+'''
+
+#set_alerts()
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'at'
+pattern = "if v.discovered and not v.alerted then"
+payload = "if v.discovered and not v.alerted and not v.no_collection then"
+
+## Description controls
+# localize
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = 'final_line[#final_line+1] = {n=G.UIT.O, config={'
+payload = '''
+final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = part.control.B and args.vars.colours[tonumber(part.control.B)] or part.control.X and loc_colour(part.control.X) or nil, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
+final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
+'''
+
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = 'elseif part.control.X then'
+payload = 'elseif part.control.X or part.control.B then' 
+
+[[patches]]
+[patches.regex]
+target = 'functions/misc_functions.lua'
+position = 'at'
+pattern = 'colour = loc_colour\(part.control.X\)'
+payload = 'colour = part.control.B and args.vars.colours[tonumber(part.control.B)] or loc_colour(part.control.X)' 
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = 'colour = loc_colour(part.control.C or nil),'
+payload = 'colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil),'
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+G.E_MANAGER:add_event(Event({ --Add bonus chips from this card
+                    trigger = 'before',
+                    delay = delay,
+'''
+position = "at"
+payload = '''
+G.E_MANAGER:add_event(Event({ --Add bonus chips from this card
+                    trigger = trigger,
+                    delay = delay,
+                    blocking = blocking,
+                    blockable = blockable,
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''   if args.info then 
+     t = {n=args.col and G.UIT.C or G.UIT.R, config={align = "cm"}, nodes={'''
+position = "before"
+payload = """if args.hide_label then 
+    local t2 = {}
+    for i = 1, #t.nodes do
+        if i ~= 1 then table.insert(t2, t.nodes[i]) end
+    end
+    t.nodes = t2
+end"""
+match_indent = true
+
+# UIBox_button():
+# the counters on collection buttons use text_colour instead of being hardcoded to white
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = "{n=G.UIT.T, config={scale = 0.35,text = args.count.tally..' / '..args.count.of, colour = {1,1,1,0.9}}}"
+position = "at"
+match_indent = true
+payload = "{n=G.UIT.T, config={scale = 0.35,text = args.count.tally..' / '..args.count.of, colour = args.text_colour}}"
+
+# G.UIDEF.card_h_popup():
+# add a "card_type_text_colour" variable
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = 'local card_type_colour = get_type_colour(card.config.center or card.config, card)'
+position = 'after'
+match_indent = true
+payload = 'local card_type_text_colour = (AUT.card_type and SMODS.ConsumableTypes[AUT.card_type] and SMODS.ConsumableTypes[AUT.card_type].text_colour) or G.C.UI.TEXT_LIGHT'
+
+# G.UIDEF.card_h_popup():
+# pass "card_type_text_colour" variable to create_badge() when creating the badge for a card type
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = "badges[#badges + 1] = create_badge(((card.ability.name == 'Pluto' or card.ability.name == 'Ceres' or card.ability.name == 'Eris') and localize('k_dwarf_planet')) or (card.ability.name == 'Planet X' and localize('k_planet_q') or card_type),card_type_colour, nil, 1.2)"
+position = 'at'
+match_indent = true
+payload = "badges[#badges + 1] = create_badge(((card.ability.name == 'Pluto' or card.ability.name == 'Ceres' or card.ability.name == 'Eris') and localize('k_dwarf_planet')) or (card.ability.name == 'Planet X' and localize('k_planet_q') or card_type), card_type_colour, card_type_text_colour, 1.2)"
+
+# Fixing description error when info_queue has multi-box descriptions.
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = '''
+bump = true,
+silent = true,
+pop_in = 0,
+pop_in_rate = 4,
+maxw = 5,
+shadow = true,
+y_offset = -0.6,
+'''
+position = "at"
+payload = '''
+bump = not args.no_bump,
+text_effect = SMODS.DynaTextEffects[part.control.E] and part.control.E,
+silent = not args.no_silent,
+pop_in = (not args.no_pop_in and (args.pop_in or 0)) or nil,
+pop_in_rate = (not args.no_pop_in and (args.pop_in_rate or 4)) or nil,
+maxw = args.maxw or 5,
+shadow = not args.no_shadow,
+y_offset = args.y_offset or -0.6,'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''
+desc_nodes.name = localize{type = 'name_text', key = name_override or _c.key, set = name_override and 'Other' or _c.set} 
+'''
+position = "after"
+payload = '''
+-- If statement guards against setting `name_styled` twice. This apparently happens
+-- when generating ui for Lucky Cards: smods takes ownership of vanilla, so
+-- this code is reached in both places it appears
+if not desc_nodes.name_styled then
+  local set = name_override and "Other" or _c.set
+  local key = name_override or _c.key
+  if set == "Seal" then
+    if G.localization.descriptions["Other"][_c.key.."_seal"] then set = "Other"; key = key.."_seal" end
+  else
+    if not G.localization.descriptions[set][_c.key] then set = "Other" end
+  end
+  desc_nodes.name_styled = {}
+  localize{type = 'name', key = key, set = set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars({}, _c:create_fake_card()) or {}).vars) or {colours = {}}} 
+  desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+  desc_nodes.name_styled.config.align = "cm"
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+function info_tip_from_rows(desc_nodes, name)
+'''
+position = "after"
+payload = '''
+  local name_nodes
+  if not desc_nodes.name_styled then
+    name_nodes = {{n=G.UIT.T, config={text = name, scale = 0.32, colour = G.C.UI.TEXT_LIGHT}}}
+  else
+    name_nodes = {desc_nodes.name_styled}
+  end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'engine/node.lua'
+pattern = '''
+self.children.h_popup.states.drag.can = true
+'''
+position = "after"
+payload = '''
+-- Fixes styled info_queue names
+-- This ensures show_infotip runs just after the main hover box is created instead of being able to fall one frame after
+if ((self.children.h_popup.UIRoot.children[1] or {}).config or {}).func == "show_infotip" then
+  G.FUNCS.show_infotip(self.children.h_popup.UIRoot.children[1])
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+{n=G.UIT.R, config={align = "tm", minh = 0.36, padding = 0.03}, nodes={{n=G.UIT.T, config={text = name, scale = 0.32, colour = G.C.UI.TEXT_LIGHT}}}},
+'''
+position = "at"
+payload = '''
+{n=G.UIT.R, config={align = "tm", minh = 0.36, padding = 0.03}, nodes=name_nodes},
+'''
+match_indent = true

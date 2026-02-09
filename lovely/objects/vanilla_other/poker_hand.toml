@@ -1,0 +1,127 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+### Poker Hand API
+
+# evaluate_poker_hand()
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "local parts = {"
+position = 'before'
+payload = '''
+for _,v in ipairs(SMODS.PokerHand.obj_buffer) do
+    results[v] = {}
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "if next(parts._5) and next(parts._flush) then"
+position = 'before'
+payload = '''
+for _,_hand in pairs(SMODS.PokerHands) do
+    if _hand.atomic_part and type(_hand.atomic_part) == 'function' then
+        parts[_hand.key] = _hand.atomic_part(hand)
+    end
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "return results"
+position = 'before'
+payload = '''
+for _,_hand in pairs(SMODS.PokerHands) do
+    if _hand.composite and type(_hand.composite) == 'function' then
+        local other_hands
+        results[_hand.key], other_hands = _hand.composite(parts)
+        results[_hand.key] = results[_hand.key] or {}
+        if other_hands and type(other_hands) == 'table' then
+            for k, v in pairs(other_hands) do
+                results[k] = v
+            end
+        end
+    else
+        results[_hand.key] = parts[_hand.key]
+    end
+end
+results.top = nil
+for _, v in ipairs(G.handlist) do
+    if not results.top and results[v] then
+        results.top = results[v]
+        break
+    end
+end'''
+match_indent = true
+
+## is_visible
+
+# create_UIBox_blind_choice
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''if v.visible then _poker_hands[#_poker_hands+1] = k end'''
+position = "at"
+payload = '''
+if SMODS.is_poker_hand_visible(k) then _poker_hands[#_poker_hands+1] = k end
+'''
+match_indent = true
+
+# card:calculate_joker
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''if k ~= context.scoring_name and v.played >= play_more_than and v.visible then'''
+position = "at"
+payload = '''
+if k ~= context.scoring_name and v.played >= play_more_than and SMODS.is_poker_hand_visible(k) then
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''if v.visible and k ~= self.ability.to_do_poker_hand then _poker_hands[#_poker_hands+1] = k end'''
+position = "at"
+payload = '''
+if SMODS.is_poker_hand_visible(k) and k ~= self.ability.to_do_poker_hand then _poker_hands[#_poker_hands+1] = k end
+'''
+match_indent = true
+
+# card:set_ability
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''if v.visible then _poker_hands[#_poker_hands+1] = k end'''
+position = "at"
+payload = '''
+if SMODS.is_poker_hand_visible(k) then _poker_hands[#_poker_hands+1] = k end
+'''
+match_indent = true
+
+# G.FUNCS.evaluate_play()
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''G.GAME.hands[text].played_this_round = G.GAME.hands[text].played_this_round + 1'''
+position = "after"
+payload = '''G.GAME.hands[text].played_this_ante = G.GAME.hands[text].played_this_ante + 1'''
+match_indent = true
+times = 1
+
+# end_round()
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''G.GAME.voucher_restock = nil'''
+position = "after"
+payload = '''for k, v in pairs(G.GAME.hands) do
+    v.played_this_ante = 0
+end'''
+match_indent = true
+times = 1

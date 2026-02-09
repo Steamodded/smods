@@ -1,0 +1,207 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+### Back API
+
+# Back:init()
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = "if not selected_back then selected_back = G.P_CENTERS.b_red end"
+position = 'after'
+match_indent = true
+payload = "self.atlas = selected_back.unlocked and selected_back.atlas or nil"
+
+# Back:change_to()
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = "if not new_back then new_back = G.P_CENTERS.b_red end"
+position = 'after'
+match_indent = true
+payload = "self.atlas = new_back.unlocked and new_back.atlas or nil"
+
+# G.FUNCS.change_viewed_back
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = "G.PROFILES[G.SETTINGS.profile].MEMORY.deck = args.to_val"
+position = 'after'
+match_indent = true
+payload = '''
+for key, val in pairs(G.sticker_card.area.cards) do
+	val.children.back = false
+	val:set_ability(val.config.center, true)
+end'''
+
+# Back:apply_to_run()
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = "function Back:apply_to_run()"
+position = 'after'
+match_indent = true
+payload = '''
+	local obj = self.effect.center
+	if obj.apply and type(obj.apply) == 'function' then
+		obj:apply(self)
+	end'''
+
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = "if self.effect.config.randomize_rank_suit then"
+position = 'before'
+match_indent = true
+payload = '''
+G.E_MANAGER:add_event(Event({
+	func = function()
+		G.E_MANAGER:add_event(Event({
+			func = function()
+				save_run()
+				return true
+			end
+		}))
+		return true
+	end
+}))
+'''
+
+# Back:trigger_effect(args)
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = "if not args then return end"
+position = 'after'
+match_indent = true
+payload = '''
+	local obj = self.effect.center
+	if type(obj.calculate) == 'function' then
+		local o = {obj:calculate(self, args)}
+		if next(o) ~= nil then return unpack(o) end
+	elseif type(obj.trigger_effect) == 'function' then
+		-- kept for compatibility
+		local o = {obj:trigger_effect(args)}
+		if next(o) ~= nil then
+			sendWarnMessage(('Found `trigger_effect` function on SMODS.Back object "%s". This field is deprecated; please use `calculate` instead.'):format(obj.key), 'Back')
+			return unpack(o)
+		end
+	end'''
+
+## Back:generate_UI
+
+# Localization with `unlock` field in loc_txt, same as for Jokers
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = 'if not back_config.unlock_condition then'
+position = 'at'
+payload = '''
+local localized_by_smods
+local key_override
+if back_config.locked_loc_vars and type(back_config.locked_loc_vars) == 'function' then
+	local res = back_config:locked_loc_vars() or {}
+	loc_args = res.vars or {}
+	key_override = res.key
+end
+if G.localization.descriptions.Back[key_override or back_config.key].unlock_parsed then
+	localize{type = 'unlocks', key = key_override or back_config.key, set = 'Back', nodes = loc_nodes, vars = loc_args}
+	localized_by_smods = true
+end
+if not back_config.unlock_condition then'''
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = '''localize{type = 'descriptions', key = 'demo_locked', set = "Other", nodes = loc_nodes, vars = loc_args}'''
+position = 'at'
+payload = '''
+if not localized_by_smods then
+	localize{type = 'descriptions', key = 'demo_locked', set = "Other", nodes = loc_nodes, vars = loc_args}
+end'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = 'loc_args = {other_name}'
+position = 'at'
+payload = 'loc_args = loc_args or {other_name}'
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = 'loc_args = {tostring(back_config.unlock_condition.amount)}'
+position = 'at'
+payload = 'loc_args = loc_args or {tostring(back_config.unlock_condition.amount)}'
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = 'loc_args = {other_name, colours = {get_stake_col(back_config.unlock_condition.stake)}}'
+position = 'at'
+payload = 'loc_args = loc_args or {other_name, colours = {get_stake_col(back_config.unlock_condition.stake)}}'
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = "if name_to_check == 'Blue Deck'*"
+position = 'at'
+match_indent = true
+payload = '''
+local key_override
+if back_config.loc_vars and type(back_config.loc_vars) == 'function' then
+	local res = back_config:loc_vars() or {}
+	loc_args = res.vars or {}
+	key_override = res.key
+elseif name_to_check == 'Blue Deck' then loc_args = {effect_config.hands}'''
+
+[[patches]]
+[patches.regex]
+target = 'back.lua'
+pattern = "key = back_config\\.key"
+position = 'at'
+payload = "key = key_override or back_config.key"
+
+# Back:apply_to_run() - add jokers support to config
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if self.effect.config.voucher then
+'''
+payload = '''
+if self.effect.config.jokers then
+        delay(0.4)
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                for k, v in ipairs(self.effect.config.jokers) do
+                    local card = create_card('Joker', G.jokers, nil, nil, nil, nil, v, 'deck')
+                    card:add_to_deck()
+                    G.jokers:emplace(card)
+					card:start_materialize()
+                end
+            return true
+            end
+        }))
+    end
+'''
+
+# Load deck when continuing the run
+# Game.start_run
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = "self.GAME.selected_back = Back(selected_back)"
+position = 'after'
+match_indent = true
+payload = '''
+if saveTable then
+    self.GAME.selected_back:load(saveTable.BACK)
+end
+'''

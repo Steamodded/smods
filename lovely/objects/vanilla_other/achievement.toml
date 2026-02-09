@@ -1,0 +1,109 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+## Achievement API
+
+# fetch_achievements()
+[[patches]]
+[patches.regex]
+target = "functions/common_events.lua"
+pattern = '''(?<indent>[\t ]*)if G\.F_NO_ACHIEVEMENTS then return end[\n\s]*?--\|FROM LOCAL SETTINGS FILE'''
+position = 'before'
+# match_indent = true
+line_prepend = '$indent'
+payload = '''
+G.SETTINGS.ACHIEVEMENTS_EARNED = G.SETTINGS.ACHIEVEMENTS_EARNED or {}
+for k, v in pairs(G.ACHIEVEMENTS) do
+    if not v.key then v.key = k end
+    for kk, vv in pairs(G.SETTINGS.ACHIEVEMENTS_EARNED) do 
+        if G.ACHIEVEMENTS[kk] and G.ACHIEVEMENTS[kk].mod then
+            G.ACHIEVEMENTS[kk].earned = true
+        end
+    end
+end
+'''
+
+# check_for_unlock
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''if G.GAME.challenge then return end'''
+position = "after"
+payload = '''
+fetch_achievements() -- Refreshes achievements
+for k, v in pairs(G.ACHIEVEMENTS) do
+    if (not v.earned) and (v.unlock_condition and type(v.unlock_condition) == 'function') and v:unlock_condition(args) then
+        unlock_achievement(k)
+    end
+end'''
+match_indent = true
+
+# unlock_achievement()
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''if G.PROFILES[G.SETTINGS.profile].all_unlocked then return end'''
+position = "at"
+payload = '''if G.PROFILES[G.SETTINGS.profile].all_unlocked and (G.ACHIEVEMENTS and G.ACHIEVEMENTS[achievement_name] and not G.ACHIEVEMENTS[achievement_name].bypass_all_unlocked and SMODS.config.achievements < 3) or (SMODS.config.achievements < 3 and (G.GAME.seeded or G.GAME.challenge)) then return true end'''
+match_indent = true
+
+# unlock_achievement() - fix event queue leaking
+# fixed smods achievements not unlocking due to above comment's memory leak fix
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''local achievement_set = false
+if G.F_NO_ACHIEVEMENTS then return end'''
+position = "at"
+payload = '''local achievement_set = false
+if not G.ACHIEVEMENTS then fetch_achievements() end
+G.SETTINGS.ACHIEVEMENTS_EARNED[achievement_name] = true
+G:save_progress()
+
+if G.ACHIEVEMENTS[achievement_name] and G.ACHIEVEMENTS[achievement_name].mod then 
+    if not G.ACHIEVEMENTS[achievement_name].earned then
+        --|THIS IS THE FIRST TIME THIS ACHIEVEMENT HAS BEEN EARNED
+        achievement_set = true
+        G.FILE_HANDLER.force = true
+    end
+    G.ACHIEVEMENTS[achievement_name].earned = true
+end
+
+if achievement_set then 
+    notify_alert(achievement_name)
+    return true
+end
+if G.F_NO_ACHIEVEMENTS and not (G.ACHIEVEMENTS[achievement_name] or {}).mod then return true end'''
+match_indent = true
+
+# option to allow unlocks and discoveries in seeded runs
+[[patches]]
+[patches.regex]
+target = 'functions/common_events.lua'
+pattern = 'if G\.GAME\.seeded or G\.GAME\.challenge then return end'
+position = 'at'
+payload = 'if not SMODS.config.seeded_unlocks and (G.GAME.seeded or G.GAME.challenge) then return end'
+
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'at'
+pattern = 'if not G.GAME.seeded and not G.GAME.challenge then'
+payload = 'if (not G.GAME.seeded and not G.GAME.challenge) or SMODS.config.seeded_unlocks then'
+
+[[patches]]
+[patches.regex]
+target = 'functions/common_events.lua'
+pattern = 'if G\.GAME\.seeded then'
+position = 'at'
+payload = 'if false then'
+
+[[patches]]
+[patches.regex]
+target = 'functions/common_events.lua'
+pattern = 'if G\.GAME\.challenge then'
+position = 'at'
+payload = 'if false then'

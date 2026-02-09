@@ -1,0 +1,111 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+### Sticker API
+
+# generate_UIBox_ability_table()
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if self.sticker or ((self.sticker_run and self.sticker_run~='NONE') and G.SETTINGS.run_stake_stickers)  then loc_vars = loc_vars or {}; loc_vars.sticker=(self.sticker or self.sticker_run) end"
+position = "before"
+match_indent = true
+payload = '''
+for k, v in ipairs(SMODS.Sticker.obj_buffer) do
+	if self.ability[v] and not SMODS.Stickers[v].hide_badge then
+        badges[#badges+1] = v
+    end
+end'''
+
+# generate_card_ui()
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if v == 'eternal' then*"
+match_indent = true
+position = "before"
+payload = '''
+local sticker = SMODS.Stickers[v]
+if sticker then
+    local t = { key = v, set = 'Other' }
+    local res = {}
+    if sticker.loc_vars and type(sticker.loc_vars) == 'function' then
+        res = sticker:loc_vars(info_queue, card) or {}
+        t.vars = res.vars or {}
+        t.key = res.key or t.key
+        t.set = res.set or t.set
+    end
+    info_queue[#info_queue+1] = t
+else'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if v == 'rental' then*"
+match_indent = true
+position = "after"
+payload = '''end'''
+
+# create_card()
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if card.ability.consumeable and not skip_materialize then card:start_materialize() end"
+position = "after"
+match_indent = true
+payload = '''
+for k, v in ipairs(SMODS.Sticker.obj_buffer) do
+    local sticker = SMODS.Stickers[v]
+    if sticker.should_apply and type(sticker.should_apply) == 'function' and sticker:should_apply(card, center, area) then
+        sticker:apply(card, true)
+    end
+end'''
+
+## Remove base game sticker rolls if one is added
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if G.GAME.modifiers.enable_eternals_in_shop and eternal_perishable_poll > 0.7 then"
+position = "at"
+match_indent = true
+payload = '''if G.GAME.modifiers.enable_eternals_in_shop and eternal_perishable_poll > 0.7 and not SMODS.Stickers["eternal"].should_apply then'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "elseif G.GAME.modifiers.enable_perishables_in_shop and ((eternal_perishable_poll > 0.4) and (eternal_perishable_poll <= 0.7)) then"
+position = "at"
+match_indent = true
+payload = '''elseif G.GAME.modifiers.enable_perishables_in_shop and ((eternal_perishable_poll > 0.4) and (eternal_perishable_poll <= 0.7)) and not SMODS.Stickers["perishable"].should_apply then'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if G.GAME.modifiers.enable_rentals_in_shop and pseudorandom((area == G.pack_cards and 'packssjr' or 'ssjr')..G.GAME.round_resets.ante) > 0.7 then"
+position = "at"
+match_indent = true
+payload = '''if G.GAME.modifiers.enable_rentals_in_shop and pseudorandom((area == G.pack_cards and 'packssjr' or 'ssjr')..G.GAME.round_resets.ante) > 0.7 and not SMODS.Stickers["rental"].should_apply then'''
+
+# get_badge_colour()
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = 'return G.BADGE_COL[key] or {1, 0, 0, 1}'
+position = 'before'
+match_indent = true
+payload = '''
+for k, v in pairs(SMODS.Stickers) do
+    G.BADGE_COL[k] = v.badge_colour
+end'''
+
+## Remove Pinned effect when in Sticker collections
+# CardArea:aling_cards
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+pattern = '''table.sort(self.cards, function (a, b) return a.T.x + a.T.w/2 - 100*(a.pinned and a.sort_id or 0) < b.T.x + b.T.w/2 - 100*(b.pinned and b.sort_id or 0) end)'''
+position = 'at'
+match_indent = true
+payload = '''table.sort(self.cards, function (a, b) return a.T.x + a.T.w/2 - 100*((a.pinned and not a.ignore_pinned) and a.sort_id or 0) < b.T.x + b.T.w/2 - 100*((b.pinned and not b.ignore_pinned) and b.sort_id or 0) end)'''

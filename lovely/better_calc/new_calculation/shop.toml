@@ -1,0 +1,271 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Set defaults
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+erratic_suits_and_ranks = false,
+'''
+payload = '''
+boosters_in_shop = 2,
+vouchers_in_shop = 1,
+'''
+
+# Allow booster count to be controlled by G.GAME.modifiers.extra_boosters
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+for i = 1, 2 do
+    G.GAME.current_round.used_packs = G.GAME.current_round.used_packs or {}
+'''
+payload = '''
+for i=1, G.GAME.starting_params.boosters_in_shop + (G.GAME.modifiers.extra_boosters or 0) do
+    G.GAME.current_round.used_packs = G.GAME.current_round.used_packs or {}
+'''
+# Custom deck functionality
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if self.effect.config.no_interest then
+'''
+payload = '''
+if self.effect.config.boosters_in_shop then
+    G.GAME.starting_params.boosters_in_shop = self.effect.config.boosters_in_shop
+end
+'''
+
+# Allow voucher count to be controlled by G.GAME.modifiers.extra_vouchers
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if G.GAME.current_round.voucher and G.P_CENTERS[G.GAME.current_round.voucher] then
+    local card = Card(G.shop_vouchers.T.x + G.shop_vouchers.T.w/2,
+    G.shop_vouchers.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS[G.GAME.current_round.voucher],{bypass_discovery_center = true, bypass_discovery_ui = true})
+    card.shop_voucher = true
+    create_shop_card_ui(card, 'Voucher', G.shop_vouchers)
+    card:start_materialize()
+    G.shop_vouchers:emplace(card)
+end
+'''
+payload = '''
+local vouchers_to_spawn = 0
+for _,_ in pairs(G.GAME.current_round.voucher.spawn) do vouchers_to_spawn = vouchers_to_spawn + 1 end
+if vouchers_to_spawn < G.GAME.starting_params.vouchers_in_shop + (G.GAME.modifiers.extra_vouchers or 0) then
+    SMODS.get_next_vouchers(G.GAME.current_round.voucher)
+end
+for _, key in ipairs(G.GAME.current_round.voucher or {}) do
+    if G.P_CENTERS[key] and G.GAME.current_round.voucher.spawn[key] then
+        SMODS.add_voucher_to_shop(key)
+    end
+end
+'''
+# Modify generating vouchers
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.GAME.current_round.voucher = get_next_voucher_key()
+'''
+payload = '''
+G.GAME.current_round.voucher = SMODS.get_next_vouchers()
+'''
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.GAME.current_round.voucher = G.SETTINGS.tutorial_progress and G.SETTINGS.tutorial_progress.forced_voucher or get_next_voucher_key()
+'''
+payload = '''
+local forced_voucher = (G.SETTINGS.tutorial_progress or {}).forced_voucher
+self.GAME.current_round.voucher = forced_voucher and {forced_voucher, spawn = {[forced_voucher] = true }} or SMODS.get_next_vouchers()
+'''
+# Stop redeeming vouchers deleting the table of vouchers
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if self.shop_voucher then G.GAME.current_round.voucher = nil end
+'''
+payload = '''
+if self.shop_voucher then G.GAME.current_round.voucher.spawn[self.config.center_key] = false end
+if self.from_tag then G.GAME.current_round.voucher.spawn[G.GAME.current_round.voucher[1]] = false end
+'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.GAME.current_round.voucher = nil
+'''
+payload = '''
+--G.GAME.current_round.voucher = nil
+'''
+# Add voucher restock message
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+  if (G.shop_vouchers and G.shop_vouchers.cards and (G.shop_vouchers.cards[1] or G.GAME.current_round.voucher)) then
+'''
+payload = '''
+  if (G.shop_vouchers and G.shop_vouchers.cards and G.shop_vouchers.cards[1]) then
+'''
+# Maintain voucher tag jank interaction
+[[patches]]
+[patches.pattern]
+target = 'tag.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+create_shop_card_ui(card, 'Voucher', G.shop_vouchers)
+'''
+payload = '''
+card.from_tag = true
+'''
+
+
+# Free Rerolls
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+local chaos = find_joker('Chaos the Clown')
+G.GAME.current_round.free_rerolls = #chaos
+'''
+payload = '''
+G.GAME.current_round.free_rerolls = G.GAME.round_resets.free_rerolls
+'''
+# G.GAME.round_resets.free_rerolls
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+reroll_cost = 1,
+'''
+payload = '''
+free_rerolls = 0,
+'''
+# Adjust Chaos the Clown
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.GAME.current_round.free_rerolls = G.GAME.current_round.free_rerolls + 1
+'''
+payload = '''
+SMODS.change_free_rerolls(1)
+'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.GAME.current_round.free_rerolls = G.GAME.current_round.free_rerolls - 1
+'''
+payload = '''
+SMODS.change_free_rerolls(-1)
+'''
+
+## Shop Card Area Width
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''G.GAME.shop.joker_max*1.02*G.CARD_W,'''
+position = 'at'
+match_indent = true
+payload = '''math.min(G.GAME.shop.joker_max*1.02*G.CARD_W,4.08*G.CARD_W),'''
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''G.shop_jokers.T.w = G.GAME.shop.joker_max*1.01*G.CARD_W'''
+position = 'at'
+match_indent = true
+payload = '''G.shop_jokers.T.w = math.min(G.GAME.shop.joker_max*1.02*G.CARD_W,4.08*G.CARD_W)'''
+
+# for some reason shop_voucher is not saved/loaded so... that's what's gonna happen
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''ability = self.ability,'''
+position = "before"
+payload = '''
+shop_voucher = self.shop_voucher,
+'''
+match_indent = true
+
+# water is wet
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''self.ability = cardTable.ability'''
+position = "before"
+payload = '''
+self.shop_voucher = cardTable.shop_voucher
+'''
+match_indent = true
+
+# poll_edition for playing cards in shop
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+local edition_poll = pseudorandom(pseudoseed('illusion'))
+local edition = {}
+if edition_poll > 1 - 0.15 then edition.polychrome = true
+elseif edition_poll > 0.5 then edition.holo = true
+else edition.foil = true
+end
+card:set_edition(edition)
+'''
+position = 'at'
+match_indent = true
+payload = '''card:set_edition(poll_edition('illusion', nil, true, true))'''
+
+
+# modify_shop_card context for allowing shop cards to be modified (duh)
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+local card = create_card(v.type, area, nil, nil, nil, nil, nil, 'sho')
+'''
+position = 'at'
+payload = '''
+local args = {set = v.type, area = area, key_append = 'sho'}
+local flags = SMODS.calculate_context({create_shop_card = true, set = v.type})
+local create_flags = SMODS.merge_defaults(flags.shop_create_flags or {}, args)
+local card = SMODS.create_card(create_flags)
+SMODS.calculate_context({modify_shop_card = true, card = card})
+'''
+match_indent = true

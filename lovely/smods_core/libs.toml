@@ -1,0 +1,32 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+[[patches]]
+[patches.module]
+source = "libs/json/json.lua"
+name = "json" 
+
+[[patches]]
+[patches.module]
+source = "libs/nativefs/nativefs.lua"
+name = "nativefs"
+
+# We use our own module because we modifed it
+# and other mods may vendor their own which doesn't
+# have our patches
+[[patches]]
+[patches.module]
+source = "libs/nativefs/nativefs.lua"
+name = "SMODS.nativefs"
+
+[[patches]]
+[patches.module]
+source = "libs/https/luajit-curl.lua"
+name = "luajit-curl"
+
+[[patches]]
+[patches.module]
+source = "libs/https/smods-https.lua"
+name = "SMODS.https"

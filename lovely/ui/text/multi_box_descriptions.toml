@@ -1,0 +1,158 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Handle multi boxes in localize
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+for _, lines in ipairs(args.type == 'unlocks' and loc_target.unlock_parsed or args.type == 'name' and loc_target.name_parsed or (args.type == 'text' or args.type == 'tutorial' or args.type == 'quips') and loc_target or loc_target.text_parsed) do
+'''
+payload = '''
+args.AUT = args.AUT or {}
+args.AUT.box_colours = {}
+if (args.type == 'descriptions' or args.type == 'other') and type(loc_target.text) == 'table' and type(loc_target.text[1]) == 'table' then
+    args.AUT.multi_box = args.AUT.multi_box or {} 
+    for i, box in ipairs(loc_target.text_parsed) do
+        for j, line in ipairs(box) do
+            local final_line = SMODS.localize_box(line, args)
+            if i == 1 or next(args.AUT.info) then
+                args.nodes[#args.nodes+1] = final_line -- Sends main box to AUT.main
+                if not next(args.AUT.info) then args.nodes.main_box_flag = true end
+            elseif not next(args.AUT.info) then 
+                args.AUT.multi_box[i-1] = args.AUT.multi_box[i-1] or {}
+                args.AUT.multi_box[i-1][#args.AUT.multi_box[i-1]+1] = final_line
+            end
+            if not next(args.AUT.info) then args.AUT.box_colours[i] = args.vars.box_colours and args.vars.box_colours[i] or G.C.UI.BACKGROUND_WHITE end
+        end
+    end
+    return
+end
+'''
+
+# Patch importing localizations
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+for _, line in ipairs(center.text) do
+    center.text_parsed[#center.text_parsed+1] = loc_parse_string(line)
+end
+'''
+payload = '''
+for _, line in ipairs(center.text) do
+    if type(line) == 'table' then
+        center.text_parsed[#center.text_parsed+1] = {}
+        for _, new_line in ipairs(line) do
+             center.text_parsed[#center.text_parsed][#center.text_parsed[#center.text_parsed]+1] = loc_parse_string(new_line)
+        end
+    else
+        center.text_parsed[#center.text_parsed+1] = loc_parse_string(line)
+    end
+end
+'''
+
+# Create extra boxes
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if AUT.info then
+'''
+payload = '''
+AUT.main.background_colour = AUT.main.background_colour or AUT.box_colours and AUT.box_colours[1] or nil
+local multi_boxes = {}
+if AUT.multi_box then
+    for i, box in ipairs(AUT.multi_box) do
+        box.background_colour = box.background_colour or AUT.box_colours and AUT.box_colours[i+1] or nil
+        multi_boxes[#multi_boxes+1] = desc_from_rows(box)
+    end
+end
+'''
+
+# Change return so it can be modified
+# Includes some info_boxes patch that got munched
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+return {n=G.UIT.ROOT, config = {align = 'cm', colour = G.C.CLEAR}, nodes={
+    {n=G.UIT.C, config={align = "cm", func = 'show_infotip',object = Moveable(),ref_table = next(info_boxes) and info_boxes or nil}, nodes={
+'''
+payload = '''
+local cols
+if #info_boxes <= 3 then
+    cols = 1
+elseif #info_boxes <= 10 then
+    cols = 2
+elseif #info_boxes <= 24 then
+    cols = 3
+else
+    cols = 4
+end
+local nodes_per_col = math.ceil(#info_boxes/cols)
+local info_cols = {}
+for i = 0, cols-1 do
+    local col = {}
+    for j = 1, nodes_per_col do
+        local info_box = info_boxes[i*nodes_per_col+j]
+        if info_box then
+            table.insert(col, info_box)
+        else break end
+    end
+    table.insert(info_cols, {n=G.UIT.C, config = {align="cm"}, nodes = col})
+end
+info_boxes = {{n=G.UIT.R, config = {align="cm", padding = 0.05, card_pos = card.T.x }, nodes = info_cols}}
+local ret_val = {n=G.UIT.ROOT, config = {align = 'cm', colour = G.C.CLEAR}, nodes={
+    {n=G.UIT.C, config={align = "cm", func = 'show_infotip',object = Moveable(),ref_table = next(info_boxes) and info_boxes or nil}, nodes={
+'''
+
+# Add multi boxes to return table
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+            badges[1] and {n=G.UIT.R, config={align = "cm", padding = 0.03}, nodes=badges} or nil,
+            }}
+        }}
+    }},
+}}
+'''
+payload = '''
+if multi_boxes[1] then
+    for i=1, #ret_val.nodes[1].nodes[1].nodes[1].nodes do -- find the main box
+        if ret_val.nodes[1].nodes[1].nodes[1].nodes[i] and ret_val.nodes[1].nodes[1].nodes[1].nodes[i].config and ret_val.nodes[1].nodes[1].nodes[1].nodes[i].config.main_box_flag then
+            for j=#multi_boxes, 1, -1 do -- add the extra boxes
+                table.insert(ret_val.nodes[1].nodes[1].nodes[1].nodes, i+1, multi_boxes[j])
+            end
+            break
+        end
+    end
+    
+end
+
+return ret_val
+'''
+
+# Add main_box_flag to the main box
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+return {n=G.UIT.R, config={align = "cm", colour = empty and G.C.CLEAR or G.C.UI.BACKGROUND_WHITE, r = 0.1, padding = 0.04, minw = 2, minh = 0.8, emboss = not empty and 0.05 or nil, filler = true}, nodes={'''
+payload = '''
+return {n=G.UIT.R, config={align = "cm", colour = empty and G.C.CLEAR or G.C.UI.BACKGROUND_WHITE, r = 0.1, padding = 0.04, minw = 2, minh = 0.8, emboss = not empty and 0.05 or nil, filler = true, main_box_flag = desc_nodes.main_box_flag and true or nil}, nodes={'''

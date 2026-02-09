@@ -1,0 +1,364 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+## no_rank, no_suit, all_suits
+
+# Card:get_id()
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if self.ability.effect == 'Stone Card' and not self.vampired then"
+match_indent = true
+position = "at"
+payload = '''if SMODS.has_no_rank(self) and not self.vampired then'''
+
+# Card:get_chip_bonus()
+[[patches]]
+[patches.regex]
+target = "card.lua"
+pattern = '''
+(?<indent>[\t ]*)if self\.ability\.effect == 'Stone Card' then
+[\t ]*    return self\.ability\.bonus \+ \(self\.ability\.perma_bonus or 0\)
+[\t ]*end'''
+position = "at"
+payload = '''if self.ability.effect == 'Stone Card' or self.config.center.replace_base_card then
+    return self.ability.bonus + (self.ability.perma_bonus or 0)
+end'''
+line_prepend = '$indent'
+
+# Card:calculate_joker()
+# Raised Fist
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if temp_ID >= G.hand.cards[i].base.id and G.hand.cards[i].ability.effect ~= 'Stone Card' then temp_Mult = G.hand.cards[i].base.nominal; temp_ID = G.hand.cards[i].base.id; raised_card = G.hand.cards[i] end"
+match_indent = true
+position = "at"
+payload = """if temp_ID >= G.hand.cards[i].base.id and not SMODS.has_no_rank(G.hand.cards[i]) then 
+    temp_Mult = G.hand.cards[i].base.nominal
+    temp_ID = G.hand.cards[i].base.id
+    raised_card = G.hand.cards[i]
+end"""
+# Flower Pot, Seeing Double
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if context.scoring_hand[i].ability.name ~= 'Wild Card' then"
+match_indent = true
+position = "at"
+payload = '''if not SMODS.has_any_suit(context.scoring_hand[i]) then'''
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if context.scoring_hand[i].ability.name == 'Wild Card' then"
+match_indent = true
+position = "at"
+payload = '''if SMODS.has_any_suit(context.scoring_hand[i]) then'''
+
+# Card:get_suit()
+[[patches]]
+[patches.regex]
+target = "card.lua"
+pattern = '''(?<indent>[\t ]*)if self\.ability\.effect == 'Stone Card' then'''
+line_prepend = '$indent'
+position = "at"
+payload = '''if SMODS.has_no_suit(self) then'''
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'if self.ability.name == "Wild Card" then'
+match_indent = true
+position = "at"
+payload = '''if SMODS.has_any_suit(self) then'''
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'if self.ability.name == "Wild Card" and not self.debuff then'
+match_indent = true
+position = "at"
+payload = '''if SMODS.has_any_suit(self) and self:can_calculate() then'''
+
+# check_for_unlock
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if v.ability.name ~= 'Stone Card' and v.base.suit == 'Hearts' then"
+match_indent = true
+position = "at"
+payload = "if not SMODS.has_no_suit(v) and v.base.suit == 'Hearts' then"
+
+# reset_idol_card()
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "valid_idol_cards[#valid_idol_cards+1] = v"
+match_indent = true
+position = "at"
+payload = """if not SMODS.has_no_suit(v) and not SMODS.has_no_rank(v) then
+    valid_idol_cards[#valid_idol_cards+1] = v
+end"""
+
+# reset_mail_rank()
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "valid_mail_cards[#valid_mail_cards+1] = v"
+match_indent = true
+position = "at"
+payload = """if not SMODS.has_no_rank(v) then
+    valid_mail_cards[#valid_mail_cards+1] = v
+end"""
+
+# reset_castle_card()
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "valid_castle_cards[#valid_castle_cards+1] = v"
+match_indent = true
+position = "at"
+payload = """if not SMODS.has_no_suit(v) then
+    valid_castle_cards[#valid_castle_cards+1] = v
+end"""
+
+# G.FUNCS.evaluate_play()
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "if scoring_hand[i].ability.effect ~= 'Stone Card' then"
+match_indent = true
+position = "at"
+payload = '''if not SMODS.has_no_rank(scoring_hand[i]) then'''
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "G.GAME.cards_played[scoring_hand[i].base.value].suits[scoring_hand[i].base.suit] = true"
+match_indent = true
+position = "at"
+payload = """if not SMODS.has_no_suit(scoring_hand[i]) then
+    G.GAME.cards_played[scoring_hand[i].base.value].suits[scoring_hand[i].base.suit] = true
+end"""
+
+# Add the delayed property to sprites that are delayed
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if delay_sprites then 
+    G.E_MANAGER:add_event(Event({
+        func = function()
+            if not self.REMOVED then
+                self:set_sprites(center)
+            end
+            return true
+        end
+    })) 
+'''
+payload = '''
+if delay_sprites == 'quantum' or delay_sprites == 'manual' then
+elseif delay_sprites then 
+    self.ability.delayed = true
+    G.E_MANAGER:add_event(Event({
+        func = function()
+            if not self.REMOVED then
+                self:set_sprites(center)
+                self.ability.delayed = false
+            end
+            return true
+        end
+    })) 
+'''
+
+
+
+# Card:generate_UIBox_ability_table()
+# replaces two consecutive lines
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if (_c.name == 'Stone Card') then full_UI_table.name = true end"
+match_indent = true
+position = "at"
+payload = "if _c.name == 'Stone Card' or _c.replace_base_card then full_UI_table.name = true"
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if (specific_vars.playing_card and (_c.name ~= 'Stone Card')) then"
+match_indent = true
+position = "at"
+payload = "elseif specific_vars.playing_card then"
+
+
+## Allow cards to function as multiple enhancements (e.g. from jokers)
+# Calculate extra enhancements when held in hand at end of round
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "local effects = {G.hand.cards[i]:get_end_of_round_effect()}"
+position = "at"
+payload = '''
+local effects = {[1] = {playing_card = G.hand.cards[i]:get_end_of_round_effect()}}
+local extra_enhancements = SMODS.get_enhancements(G.hand.cards[i], true)
+local old_ability = copy_table(G.hand.cards[i].ability)
+local old_center = G.hand.cards[i].config.center
+local old_center_key = G.hand.cards[i].config.center_key
+for k, _ in pairs(extra_enhancements) do
+    if G.P_CENTERS[k] then
+        G.hand.cards[i]:set_ability(G.P_CENTERS[k])
+        G.hand.cards[i].ability.extra_enhancement = k
+        effects[#effects+1] = {[1] = {playing_card = G.hand.cards[i]:get_end_of_round_effect()}}
+    end
+end
+G.hand.cards[i].ability = old_ability
+G.hand.cards[i].config.center = old_center
+G.hand.cards[i].config.center_key = old_center_key
+G.hand.cards[i]:set_sprites(old_center)
+'''
+match_indent = true
+
+# Prevent blue seal effect on extra enhancements at end of round
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then"
+position = "before"
+payload = '''
+if self.extra_enhancement then return ret end
+'''
+match_indent = true
+
+# Use the has enhancement function for enhancement gates
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if vv.config.center.key == v.enhancement_gate then"
+position = "at"
+payload = "if SMODS.has_enhancement(vv, v.enhancement_gate) then"
+match_indent = true
+
+# Glass Card shattering
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if card.ability.name == 'Glass Card' then"
+position = "at"
+payload = "if SMODS.shatters(card) then"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "if G.hand.highlighted[i].ability.name == 'Glass Card' then"
+position = "at"
+payload = "if SMODS.shatters(G.hand.highlighted[i]) then"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "if scoring_hand[i].ability.name == 'Glass Card' then"
+position = "at"
+payload = "if SMODS.shatters(scoring_hand[i]) then"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "if cards_destroyed[i].ability.name == 'Glass Card' then"
+position = "at"
+payload = "if cards_destroyed[i].shattered then"
+match_indent = true
+
+# Prevent blue seals from applying on quantum enhancement calc
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then"
+position = "at"
+payload = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit and not self.ability.extra_enhancement then"
+match_indent = true
+
+# Reset enh cache on game update
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = "modulate_sound(dt)"
+position = "after"
+payload = "SMODS.enh_cache:clear()"
+match_indent = true
+
+# Invalidate enhancement cache when card changes / replace_base_card fix pt1
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:set_ability(center, initial, delay_sprites)"
+position = "after"
+payload = '''
+    SMODS.enh_cache:write(self, nil)
+
+    if self.ability and not initial then
+        self.ability.card_limit = self.ability.card_limit - (self.config.center.config.card_limit or 0)
+        self.ability.extra_slots_used = self.ability.extra_slots_used - (self.config.center.config.extra_slots_used or 0)
+    end
+  
+    if self.ability and not initial then
+        self.front_hidden = self:should_hide_front()
+    end
+'''
+match_indent = true
+
+# replace_base_card Fix Part 2
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "self:set_sprites(center)"
+position = "after"
+payload = '''if self.ability and not initial then
+  self.front_hidden = self:should_hide_front()
+end'''
+match_indent = true
+
+# replace_base_card Fix Part 3
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "if not G.OVERLAY_MENU then "
+position = "before"
+payload = '''if self.ability and not initial then
+  self.front_hidden = self:should_hide_front()
+end'''
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:set_base(card, initial)"
+position = "after"
+payload = "SMODS.enh_cache:write(self, nil)"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:set_seal(_seal, silent, immediate)"
+position = "after"
+payload = '''
+    SMODS.enh_cache:write(self, nil)
+    if self.seal then
+        self.ability.card_limit = self.ability.card_limit - (self.ability.seal.card_limit or 0)
+        self.ability.extra_slots_used = self.ability.extra_slots_used - (self.ability.seal.extra_slots_used or 0)
+    end
+'''
+match_indent = true
+
+# safeguards an infloop with debuff context
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = 'if not initial then G.GAME.blind:debuff_card(self) end'
+position = 'at'
+payload = 'if not initial and delay_sprites ~= "quantum" and G.GAME.blind then G.GAME.blind:debuff_card(self) end'
+match_indent = true

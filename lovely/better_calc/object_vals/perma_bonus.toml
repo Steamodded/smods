@@ -1,0 +1,297 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+### Permanent card values implementations
+## Adapted from AMM (https://github.com/AutumnMood924/AutumnMoodMechanics)
+
+# generate_card_ui(): mult card special case
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "if _c.effect == 'Mult Card' then loc_vars = {cfg.mult}"
+position = "at"
+payload = "if _c.effect == 'Mult Card' then loc_vars = {SMODS.signed(cfg.mult)}"
+match_indent = true
+
+# generate_card_ui(): gold card special case
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "elseif _c.effect == 'Gold Card' then loc_vars = {cfg.h_dollars}"
+position = "at"
+payload = "elseif _c.effect == 'Gold Card' then loc_vars = {SMODS.signed_dollars(cfg.h_dollars)}"
+match_indent = true
+
+# generate_card_ui(): stone card special case
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "elseif _c.effect == 'Stone Card' then loc_vars = {((specific_vars and specific_vars.bonus_chips) or cfg.bonus)}"
+position = "at"
+payload = "elseif _c.effect == 'Stone Card' then loc_vars = {((specific_vars and SMODS.signed(specific_vars.bonus_chips)) or cfg.bonus and SMODS.signed(cfg.bonus) or 0)}"
+match_indent = true
+
+# generate_card_ui(): show permanent bonuses on default playing cards
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "elseif _c.set == 'Enhanced' then"
+position = "before"
+payload = '''SMODS.localize_perma_bonuses(specific_vars, desc_nodes)'''
+match_indent = true
+overwrite = false
+
+# generate_card_ui(): signed(extra_chips)
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "localize{type = 'other', key = 'card_extra_chips', nodes = desc_nodes, vars = {specific_vars.bonus_chips}}"
+position = "at"
+match_indent = true
+payload = "localize{type = 'other', key = 'card_extra_chips', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_chips)}}"
+
+# generate_card_ui(): signed(extra_chips)
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "localize{type = 'other', key = 'card_extra_chips', nodes = desc_nodes, vars = {((specific_vars and specific_vars.bonus_chips) or cfg.bonus)}}"
+position = "at"
+match_indent = true
+payload = "localize{type = 'other', key = 'card_extra_chips', nodes = desc_nodes, vars = {SMODS.signed((specific_vars and specific_vars.bonus_chips) or cfg.bonus)}}"
+
+# generate_card_ui(): show permanent bonuses on enhanced playing cards
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "elseif _c.set == 'Booster' then"
+position = "before"
+payload = '''SMODS.localize_perma_bonuses(specific_vars, desc_nodes)'''
+match_indent = true
+overwrite = false
+
+# generate_UIBox_ability_table(): prime locals for easier boolean magic
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "loc_vars = { playing_card = not not self.base.colour, value = self.base.value, suit = self.base.suit, colour = self.base.colour,"
+position = "before"
+payload = '''local bonus_chips = self.ability.bonus + (self.ability.perma_bonus or 0)
+local total_h_dollars = self:get_h_dollars()'''
+match_indent = true
+overwrite = false
+
+# generate_UIBox_ability_table(): prime specific_vars for playing cards
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "bonus_chips = (self.ability.bonus + (self.ability.perma_bonus or 0)) > 0 and (self.ability.bonus + (self.ability.perma_bonus or 0)) or nil,"
+position = "at"
+payload = '''
+bonus_x_chips = self.ability.perma_x_chips ~= 0 and (self.ability.perma_x_chips + 1) or nil,
+bonus_mult = self.ability.perma_mult ~= 0 and self.ability.perma_mult or nil,
+bonus_x_mult = self.ability.perma_x_mult ~= 0 and (self.ability.perma_x_mult + 1) or nil,
+bonus_h_chips = self.ability.perma_h_chips ~= 0 and self.ability.perma_h_chips or nil,
+bonus_h_x_chips = self.ability.perma_h_x_chips ~= 0 and (self.ability.perma_h_x_chips + 1) or nil,
+bonus_h_mult = self.ability.perma_h_mult ~= 0 and self.ability.perma_h_mult or nil,
+bonus_h_x_mult = self.ability.perma_h_x_mult ~= 0 and (self.ability.perma_h_x_mult + 1) or nil,
+bonus_p_dollars = self.ability.perma_p_dollars ~= 0 and self.ability.perma_p_dollars or nil,
+bonus_h_dollars = self.ability.perma_h_dollars ~= 0 and self.ability.perma_h_dollars or nil,
+total_h_dollars = total_h_dollars ~= 0 and total_h_dollars or nil,
+bonus_chips = bonus_chips ~= 0 and bonus_chips or nil,
+bonus_repetitions = self.ability.perma_repetitions ~= 0 and self.ability.perma_repetitions or nil,'''
+match_indent = true
+overwrite = false
+
+# set_ability: set defaults for temporary bonuses
+# Also add conformance with SMODS documentation.
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "x_mult = center.config.Xmult or 1,"
+position = "at"
+payload = '''
+x_mult = center.config.Xmult or center.config.x_mult or 1,
+h_chips = center.config.h_chips or 0,
+x_chips = center.config.x_chips or 1,
+h_x_chips = center.config.h_x_chips or 1,
+repetitions = center.config.repetitions or 0,
+'''
+match_indent = true
+overwrite = false
+
+# set_ability: set defaults for permanent bonuses
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "perma_bonus = self.ability and self.ability.perma_bonus or 0,"
+position = "after"
+payload = '''
+perma_x_chips = self.ability and self.ability.perma_x_chips or 0,
+perma_mult = self.ability and self.ability.perma_mult or 0,
+perma_x_mult = self.ability and self.ability.perma_x_mult or 0,
+perma_h_chips = self.ability and self.ability.perma_h_chips or 0,
+perma_h_x_chips = self.ability and self.ability.perma_h_x_chips or 0,
+perma_h_mult = self.ability and self.ability.perma_h_mult or 0,
+perma_h_x_mult = self.ability and self.ability.perma_h_x_mult or 0,
+perma_p_dollars = self.ability and self.ability.perma_p_dollars or 0,
+perma_h_dollars = self.ability and self.ability.perma_h_dollars or 0,
+perma_repetitions = self.ability and self.ability.perma_repetitions or 0,
+card_limit = self.ability and self.ability.card_limit or 0,
+extra_slots_used = self.ability and self.ability.extra_slots_used or 0,
+'''
+match_indent = true
+overwrite = false
+
+# Card:get_chip_bonus
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''function Card:get_chip_bonus(*'''
+position = "after"
+match_indent = true
+payload = '''
+    if self.ability.extra_enhancement then return self.ability.bonus end'''
+
+# Card:get_chip_mult
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''if self.ability.effect == "Lucky Card" then
+    if pseudorandom('lucky_mult') < G.GAME.probabilities.normal/5 then
+        self.lucky_trigger = true
+        return self.ability.mult
+    else
+        return 0
+    end
+else
+    return self.ability.mult
+end'''
+position = "at"
+match_indent = true
+payload = '''local ret = (not self.ability.extra_enhancement and self.ability.perma_mult) or 0
+if self.ability.effect == "Lucky Card" then
+    if SMODS.pseudorandom_probability(self, 'lucky_mult', 1, 5) then
+        self.lucky_trigger = true
+        ret = ret + self.ability.mult
+    end
+else
+    ret = ret + self.ability.mult
+end
+-- TARGET: get_chip_mult
+return ret'''
+
+# Card:get_chip_x_mult
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''if self.ability.x_mult <= 1 then return 0 end
+return self.ability.x_mult'''
+position = "at"
+match_indent = true
+payload = '''local ret = SMODS.multiplicative_stacking(self.ability.x_mult or 1, (not self.ability.extra_enhancement and self.ability.perma_x_mult) or 0)
+-- TARGET: get_chip_x_mult
+return ret
+'''
+
+# Card:get_chip_h_mult
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'return self.ability.h_mult'
+position = "at"
+match_indent = true
+payload = '''local ret = (self.ability.h_mult or 0) + ((not self.ability.extra_enhancement and self.ability.perma_h_mult) or 0)
+-- TARGET: get_chip_h_mult
+return ret
+'''
+
+# Card:get_chip_h_x_mult
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'return self.ability.h_x_mult'
+position = "at"
+match_indent = true
+payload = '''local ret = SMODS.multiplicative_stacking(self.ability.h_x_mult or 1, (not self.ability.extra_enhancement and self.ability.perma_h_x_mult) or 0)
+-- TARGET: get_chip_h_x_mult
+return ret
+'''
+
+# Card:get_chip_x_bonus
+# Card:get_chip_h_bonus
+# Card:get_chip_h_x_bonus
+# Card:get_h_dollars
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'function Card:get_edition()'
+position = "before"
+match_indent = true
+payload = '''
+function Card:get_chip_x_bonus()
+    if self.debuff then return 0 end
+    local ret = SMODS.multiplicative_stacking(self.ability.x_chips or 1, (not self.ability.extra_enhancement and self.ability.perma_x_chips) or 0)
+    -- TARGET: get_chip_x_bonus
+    return ret
+end
+
+function Card:get_chip_h_bonus()
+    if self.debuff then return 0 end
+    local ret = (self.ability.h_chips or 0) + ((not self.ability.extra_enhancement and self.ability.perma_h_chips) or 0)
+    -- TARGET: get_chip_h_bonus
+    return ret
+end
+
+function Card:get_chip_h_x_bonus()
+    if self.debuff then return 0 end
+    local ret = SMODS.multiplicative_stacking(self.ability.h_x_chips or 1, (not self.ability.extra_enhancement and self.ability.perma_h_x_chips) or 0)
+    -- TARGET: get_chip_h_x_bonus
+    return ret
+end
+
+function Card:get_h_dollars()
+    if self.debuff then return 0 end
+    local ret = (self.ability.h_dollars or 0) + ((not self.ability.extra_enhancement and self.ability.perma_h_dollars) or 0)
+    -- TARGET: get_h_dollars
+    return ret
+end
+'''
+
+# Card:get_p_dollars
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''end
+if ret > 0 then
+    G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + ret'''
+position = "at"
+match_indent = true
+payload = '''elseif self.ability.p_dollars < 0 then
+    ret = ret + self.ability.p_dollars
+end
+ret = ret + ((not self.ability.extra_enhancement and self.ability.perma_p_dollars) or 0)
+-- TARGET: get_p_dollars
+if ret ~= 0 then
+    G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + ret'''
+
+# Card:get_end_of_round_effect
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.h_dollars > 0 then
+    ret.h_dollars = self.ability.h_dollars
+    ret.card = self
+end
+'''
+position = "at"
+match_indent = true
+payload = '''
+local h_dollars = self:get_h_dollars()
+if h_dollars ~= 0 then
+    ret.h_dollars = h_dollars
+    ret.card = self
+end
+'''

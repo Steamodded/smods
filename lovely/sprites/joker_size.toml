@@ -1,0 +1,73 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if _center.name == 'Square Joker' and (_center.discovered or self.bypass_discovery_center) then 
+    self.children.center.scale.y = self.children.center.scale.x
+end
+'''
+position = "after"
+payload = '''
+if _center.pixel_size and _center.pixel_size.h and (_center.discovered or self.bypass_discovery_center) then
+    self.children.center.scale.y = self.children.center.scale.y*(_center.pixel_size.h/95)
+end
+if _center.pixel_size and _center.pixel_size.w and (_center.discovered or self.bypass_discovery_center) then
+    self.children.center.scale.x = self.children.center.scale.x*(_center.pixel_size.w/71)
+end
+'''
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if center.name == "Wee Joker" and (center.discovered or self.bypass_discovery_center) then 
+    H = H*0.7
+    W = W*0.7
+    self.T.h = H
+    self.T.w = W
+end
+'''
+position = "after"
+payload = '''
+if center.display_size and center.display_size.h and (center.discovered or self.bypass_discovery_center) then
+    H = H*(center.display_size.h/95)
+    self.T.h = H
+elseif center.pixel_size and center.pixel_size.h and (center.discovered or self.bypass_discovery_center) then
+    H = H*(center.pixel_size.h/95)
+    self.T.h = H
+end
+if center.display_size and center.display_size.w and (center.discovered or self.bypass_discovery_center) then
+    W = W*(center.display_size.w/71)
+    self.T.w = W
+elseif center.pixel_size and center.pixel_size.w and (center.discovered or self.bypass_discovery_center) then
+    W = W*(center.pixel_size.w/71)
+    self.T.w = W
+end
+'''
+match_indent = true
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+self.VT.h = self.T.h
+self.VT.w = self.T.w
+'''
+position = "before"
+payload = '''
+if self.config.center.display_size and self.config.center.display_size.h then
+    self.T.h = H*(self.config.center.display_size.h/95)
+elseif self.config.center.pixel_size and self.config.center.pixel_size.h then
+    self.T.h = H*(self.config.center.pixel_size.h/95)
+end
+if self.config.center.display_size and self.config.center.display_size.w then
+    self.T.w = W*(self.config.center.display_size.w/71)
+elseif self.config.center.pixel_size and self.config.center.pixel_size.w then
+    self.T.w = W*(self.config.center.pixel_size.w/71)
+end
+'''
+match_indent = true

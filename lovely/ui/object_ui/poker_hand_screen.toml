@@ -1,0 +1,54 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Add enhancements to poker hand screen
+# create_UIBox_hand_tip
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''local card = Card(0,0, 0.5*G.CARD_W, 0.5*G.CARD_H, G.P_CARDS[v[1]], G.P_CENTERS.c_base)'''
+position = "at"
+payload = '''
+local card = Card(0,0, 0.5*G.CARD_W, 0.5*G.CARD_H, G.P_CARDS[v[1]], G.P_CENTERS[v.enhancement or 'c_base'])
+if v.edition then card:set_edition(v.edition, true, true) end
+if v.seal then card:set_seal(v.seal, true, true) end
+'''
+match_indent = true
+
+# Add text styling to poker hand screen
+# create_popup_UIBox_tooltip
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''local r = {n=G.UIT.R, config={align = "cm", padding = 0.03}, nodes={
+                {n=G.UIT.T, config={text = text[i],colour = G.C.UI.TEXT_DARK, scale = 0.4}}}}'''
+position = "at"
+payload = '''
+local r = {n=G.UIT.R, config={align = "cm", padding = 0.03}, nodes=SMODS.localize_box(loc_parse_string(text[i]), {scale = 1.25})}
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''
+function create_UIBox_current_hand_row(handname, simple)
+    return (G.GAME.hands[handname].visible) and
+'''
+position = "at"
+payload = '''
+function create_UIBox_current_hand_row(handname, simple, in_collection)
+    return (in_collection or SMODS.is_poker_hand_visible(handname)) and
+'''
+match_indent = true
+
+# Display total played count in collection
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''{n=G.UIT.T, config={text = G.GAME.hands[handname].played, scale = 0.45, colour = G.C.FILTER, shadow = true}},'''
+position = "at"
+payload = '''{n=G.UIT.O, config={object = DynaText({string = {tostring(in_collection and G.PROFILES[G.SETTINGS.profile].hand_usage[string.gsub(handname, " ", "")] and G.PROFILES[G.SETTINGS.profile].hand_usage[string.gsub(handname, " ", "")].count or G.GAME.hands[handname].played)}, maxw = 0.9, scale = 0.45, colours = {G.C.FILTER}, shadow = true})}},'''
+match_indent = true
