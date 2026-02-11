@@ -1919,6 +1919,27 @@ payload = '''
 self.from_load = true
 '''
 
+# context.set_cost
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.sell_cost = math.max(1, math.floor(self.cost/2)) + (self.ability.extra_value or 0)
+'''
+payload = '''
+if not loading then
+    local cost_flags = SMODS.calculate_context({set_cost = true, cost = self.cost, card = self}) or {}
+    if cost_flags.cost then self.cost = cost_flags.cost end
+end
+self.sell_cost = math.max(1, math.floor(self.cost/2)) + (self.ability.extra_value or 0)
+if not loading then
+    local sell_flags = SMODS.calculate_context({set_sell_cost = true, sell_cost = self.sell_cost, card = self}) or {}
+    if sell_flags.sell_cost then self.sell_cost = sell_flags.sell_cost end
+end
+'''
+
 # Fix Campfire 'upgrading' when it is sold
 [[patches]]
 [patches.pattern]
