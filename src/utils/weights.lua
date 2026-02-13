@@ -12,7 +12,7 @@ function SMODS.poll_object(args)
     local types = args.labels or {args.type}
     local total_weight = 0
     local modded_weight = 0
-    local chance = args.guaranteed and 1 or args.chance or SMODS.base_rate_percentage[args.type] or 1
+    local chance = (args.guaranteed and 1 or args.chance or SMODS.base_rate_percentage[args.type] or 1) * (args.mod or 1)
     local poll_key = pseudorandom(pseudoseed(args.seed or SMODS.get_poll_key(args.type)))
     if not args.pool then
         for _, label in ipairs(types) do
@@ -72,7 +72,8 @@ function SMODS.poll_object(args)
     end
 
     if not SMODS.no_repoll[args.type] then
-        poll_key = pseudorandom(pseudoseed(SMODS.get_poll_key(args.type, 'type')))
+        poll_key = pseudorandom(pseudoseed(args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')))
+        if args.print then print('Poll key string:', args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')) end
         chance = 1
     end
     if args.print then print('Poll key: '..poll_key) end
@@ -82,17 +83,20 @@ function SMODS.poll_object(args)
     if args.print then print('Looking for item: '..poll_weight) end
     local low = 1
     local high = #final_pool
-    if poll_weight < final_pool[1].mod_weight then return final_pool[1].key end
-    
-    local ind = SMODS.select_by_weight(final_pool, poll_weight, low, high)
+    local ind = 1
+    if poll_weight > final_pool[1].mod_weight then ind = SMODS.select_by_weight(final_pool, poll_weight, low, high) end
     -- print('Index: '..ind)
     -- print(final_pool[ind].key)
+
+    if args.no_negative and final_pool[ind].key == 'e_negative' then return 'e_polychrome' end
+
     return final_pool[ind].key
 end
 
 -- Returns the `weight` and `modified_weight` or a given object
 ---@param args table|{key: string, no_mod: boolean?} 
 function SMODS.get_weight_of_object(obj, opt_weight)
+    if not obj then return 10, 10 end
     local w = opt_weight or obj.weight or 10
     local m = not opt_weight and obj.get_weight and obj:get_weight(w) or w
 
@@ -117,7 +121,7 @@ SMODS.base_rate_percentage = {
 }
 
 SMODS.no_repoll = {
-    Edition = true
+    Edition = true,
 }
 
 SMODS.game_table_from_type = {
@@ -131,7 +135,7 @@ SMODS.game_table_from_type = {
 SMODS.poll_keys = {
     Edition = {str = 'edition_generic', block_infill = true},
     Seal = {str = 'stdseal', ante = true},
-    Enhanced = {str = 'std_enhance', ante = true}
+    Enhanced = {str = 'Enhanced', ante = true}
 }
 
 function SMODS.get_poll_key(type, infill)

@@ -70,3 +70,16 @@ payload = '''
 if v.small or v.big then bosses_used[k] = 0 end
 '''
 
+# comment
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+center = pseudorandom_element(_pool, pseudoseed(_pool_key..'_resample'..it))
+'''
+payload = '''
+print(_pool_key..'_resample'..it)
+print(_pool)
+'''
