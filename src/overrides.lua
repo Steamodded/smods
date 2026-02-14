@@ -609,73 +609,423 @@ G.FUNCS.change_stake = function(args)
 end
 
 --#endregion
---#region straights and view deck UI
+--#region Straights, X same, quantum Full House and Two Pair
 
 function get_straight(hand, min_length, skip, wrap)
     min_length = min_length or 5
     if min_length < 2 then min_length = 2 end
     if #hand < min_length then return {} end
-    local ranks = {}
-    for k,_ in pairs(SMODS.Ranks) do ranks[k] = {} end
-    for _,card in ipairs(hand) do
-        local id = card:get_id()
-        if id > 0 then
-            for k,v in pairs(SMODS.Ranks) do
-                if v.id == id then table.insert(ranks[k], card); break end
-            end
-        end
-    end
-    local function next_ranks(key, start)
-        local rank = SMODS.Ranks[key]
-        local ret = {}
-		if not start and not wrap and rank.straight_edge then return ret end
-        for _,v in ipairs(rank.next) do
-            ret[#ret+1] = v
-            if skip and (wrap or not SMODS.Ranks[v].straight_edge) then
-                for _,w in ipairs(SMODS.Ranks[v].next) do
-                    ret[#ret+1] = w
-                end
-            end
-        end
-        return ret
-    end
-    local tuples = {}
-    local ret = {}
-    for _,k in ipairs(SMODS.Rank.obj_buffer) do
-        if next(ranks[k]) then
-            tuples[#tuples+1] = {k}
-        end
-    end
-    for i = 2, #hand+1 do
-        local new_tuples = {}
-        for _, tuple in ipairs(tuples) do
-            local any_tuple
-            if i ~= #hand+1 then
-                for _,l in ipairs(next_ranks(tuple[i-1], i == 2)) do
-                    if next(ranks[l]) then
-                        local new_tuple = {}
-                        for _,v in ipairs(tuple) do new_tuple[#new_tuple+1] = v end
-                        new_tuple[#new_tuple+1] = l
-                        new_tuples[#new_tuples+1] = new_tuple
-                        any_tuple = true
-                    end
-                end
-            end
-            if i > min_length and not any_tuple then
-                local straight = {}
-                for _,v in ipairs(tuple) do
-                    for _,card in ipairs(ranks[v]) do
-                        straight[#straight+1] = card
-                    end
-                end
-                ret[#ret+1] = straight
-            end
-        end
-        tuples = new_tuples
-    end
-    table.sort(ret, function(a,b) return #a > #b end)
-    return ret
+    local ranks = SMODS.get_straight_ranks()
+
+	if not SMODS.optional_features.quantum_ranks then
+		-- for _,card in ipairs(hand) do
+		-- 	local id = card:get_id()
+		-- 	if id > 0 then
+		-- 		for k,v in pairs(SMODS.Ranks) do
+		-- 			if v.id == id then table.insert(ranks[k], card); break end
+		-- 		end
+		-- 	end
+		-- end
+		-- local function next_ranks(key)
+		-- 	local rank = SMODS.Ranks[key]
+		-- 	local ret = {}
+		-- 	for v, _ in pairs(rank.next) do
+		-- 		ret[#ret+1] = v
+		-- 		if skip and (wrap or not next(SMODS.Ranks[v].straight_edges) or not SMODS.Ranks[v].straight_edges[key]) then
+		-- 			for w, _ in pairs(SMODS.Ranks[v].next) do
+		-- 				ret[#ret+1] = w
+		-- 			end
+		-- 		end
+		-- 	end
+		-- 	return ret
+		-- end
+		-- local tuples = {}
+		-- local ret = {}
+		-- for _,k in ipairs(SMODS.Rank.obj_buffer) do
+		-- 	if next(ranks[k]) then
+		-- 		tuples[#tuples+1] = {k}
+		-- 	end
+		-- end
+		-- for i = 2, #hand+1 do
+		-- 	local new_tuples = {}
+		-- 	for _, tuple in ipairs(tuples) do
+		-- 		local any_tuple
+		-- 		if i ~= #hand+1 then
+		-- 			if (i == 2 or wrap or not next(SMODS.Ranks[tuple[i-1]].straight_edges) or not SMODS.Ranks[tuple[i-1]].straight_edges[tuple[i-2]]) then
+		-- 				for _,l in ipairs(next_ranks(tuple[i-1])) do
+		-- 					if next(ranks[l]) then
+		-- 						local new_tuple = {}
+		-- 						for _,v in ipairs(tuple) do new_tuple[#new_tuple+1] = v end
+		-- 						new_tuple[#new_tuple+1] = l
+		-- 						new_tuples[#new_tuples+1] = new_tuple
+		-- 						any_tuple = true
+		-- 					end
+		-- 				end
+		-- 			end
+		-- 		end
+		-- 		if i > min_length and not any_tuple then
+		-- 			local straight = {}
+		-- 			for _,v in ipairs(tuple) do
+		-- 				for _,card in ipairs(ranks[v]) do
+		-- 					straight[#straight+1] = card
+		-- 				end
+		-- 			end
+		-- 			ret[#ret+1] = straight
+		-- 		end
+		-- 	end
+		-- 	tuples = new_tuples
+		-- end
+		-- table.sort(ret, function(a,b) return #a > #b end)
+		-- return ret
+	else 													-- If quantum ranks are toggled on
+		-- Card Representer Struct
+		-- This is placed into [ranks] at every rank its card may be. 
+		local CardRep = {
+			new = function (card, av_ranks)
+				local cr = {
+					card = card,
+					ranks = av_ranks -- Map of ranks or "WILD" if Wild Rank
+				}
+				return cr
+			end
+		}
+
+		-- All card_rep instances
+		local card_reps = {}
+
+		local wild_reps = {}
+		local wild_rank_count = 0
+
+		for _, pcard in ipairs(hand) do
+			if SMODS.has_any_rank(pcard, {eval_getting_ranks = {type = "straight"}}) then
+				local card_rep = CardRep.new(pcard, "WILD")
+				card_reps[#card_reps+1] = card_rep
+				wild_reps[#wild_reps+1] = card_rep
+				wild_rank_count = wild_rank_count + 1
+			else
+				local pcard_ranks = SMODS.get_straight_ranks(pcard:get_ranks({eval_getting_ranks = {type = "straight"}}), true)
+
+				if next(pcard_ranks) then
+					local card_rep = CardRep.new(pcard, pcard_ranks)
+					card_reps[#card_reps+1] = card_rep						-- Add card_rep to card_reps_holder
+
+					for p_rank, _ in pairs(pcard_ranks) do
+						ranks[p_rank.key][card_rep] = true 					-- Add card_rep to rank
+					end
+				end
+			end
+		end
+
+		-- TODO: Optimization that may or may not be worth it: 
+		-- Remove all card_reps that share a rank with a 1-rank card_rep at that rank. Repeat until none are removed.
+		-- Also, collapse any N card_reps that share N ranks into one of those ranks each. (Hard to implement / too inefficient maybe)
+
+		-- Recursive function to get all .nexts/.prevs of a rank and its .next/.prev ranks down to a [depth] (which should be the shortcut level), merged into one table
+		-- [depth] = 0 is base, 1 is shortcut
+		local get_next_ranks
+		get_next_ranks = function (rank, depth, do_wrap, direction)
+			direction = direction or "next"
+			local rec_ret = {}
+			for r, _ in pairs(rank:get_straight_next(direction, do_wrap)) do
+				rec_ret[#rec_ret+1] = SMODS.Ranks[r] or SMODS.VirtualRanks[r]
+				if depth > 0 then
+					for v, _ in pairs(get_next_ranks(SMODS.Ranks[r] or SMODS.VirtualRanks[r], depth - 1, do_wrap, direction)) do
+						rec_ret[#rec_ret+1] = v
+					end
+				end
+			end
+			return rec_ret
+		end
+
+		-- Recursive function to find a valid straight, with [rank] as the starting point
+		-- This function goes both ways; .next and .prev
+		-- When called with [direction] = nil, the function first sets the [current_straight] to the best straight from a [direction] = "prev_base" call to itself
+		-- and then uses that as a base recursively with [direction] = "next_base"
+		local recursive_get_straight
+		recursive_get_straight = function (rank, other_rank, current_straight, max_skips, do_wrap, direction, used_c_reps, used_wilds)
+			local next_straight = {}
+			for k, v in pairs(current_straight) do next_straight[k] = v end
+			local ret_straight = next_straight
+
+			-- Check and setup c_reps for the current rank 
+			local c_reps = ranks[rank.key]
+			if not c_reps or not next(c_reps) then
+				if used_wilds < wild_rank_count then
+					used_wilds = used_wilds + 1
+					c_reps = {[wild_reps[used_wilds]] = "WILD"}
+				else
+					return current_straight -- If no card_representers are present for the given [rank] and no Wild Ranks remain, return whatever [current_straight] was passed to the function
+				end
+			end
+
+			-- Get all next ranks for this rank
+			local rank_nexts = get_next_ranks(rank, max_skips, do_wrap, direction)
+
+			for c_rep, exists in pairs(c_reps) do
+				if exists and not used_c_reps[c_rep] then -- If the encountered card_rep hasn't assumed a rank yet
+					if exists ~= "WILD" then used_c_reps[c_rep] = true end
+					next_straight[#next_straight+1] = {c_rep=c_rep, rank=exists ~= "WILD" and rank}
+					ret_straight = next_straight
+					local all_dead_ends = true
+					for _, n_rank in ipairs(rank_nexts) do
+						local rec_ret_straight = recursive_get_straight(n_rank, other_rank, next_straight, max_skips, do_wrap, direction, used_c_reps, used_wilds)
+						if rec_ret_straight ~= next_straight then
+							all_dead_ends = false
+						end
+						if #rec_ret_straight > #ret_straight then
+							ret_straight = rec_ret_straight
+						end
+						if #ret_straight >= #hand then
+							return ret_straight
+						end
+					end
+					if other_rank and all_dead_ends then -- If it hit a dead end, try to extend backwards from beginning
+						ret_straight = recursive_get_straight(other_rank, nil, next_straight, max_skips, do_wrap, "prev", used_c_reps, used_wilds - (exists == "WILD" and 1 or 0)) -- If the current c_rep was a wild_rep, reduce used_wilds by one, so that it may instead be used to extend the prev part of the straight.
+					end
+					if SMODS.optional_features.quantum_straight_min_return and #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
+					next_straight = {}
+					for k, v in pairs(current_straight) do next_straight[k] = v end
+					used_c_reps[c_rep] = false
+				end
+			end
+
+			return ret_straight
+		end
+
+
+		-- Alright now we can evaluate the straight :)
+
+		local max_hole_size = skip and 1 or 0
+		local best_straight = {}
+		local branches_checked = 0
+
+		local appeared_in_ret_straight = {} -- {rank: boolean}
+
+		-- Iterate over all card_reps and all their ranks as starting points of straight calculation, however:
+		-- ranks that have appeared in a returned straight are no longer used as starting points, because they cannot yield a new straight.
+		-- (Even if their .next/.prev forks, because then the fork's ranks will yield the fork's straight later on)
+		for _, c_rep in ipairs(card_reps) do
+			if c_rep.ranks ~= "WILD" then
+				local used_c_reps = {[c_rep] = true} -- This is a set of all card_reps used during this eval. They are set in recursive_get_straight()
+				local had_new_rank = false
+				for rank, _ in pairs(c_rep.ranks) do
+					if not appeared_in_ret_straight[rank] then
+						local current_straight = {{c_rep=c_rep, rank=rank}}
+						had_new_rank = true
+						for _, next_rank in ipairs(get_next_ranks(rank, max_hole_size, wrap, "next")) do
+							for _, prev_rank in ipairs(get_next_ranks(rank, max_hole_size, wrap, "prev")) do
+								local ret_straight = recursive_get_straight(next_rank, prev_rank, current_straight, max_hole_size, wrap, "next", used_c_reps, 0)
+
+								if #ret_straight >= min_length and #ret_straight > #best_straight then
+									best_straight = ret_straight
+								end
+
+								for _, tup in ipairs(ret_straight) do
+									if tup.rank then
+										appeared_in_ret_straight[tup.rank] = true
+									end
+								end
+								-- Optimization: If the size of the played hand minus the minimum straight length (5=default, 4=Four Fingers)
+								-- minus the amount of branches checked (unique returned straights) is less than zero, there cannot be a straight in the hand.
+								-- (Equally, if the length of the best_straight is more or equal the length of the hand minus one, the remaining card cannot result in a longer straight (it must be a fork in .next/.prev))
+								if (
+									#hand - min_length - branches_checked < 0 or
+									#best_straight >= #hand - 1 or
+									(SMODS.optional_features.quantum_straight_min_return and #best_straight > min_length)
+								) then
+									goto continue
+								end
+							end
+						end
+					end
+				end
+				if had_new_rank then branches_checked = branches_checked + 1 end
+			end
+		end
+
+		::continue::
+
+		if #best_straight >= min_length then
+			for k, v in ipairs(best_straight) do best_straight[k] = v.c_rep.card end
+			return {best_straight} -- Only return best found straight. Feasible to return all found straights, but I need sleep :)
+		elseif #wild_reps >= min_length then
+			for i, c_rep in ipairs(wild_reps) do best_straight[i] = c_rep.card end
+			return {best_straight}
+		end
+
+		return {}
+	end
 end
+
+
+function get_X_same(num, hand, or_more)
+	if not SMODS.optional_features.quantum_ranks then
+		local vals = {}
+		for i = 1, SMODS.Rank.max_id.value do
+			vals[i] = {}
+		end
+		for i=#hand, 1, -1 do
+			local curr = {}
+			table.insert(curr, hand[i])
+			for j=1, #hand do
+				if hand[i]:get_id() == hand[j]:get_id() and i ~= j then
+					table.insert(curr, hand[j])
+				end
+			end
+			if or_more and (#curr >= num) or (#curr == num) then
+				vals[curr[1]:get_id()] = curr
+			end
+		end
+		local ret = {}
+		for i=#vals, 1, -1 do
+			if next(vals[i]) then table.insert(ret, vals[i]) end
+		end
+		return ret
+	else
+		local rank_tally, rank_cards = SMODS.get_rank_tally(hand, {eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}})
+
+		local ret = {}
+
+		for rank, tally in pairs(rank_tally) do
+			if or_more and (tally >= num) or (tally == num) then
+				table.insert(ret, rank_cards[rank])
+			end
+		end
+		return ret
+	end
+end
+
+
+-- Function to get valid quantum pairings of X sets of cards, like Two Pair (2 + 2) and Full House (2 + 3)
+-- [parts] expects the following structure; { {pairs = [pokerhandpart], min_len = [number]}, ... }
+-- Example Full House (from game_object.lua): parts = {{pairs = parts._2, min_len = 2}, {pairs = parts._3, min_len = 3}}
+function get_quantum_pairing(parts, base)
+	if not SMODS.optional_features.quantum_ranks then return {} end
+	if #parts < 2 and not base then return {} end
+
+	local parts_list = {}
+	for i, v in ipairs(parts) do
+		parts_list[i] = v
+	end
+
+	local valid_pairs = {}
+	local used_cards = {}
+	local used_pairs = {}
+	if base then
+		for _, _pairs in ipairs(base) do
+			for pair, over_by in pairs(_pairs) do
+				used_pairs[pair] = over_by
+				for _, pcard in ipairs(pair) do
+					used_cards[pcard] = pair
+				end
+			end
+		end
+	end
+
+	if base then
+		for _, pair in ipairs(parts_list[#parts_list].pairs) do
+			if not used_pairs[pair] then
+				local pair_over_by = #pair - parts_list[#parts_list].min_len
+				local valid = true
+				local overlap_decreases = {}
+				for _, pcard in ipairs(pair) do
+					local overlap = used_cards[pcard] -- The pair in which the card appeared before
+					if overlap then
+						overlap_decreases[overlap] = overlap_decreases[overlap] or 0
+						if pair_over_by + (used_pairs[overlap] - overlap_decreases[overlap]) <= 0 then
+							valid = false
+							break
+						else
+							if pair_over_by > 0 then
+								pair_over_by = pair_over_by - 1
+							else
+								overlap_decreases[overlap] = overlap_decreases[overlap] + 1
+							end
+						end
+					end
+				end
+				if valid then
+					local extension = {}
+					for b_pair, over_by in pairs(base) do
+						extension[b_pair] = over_by - (overlap_decreases[b_pair] or 0)
+					end
+					extension[pair] = pair_over_by
+					valid_pairs[#valid_pairs+1] = extension
+				end
+			end
+		end
+	else
+		for _, pair_1 in ipairs(parts_list[#parts_list].pairs) do
+			if not used_pairs[pair_1] then
+				local pair_1_over_by = #pair_1 - parts_list[#parts_list].min_len
+				for _, pcard in ipairs(pair_1) do
+					used_cards[pcard] = pair_1
+				end
+				for _, pair_2 in ipairs(parts_list[#parts_list-1].pairs) do
+					if not used_pairs[pair_2] and pair_1 ~= pair_2 then
+						local pair_2_over_by = #pair_2 - parts_list[#parts_list-1].min_len
+						local valid = true
+						local overlap_decrease = 0
+						for _, pcard in ipairs(pair_2) do
+							local overlap = used_cards[pcard]
+							if overlap then
+								if pair_2_over_by + (pair_1_over_by - overlap_decrease) <= 0 then
+									valid = false
+									break
+								else
+									if pair_2_over_by > 0 then
+										pair_2_over_by = pair_2_over_by - 1
+									else
+										overlap_decrease = overlap_decrease + 1
+									end
+								end
+							end
+						end
+						if valid then
+							valid_pairs[#valid_pairs+1] = {[pair_1] = pair_1_over_by - overlap_decrease, [pair_2] = pair_2_over_by}
+							used_pairs[pair_1] = true -- true because over_by isn't used here before recursion, only needs pair_1 because that already fixes the symmetry issue (When passing the same parts twice, would iterate over pairing AB and also BA)
+						end
+					end
+				end
+			end
+		end
+	end
+
+	if #parts_list > 2 and not base then -- If first call and there's more than 2 parts
+		table.remove(parts_list, #parts_list)
+		table.remove(parts_list, #parts_list)
+		for _, valid_pair in ipairs(valid_pairs) do
+			local valid_hand = get_quantum_pairing(parts_list, valid_pair)
+			if valid_hand then
+				return valid_hand
+			end
+		end
+	elseif #parts_list > 1 and base then -- Else if there's more than 1 part remaining and it's during recursion
+		table.remove(parts_list, #parts_list)
+		for _, valid_pair in ipairs(valid_pairs) do
+			local valid_hand = get_quantum_pairing(parts_list, valid_pair)
+			if valid_hand then
+				return valid_hand
+			end
+		end
+		return nil
+	end
+
+	if next(valid_pairs) then
+		local merged_cards = {}
+		for pair, _ in pairs(valid_pairs[1]) do
+			for _, pcard in ipairs(pair) do
+				merged_cards[#merged_cards+1] = pcard
+			end
+		end
+		return { merged_cards }
+	end
+
+	return nil
+end
+
+--#endregion
+--#region view deck UI
 
 function G.UIDEF.deck_preview(args)
 	local _minh, _minw = 0.35, 0.5
@@ -1576,12 +1926,7 @@ function G.FUNCS.get_poker_hand_info(_cards)
 	disp_text = text
 	local _hand = SMODS.PokerHands[text]
     if text == 'Straight Flush' then
-        local royal = true
-        for j = 1, #scoring_hand do
-            local rank = SMODS.Ranks[scoring_hand[j].base.value]
-            royal = royal and (rank.key == 'Ace' or rank.key == '10' or rank.face)
-        end
-        if royal then
+        if SMODS.all_royal(scoring_hand) then
             disp_text = 'Royal Flush'
         end
     elseif _hand and _hand.modify_display_text and type(_hand.modify_display_text) == 'function' then
@@ -2624,6 +2969,28 @@ function Card:use_consumeable(area, copier)
         end
     end
 	return ret
+end
+
+function Card:is_face(from_boss)
+    if self.debuff and not from_boss then return end
+	if not SMODS.optional_features.quantum_ranks then
+		local id = self:get_id()
+		local rank = SMODS.Ranks[self.base.value]
+		if not id then return end
+		if (id > 0 and rank and rank.face) or next(find_joker("Pareidolia")) then
+			return true
+		end
+	else
+		if next(find_joker("Pareidolia")) then return true end
+		if SMODS.has_any_rank(self, {is_face_getting_ranks = true}) then
+			return true
+		end
+
+		for rank, _ in pairs(self:get_ranks({is_face_getting_ranks = true})) do
+			if rank.face then return true end
+		end
+	end
+	return false
 end
 
 local ease_ante_ref = ease_ante
