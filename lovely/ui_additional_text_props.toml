@@ -359,3 +359,28 @@ final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
 payload = '''
 underline = part.control.u and loc_colour(part.control.u),
 '''
+
+# Add button support for text formatting
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
+'''
+payload = '''
+button = part.control.button,
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
+'''
+payload = '''
+button = part.control.button,
+'''

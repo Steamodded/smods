@@ -6,97 +6,6 @@ priority = -10
 #========================================================#
 # Choose any rank for custom deck and use provided atlas #
 #========================================================#
-[[patches]]
-[patches.pattern]
-target = "functions/UI_definitions.lua"
-pattern = "{n=G.UIT.O, config={object = face_cards}}"
-position = "at"
-payload = "{n=G.UIT.O, config={object = G.cdds_cards}}"
-match_indent = true
-overwrite = false
-
-[[patches]]
-[patches.pattern]
-target = "functions/UI_definitions.lua"
-pattern = "table.insert(t, create_toggle({label = localize('b_high_contrast_cards'), ref_table = G.SETTINGS, ref_value = 'colourblind_option', callback = G.FUNCS.refresh_contrast_mode}))"
-position = "at"
-payload = '''
-local deckskin_key = G.COLLABS.options[_suit][current_option]
-
-local palette_loc_options = SMODS.DeckSkin.get_palette_loc_options(deckskin_key, _suit)
-
-local selected_palette = 1
-for i, v in ipairs(G.COLLABS.colour_palettes[deckskin_key]) do
-    if G.SETTINGS.colour_palettes[_suit] == v then
-        selected_palette = i
-    end
-end
-
-table.insert(t,
-    {n=G.UIT.R, config={align = "cm", id = 'palette_selector'}, nodes={
-      create_option_cycle({options = palette_loc_options, w = 5.5, cycle_shoulders = false, curr_suit = _suit, curr_skin = deckskin_key, opt_callback = 'change_colour_palette', current_option = selected_palette, colour = G.C.ORANGE, focus_args = {snap_to = true, nav = 'wide'}}),
-    }}
-  )
-'''
-match_indent = true
-overwrite = false
-
-#=======================#
-# Extend custom deck ui #
-#=======================#
-[[patches]]
-[patches.regex]
-target = "functions/UI_definitions.lua"
-pattern = '''local face_cards = CardArea\(([\s\S]*?)\)'''
-position = "at"
-payload = '''
-local rankCount = 0
-local lookup = {}
-for i, s in ipairs(SMODS.Suit:obj_list(true)) do
-    local options = G.COLLABS.options[s.key]
-    for i = 1, #options do
-        local skin = SMODS.DeckSkins[options[i]]
-        if skin.palettes and not (skin.display_ranks or skin.ranks) then
-            for _, p in ipairs(skin.palettes) do
-                local p_ranks = p.display_ranks or p.ranks
-                for j = 1, #p_ranks do
-                    if not lookup[p_ranks[j]] then
-                        lookup[p_ranks[j]] = true
-                        rankCount = rankCount + 1
-                    end
-                end
-            end
-        elseif not skin.palettes and (skin.display_ranks or skin.ranks) then
-            local ranks = skin.display_ranks or skin.ranks
-            for j = 1, #ranks do
-                if not lookup[skin.ranks[j]] then
-                    lookup[skin.ranks[j]] = true
-                    rankCount = rankCount + 1
-                end
-            end
-        end
-
-    end
-end
-
-G.cdds_cards = CardArea(
-    0,0,
-    math.min(math.max(rankCount*G.CARD_W*0.6, 4*G.CARD_W), 10*G.CARD_W),
-    1.4*G.CARD_H,
-    {card_limit = rankCount, type = 'title', highlight_limit = 0})
-
-G.cdds_cards.rankCount = rankCount
-
-'''
-
-[[patches]]
-[patches.regex]
-target = "functions/UI_definitions.lua"
-pattern = '''for i = 1, 3 do([\s\S]*?)end'''
-position = "at"
-payload = '''
-G.FUNCS.update_collab_cards(current_option, _suit, true)
-'''
 
 [[patches]]
 [patches.regex]
@@ -184,3 +93,18 @@ pattern = '''label = "Collabs",'''
 position = "after"
 payload = '''chosen = SMODS.init_collab_credits,'''
 match_indent = true
+
+# Add note for overriden function
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+function G.UIDEF.custom_deck_tab(_suit)
+'''
+payload = '''
+-- WARNING
+-- This function is overriden by SMODS and can be found in src/ui.lua
+-- WARNING
+'''

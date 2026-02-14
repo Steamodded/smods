@@ -238,7 +238,8 @@ SMODS.upgrade_poker_hands({
     end,
     level_up = amount,
     from = card,
-    instant = instant
+    instant = instant,
+    StatusText = statustext
 })
 --[[
 '''

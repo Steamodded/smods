@@ -14,9 +14,7 @@ position = 'after'
 payload = '''
 local blind_desc_nodes = {}
 for k, v in ipairs(text_table) do
-  blind_desc_nodes[#blind_desc_nodes+1] = {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes={
-    {n=G.UIT.T, config={text = v or '-', scale = 0.32, colour = disabled and G.C.UI.TEXT_INACTIVE or G.C.WHITE, shadow = not disabled}}
-  }}
+  blind_desc_nodes[#blind_desc_nodes+1] = {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes=SMODS.localize_box(v, {default_col = disabled and G.C.UI.TEXT_INACTIVE or target.text_colour or G.C.WHITE, shadow = not disabled, vars = target.vars, scale = target.scale})}
 end'''
 match_indent = true
 
@@ -74,15 +72,21 @@ line_prepend = '$indent'
 target = "blind.lua"
 pattern = "for k, v in ipairs(loc_target) do"
 position = 'before'
-payload = 'EMPTY(self.loc_debuff_lines)'
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "blind.lua"
-pattern = "self.loc_debuff_text = self.loc_debuff_text..v..(k <= #loc_target and ' ' or '')"
-position = 'after'
-payload = "self.loc_debuff_lines[k] = v"
+payload = '''
+EMPTY(self.loc_debuff_lines)
+if G.localization.descriptions[target.set][target.key] then
+    for k, v in ipairs(G.localization.descriptions[target.set][target.key].text_parsed) do
+        self.loc_debuff_lines[k] = v
+    end
+    self.loc_debuff_lines.vars = target.vars
+    self.loc_debuff_lines.scale = target.scale
+    self.loc_debuff_lines.text_colour = target.text_colour
+else
+    for k, v in ipairs(loc_target) do
+        self.loc_debuff_lines[k] = v
+    end
+end
+'''
 match_indent = true
 
 [[patches]]

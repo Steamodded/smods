@@ -492,4 +492,61 @@ else
     end
 end
 
+local redirects = {}
+
+function nativefs.smodsAddRedirect(realPath, lfsPath)
+    if redirects[realPath] then return false, 'A redirect with path "' .. realPath .. '" already exists' end
+    redirects[realPath] = lfsPath
+    return true
+end
+
+local function getRedirectPath(realPath)
+    for p, r in pairs(redirects) do
+        local len = #p
+        local sub = realPath:sub(0, len + 1)
+        if sub == p then return r end
+        if sub == p .. "/" then return r .. "/" .. realPath:sub(len + 2) end
+    end
+    return false
+end
+
+local function patchSimple(n, l) -- Simple funcions always have the path as the first argument
+    return function (path, ...)
+        local red = getRedirectPath(path)
+        if red then return l(red, ...) end
+        return n(path, ...)
+    end
+end
+
+for _, v in ipairs{"newFile", "unmount", "write", "append", "lines", "load", "getDirectoryItems", "getInfo", "createDirectory", "remove", "mount", "newFileData"} do
+    nativefs[v] = patchSimple(nativefs[v], love.filesystem[v])
+end
+nativefs.getDirectoryItemsInfo = patchSimple(nativefs.getDirectoryItemsInfo, getDirectoryItemsInfo)
+
+do
+    local nRead = nativefs.read
+    local lRead = love.filesystem.read
+    function nativefs.read(containerOrName, nameOrSize, sizeOrNil)
+        if sizeOrNil then -- Container defined
+            local red = getRedirectPath(nameOrSize)
+            if red then return lRead(containerOrName, red, sizeOrNil) end
+            return nRead(containerOrName, nameOrSize, sizeOrNil)
+        elseif not nameOrSize then
+            local red = getRedirectPath(containerOrName)
+            if red then return lRead(red, nameOrSize, sizeOrNil) end
+            return nRead(containerOrName, nameOrSize, sizeOrNil)
+        else
+            if type(nameOrSize) == 'number' or nameOrSize == 'all' then
+            local red = getRedirectPath(containerOrName)
+            if red then return lRead(red, nameOrSize, sizeOrNil) end
+            return nRead(containerOrName, nameOrSize, sizeOrNil)
+            else
+                local red = getRedirectPath(nameOrSize)
+                if red then return lRead(containerOrName, red, sizeOrNil) end
+                return nRead(containerOrName, nameOrSize, sizeOrNil)
+            end
+        end
+    end
+end
+
 return nativefs
