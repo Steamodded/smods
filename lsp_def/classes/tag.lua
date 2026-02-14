@@ -26,6 +26,7 @@
 ---@field generate_ui? fun(self: SMODS.Tag|table, info_queue: table, tag: Tag|table, desc_nodes: table, specific_vars: table, full_UI_table: table) Provides complex control over the UI display of the tag. See [`generate_ui`](https://github.com/Steamodded/smods/wiki/Localization#generate_ui-advanced) documentation for details. 
 ---@field loc_vars? fun(self: SMODS.Tag|table, info_queue: table, tag: Tag|table): table? Provides simple control over displaying descriptions and tooltips of the tag. See [`loc_vars`](https://github.com/Steamodded/smods/wiki/Localization#loc_vars) documentation for details. 
 ---@field in_pool? fun(self: SMODS.Tag|table, args: table): nil|boolean, table? Allows configuring if the tag is allowed to spawn. 
+---@field calculate? fun(self: SMODS.Tag|table, tag: Tag|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
 ---@overload fun(self: SMODS.Tag): SMODS.Tag
 SMODS.Tag = setmetatable({}, {
     __call = function(self)

@@ -14,7 +14,7 @@ position = 'after'
 match_indent = true
 payload = '''
     if self.triggered then return end
-    local flags = SMODS.calculate_context({prevent_tag_trigger = self, other_context = _context})
+    local flags = SMODS.calculate_context({prevent_tag_trigger = self, other_context = _context, no_tags = true})
     if flags.prevent_trigger then return end
     local obj = SMODS.Tags[self.key]
     local res
