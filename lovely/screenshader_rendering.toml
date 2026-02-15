@@ -3,8 +3,6 @@ version = "1.0.0"
 dump_lua = true
 priority = -5
 
-# i think prio 0 is correct. idk if this patch builds off of any other patches
-
 [[patches]]
 [patches.pattern]
 target = "game.lua"
@@ -34,7 +32,7 @@ for index, key in ipairs(SMODS.ScreenShader.obj_buffer) do
         if shader.send_vars then
             local vars = shader:send_vars()
             for k,v in pairs(vars) do
-                shader_object:send(k, v)
+                shader_object:send(k, unpack( (type(v) == "table" and v.array) and v.array or {v} ))
             end
 
         end
