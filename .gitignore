@@ -200,3 +200,6 @@ core/EditionAPI.lua
 # LSP/Editor settings
 .vscode
 .luarc.json
+
+# Balatro specific
+.lovelyignore
