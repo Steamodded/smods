@@ -3,7 +3,7 @@ version = "1.0.0"
 dump_lua = true
 priority = -5
 
-## Comments for functions that have been overriden by SMODS so they're easier to notice in the lovely dump
+## Comments for functions that have been overridden by SMODS so they're easier to notice in the lovely dump
 
 # src/card_draw.lua
 
