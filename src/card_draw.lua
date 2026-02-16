@@ -533,6 +533,12 @@ function Card:draw(layer)
     self.hover_tilt = 1
     if not self.states.visible then return end
     for _, k in ipairs(SMODS.DrawStep.obj_buffer) do
-        if SMODS.DrawSteps[k]:check_conditions(self, layer) then SMODS.DrawSteps[k].func(self, layer) end
+        if SMODS.DrawSteps[k]:check_conditions(self, layer) then 
+            local center = self.config.center
+            if center.pre_draw and type(center.pre_draw) == 'function' then
+                center:pre_draw(self, SMODS.DrawSteps[k])
+            end
+            SMODS.DrawSteps[k].func(self, layer) 
+        end
     end
 end
