@@ -294,7 +294,7 @@ target = 'functions/UI_definitions.lua'
 pattern = 'local card_type_colour = get_type_colour(card.config.center or card.config, card)'
 position = 'after'
 match_indent = true
-payload = "local card_type_text_colour = SMODS.get_badge_text_colour(debuffed and 'debuffed' or nil, AUT.card_type, card.config.center or card.config, card)"
+payload = "local card_type_text_colour = SMODS.get_badge_text_colour(nil, AUT.card_type, card.config.center or card.config, card)"
 
 # G.UIDEF.card_h_popup():
 # pass "card_type_text_colour" variable to create_badge() when creating the badge for a card type
