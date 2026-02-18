@@ -3421,20 +3421,19 @@ SMODS.custom_debuff_handling = {
     'j_shoot_the_moon', 'j_baron', 'j_reserved_parking', 'j_raised_fist'
 }
 
-function SMODS.get_badge_text_colour(key, type, center, card)
-    if (center or {}).badge_text_colour then
-        if (card or {}).debuff then return end
-        return center.badge_text_colour
-    end
+function SMODS.get_card_type_text_colour(type, center, card)
+    if (card or {}).debuff then return end
+    if (center or {}).badge_text_colour then return center.badge_text_colour end
     if type == 'Joker' and center then
-        if (card or {}).debuff then return end
         local rarity = ({"Common", "Uncommon", "Rare", "Legendary"})[center.rarity] or center.rarity
         return SMODS.Rarities[rarity] and SMODS.Rarities[rarity].text_colour
     end
     if type and SMODS.ConsumableTypes[type] then
-        if (card or {}).debuff then return end
         return SMODS.ConsumableTypes[type].text_colour
     end
+end
+
+function SMODS.get_badge_text_colour(key)
     if not key then return end
     if (SMODS.Rarities[key] or {}).text_colour then return SMODS.Rarities[key].text_colour end
     if (SMODS.Stickers[key] or {}).text_colour then return SMODS.Stickers[key].text_colour end
