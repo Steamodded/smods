@@ -773,4 +773,16 @@ function SMODS.challenge_is_unlocked(challenge, k) end
 --- a string, which changes the displayed text, a boolean, which disables StatusText when set to `false`,
 --- a table, which defines the `attention_text` function settings, or a function that takes the key of
 --- the hand and scoring parameter being upgraded as arguments and returns a boolean, string or table
-    function SMODS.upgrade_poker_hands(args) end
+function SMODS.upgrade_poker_hands(args) end
+
+---Returns the text colour for the card type's badge or nil if none
+---@param type string?
+---@param center SMODS.Center|table?
+---@param card Card|table?
+---@return table?
+function SMODS.get_card_type_text_colour(type, center, card) end
+
+---Returns the text colour for the badge of an object with this key or nil if none
+---@param key string
+---@return table?
+function SMODS.get_badge_text_colour(key) end
