@@ -1179,6 +1179,11 @@ end
 -- This function handles the calculation of each effect returned to evaluate play.
 -- Can easily be hooked to add more calculation effects ala Talisman
 SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, from_edition)
+    if key == 'pre_func' then
+        effect.pre_func()
+        return true
+    end
+
     if SMODS.Scoring_Parameter_Calculation[key] then
         return SMODS.Scoring_Parameters[SMODS.Scoring_Parameter_Calculation[key]]:calc_effect(effect, scored_card, key, amount, from_edition)
     end
@@ -1387,6 +1392,9 @@ SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
 end
 
 SMODS.calculation_keys = {}
+SMODS.pre_scoring_calculation_keys = {
+    'pre_func'
+}
 SMODS.scoring_parameter_keys = {
     'chips', 'h_chips', 'chip_mod',
     'mult', 'h_mult', 'mult_mod',

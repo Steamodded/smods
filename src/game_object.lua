@@ -3665,7 +3665,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             self.current = self.default_value
             if self.calculation_keys then
                 SMODS.scoring_parameter_keys = SMODS.merge_lists({SMODS.scoring_parameter_keys, self.calculation_keys})
-                SMODS.calculation_keys = SMODS.merge_lists({SMODS.scoring_parameter_keys, SMODS.other_calculation_keys})
+                SMODS.calculation_keys = SMODS.merge_lists({SMODS.pre_scoring_calculation_keys, SMODS.scoring_parameter_keys, SMODS.other_calculation_keys})
                 for _, calc_key in ipairs(self.calculation_keys) do
                     SMODS.Scoring_Parameter_Calculation[calc_key] = self.key
                 end
