@@ -881,7 +881,7 @@ function Card:add_sticker(sticker, bypass_check)
 end
 
 function Card:remove_sticker(sticker)
-    if self.ability[sticker] then
+    if (sticker == 'pinned' and self.pinned) or self.ability[sticker] then
         SMODS.Stickers[sticker]:apply(self, false)
         SMODS.enh_cache:write(self, nil)
     end
