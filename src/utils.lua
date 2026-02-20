@@ -1315,7 +1315,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return key
     end
 
-    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or
+    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or key == 'cost' or key == 'sell_cost' or
         key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'modify' or key == 'shop_create_flags'  then
         return { [key] = amount }
     end
@@ -1417,6 +1417,7 @@ SMODS.other_calculation_keys = {
     'numerator', 'denominator',
     'modify',
     'no_destroy', 'prevent_trigger',
+    'cost', 'sell_cost',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
     'shop_create_flags',
     'extra',
@@ -1429,7 +1430,8 @@ SMODS.silent_calculation = {
     cards_to_draw = true,
     func = true, extra = true,
     numerator = true, denominator = true,
-    no_destroy = true
+    no_destroy = true,
+    cost = true, sell_cost = true,
 }
 
 SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
@@ -1770,6 +1772,8 @@ function SMODS.update_context_flags(context, flags)
     if flags.numerator then context.numerator = flags.numerator end
     if flags.denominator then context.denominator = flags.denominator end
     if flags.cards_to_draw then context.amount = flags.cards_to_draw end
+    if flags.cost then context.cost = flags.cost end
+    if flags.sell_cost then context.sell_cost = flags.sell_cost end
     if flags.saved then context.game_over = false end
     if flags.modify then
         -- insert general modified value updating here
