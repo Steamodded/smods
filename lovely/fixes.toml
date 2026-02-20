@@ -890,3 +890,32 @@ local card = Card(_area.T.x, _area.T.y, G.CARD_W, G.CARD_H, card_init.front, car
 payload = '''
 card:add_to_deck()
 '''
+
+
+# display negative chips from card's rank
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'nominal_chips = self.base.nominal > 0 and self.base.nominal or nil,'
+position = "at"
+payload = 'nominal_chips = self.base.nominal ~= 0 and self.base.nominal or nil,'
+match_indent = true
+
+# negative chips from card's rank proper localization
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+            if specific_vars.nominal_chips then
+                localize{type = 'other', key = 'card_chips', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
+'''
+position = "at"
+payload = '''
+            if specific_vars.nominal_chips then
+                if specific_vars.nominal_chips > 0 then
+                    localize{type = 'other', key = 'card_chips', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
+                else
+                    localize{type = 'other', key = 'card_chips_minus', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
+                end
+'''
+match_indent = true
