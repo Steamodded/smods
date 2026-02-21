@@ -1624,7 +1624,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 SMODS.current_evaluated_object = _card
                 local eval, post = eval_card(_card, context)
                 if args and args.main_scoring and eval.jokers then
-                    eval.jokers.juice_card = eval.jokers.juice_card or eval.jokers.card or _card
+                    eval.jokers.juice_card = eval.jokers.juice_card or eval.jokers.card or (not eval.jokers.no_juice and _card)
                     eval.jokers.message_card = eval.jokers.message_card or context.other_card
                 end
 
@@ -1643,7 +1643,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                         context.retrigger_joker = eval.retriggers[rt].retrigger_card
                         local rt_eval, rt_post = eval_card(_card, context)
                         if args and args.main_scoring and rt_eval.jokers then
-                            rt_eval.jokers.juice_card = rt_eval.jokers.juice_card or rt_eval.jokers.card or _card
+                            rt_eval.jokers.juice_card = rt_eval.jokers.juice_card or rt_eval.jokers.card or (not rt_eval.jokers.no_juice and _card)
                             rt_eval.jokers.message_card = rt_eval.jokers.message_card or context.other_card
                         end
                         if next(rt_eval) then
@@ -1738,7 +1738,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             SMODS.current_evaluated_object = area.object
             local eval, post = SMODS.eval_individual(area, context)
             if args and args.main_scoring and eval.individual then
-                eval.individual.juice_card = eval.individual.juice_card or eval.individual.card or area.scored_card
+                eval.individual.juice_card = eval.individual.juice_card or eval.individual.card or (not eval.individual.no_juice and area.scored_card)
                 eval.individual.message_card = eval.individual.message_card or eval.individual.card or context.other_card
             end
             local effects = {eval}
