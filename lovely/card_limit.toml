@@ -37,7 +37,7 @@ self.config = setmetatable({card_limits = {card_limit}}, {
         if key == 'card_limit' then
             if not t.card_limits.base then rawset(t.card_limits, 'base', value) end
             if not t.card_limits.total_slots then rawset(t.card_limits, 'total_slots', value) end
-            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0))
+            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0) + (t.card_limits.extra_slots_used or 0))
         else
             rawset(t, key, value)
         end
@@ -66,7 +66,7 @@ self.config = setmetatable(cardAreaTable.config, {
     __newindex = function(t, key, value)
         if key == 'card_limit' then
             if not t.card_limits.base then rawset(t.card_limits, 'base', value) end
-            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0))
+            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0) + (t.card_limits.extra_slots_used or 0))
         else
             rawset(t, key, value)
         end
@@ -250,7 +250,7 @@ target = 'functions/common_events.lua'
 match_indent = true
 position = 'before'
 pattern = '''
-if first_pass and not (_c.set == 'Edition') and badges then
+for _, v in ipairs(info_queue) do
 '''
 payload = '''
 if card and card.ability and (card.ability.extra_slots_used or 0) ~= 0 then
@@ -383,7 +383,6 @@ end
 payload = '''
 if #self.cards > self.config.card_limit then
     if self == G.deck and G.GAME.blind then
-        print('Setting here to '..#self.cards)
         self.config.card_limit = #self.cards
     end
 end
