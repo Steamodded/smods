@@ -168,7 +168,12 @@ return {
                 text = {
                     'Ocupa {C:dark_edition}#1#{} ranuras'
                 }
-            }
+            },
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{} fichas'
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {

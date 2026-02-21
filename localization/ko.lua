@@ -170,7 +170,12 @@ return {
                 text = {
                     '{C:dark_edition}#1#{} 슬롯 크기'
                 }
-            }
+            },
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{} 개의 칩'
+                },
+            },
 		},
 		Edition = {
 			e_negative_playing_card = {

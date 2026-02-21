@@ -1,6 +1,8 @@
 --- STEAMODDED CORE
 --- MODULE API
 
+local NFS = SMODS.NFS
+
 function loadAPIs()
     -------------------------------------------------------------------------------------------------
     --- API CODE GameObject
@@ -121,10 +123,27 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         return false
     end
 
+    function SMODS.GameObject:__internal_register(obj, class_to_compare)
+        -- only add the object to each unique table/buffer once
+        if self.obj_table ~= class_to_compare.obj_table then
+            self.obj_table[obj.key] = obj
+        end
+        if self.obj_buffer ~= class_to_compare.obj_buffer then
+            self.obj_buffer[#self.obj_buffer+1] = obj.key
+        end
+    end
+
     function SMODS.GameObject:register()
         if self:check_dependencies() then
-            self.obj_table[self.key] = self
-            self.obj_buffer[#self.obj_buffer + 1] = self.key
+            -- start with this class and propagate up to all parent classes that can have objects
+            self:__internal_register(self, {})
+            local parent = self.super or {}
+            local child = self
+            while parent.obj_buffer and parent.obj_table do
+                parent:__internal_register(self, child)
+                parent = parent.super or {}
+                child = child.super
+            end
             self.registered = true
         end
     end
@@ -381,7 +400,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         set = '[INTERNAL]',
         register = function() error('INTERNAL CLASS, DO NOT CALL') end,
         pre_inject_class = function()
-            SMODS.handle_loc_file(SMODS.path, '_')
+            SMODS.load_mod_localization(SMODS.path, '_')
             if SMODS.dump_loc then SMODS.dump_loc.pre_inject = copy_table(G.localization) end
             for _, mod in ipairs(SMODS.mod_list) do
                 if mod.process_loc_text and type(mod.process_loc_text) == 'function' then
@@ -1033,10 +1052,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -------------------------------------------------------------------------------------------------
     ------- API CODE GameObject.ConsumableType
     -------------------------------------------------------------------------------------------------
-
+    local ctype_buffer = {}
     SMODS.ConsumableTypes = {}
     SMODS.ConsumableType = SMODS.ObjectType:extend {
-        ctype_buffer = {},
+        obj_table = SMODS.ConsumableTypes,
+        obj_buffer = ctype_buffer,
+        --DEPRECATED
+        ctype_buffer = ctype_buffer,
         visible_buffer = {},
         set = 'ConsumableType',
         required_params = {
@@ -1056,13 +1078,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         register = function(self)
             SMODS.ConsumableType.super.register(self)
             if self:check_dependencies() then
-                SMODS.ConsumableType.ctype_buffer[#SMODS.ConsumableType.ctype_buffer+1] = self.key
+                -- this is duplicate information but it's more convenient to keep
                 if not self.no_collection then SMODS.ConsumableType.visible_buffer[#SMODS.ConsumableType.visible_buffer + 1] = self.key end
             end
         end,
         inject = function(self)
             SMODS.ObjectType.inject(self)
-            SMODS.ConsumableTypes[self.key] = self
             G.localization.descriptions[self.key] = G.localization.descriptions[self.key] or {}
             G.C.SET[self.key] = self.primary_colour
             G.C.SECONDARY_SET[self.key] = self.secondary_colour
@@ -3456,6 +3477,56 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.ScreenShader
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.ScreenShaders = {}
+    SMODS.ScreenShader = SMODS.GameObject:extend {
+        obj_table = SMODS.ScreenShaders,
+        obj_buffer = {},
+        required_params = {
+            "key",
+        },
+        set = "ScreenShader",
+        order = 0,
+        send_vars = nil, -- same as Shader.send_vars
+        should_apply = nil, -- function to determine if the shader should be drawn. defaults to true if not specified
+        inject = function(self)
+            assert(self.shader or self.path, "ScreenShader " .. self.key .. " not given shader key or path")
+            if self.path and (not self.shader) then
+                SMODS.Shader.inject(self)
+                self.shader = self.key
+            end
+        end,
+        post_inject_class = function(self)
+            table.sort(self.obj_buffer, function(_self, _other) return self.obj_table[_self].order < self.obj_table[_other].order end)
+        end,
+    }
+
+    SMODS.ScreenShader {
+        key = "CRT",
+        shader = "CRT",
+        send_vars = function(self)
+            local crt = G.SETTINGS.GRAPHICS.crt * 0.3
+            return {
+                ['distortion_fac'] = {1.0 + 0.07*crt/100, 1.0 + 0.1*crt/100},
+                ['scale_fac'] = {1.0 - 0.008*crt/100, 1.0 - 0.008*crt/100},
+                ['feather_fac'] = 0.01,
+                ['bloom_fac'] = G.SETTINGS.GRAPHICS.bloom - 1,
+                ['time'] = 400 + G.TIMERS.REAL,
+                ['noise_fac'] = 0.001*crt/100,
+                ['crt_intensity'] = 0.16*crt/100,
+                ['glitch_intensity'] = 0,
+                ['scanlines'] = G.CANVAS:getPixelHeight()*0.75/G.CANV_SCALE,
+                ['mouse_screen_pos'] = G.video_control and {love.graphics.getWidth( )/2, love.graphics.getHeight( )/2} or {G.ARGS.eased_cursor_pos.sx, G.ARGS.eased_cursor_pos.sy},
+                ['screen_scale'] = G.TILESCALE*G.TILESIZE,
+                ['hovering'] = 1,
+            }
+        end,
+        order = 0, -- not necessary, but explicitly set in this example for clarity
+    }
+
+    -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Edition
     -------------------------------------------------------------------------------------------------
 
@@ -4021,7 +4092,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         pre_inject_class = function()
             for _, mod in ipairs(SMODS.mod_list) do
                 if mod.can_load and not mod.lovely_only then
-                    SMODS.handle_loc_file(mod.path, mod.id)
+                    SMODS.load_mod_localization(mod.path, mod.id)
                 end
             end
         end

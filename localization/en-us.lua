@@ -188,7 +188,12 @@ return {
                 text = {
                     'Fills {C:dark_edition}#1#{} hand space'
                 }
-            }
+            },
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{} chips'
+                }
+            },
         },
         Edition = {
             e_negative_playing_card = {
