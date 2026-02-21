@@ -1278,6 +1278,22 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     }
 
+    SMODS.Joker:take_ownership("cloud_9", {
+        update = function () end,
+        loc_vars = function (self, info_queue, card)
+            local tally = SMODS.get_rank_tally(G.playing_cards, {effect_getting_ranks = "Cloud 9"})
+            card.ability.nine_tally = tally[SMODS.Ranks["9"]] or 0
+            return { vars = {card.ability.extra, card.ability.extra*(card.ability.nine_tally or 0)}}
+        end,
+        calc_dollar_bonus = function (self, card)
+            local tally = SMODS.get_rank_tally(G.playing_cards, {effect_getting_ranks = "Cloud 9"})
+            card.ability.nine_tally = tally[SMODS.Ranks["9"]] or 0
+            if card.ability.nine_tally and card.ability.nine_tally > 0 then
+                return card.ability.extra*(card.ability.nine_tally)
+            end
+        end
+    })
+
     -------------------------------------------------------------------------------------------------
     ------- API CODE GameObject.Center.Consumable
     -------------------------------------------------------------------------------------------------
@@ -2053,7 +2069,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         },
         next = {},
         prev = nil,
-        straight_edge = false,
+        virtual = {
+            ranks = nil,
+            next = nil,
+            prev = nil,
+        },
+        parity = nil,
+        is_royal = nil,
         -- TODO we need a better system for what this is doing.
         -- We should allow setting a playing card's atlas and position to any values,
         -- and we should also ensure that it's easy to create an atlas with a standard
@@ -2105,15 +2127,20 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             SMODS.process_loc_text(G.localization.misc.ranks, self.key, self.loc_txt, 'name')
         end,
         inject = function(self)
-            for _,v in ipairs(self.next) do
-                local other = self.obj_table[v]
+            for k, _ in pairs(self.next) do
+                local other = self.obj_table[k]
                 if other then
-                    table.insert(other.prev, self.key)
+                    other.prev[self.key] = true
                 end
             end
             for _, suit in pairs(SMODS.Suits) do
                 SMODS.inject_p_card(suit, self)
             end
+            self.virtual = { -- Redefine so it's not shared between ranks
+                ranks = {},
+                next = nil,
+                prev = nil,
+            }
         end,
         delete = function(self)
             local i
@@ -2125,15 +2152,36 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
             self.used_card_keys[self.card_key] = nil
             table.remove(self.obj_buffer, i)
+        end,
+        get_straight_next = function (self, direction, do_wrap)
+            local dir = direction == "prev" and "prev" or "next"
+            return self.virtual[dir] or self[dir]
         end
     }
-    for _, v in ipairs({ 2, 3, 4, 5, 6, 7, 8, 9 }) do
+    SMODS.Rank {
+        key = '2',
+        card_key = '2',
+        pos = { x = 0 },
+        nominal = 2,
+        next = { ['3'] = true },
+        parity = 0,
+        strength_effect = {
+            fixed_next = '3',
+            fixed_prev = 'Ace'
+        },
+    }
+    for _, v in ipairs({ 3, 4, 5, 6, 7, 8, 9 }) do
         SMODS.Rank {
             key = v .. '',
             card_key = v .. '',
             pos = { x = v - 2 },
             nominal = v,
-            next = { (v + 1) .. '' },
+            next = { [(v + 1) .. ''] = true },
+            parity = math.fmod(v, 2),
+            strength_effect = {
+                fixed_next = (v + 1) .. '',
+                fixed_prev = (v - 1) .. '',
+            },
         }
     end
     SMODS.Rank {
@@ -2141,7 +2189,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         card_key = 'T',
         pos = { x = 8 },
         nominal = 10,
-        next = { 'Jack' },
+        next = { Jack = true },
+        parity = 0,
+        is_royal = true,
+        strength_effect = {
+            fixed_next = 'Jack',
+            fixed_prev = '9'
+        },
     }
     SMODS.Rank {
         key = 'Jack',
@@ -2151,7 +2205,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face_nominal = 0.1,
         face = true,
         shorthand = 'J',
-        next = { 'Queen' },
+        next = { Queen = true },
+        parity = nil,
+        is_royal = true,
+        strength_effect = {
+            fixed_next = 'Queen',
+            fixed_prev = '10'
+        },
     }
     SMODS.Rank {
         key = 'Queen',
@@ -2161,7 +2221,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face_nominal = 0.2,
         face = true,
         shorthand = 'Q',
-        next = { 'King' },
+        next = { King = true },
+        parity = nil,
+        is_royal = true,
+        strength_effect = {
+            fixed_next = 'King',
+            fixed_prev = 'Jack'
+        },
     }
     SMODS.Rank {
         key = 'King',
@@ -2171,7 +2237,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         face_nominal = 0.3,
         face = true,
         shorthand = 'K',
-        next = { 'Ace' },
+        next = { Ace = true },
+        parity = nil,
+        is_royal = true,
+        strength_effect = {
+            fixed_next = 'Ace',
+            fixed_prev = 'Queen'
+        },
     }
     SMODS.Rank {
         key = 'Ace',
@@ -2180,9 +2252,98 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         nominal = 11,
         face_nominal = 0.4,
         shorthand = 'A',
-        straight_edge = true,
-        next = { '2' },
+        next = { ['2'] = true },
+        parity = 1,
+        is_royal = true,
+        strength_effect = {
+            fixed_next = '2',
+            fixed_prev = 'King'
+        },
     }
+
+    SMODS.VirtualRanks = {}
+    SMODS.VirtualRank = SMODS.GameObject:extend {
+        obj_table = SMODS.VirtualRanks,
+        obj_buffer = {},
+        set = 'VirtualRank',
+        required_params = {
+            'key',
+            'base_ranks',
+        },
+        next_redirs = {},
+        prev_redirs = {},
+        register = function (self)
+            if self:check_dependencies() then
+                if SMODS.Ranks[self.key] then
+                    sendWarnMessage(("VirtualRank from '%s' tried to register with existing Rank key '%s'"):format(self.mod.name, self.key), self.set)
+                    return
+                end
+                self.obj_table[self.key] = self
+                self.obj_buffer[#self.obj_buffer + 1] = self.key
+                self.registered = true
+            end
+        end,
+        inject = function(self)
+            for rank, _ in pairs(self.base_ranks) do
+                if SMODS.Ranks[rank] then
+                    table.insert(SMODS.Ranks[rank].virtual.ranks, self.key)
+                else
+                    self.base_ranks[rank] = nil
+                    sendWarnMessage(("VirtualRank from '%s' tried to register with invalid base_rank key '%s'"):format(self.mod.name, self.key), self.set)
+                end
+            end
+            for _, dir in ipairs({"next", "prev"}) do
+                for redir_rank, do_redir in pairs(self[dir.."_redirs"]) do
+                    if SMODS.Ranks[redir_rank] then
+                        SMODS.Ranks[redir_rank].virtual[dir] = SMODS.Ranks[redir_rank].virtual[dir] or {}
+                        if do_redir then
+                            SMODS.Ranks[redir_rank].virtual[dir][self.key] = true
+                        else
+                            -- Do nothin' because the line before the if statement already guarantees overriding of base .next/.prev
+                        end
+                    end
+                end
+            end
+        end,
+        delete = function(self)
+            local i
+            for j, v in ipairs(self.obj_buffer) do
+                if v == self.key then i = j end
+            end
+            table.remove(self.obj_buffer, i)
+        end,
+        get_straight_next = function (self, direction, do_wrap)
+            local dir = direction == "prev" and "prev" or "next"
+            local ret = {}
+            for k, v in pairs(self[dir] or {}) do
+                    ret[k] = v
+                end
+            if do_wrap then
+                for k, v in pairs(self[dir.."_wrap"] or {}) do
+                    ret[k] = v
+                end
+            end
+            return ret
+        end
+    }
+
+    SMODS.VirtualRank {
+        key = "Ace_low",
+        base_ranks = {Ace = true},
+        next = {['2'] = true},
+        prev_redirs = {['2'] = true},
+        -- next_redirs = {King = false}, -- Technically redundant because of the Ace_high overriding it
+        prev_wrap = {King = true},
+    }
+    SMODS.VirtualRank {
+        key = "Ace_high",
+        base_ranks = {Ace = true},
+        prev = {King = true},
+        next_redirs = {King = true},
+        -- prev_redirs = {['2'] = false}, -- Technically redundant because of the Ace_low overriding it
+        next_wrap = {['2'] = true},
+    }
+
     -- make consumable effects compatible with added suits
     -- TODO put this in utils.lua
     local function juice_flip(used_tarot)
@@ -2835,8 +2996,17 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             return { SMODS.merge_lists(parts._5, parts._flush) }
         end,
         ['Flush House'] = function(parts)
-            if #parts._3 < 1 or #parts._2 < 2 or not next(parts._flush) then return {} end
-            return { SMODS.merge_lists(parts._all_pairs, parts._flush) }
+            if not SMODS.optional_features.quantum_ranks then
+                if #parts._3 > 0 and #parts._2 > 1 and next(parts._flush) then
+                    return { SMODS.merge_lists(parts._all_pairs, parts._flush) }
+                end
+            else
+                local full_house = get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._3, min_len = 3}}) or {}
+                if next(full_house) and next(parts._flush) then
+                    return { SMODS.merge_lists(full_house, parts._flush) }
+                end
+            end
+            return {}
         end,
         ['Five of a Kind'] = function(parts) return parts._5 end,
         ['Straight Flush'] = function(parts)
@@ -2845,15 +3015,27 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         ['Four of a Kind'] = function(parts) return parts._4 end,
         ['Full House'] = function(parts)
-            if #parts._3 < 1 or #parts._2 < 2 then return {} end
-            return parts._all_pairs
+            if not SMODS.optional_features.quantum_ranks then
+                if #parts._3 > 0 and #parts._2 > 1 then
+                    return parts._all_pairs
+                end
+            else
+                return get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._3, min_len = 3}}) or {}
+            end
+            return {}
         end,
         ['Flush'] = function(parts) return parts._flush end,
         ['Straight'] = function(parts) return parts._straight end,
         ['Three of a Kind'] = function(parts) return parts._3 end,
         ['Two Pair'] = function(parts)
-            if #parts._2 < 2 then return {} end
-            return parts._all_pairs
+            if not SMODS.optional_features.quantum_ranks then
+                if #parts._2 > 1 then
+                    return parts._all_pairs
+                end
+            else
+                return get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._2, min_len = 2}}) or {}
+            end
+            return {}
         end,
         ['Pair'] = function(parts) return parts._2 end,
         ['High Card'] = function(parts) return parts._highest end,

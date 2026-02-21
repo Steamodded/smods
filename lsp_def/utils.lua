@@ -100,6 +100,13 @@
 ---@field new_suit? Suits|string New suit the card changed to.
 ---@field old_suit? Suits|string Old suit the card changed from.
 ---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
+---@field get_ranks? true Check if `true` for modifying the rank(s) of the context.card. `context.ranks` is a map of `SMODS.Rank`s. Return `ranks_changed` or `ranks_fixed` to add/remove or override the `context.ranks` 
+---@field eval_getting_ranks? table Passed as flag in context.get_ranks / by hand type evaluation when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside hand type evaluation)
+---@field is_face_getting_ranks? table Passed as flag in context.get_ranks by Card:is_face() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside is_face() evaluation)
+---@field is_parity_getting_ranks? table Passed as flag in context.get_ranks by Card:is_parity() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside is_parity() evaluation)
+---@field is_tally_getting_ranks? table Passed as default flag in context.get_ranks by SMODS.get_rank_tally() when calling get_ranks() / SMODS.has_any_rank(). (Allows quantum ranks exclusively during / outside rank tally)
+---@field effect_getting_ranks? string Should be manually passed as flag param when calling any Quantum Rank function, its string value being e.g. the key of the caller object. (Allows quantum ranks exclusively during / outside specific effects)
+---@field no_mod? boolean Check if `true` to decide whether an effect should modify context.get_ranks' ranks_fixed/ranks_changed fields. (If you want to override and block other effects, return `no_mod=true` alongside ranks_fixed=[only your ranks])
 ---@field money_altered? true Check if `true` for effects when the amount of money the player has changes.
 ---@field from_shop? true Check if `true` if money changed during the shop.
 ---@field from_consumeable? true Check if `true` if money changed by a consumable.
@@ -122,6 +129,7 @@ function SMODS.merge_lists(...) end
 --- A table of SMODS feature that mods can choose to enable.
 ---@class SMODS.optional_features: table
 ---@field quantum_enhancements? boolean Enables "Quantum Enhancement" contexts. Cards can count as having multiple enhancements at once.
+---@field quantum_ranks? boolean Enables "Quantum Ranks" contexts. Cards can count as more than one rank.
 ---@field retrigger_joker? boolean Enables "Joker Retrigger" contexts. Jokers can be retriggered by other jokers or effects.
 ---@field post_trigger? boolean Enables "Post Trigger" contexts. Allows calculating effects after a Joker has been calculated.
 ---@field cardareas? SMODS.optional_features.cardareas Enables additional CardArea calculation.
@@ -288,6 +296,12 @@ function SMODS.has_any_suit(card) end
 ---@return boolean?
 --- Checks if the card counts as having no rank.
 function SMODS.has_no_rank(card) end
+
+---@param card Card|table
+---@param flags table|nil Used by poker hand eval / is_face eval, allows Wild ranks exclusively during / outside those evals. 
+---@return boolean?
+--- Checks if the card counts as having all ranks.
+function SMODS.has_any_rank(card, flags) end
 
 ---@param card Card|table
 ---@return boolean?
@@ -699,6 +713,22 @@ function SMODS.is_poker_hand_visible(handname) end
 --- `trigger` is the card or effect that runs the check
 function SMODS.is_eternal(card, trigger) end
 
+---@param id number
+---@return SMODS.Rank rank
+--- Returns the first rank from SMODS.Ranks whose .id == [id].
+function SMODS.get_rank_from_id(id) end
+
+---@param cards table<integer, Card>
+---@param flags? table
+---@return table<SMODS.Rank, integer> tally
+---@return table<SMODS.Rank, table<integer, Card>> rank_to_cards
+function SMODS.get_rank_tally(cards, flags) end
+
+
+---@param cards table<integer, Card>
+---@return table<"lowest"|"highest", table<"rank"|"cards", SMODS.Rank|table<integer, Card>>>
+function SMODS.lowest_and_highest_rank(cards) end
+
 ---@param card Card|table
 ---@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: string?}
 ---@return table? results
@@ -748,6 +778,43 @@ function SMODS.is_getter_context(context) end
 --- [eval_object] to incite any getter context, if yes returns false,
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
+
+
+---@param rank SMODS.Rank|integer|string The SMODS.Rank or rank id or rank key (recommended) 
+---@param bypass_debuff? boolean Whether the card being debuffed should be ignored
+---@param flags? table The flags passed to Card:get_ranks() / SMODS.has_any_rank(). Useful for rank changing effects that should only apply for certain checks. (Read CalcContext eval_getting_ranks LSP def)
+---@return boolean?
+function Card:is_rank(rank, bypass_debuff, flags) end
+
+---@param ranks table<integer, SMODS.Rank|integer|string>|SMODS.Rank|integer|string A list of 'SMODS.Rank's or rank ids or rank keys (recommended) (or a singular one, but use Card:is_rank() instead)
+---@param bypass_debuff? boolean Whether the card being debuffed should be ignored
+---@param flags? table The flags passed to Card:get_ranks() / SMODS.has_any_rank(). Useful for rank changing effects that should only apply for certain checks. (Read CalcContext eval_getting_ranks LSP def)
+---@param all? boolean Whether the card needs to be all or just any of the ranks passed to the function.
+function Card:is_ranks(ranks, bypass_debuff, flags, all) end
+
+---@param flags? table See CalcContext eval_getting_ranks, etc. lsp def
+---@return table<SMODS.Rank, boolean> ranks A map of ranks using 'SMODS.Rank's as keys.
+function Card:get_ranks(flags) end
+
+---@param parity integer The parity to be checked. (See SMODS.Rank lsp def)
+---@return boolean
+function Card:is_parity(parity) end
+
+---@param t? table The list to turn into a map
+---@return table
+--- This function turns a list into a mapping, so for {k: v} -> {v: true}
+function SMODS.to_map(t) end
+
+---@param t? table The table from which to get the keys.
+---@return table
+--- This function gets the keys of a table and returns them as a list
+function SMODS.get_keys(t) end
+
+---@param t? table The table of ranks to use as reference, SMODS.Ranks by default
+---@param objectified? boolean Whether to return a map of 'SMODS.Rank's or rank keys
+---@return table<SMODS.Rank|string, true|table>
+--- Helper function for straight calculation, gets SMODS.Ranks with respect to VirtualRanks
+function SMODS.get_straight_ranks(t, objectified) end
 
 ---@param atlas_key string The key of the atlas 
 --- This function gets an atlas from G.ASSET_ATLAS or G.ANIMATION_ATLAS

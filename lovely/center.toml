@@ -62,7 +62,16 @@ match_indent = true
 payload = '''
 local obj = self.config.center
 if obj.update and type(obj.update) == 'function' then
-    obj:update(self, dt)
+    if G.STAGE == G.STAGES.RUN then
+        if self.ability and self.ability.perma_debuff then self.debuff = true end
+        if self.area and ((self.area == G.jokers) or (self.area == G.consumeables)) then
+                self.bypass_lock = true
+                self.bypass_discovery_center = true
+                self.bypass_discovery_ui = true
+            end
+            self.sell_cost_label = self.facing == 'back' and '?' or self.sell_cost
+    end
+    return obj:update(self, dt)
 end'''
 
 # Card:generate_UIBox_ability_table()
