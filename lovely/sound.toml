@@ -98,7 +98,7 @@ elseif request.type == 'sound_source' then
     SMODS_Sounds[request.sound_code] = {
         sound_code = request.sound_code,
         data = request.data,
-        sound = sound,
+        should_stream = request.should_stream,
         per = request.per,
         vol = request.vol,
     }
@@ -130,6 +130,28 @@ pattern = "RESTART_MUSIC()"
 match_indent = true
 position = 'at'
 payload = 'RESTART_MUSIC(request)'
+
+[[patches]]
+[patches.pattern]
+target = 'engine/sound_manager.lua'
+pattern = '''SOURCES[k] = {}
+            args.per = 0.7'''
+match_indent = true
+position = 'at'
+payload = '''SOURCES[k] = {}
+            if not SMODS_Sounds[k] or k == args.desired_track then
+            args.per = 0.7'''
+
+[[patches]]
+[patches.pattern]
+target = 'engine/sound_manager.lua'
+pattern = '''local s = PLAY_SOUND(args)
+            s.initialized = true'''
+match_indent = true
+position = 'at'
+payload = '''local s = PLAY_SOUND(args)
+            if s then s.initialized = true end
+            end'''
 
 # fix looping for music of different length
 
