@@ -3238,6 +3238,15 @@ function SMODS.blind_modifies_draw(key)
     if SMODS.Blinds.modifies_draw[key] then return true end
 end
 
+-- Gets all keys from a table
+function SMODS.get_table_keys(t)
+	local keys = {}
+	for k, _ in pairs(t) do
+		keys[#keys+1] = k
+	end
+	return keys
+end
+
 function SMODS.upgrade_poker_hands(args)
     -- args.hands
     -- args.parameters
@@ -3247,17 +3256,9 @@ function SMODS.upgrade_poker_hands(args)
     -- args.from
     -- args.StatusText
 
-    local function get_keys(t)
-        local keys = {}
-        for k, _ in pairs(t) do
-            table.insert(keys, k)
-        end
-        return keys
-    end
-
-    args.hands = args.hands or get_keys(G.GAME.hands)
+    args.hands = args.hands or SMODS.get_table_keys(G.GAME.hands)
     if type(args.hands) == 'string' then args.hands = {args.hands} end
-    args.parameters = args.parameters or get_keys(SMODS.Scoring_Parameters)
+    args.parameters = args.parameters or SMODS.get_table_keys(SMODS.Scoring_Parameters)
     local instant = args.instant
 
     if not args.func then
