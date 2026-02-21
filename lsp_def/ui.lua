@@ -22,6 +22,10 @@ G.UIT = {
     padding = 0, --default padding
 }
 
+---@class UINode.shader_config: table
+---@field shader string Key for the shader being used on this element.
+---@field send table? Allows sending custom arguments to the shader. Works like the `_send` argument of `Sprite:draw_shader()`.
+
 ---@class UINode.config: table
 ---@field align? string String *MUST* be two or less letters, 1st indicating vertical alignment and 2nd horizontal.
 ---@field h? number Fixed height.
@@ -53,6 +57,7 @@ G.UIT = {
 ---@field vert? boolean Sets if the text is drawn vertically.
 ---@field object? Node Object to render.
 ---@field role? "Major"|"Minor"|"Glued" Sets object's role type.
+---@field shader UINode.shader_config|string|(UINode.shader_config|string)[] Defines what shaders are used to draw this UI box. If a string, uses that string as the key and sends default arguments.
 
 --- Internal class for annotating UIBox/UIElement tables before being turned into objects.
 ---@class UINode: table
