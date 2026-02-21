@@ -906,16 +906,10 @@ match_indent = true
 [patches.pattern]
 target = "functions/common_events.lua"
 pattern = '''
-            if specific_vars.nominal_chips then
-                localize{type = 'other', key = 'card_chips', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
+localize{type = 'other', key = 'card_chips', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
 '''
 position = "at"
 payload = '''
-            if specific_vars.nominal_chips then
-                if specific_vars.nominal_chips > 0 then
-                    localize{type = 'other', key = 'card_chips', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
-                else
-                    localize{type = 'other', key = 'card_chips_minus', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
-                end
+localize{type = 'other', key = 'card_chips'..(specific_vars.nominal_chips < 0 and '_minus' or ''), nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
 '''
 match_indent = true
