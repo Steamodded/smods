@@ -424,44 +424,6 @@ payload = '''
 ability_text[#ability_text + 1] = {n=G.UIT.R, config={align = "cm"}, nodes=SMODS.localize_box(v, {default_col = target.text_colour or G.C.WHITE, shadow = true, vars = target.vars, scale = target.scale})}
 '''
 
-# get_new_boss()
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-pattern = '''
-if not v.boss then
-
-elseif not v.boss.showdown and (v.boss.min <= math.max(1, G.GAME.round_resets.ante) and ((math.max(1, G.GAME.round_resets.ante))%G.GAME.win_ante ~= 0 or G.GAME.round_resets.ante < 2)) then
-    eligible_bosses[k] = true
-elseif v.boss.showdown and (G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante >= 2 then
-    eligible_bosses[k] = true
-end
-'''
-match_indent = true
-position = 'at'
-payload = '''
-local res, options = SMODS.add_to_pool(v)
-options = options or {}
-if not v.boss then
-
-elseif options.ignore_showdown_check then
-    eligible_bosses[k] = res and true or nil
-elseif v.in_pool and type(v.in_pool) == 'function' then
-    if
-        (
-            ((G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante >= 2) ==
-            (v.boss.showdown or false)
-        )
-    then
-        eligible_bosses[k] = res and true or nil
-    end
-elseif not v.boss.showdown and (v.boss.min <= math.max(1, G.GAME.round_resets.ante) and ((math.max(1, G.GAME.round_resets.ante))%G.GAME.win_ante ~= 0 or G.GAME.round_resets.ante < 2)) then
-    eligible_bosses[k] = res and true or nil
-elseif v.boss.showdown and (G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante >= 2 then
-    eligible_bosses[k] = res and true or nil
-end
-'''
-
 # G.UIDEF.challenge_description_tab
 [[patches]]
 [patches.pattern]
@@ -550,3 +512,60 @@ position = "after"
 payload = '''
 effect = self.effect,
 '''
+### Account for changed Blind:get_type() function
+# Blind.set_blind : Use new Blind:is_types()
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+match_indent = true
+pattern = "if G.GAME.modifiers.no_blind_reward and G.GAME.modifiers.no_blind_reward[self:get_type()] then self.dollars = 0 end"
+position = "at"
+payload = '''if G.GAME.modifiers.no_blind_reward and self:is_types(G.GAME.modifiers.no_blind_reward) then self.dollars = 0 end'''
+# game.lua : Game:start_run() : account for "Showdown" type with "no_reward" rule
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+match_indent = true
+pattern = "self.GAME.modifiers.no_blind_reward.Boss = true"
+position = "after"
+payload = '''self.GAME.modifiers.no_blind_reward.Showdown = true'''
+# card.lua : Card:generate_UIBox_ability_table()
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+match_indent = true
+pattern = "local disableable = G.GAME.blind and ((not G.GAME.blind.disabled) and (G.GAME.blind:get_type() == 'Boss'))"
+position = "at"
+payload = '''local disableable = G.GAME.blind and ((not G.GAME.blind.disabled) and (G.GAME.blind:is_type("Boss")))'''
+# card.lua : Card:calculate_joker() : Luchador !-- could be taken ownership of instead
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+match_indent = true
+pattern = "if G.GAME.blind and ((not G.GAME.blind.disabled) and (G.GAME.blind:get_type() == 'Boss')) then "
+position = "at"
+payload = '''if G.GAME.blind and ((not G.GAME.blind.disabled) and (G.GAME.blind:is_type("Boss"))) then '''
+# functions/button_callbacks.lua : G.FUNCS.HUD_blind_reward()
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+match_indent = true
+pattern = "if G.GAME.modifiers.no_blind_reward and (G.GAME.blind and G.GAME.modifiers.no_blind_reward[G.GAME.blind:get_type()]) then"
+position = "at"
+payload = '''
+if G.GAME.modifiers.no_blind_reward and (G.GAME.blind and blind:is_types(G.GAME.modifiers.no_blind_reward)) then
+'''
+# functions/state_events.lua : end_round()
+[[patches]]
+[patches.regex]
+target = "functions/state_events.lua"
+pattern = '''G\.GAME\.blind:get_type\(\) == 'Boss' '''
+position = "at"
+payload = '''G.GAME.blind:is_type("Boss") '''
+# game.lua : Game:init_game_object()
+[[patches]]
+[patches.regex]
+target = "game.lua"
+pattern = '''if v.boss then bosses_used[k] = 0 end'''
+position = "at"
+payload = '''if SMODS.get_blind_types(blind_obj).Boss then bosses_used[k] = 0 end'''
