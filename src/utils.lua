@@ -1379,7 +1379,7 @@ SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
     local ret = {}
     for _, key in ipairs(SMODS.calculation_keys) do
         if effect[key] then
-            if effect.juice_card and not SMODS.no_resolve then
+            if effect.juice_card and not SMODS.no_resolve and not effect.no_juice then
                 G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function ()
                     effect.juice_card:juice_up(0.1)
                     if (not effect.message_card) or (effect.message_card and effect.message_card ~= scored_card) then
@@ -1643,7 +1643,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                         context.retrigger_joker = eval.retriggers[rt].retrigger_card
                         local rt_eval, rt_post = eval_card(_card, context)
                         if args and args.main_scoring and rt_eval.jokers then
-                            rt_eval.jokers.juice_card = rt_eval.jokers.juice_card or rt_eval.jokers.card or _card
+                            rt_eval.jokers.juice_card = rt_eval.jokers.juice_card or rt_eval.jokers.card or  _card
                             rt_eval.jokers.message_card = rt_eval.jokers.message_card or context.other_card
                         end
                         if next(rt_eval) then
