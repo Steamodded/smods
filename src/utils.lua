@@ -670,6 +670,73 @@ function SMODS.poll_edition(args)
     return poll_edition(args.key or 'editiongeneric', args.mod, args.no_negative, args.guaranteed, args.options)
 end
 
+function SMODS.poll_soul(args)
+    assert(args and args.set, "SMODS.poll_soul called without a set")
+
+    local set = args.set
+    local forced_key
+    local soul_total_rate = 0
+    local non_soul_rate = 1
+    local modded_souls = {}
+
+    for _, v in ipairs(SMODS.Consumable.legendaries) do
+        if not G.GAME.banned_keys[v.key] then
+            local can_repeat = SMODS.showman(v.key) or v.can_repeat_soul or args.allow_duplicates
+            local is_soul_set = set == v.type.key
+            if not is_soul_set and v.soul_set then
+                local consumable_soul_sets = type(v.soul_set) == "table" and v.soul_set or { v.soul_set }
+                for _, soul_set in ipairs(consumable_soul_sets) do
+                    is_soul_set = set == soul_set
+                    if is_soul_set then break end
+                end
+            end
+            if is_soul_set and not (G.GAME.used_jokers[v.key] and not can_repeat) and SMODS.add_to_pool(v) then
+                local soul_rate = SMODS.get_soul_rate(v, set) * (args.mod or 1)
+                v.temp_soul_rate = soul_rate -- to ensure it doesn't change and so it isn't calculated twice
+                soul_total_rate = soul_total_rate + soul_rate
+                non_soul_rate = non_soul_rate * (1 - soul_rate)
+                non_soul_rate = math.max(non_soul_rate, 0)
+                table.insert(modded_souls, v)
+            end
+        end
+    end
+    local roll = pseudorandom(args.key or ('soul_smods_' .. set .. G.GAME.round_resets.ante))
+    local threshold = 1
+    non_soul_rate = args.guaranteed and 0 or non_soul_rate
+    for _, v in ipairs(modded_souls) do
+        local soul_rate = v.temp_soul_rate
+        threshold = threshold - soul_rate / soul_total_rate * (1 - non_soul_rate)
+        v.temp_soul_rate = nil
+        if roll > threshold then
+            forced_key = v.key
+            break
+        end
+    end
+    if not G.GAME.banned_keys['c_soul'] and not args.ignore_vanilla then
+        if (set == 'Tarot' or set == 'Spectral' or set == 'Tarot_Planet') and
+            not (G.GAME.used_jokers['c_soul'] and not SMODS.showman('c_soul')) then
+            if (not forced_key and args.guaranteed) or pseudorandom(args.key or ('soul_' .. set .. G.GAME.round_resets.ante)) > 0.997 - (0.003 * ((G.GAME.soul_mod or 1) * (args.mod or 1) - 1)) then
+                forced_key = 'c_soul'
+            end
+        end
+        if (set == 'Planet' or set == 'Spectral') and
+            not (G.GAME.used_jokers['c_black_hole'] and not SMODS.showman('c_black_hole')) then
+            if ((not forced_key or forced_key == 'c_soul') and args.guaranteed) or pseudorandom(args.key or ('soul_' .. set .. G.GAME.round_resets.ante)) > 0.997 - (0.003 * ((G.GAME.soul_mod or 1) * (args.mod or 1) - 1)) then
+                forced_key = 'c_black_hole'
+            end
+        end
+    end
+    return forced_key
+end
+
+function SMODS.get_soul_rate(consumable, set)
+    local prototype = type(consumable) == "string" and G.P_CENTERS[consumable] or consumable
+    if not prototype then return nil, "SMODS.get_soul_rate was called with an invalid consumable" end
+    local soul_rate = type(prototype.soul_rate) == "function" and prototype.soul_rate(set) or
+        prototype.soul_rate or 0
+    return soul_rate * (G.GAME.soul_mod or 1)
+end
+
 function SMODS.poll_seal(args)
     args = args or {}
     local key = args.key or 'stdseal'
