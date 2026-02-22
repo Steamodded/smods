@@ -10,7 +10,8 @@
 ---@field in_shop? boolean Sets if the Edition spawns naturally in the shop. 
 ---@field weight? number The weight of the Edition. 
 ---@field extra_cost? number Extra cost applied to cards in the shop with this Edition. 
----@field apply_to_float? boolean Sets if the shader is drawn on floating sprites. 
+---@field apply_to_float? boolean Sets if the shader is drawn on floating sprites.
+---@field text_colour? table Colour of the label for the badge.
 ---@field badge_colour? table HEX color of the Edition's badge
 ---@field sound? table|{sound: string, per?: number, vol?: number} Used to set a custom sound when the Edition is applied. 
 ---@field disable_shadow? boolean Sets if the shadow is drawn under the card with this Edition. 

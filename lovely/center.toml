@@ -36,6 +36,22 @@ for k, v in pairs(center.config) do
 end"""
 match_indent = true
 
+# Clean up sprites
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+self:set_sprites(center)
+'''
+payload = '''
+SMODS.clean_up_children(self.children)
+if self.canvas_text then SMODS.clean_up_canvas_text(self) end
+if self.playing_card and self.ability and not self:should_hide_front() then self:set_sprites(nil, self.config.card) end
+'''
+
+
 # Card:calculate_joker()
 [[patches]]
 [patches.pattern]
@@ -637,3 +653,17 @@ else
     G.GAME.consumeable_usage_total[card.config.center.set:lower()] = G.GAME.consumeable_usage_total[card.config.center.set:lower()] + 1
 '''
 match_indent = true
+
+# Card:remove()
+# Clean up canvas_text when cards are removed
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+remove_all(self.children)
+'''
+payload = '''
+if self.canvas_text then SMODS.clean_up_canvas_text(self) end
+'''

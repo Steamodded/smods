@@ -93,6 +93,7 @@ pattern = 'return G.BADGE_COL[key] or {1, 0, 0, 1}'
 position = 'before'
 match_indent = true
 payload = '''
+if G.BADGE_COL[key] then return G.BADGE_COL[key] end
 for _, v in ipairs(G.P_CENTER_POOLS.Edition) do
 	G.BADGE_COL[v.key:sub(3)] = v.badge_colour
 end'''

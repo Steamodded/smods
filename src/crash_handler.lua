@@ -492,6 +492,18 @@ end
 -- Note: The below code is not from the original StackTracePlus.lua
 local stackTraceAlreadyInjected = false
 
+local function doRestart()
+    if SMODS and SMODS.restart_game then
+        SMODS.restart_game()
+    else
+        local test, msg = pcall(function()
+            require"lovely".reload_patches()
+        end)
+        if not test then sendErrorMessage("Failed to reload patches... " .. tostring(msg), "StackTrace") end
+        love.event.quit("restart")
+    end
+end
+
 function getDebugInfoForCrash()
     local version = VERSION
     if not version or type(version) ~= "string" then
@@ -803,13 +815,13 @@ function injectStackTrace()
 
             for e, a, b, c in love.event.poll() do
                 if e == "quit" then
-                    return 1
+                    return a or 0
                 elseif e == "keypressed" and a == "escape" then
                     return 1
                 elseif e == "keypressed" and a == "c" and love.keyboard.isDown("lctrl", "rctrl") then
                     copyToClipboard()
                 elseif e == "keypressed" and a == "r" then
-                    SMODS.restart_game()
+                    doRestart()
                 elseif e == "keypressed" and a == "down" then
                     scrollDown()
                 elseif e == "keypressed" and a == "up" then
@@ -829,7 +841,7 @@ function injectStackTrace()
                 elseif e == "gamepadpressed" and b == "dpup" then
                     scrollUp()
                 elseif e == "gamepadpressed" and b == "a" then
-                    return "restart"
+                    doRestart()
                 elseif e == "gamepadpressed" and b == "x" then
                     copyToClipboard()
                 elseif e == "gamepadpressed" and (b == "b" or b == "back" or b == "start") then
@@ -847,7 +859,7 @@ function injectStackTrace()
                     if pressed == 1 then
                         return 1
                     elseif pressed == 3 then
-                        return "restart"
+                        doRestart()
                     elseif pressed == 4 then
                         copyToClipboard()
                     end

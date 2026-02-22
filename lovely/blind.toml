@@ -258,6 +258,9 @@ if obj.loc_vars and type(obj.loc_vars) == 'function' then
     local res = obj:loc_vars() or {}
     target.vars = res.vars or target.vars
     target.key = res.key or target.key
+    target.set = res.set or target.set
+    target.scale = res.scale
+    target.text_colour = res.text_colour
 end
 local loc_target = localize(target)'''
 
@@ -374,8 +377,21 @@ if obj.loc_vars and _G['type'](obj.loc_vars) == 'function' then
     local res = obj:loc_vars() or {}
     target.vars = res.vars or target.vars
     target.key = res.key or target.key
+    target.set = res.set or target.set
+    target.scale = res.scale
+    target.text_colour = res.text_colour
 end
-local loc_target = localize(target)'''
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = "local text_table = loc_target"
+match_indent = true
+position = 'at'
+payload = '''
+local text_table = G.localization.descriptions[target.set][target.key].text_parsed
+'''
 
 # create_UIBox_blind_popup()
 [[patches]]
@@ -390,8 +406,23 @@ if blind.collection_loc_vars and type(blind.collection_loc_vars) == 'function' t
     local res = blind:collection_loc_vars() or {}
     target.vars = res.vars or target.vars
     target.key = res.key or target.key
+    target.set = res.set or target.set
+    target.scale = res.scale
+    target.text_colour = res.text_colour
 end
-local loc_target = localize(target)'''
+local loc_target = G.localization.descriptions[target.set][target.key].text_parsed'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+ability_text[#ability_text + 1] = {n=G.UIT.R, config={align = "cm"}, nodes={{n=G.UIT.T, config={text = (k ==1 and blind.name == 'The Wheel' and '1' or '')..v, scale = 0.35, shadow = true, colour = G.C.WHITE}}}}
+'''
+match_indent = true
+position = 'at'
+payload = '''
+ability_text[#ability_text + 1] = {n=G.UIT.R, config={align = "cm"}, nodes=SMODS.localize_box(v, {default_col = target.text_colour or G.C.WHITE, shadow = true, vars = target.vars, scale = target.scale})}
+'''
 
 # get_new_boss()
 [[patches]]
