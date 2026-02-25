@@ -423,3 +423,33 @@ payload = '''
 {n=G.UIT.R, config={align = "tm", minh = 0.36, padding = 0.03}, nodes=name_nodes},
 '''
 match_indent = true
+
+# Support starting modifiers (rules.modifiers) without UI for Challenges
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+match_indent = true
+position = "at"
+pattern = '''
+base_modifiers[v.id] = {value = v.value, order = base_modifiers[v.id] and base_modifiers[v.id].order or bonus_mods, custom = true, old_val = base_modifiers[v.id].value}
+bonus_mods = bonus_mods + 1'''
+payload = '''
+if not v.no_ui then
+  base_modifiers[v.id] = {value = v.value, order = base_modifiers[v.id] and base_modifiers[v.id].order or bonus_mods, custom = true, old_val = base_modifiers[v.id].value}
+  bonus_mods = bonus_mods + 1
+end
+'''
+
+# Support custom modifiers (rules.custom) without UI for Challenges
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+match_indent = true
+position = "at"
+pattern = '''
+game_rules[#game_rules+1] = {n=G.UIT.R, config={align = "cl"}, nodes= localize{type = 'text', key = 'ch_c_'..v.id, vars = {v.value}}}'''
+payload = '''
+if not v.no_ui then
+  game_rules[#game_rules+1] = {n=G.UIT.R, config={align = "cl"}, nodes= localize{type = 'text', key = 'ch_c_'..v.id, vars = {v.value}}}
+end
+'''
