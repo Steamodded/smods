@@ -1012,6 +1012,12 @@ function buildModtag(mod)
         G.FUNCS["openModUI_" .. mod.id](self)
     end
     tag_sprite.stop_hover = function(_self) _self.hovering = false; Node.stop_hover(_self); _self.hover_tilt = 0 end
+    tag_sprite.update = function (self, dt)
+        if not self.rescaled then
+            if type(tag_sprite.rescale) == "function" then tag_sprite:rescale() end
+            self.rescaled = true
+        end
+    end
 
     tag_sprite:juice_up()
 
