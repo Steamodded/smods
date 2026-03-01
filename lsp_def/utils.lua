@@ -111,6 +111,11 @@
 ---@field old? string Key of the old center after a card's ability is set.
 ---@field new? string Key of the new center after a card's ability is set.
 ---@field unchanged? boolean `true` if the key of the old center is the same as the new one after a card's ability is set.
+---@field poker_hand_changed? boolean `true` if a poker hand's values are being altered.
+---@field old_level? integer Level of the poker hand before the alteration, if it was changed.
+---@field new_level? integer Level of the poker hand after the alteration, if it was changed.
+---@field old_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand before the alteration.
+---@field new_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand after the alteration.
 
 --- Util Functions
 
@@ -700,7 +705,7 @@ function SMODS.is_poker_hand_visible(handname) end
 function SMODS.is_eternal(card, trigger) end
 
 ---@param card Card|table
----@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: string?}
+---@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: '+'|'X'|'-'|string|fun(ref_table: table, ref_value: string, initial: number, change: number)?, block_overrides: {value: boolean?, scalar: boolean?, message: boolean?}?, scaling_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
 ---@return table? results
 --- Tells Jokers that this card is scaling allowing for scaling detection
 --- Can return scaling_value and scalar_value in results to change the scaling cards values
