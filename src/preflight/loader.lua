@@ -477,6 +477,7 @@ function loadMods(modsDirectory)
                 name = name:match("^(.*).zip$")
             end
             local path = SMODS.MODS_DIR.. "/" .. flags.name .. "/"
+            if flags.name:find('smods') then smods_dupe = true end
             local mod = {
                 name = name,
                 id = "lovely-compat-" .. flags.name,
@@ -800,7 +801,6 @@ local function doGameHooks()
     local init_item_prototypes_ref = Game.init_item_prototypes
     function Game:init_item_prototypes()
         init_item_prototypes_ref(self)
-        convert_save_data()
         if SMODS.booted then
             SMODS.injectItems()
         end
@@ -817,7 +817,9 @@ local function initSteamodded()
     initializeModUIFunctions()
     -- boot_print_stage("Injecting Items")
     SMODS.injectItems()
+    convert_save_data()
     SMODS.booted = true
+
 
     -- re-inject on reload
 end

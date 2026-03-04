@@ -672,7 +672,10 @@ function injectStackTrace()
         local err = {}
 
         table.insert(err, "Oops! The game crashed:")
-        if sanitizedmsg:find("Syntax error: game.lua:4: '=' expected near 'Game'") then
+        
+        if smods_dupe then
+            table.insert(err, 'Duplicate installation of Steamodded detected! Please remove the duplicate steamodded/smods folder/zip in your mods folder.')
+        elseif sanitizedmsg:find("Syntax error: game.lua:4: '=' expected near 'Game'") then
             table.insert(err,
                 'Duplicate installation of Steamodded detected! Please clean your installation: Steam Library > Balatro > Properties > Installed Files > Verify integrity of game files.')
         elseif sanitizedmsg:find("Syntax error: game.lua:%d+: duplicate label 'continue'") then
@@ -693,8 +696,8 @@ function injectStackTrace()
             table.insert(err, '\n\nDevelopment version of Steamodded detected! If you are not actively developing a mod, please try using the latest release instead.\n\n')
         end
 
-        if not V then
-            table.insert(err, '\nA mod you have installed has caused a syntax error through patching. Please share this crash with the mod developer.\n')
+        if not V and not smods_dupe then
+            table.insert(err, '\nA mod you have installed has caused a syntax error through patching. Please share this crash with the mod developer.\n')            
         end
 
         local success, msg = pcall(getDebugInfoForCrash)
