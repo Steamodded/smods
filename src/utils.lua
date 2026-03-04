@@ -3498,7 +3498,7 @@ function save_run()
         end
     end
     smods_hook_save_run()
-    if SMODS.last_hand then
+    if SMODS.last_hand and G.culled_table then
         G.culled_table.SMODS = {
         last_hand = {
                 scoring_name = SMODS.last_hand.scoring_name,
