@@ -289,6 +289,7 @@ function loadMods(modsDirectory)
             elseif filename:lower():match('%.json') and depth > 1 then
                 local json_str = NFS.read(file_path)
                 local parsed, mod = pcall(JSON.decode, json_str)
+                if mod and mod.name and mod.name:find('Steamodded') then smods_dupe = directory end
                 local valid = true
                 local err
                 if not parsed then
@@ -800,7 +801,6 @@ local function doGameHooks()
     local init_item_prototypes_ref = Game.init_item_prototypes
     function Game:init_item_prototypes()
         init_item_prototypes_ref(self)
-        convert_save_data()
         if SMODS.booted then
             SMODS.injectItems()
         end
@@ -817,7 +817,9 @@ local function initSteamodded()
     initializeModUIFunctions()
     -- boot_print_stage("Injecting Items")
     SMODS.injectItems()
+    convert_save_data()
     SMODS.booted = true
+
 
     -- re-inject on reload
 end
