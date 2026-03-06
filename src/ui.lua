@@ -77,8 +77,8 @@ function UIElement:draw_children(...)
                 love.graphics.scale(1 / G.TILESIZE)
                 love.graphics.setColor(0, 0, 0, 1)
 
-                local scale_factor = math.max(1 / self.VT.scale, 1)
-    
+                local ds = math.max(G.WINDOWTRANS.w, G.WINDOWTRANS.h) * math.max(1 / self.VT.scale, 1) * G.TILESIZE * 3
+
                 if v and h then
                     if self.config.r and self.VT.w > 0.01 then
                         self:draw_pixellated_rect("fill", 0)
@@ -86,9 +86,9 @@ function UIElement:draw_children(...)
                         love.graphics.rectangle("fill", 0, 0, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE)
                     end
                 elseif v then
-                    love.graphics.rectangle("fill", -G.WINDOWTRANS.w * scale_factor, 0, self.VT.w * G.TILESIZE + G.WINDOWTRANS.w * scale_factor, self.VT.h * G.TILESIZE)
+                    love.graphics.rectangle("fill", -ds, 0, self.VT.w * G.TILESIZE + 2 * ds, self.VT.h * G.TILESIZE)
                 elseif h then
-                    love.graphics.rectangle("fill", 0, -G.WINDOWTRANS.h * scale_factor, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE + G.WINDOWTRANS.h * scale_factor)
+                    love.graphics.rectangle("fill", 0, -ds, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE + 2 * ds)
                 end
     
                 love.graphics.pop()
@@ -109,17 +109,41 @@ function Node:inside_overflow_boundaries(point)
 	end
 	self.overflow_check_timer = G.TIMERS.REAL
     self.overflow_check_point = point
-    local r = true
+
+    local set_value = function(r)
+        self.overflow_check_result = r
+        return r
+    end
 
     -- No parent = no overflow can be done so collide as usual
-    if not self.parent then r = true
-    -- If parent has overflow then we should check do we collide with it and if not, all children in it cannot be collided too
-    elseif self.parent.config and self.parent.config.no_overflow and not Node.collides_with_point(self.parent, point) then r = false
-    -- Otherwise process all parents looking for first non-collideable overflow
-    else r = Node.inside_overflow_boundaries(self.parent, point) end
+    if not self.parent then return set_value(true) end
 
-    self.overflow_check_result = r
-    return r
+    -- Parent has overflow = should check do we collide with it, accounting overflow directions
+    if self.parent.config and self.parent.config.no_overflow then
+        local v, h = string.find(self.parent.config.no_overflow, "v"), string.find(self.parent.config.no_overflow, "h")
+        -- Do additional check only if at least one direction present
+        if v or h then
+            local r = Node.collides_with_point(self.parent, point)
+            local T = self.parent.CT or self.parent.T
+            local _p = self.parent.ARGS.collides_with_point_point
+            local _b = self.parent.states.hover.is and G.COLLISION_BUFFER or 0
+            
+            -- Both directions = use default collision check
+            if v and h then
+            -- Vertical = only y coordinate
+            elseif v then
+                r = _p.y >= T.y - _b and _p.y <= T.y + T.h + _b
+            -- Horizontal = only x coordinate
+            elseif h then
+                r = _p.x >= T.x - _b and _p.x <= T.x + T.w + _b 
+            end
+
+            -- No collision = mark it and children as non-collideable
+            if not r then return set_value(false) end
+        end
+    end
+
+    return set_value(Node.inside_overflow_boundaries(self.parent, point) or false)
 end
 
 --
@@ -1318,10 +1342,18 @@ local function createClickableModBox(modInfo, scale)
                 colours = {the_colour},
                 shadow = true,
             },
+            container = {
+                config = {
+                    can_collide = false
+                }
+            },
             overflow = {
                 node_config = {
                     maxw = 2.4,
                     no_overflow = "h"
+                },
+                config = {
+                    can_collide = false
                 }
             },
             sync_mode = "progress",
