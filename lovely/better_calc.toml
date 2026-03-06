@@ -602,7 +602,7 @@ SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, 
 
 SMODS.displayed_hand = nil'''
 
-# context.final_scoring_step
+# context.main_scoring for individual areas and context.final_scoring_step
 [[patches]]
 [patches.pattern]
 target = "functions/state_events.lua"
@@ -610,6 +610,21 @@ pattern = '''local nu_chip, nu_mult = G.GAME.selected_back:trigger_effect{contex
 match_indent = true
 position = "before"
 payload = '''
+--- context.main_scoring for individual area calculations
+for _, _area in ipairs(SMODS.get_card_areas('individual')) do
+    local effects = {}
+    -- Calculate context.main_scoring for individual areas
+    local _eval, post = SMODS.eval_individual(_area, { cardarea = G.jokers, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, main_scoring = true })
+    if next(_eval) then
+        table.insert(effects, _eval)
+        _eval.individual.juice_card = _area.scored_card
+        for _, v in ipairs(post) do effects[#effects + 1] = v end
+    end
+
+    SMODS.trigger_effects(effects, _area.scored_card)
+end
+
+
 -- context.final_scoring_step calculations
 SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, final_scoring_step = true})
 
