@@ -1760,6 +1760,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         config = {},
         dollars = 5,
         mult = 2,
+        blind_types = nil, -- Map of types, used by SMODS.get_new_blind()
         atlas = 'blind_chips',
         discovered = false,
         pos = { x = 0, y = 0 },
@@ -1779,6 +1780,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
             G.P_BLINDS[self.key] = self
             if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
+        end,
+        get_types = function(self)
+            return self.blind_types
         end
     }
     SMODS.Blind:take_ownership('eye', {
@@ -3890,6 +3894,1428 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         text = '^'
     }
 
+
+    -------------------------------------------------------------------------------------------------
+    ------- API CODE SMODS.AntePath AND RELATED
+    -------------------------------------------------------------------------------------------------
+    
+    ------- UI DEFS 
+    function SMODS.create_CanvasContainer_BlindSelect(run_info)
+        local ui_out
+        if run_info then
+            
+        else
+            -- Needs to set G.blind_prompt_box
+            ui_out = {
+                n=G.UIT.ROOT,
+                config={},
+                nodes={}
+            }
+        end
+        return ui_out
+    end
+    
+    ------- API CODE SMODS.AntePath 
+    SMODS.AntePaths = {}
+    SMODS.AntePath = SMODS.GameObject:extend {
+        set = 'AntePath',
+        obj_table = SMODS.AntePaths,
+        obj_buffer = {},
+        required_parameters = {
+            'key',
+        },
+        inject = function(self)
+
+        end,
+        create_data = function (self)
+            -- Vanilla Blind structure
+            -- "Small" -> "Big" -> "Boss"
+            local boss_type = (G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante > 0 and "Showdown" or "Boss"
+            local tree_data = {
+                key = "vanilla",
+                active_node = 1,
+                nodes = {
+                    SMODS.APNode {
+                        index = 1,
+                        hidden = true,
+                        selected = true,
+                    },
+                    SMODS.APNode {
+                        index = 2,
+                        callbacks = {
+                            {key = "enter_blind", triggers = {selected = true}},
+                            {key = "evaluate_round", triggers = {defeated = true}},
+                            {key = "enter_shop", triggers = {cashed_out = true}},
+                            {key = "enter_blind_select", triggers = {shop_ended = true}},
+                            {key = "create_tag", triggers = {skipped = true}},
+                        },
+                        blinds = {"bl_small"},
+                        tags = {get_next_tag_key()},
+                        next_nodes_indices = {[3] = true}
+                    },
+                    SMODS.APNode {
+                        index = 3,
+                        callbacks = {
+                            {key = "enter_blind", triggers = {selected = true}},
+                            {key = "evaluate_round", triggers = {defeated = true}},
+                            {key = "enter_shop", triggers = {cashed_out = true}},
+                            {key = "enter_blind_select", triggers = {shop_ended = true}},
+                            {key = "create_tag", triggers = {skipped = true}},
+                        },
+                        blinds = {"bl_big"},
+                        tags = {get_next_tag_key()},
+                        next_nodes_indices = {[4] = true}
+                    },
+                    SMODS.APNode {
+                        index = 4,
+                        callbacks = {
+                            {key = "enter_blind", triggers = {selected = true}},
+                            {key = "ante_up", triggers = {defeated = true}},
+                            {key = "evaluate_round", triggers = {defeated = true}},
+                            {key = "enter_blind_select", triggers = {shop_ended = true}},
+                            {key = "next_ante_path", triggers = {cashed_out = true}},
+                            {key = "enter_shop", triggers = {cashed_out = true}},
+                        },
+                        blinds = {SMODS.get_new_blind({[boss_type] = true})},
+                    }
+                }
+            }
+            return tree_data
+        end,
+        create_ui = function (self)
+            -- Vanilla Blind select UI
+            local canvas_container = UIBox {
+                definition = {n=G.UIT.ROOT, colour = G.C.CLEAR, padding = 0.2},
+                config = {align="cm", offset = {x=0,y=G.ROOM.T.y + 29}, major = G.ROOM_ATTACH, bond = 'Weak'},
+                nodes = {
+                    SMODS.create_CanvasContainer_BlindSelect()
+                }
+            }
+            return canvas_container
+        end,
+        create_run_info_ui = function (self)
+            -- Vanilla Run Info Blind Tab UI
+            local canvas_container = UIBox {
+                definition = {n=G.UIT.ROOT, colour = G.C.CLEAR, padding = 0.2},
+                config = {align="cm", offset = {x=0,y=G.ROOM.T.y}, major = G.ROOM_ATTACH, bond = 'Weak'},
+                nodes = {
+                    SMODS.create_CanvasContainer_BlindSelect(true)
+                }
+            }
+            return canvas_container
+        end,
+        create_callback_ui = function (self, cb_key, ap_node, ap_node_UIE)
+            if not cb_key or not SMODS.APNodeCallbacks[cb_key] then return end
+            return SMODS.APNodeCallbacks[cb_key]:create_ui(ap_node, ap_node_UIE)
+        end
+    }
+
+    SMODS.AntePath {
+        key = "vanilla",
+    }
+
+    function SMODS.get_ante_path()
+        return SMODS.ANTE_PATH and SMODS.AntePaths[SMODS.ANTE_PATH.key] or SMODS.AntePaths["vanilla"]
+    end
+
+    function SMODS.get_ap_node(index)
+        return SMODS.ANTE_PATH and SMODS.ANTE_PATH.nodes and SMODS.ANTE_PATH.nodes[index]
+    end
+
+    function SMODS.save_ante_path()
+        if not SMODS.ANTE_PATH then return {} end
+        local nodes_table = {}
+        for _, ap_node in ipairs(SMODS.ANTE_PATH.nodes) do
+            table.insert(nodes_table, ap_node:save())
+        end
+        local ante_path_table = {
+            key = SMODS.ANTE_PATH.key,
+            active_node = SMODS.ANTE_PATH.active_node,
+            nodes = nodes_table,
+        }
+        return ante_path_table
+    end
+
+    function SMODS.load_ante_path(ante_path_table)
+        for i, ap_node_table in ipairs(ante_path_table.nodes) do
+            ante_path_table.nodes[i] = SMODS.APNode{node_table = ap_node_table}
+        end
+        SMODS.set_ante_path(ante_path_table)
+    end
+
+    function SMODS.next_ante_path()
+        SMODS.set_ante_path(SMODS.get_ante_path():create_data())
+    end
+
+    function SMODS.set_ante_path(data)
+        SMODS.ANTE_PATH = data
+    end
+
+    function SMODS.set_active_ap_node(ap_node)
+        if type(ap_node) == "number" then
+            SMODS.ANTE_PATH.active_node = ap_node
+        else
+            SMODS.ANTE_PATH.active_node = ap_node.index
+        end
+    end
+
+    function SMODS.get_active_ap_node()
+        return SMODS.get_ap_node(SMODS.ANTE_PATH.active_node)
+    end
+
+    local start_run_ref = Game.start_run
+    function Game:start_run(args)
+        start_run_ref(self, args)
+        local saveTable = args.savetext
+        if saveTable and saveTable.ANTE_PATH then
+            SMODS.load_ante_path(saveTable.ANTE_PATH)
+        end
+    end
+
+    local save_run_ref = save_run
+    function save_run()
+        save_run_ref()
+        G.ARGS.save_run.ANTE_PATH = recursive_table_cull(SMODS.save_ante_path())
+    end
+
+    local delete_run_ref = Game.delete_run
+    function Game:delete_run()
+        delete_run_ref(self)
+        SMODS.ANTE_PATH = nil
+    end
+    
+    ------- API CODE Object.APNode
+    SMODS.APNode = Object:extend()
+    function SMODS.APNode:init(...)
+        local args = {...}
+
+        if args.node_table then
+            self:load(args.node_table)
+            return
+        end
+
+        self.index = args.index
+        self.hidden = args.hidden
+        self.selected = args.selected or false
+
+        self:set_callbacks(args.callbacks or {})
+        self:set_blinds(args.blinds or {})
+        self:set_tags(args.tags or {})
+
+        self:set_next_nodes(args.next_nodes_indices or {})
+    end
+
+    function SMODS.APNode:set_callbacks(cbs)
+        self.callbacks = {}
+        for _, cb in ipairs(cbs) do
+            table.insert(self.callbacks, {
+                key = cb.key,
+                triggers = cb.triggers,
+                called = cb.called or false,
+                ignore_hold = cb.ignore_hold or false
+            })
+        end
+    end
+
+    function SMODS.APNode:set_blinds(blinds)
+        self.blinds = {}
+        for _, blind_key in ipairs(blinds) do
+            table.insert(self.blinds, {
+                key = blind_key,
+                used = false,
+            })
+        end
+    end
+
+    function SMODS.APNode:set_tags(tags)
+        self.tags = {}
+        for _, tag_key in ipairs(tags) do
+            table.insert(self.tags, {
+                key = tag_key,
+                used = false,
+            })
+        end
+    end
+
+    function SMODS.APNode:trigger_callbacks(trigger_type)
+        if not trigger_type then return end
+        local hold = false
+        for _, cb in ipairs(self.callbacks) do
+            local callback = SMODS.APNodeCallbacks[cb.key]
+            if not cb.called and (not hold or cb.ignore_hold) and cb.triggers[trigger_type] then
+                cb.called = true
+                hold = hold or callback:on_callback(self, cb, trigger_type)
+            end
+        end
+    end
+
+    function SMODS.APNode:get_blind(keep)
+        local blind_tuple
+        for _, tup in ipairs(self.blinds) do
+            if not tup.used then
+                blind_tuple = tup
+                break
+            end
+        end
+        local blind = blind_tuple.key
+        if blind and not keep then blind_tuple.used = true end
+        return blind
+    end
+
+    function SMODS.APNode:get_tag(keep)
+        local tag_tuple
+        for _, tup in ipairs(self.tags) do
+            if not tup.used then
+                tag_tuple = tup
+                break
+            end
+        end
+        local tag = tag_tuple.key
+        if tag and not keep then tag_tuple.used = true end
+        return tag
+    end
+
+    function SMODS.APNode:set_next_nodes(nni)
+        self.next_nodes_indices = nni or {}
+    end
+
+    function SMODS.APNode:save()
+        local node_table = {
+            index = self.index,
+            hidden = self.hidden,
+            callbacks = self.callbacks,
+            blinds = self.blinds,
+            tags = self.tags,
+            selected = self.selected,
+            next_nodes_indices = self.next_nodes_indices,
+        }
+        return node_table
+    end
+
+    function SMODS.APNode:load(node_table)
+        self.index = node_table.index
+        self.hidden = node_table.hidden
+        self.callbacks = node_table.callbacks or {}
+        self.blinds = node_table.blinds or {}
+        self.tags = node_table.tags or {}
+        self.selected = node_table.selected or false
+        self.next_nodes_indices = node_table.next_nodes_indices or {}
+    end
+
+    ------- API CODE GameObject.APNodeCallback
+    SMODS.APNodeCallbacks = {}
+    SMODS.APNodeCallback = SMODS.GameObject:extend {
+        set = 'APNodeCallback',
+        obj_table = SMODS.APNodeCallbacks,
+        obj_buffer = {},
+        required_parameters = {
+            'key',
+            'on_callback',
+        },
+        inject = function(self)
+
+        end,
+        create_ui = function (self, ap_node, ap_node_UIE)
+        end
+    }
+
+    SMODS.APNodeCallback {
+        key = "enter_blind",
+        on_callback = function (self, ap_node, cb, trigger_type)
+            -- Change game state to ap_node:get_blind()
+            SMODS.enter_state(SMODS.STATES.BLIND, {key = ap_node:get_blind(), trigger_callbacks = true})
+            return true
+        end,
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return SMODS.GUI.bt_callback_enter_blind(ap_node, ap_node_UIE)
+        end
+    }
+
+    function SMODS.GUI.bt_callback_enter_blind(ap_node, ap_node_UIE)
+        return {}
+    end
+
+    SMODS.APNodeCallback {
+        key = "evaluate_round",
+        on_callback = function (self, ap_node, cb, trigger_type)
+            -- Create cashout and evaluate round 
+            SMODS.enter_state(SMODS.STATES.ROUND_EVAL, {trigger_callbacks = true})
+            return true
+        end,
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return SMODS.GUI.bt_callback_evaluate_round(ap_node, ap_node_UIE)
+        end
+    }
+
+    function SMODS.GUI.bt_callback_evaluate_round(ap_node, ap_node_UIE)
+        return {}
+    end
+
+    SMODS.APNodeCallback {
+        key = "enter_shop",
+        on_callback = function (self, ap_node, cb, trigger_type)
+            -- Change game state to shop
+            SMODS.enter_state(SMODS.STATES.SHOP, {trigger_callbacks = true})
+            return true
+        end,
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return SMODS.GUI.bt_callback_enter_shop(ap_node, ap_node_UIE)
+        end
+    }
+
+    function SMODS.GUI.bt_callback_enter_shop(ap_node, ap_node_UIE)
+        return {}
+    end
+    
+    SMODS.APNodeCallback {
+        key = "enter_blind_select",
+        on_callback = function (self, ap_node, cb, trigger_type)
+            -- Change game state to blind select
+            SMODS.enter_state(SMODS.STATES.BLIND_SELECT)
+            return true
+        end,
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return nil
+        end
+    }
+
+    SMODS.APNodeCallback {
+        key = "ante_up",
+        on_callback = function (self, ap_node, cb, trigger_type)
+            -- Ante up
+            SMODS.ante_end = true
+            ease_ante(1)
+            SMODS.ante_end = nil
+            -- Moved here from G.FUNCS.cash_out() -> Might have to be moved again for better timing
+            G.GAME.round_resets.blind_ante = G.GAME.round_resets.ante
+            ------
+            return false
+        end,
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return SMODS.GUI.bt_callback_ante_up(ap_node, ap_node_UIE)
+        end
+    }
+
+    function SMODS.GUI.bt_callback_ante_up(ap_node, ap_node_UIE)
+        return {}
+    end
+
+    SMODS.APNodeCallback {
+        key = "create_tag",
+        on_callback = function (self, ap_node, cb, trigger_type)
+            -- Create tag(s) from ap_node:get_tag()
+            add_tag(ap_node:get_tag())
+            return false
+        end,
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return SMODS.GUI.bt_callback_create_tag(ap_node, ap_node_UIE)
+        end
+    }
+
+    function SMODS.GUI.bt_callback_create_tag(ap_node, ap_node_UIE)
+        return {}
+    end
+
+    SMODS.APNodeCallback {
+        key = "next_ante_path",
+        on_callback = function (self, ap_node, cb, trigger_type)
+            G.E_MANAGER:add_event(Event{
+                trigger = "immediate",
+                func = function ()
+                    SMODS.next_ante_path()
+                    return true
+                end
+            })
+            return false
+        end,
+        create_ui = function (self, ap_node, ap_node_UIE)
+            return nil
+        end
+    }
+
+    ------- API CODE GameObject.APNodeButton
+    SMODS.APNodeButtons = {}
+    SMODS.APNodeButton = SMODS.GameObject:extend {
+        set = 'APNodeButton',
+        obj_table = SMODS.APNodeButtons,
+        obj_buffer = {},
+        required_parameters = {
+            'key',
+            'on_click',
+        },
+        inject = function(self)
+            if type(self.on_click) ~= "function" then
+                sendWarnMessage(("APNodeButton injected with invalid function '%s'"):format(self.on_click))
+            end
+        end,
+        create_ui = function (self, ap_node, ap_node_UIE)
+
+        end,
+        on_click = function (self, ap_node)
+            
+        end
+    }
+
+    SMODS.APNodeButton {
+        key = "select",
+        on_click = function (self, ap_node)
+            SMODS.set_active_ap_node(ap_node)
+            ap_node:trigger_callbacks("selected")
+        end,
+    }
+
+    SMODS.APNodeButton {
+        key = "skip",
+        on_click = function (self, ap_node)
+            SMODS.set_active_ap_node(ap_node)
+            ap_node:trigger_callbacks("skipped")
+        end,
+    }
+
+    SMODS.APNodeButton {
+        key = "reroll",
+        on_click = function (self, ap_node)
+            -- Reroll Blind
+        end,
+    }
+
+    ------- API CODE OVERRIDES
+
+
+    --[[
+    blind_states and loc_blind_states
+
+    Game:update(dt) -> This;
+        if G.prev_small_state ~= G.GAME.round_resets.blind_states.Small or
+        G.prev_large_state ~= G.GAME.round_resets.blind_states.Big or
+        G.prev_boss_state ~= G.GAME.round_resets.blind_states.Boss or G.RESET_BLIND_STATES then ...
+    can probably be ignored and replaced with own system
+        
+    Game:start_run() -> get_next_tag_key() is called, besides that; blind_states is set
+    ]]
+    function reset_blinds()
+        G.GAME.round_resets.boss_rerolled = false
+    end
+
+    function SMODS.get_blind_types(blind_obj)
+        if type(blind_obj.get_types) == "function" then
+            return blind_obj:get_types()
+        else
+            if v.boss then
+                if not v.boss.showdown then
+                    return {Boss = true}
+                else
+                    return {Showdown = true}
+                end
+            else
+                if v.name == "Small Blind" then
+                    return {Small = true}
+                else
+                    return {Big = true}
+                end
+            end
+        end
+    end
+
+    function get_new_boss()
+        sendWarnMessage("get_new_boss() is deprecated; Call SMODS.get_new_blind() instead.", "utils")
+    end
+
+    function SMODS.get_new_blind(blind_types)
+        if not blind_types or (blind_types.Boss or blind_types.Showdown) then
+            G.GAME.perscribed_bosses = G.GAME.perscribed_bosses or {}
+            if G.GAME.perscribed_bosses and G.GAME.perscribed_bosses[G.GAME.round_resets.ante] then
+                local ret_boss = G.GAME.perscribed_bosses[G.GAME.round_resets.ante] 
+                G.GAME.perscribed_bosses[G.GAME.round_resets.ante] = nil
+                G.GAME.bosses_used[ret_boss] = G.GAME.bosses_used[ret_boss] + 1
+                return ret_boss
+            end
+            if G.FORCE_BOSS then return G.FORCE_BOSS end
+        end
+
+        local eligible_bosses = {}
+        for k, v in pairs(G.P_BLINDS) do
+            local res = SMODS.add_to_pool(v)
+            if res then
+                local b_types = SMODS.get_blind_types(v)
+                for _, b_type in pairs(b_types) do
+                    if blind_types[b_type] then
+                        if v.in_pool or not v.boss or (v.boss.min <= math.max(1, G.GAME.round_resets.ante) and ((math.max(1, G.GAME.round_resets.ante))%G.GAME.win_ante ~= 0 or G.GAME.round_resets.ante < 2)) then
+                            eligible_bosses[k] = true
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        for k, v in pairs(G.GAME.banned_keys) do
+            if eligible_bosses[k] then eligible_bosses[k] = nil end
+        end
+
+        local min_use = 100
+        for k, v in pairs(G.GAME.bosses_used) do
+            if eligible_bosses[k] then
+                eligible_bosses[k] = v
+                if eligible_bosses[k] <= min_use then 
+                    min_use = eligible_bosses[k]
+                end
+            end
+        end
+        for k, v in pairs(eligible_bosses) do
+            if eligible_bosses[k] then
+                if eligible_bosses[k] > min_use then 
+                    eligible_bosses[k] = nil
+                end
+            end
+        end
+        local _, boss = pseudorandom_element(eligible_bosses, pseudoseed('boss'))
+        G.GAME.bosses_used[boss] = G.GAME.bosses_used[boss] + 1
+        
+        return boss
+    end
+
+    function Blind:get_type()
+        return SMODS.get_blind_types(self.config.blind)
+    end
+
+    function Blind:is_type(b_type)
+        return self:is_types({[b_type] = true}, false)
+    end
+
+    function Blind:is_types(b_types_map, all)
+        for k, v in pairs(self:get_type()) do
+            if v and b_types_map[k] or (k == "Showdown" and b_types_map.Boss) then
+                if not all then
+                    return true
+                end
+            elseif all then
+                return false
+            end
+        end
+        return all
+    end
+
+    SMODS.Joker:take_ownership("j_matador", {
+        check_for_unlock = function (self, args)
+            return G.GAME.current_round.hands_played == 1 and G.GAME.current_round.discards_left == G.GAME.round_resets.discards and G.GAME.blind:is_type("Boss")
+        end
+    })
+
+    SMODS.Joker:take_ownership("j_hanging_chad", {
+        check_for_unlock = function (self, args)
+            return G.GAME.last_hand_played == self.unlock_condition.extra and G.GAME.blind:is_type("Boss")
+        end
+    })
+
+    -- Create Blind Select UI -> Not used in SMODS.STATES.BLIND_SELECT.on_enter()
+    function create_UIBox_blind_select() end
+
+    -- Run Info Tab 
+    function G.UIDEF.current_blinds()
+        return SMODS.get_ante_path():create_run_info_ui()
+    end
+
+    -- Blind Choice Handler
+    function G.FUNCS.blind_choice_handler(e)
+
+    end
+
+    -- Cash Out -> Functionality is handled by custom SMODS.GameStates and APNodeCallbacks
+    function G.FUNCS.cash_out(e)
+        if SMODS.get_current_state().args.trigger_callbacks then
+            SMODS.get_active_ap_node():trigger_callbacks("cashed_out")
+        end
+    end
+
+    -- TODO : move to lovely patches
+    function G.FUNCS.evaluate_round()
+        total_cashout_rows = 0
+        local pitch = 0.95
+        local dollars = 0
+
+        if not G.GAME.blind then
+            add_round_eval_row({dollars = G.GAME.default_eval_dollars or 0, name='???', pitch = pitch}) -- TODO: Check name
+            pitch = pitch + 0.06
+            dollars = dollars + (G.GAME.default_eval_dollars or 0)
+        elseif G.GAME.chips - G.GAME.blind.chips >= 0 then
+            add_round_eval_row({dollars = G.GAME.blind.dollars, name='blind1', pitch = pitch})
+            pitch = pitch + 0.06
+            dollars = dollars + G.GAME.blind.dollars
+        else
+            add_round_eval_row({dollars = 0, name='blind1', pitch = pitch, saved = true})
+            pitch = pitch + 0.06
+        end
+
+        -- if G.GAME.blind then
+        --     G.E_MANAGER:add_event(Event({
+        --         trigger = 'before',
+        --         delay = 1.3*math.min(G.GAME.blind.dollars+2, 7)/2*0.15 + 0.5,
+        --         func = function()
+        --         G.GAME.blind:defeat() -- TODO: Replace in end_round()
+        --         return true
+        --         end
+        --     }))
+        -- end
+        delay(0.2)
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                ease_background_colour_blind(G.STATES.ROUND_EVAL, '')
+                return true
+            end
+        }))
+        SMODS.calculate_context{round_eval = true}
+        G.GAME.selected_back:trigger_effect({context = 'eval'})
+
+        if G.GAME.current_round.hands_left > 0 and not G.GAME.modifiers.no_extra_hand_money then
+            add_round_eval_row({dollars = G.GAME.current_round.hands_left*(G.GAME.modifiers.money_per_hand or 1), disp = G.GAME.current_round.hands_left, bonus = true, name='hands', pitch = pitch})
+            pitch = pitch + 0.06
+            dollars = dollars + G.GAME.current_round.hands_left*(G.GAME.modifiers.money_per_hand or 1)
+        end
+        if G.GAME.current_round.discards_left > 0 and G.GAME.modifiers.money_per_discard then
+            add_round_eval_row({dollars = G.GAME.current_round.discards_left*(G.GAME.modifiers.money_per_discard), disp = G.GAME.current_round.discards_left, bonus = true, name='discards', pitch = pitch})
+            pitch = pitch + 0.06
+            dollars = dollars +  G.GAME.current_round.discards_left*(G.GAME.modifiers.money_per_discard)
+        end
+        local i = 0
+        for _, area in ipairs(SMODS.get_card_areas('jokers')) do
+                for _, _card in ipairs(area.cards) do
+                local ret = _card:calculate_dollar_bonus()
+        
+                -- TARGET: calc_dollar_bonus per card
+                if ret then
+                    i = i+1
+                    add_round_eval_row({dollars = ret, bonus = true, name='joker'..i, pitch = pitch, card = _card})
+                    pitch = pitch + 0.06
+                    dollars = dollars + ret
+                end
+            end
+        end
+        for i = 1, #G.GAME.tags do
+            local ret = G.GAME.tags[i]:apply_to_run({type = 'eval'})
+            if ret then
+                add_round_eval_row({dollars = ret.dollars, bonus = true, name='tag'..i, pitch = pitch, condition = ret.condition, pos = ret.pos, tag = ret.tag})
+                pitch = pitch + 0.06
+                dollars = dollars + ret.dollars
+            end
+        end
+        if G.GAME.dollars >= 5 and not G.GAME.modifiers.no_interest then
+            add_round_eval_row({bonus = true, name='interest', pitch = pitch, dollars = G.GAME.interest_amount*math.min(math.floor(G.GAME.dollars/5), G.GAME.interest_cap/5)})
+            pitch = pitch + 0.06
+            if (not G.GAME.seeded and not G.GAME.challenge) or SMODS.config.seeded_unlocks then
+                if G.GAME.interest_amount*math.min(math.floor(G.GAME.dollars/5), G.GAME.interest_cap/5) == G.GAME.interest_amount*G.GAME.interest_cap/5 then 
+                    G.PROFILES[G.SETTINGS.profile].career_stats.c_round_interest_cap_streak = G.PROFILES[G.SETTINGS.profile].career_stats.c_round_interest_cap_streak + 1
+                else
+                    G.PROFILES[G.SETTINGS.profile].career_stats.c_round_interest_cap_streak = 0
+                end
+            end
+            check_for_unlock({type = 'interest_streak'})
+            dollars = dollars + G.GAME.interest_amount*math.min(math.floor(G.GAME.dollars/5), G.GAME.interest_cap/5)
+        end
+
+        pitch = pitch + 0.06
+
+        if total_cashout_rows > 7 then
+            local total_hidden = total_cashout_rows - 7
+        
+            G.E_MANAGER:add_event(Event({
+                trigger = 'before',delay = 0.38,
+                func = function()
+                    local hidden = {n=G.UIT.R, config={align = "cm"}, nodes={
+                        {n=G.UIT.O, config={object = DynaText({
+                            string = {localize{type = 'variable', key = 'cashout_hidden', vars = {total_hidden}}}, 
+                            colours = {G.C.WHITE}, shadow = true, float = false, 
+                            scale = 0.45,
+                            font = G.LANGUAGES['en-us'].font, pop_in = 0
+                        })}}
+                    }}
+        
+                    G.round_eval:add_child(hidden, G.round_eval:get_UIE_by_ID('bonus_round_eval'))
+                    return true
+                end
+            }))
+        end
+        add_round_eval_row({name = 'bottom', dollars = dollars})
+    end
+
+    -- Needs to be patched..
+    function new_round()
+        -- .. because of this;
+        -- local blhash = '' 
+        -- if G.GAME.round_resets.blind == G.P_BLINDS.bl_small then
+        --     G.GAME.round_resets.blind_states.Small = 'Current'
+        --     G.GAME.current_boss_streak = 0
+        --     blhash = 'S'
+        -- elseif G.GAME.round_resets.blind == G.P_BLINDS.bl_big then
+        --     G.GAME.round_resets.blind_states.Big = 'Current'
+        --     G.GAME.current_boss_streak = 0
+        --     blhash = 'B'
+        -- else
+        --     G.GAME.round_resets.blind_states.Boss = 'Current'
+        --     blhash = 'L'
+        -- end
+        -- G.GAME.subhash = (G.GAME.round_resets.ante)..(blhash)
+    end
+
+    -- end_round() TODO : move to lovely patches
+    function end_round()
+        G.E_MANAGER:add_event(Event({
+            trigger = 'after',
+            delay = 0.2,
+            func = function()
+                G.GAME.blind.in_blind = false
+                local game_over = true
+                local game_won = false
+                G.RESET_BLIND_STATES = true
+                G.RESET_JIGGLES = true
+                if G.GAME.chips - G.GAME.blind.chips >= 0 then
+                    game_over = false
+                end
+                -- context.end_of_round calculations
+                SMODS.saved = false
+                G.GAME.saved_text = nil
+                SMODS.calculate_context({end_of_round = true, game_over = game_over, beat_boss = G.GAME.blind.boss })
+                if SMODS.saved then game_over = false end
+                -- TARGET: main end_of_round evaluation
+                if G.GAME.round_resets.ante == G.GAME.win_ante and G.GAME.blind:is_type("Boss") then
+                    game_won = true
+                    G.GAME.won = true
+                end
+                if game_over then
+                    G.STATE = G.STATES.GAME_OVER
+                    if not G.GAME.won and not G.GAME.seeded and not G.GAME.challenge then 
+                        G.PROFILES[G.SETTINGS.profile].high_scores.current_streak.amt = 0
+                    end
+                    G:save_settings()
+                    G.FILE_HANDLER.force = true
+                    G.STATE_COMPLETE = false
+                else
+                    G.GAME.unused_discards = (G.GAME.unused_discards or 0) + G.GAME.current_round.discards_left
+                    if G.GAME.blind and G.GAME.blind.config.blind then 
+                        discover_card(G.GAME.blind.config.blind)
+                    end
+
+                    if G.GAME.blind:is_type("Boss") then
+                        local _handname, _played, _order = 'High Card', -1, 100
+                        for k, v in pairs(G.GAME.hands) do
+                            if v.played > _played or (v.played == _played and _order > v.order) then 
+                                _played = v.played
+                                _handname = k
+                            end
+                        end
+                        G.GAME.current_round.most_played_poker_hand = _handname
+                    end
+
+                    if G.GAME.blind:is_type("Boss") and not G.GAME.seeded and not G.GAME.challenge  then
+                        G.GAME.current_boss_streak = G.GAME.current_boss_streak + 1
+                        check_and_set_high_score('boss_streak', G.GAME.current_boss_streak)
+                    end
+                    
+                    if G.GAME.current_round.hands_played == 1 then 
+                        inc_career_stat('c_single_hand_round_streak', 1)
+                    else
+                        if not G.GAME.seeded and not G.GAME.challenge  then
+                            G.PROFILES[G.SETTINGS.profile].career_stats.c_single_hand_round_streak = 0
+                            G:save_settings()
+                        end
+                    end
+
+                    check_for_unlock({type = 'round_win'})
+                    set_joker_usage()
+                    if game_won and not G.GAME.win_notified then
+                        G.GAME.win_notified = true
+                        G.E_MANAGER:add_event(Event({
+                            trigger = 'immediate',
+                            blocking = false,
+                            blockable = false,
+                            func = (function()
+                                if G.STATE == SMODS.STATES.ROUND_EVAL then
+                                    win_game()
+                                    G.GAME.won = true
+                                    return true
+                                end
+                            end)
+                        }))
+                    end
+                    for _,v in ipairs(SMODS.get_card_areas('playing_cards', 'end_of_round')) do
+                        SMODS.calculate_end_of_round_effects({ cardarea = v, end_of_round = true, beat_boss = G.GAME.blind.boss })
+                    end
+
+                    G.FUNCS.draw_from_hand_to_discard()
+                    if G.GAME.blind:is_type("Boss") then
+                        G.GAME.voucher_restock = nil
+                        if G.GAME.modifiers.set_eternal_ante and (G.GAME.round_resets.ante == G.GAME.modifiers.set_eternal_ante) then 
+                            for k, v in ipairs(G.jokers.cards) do
+                                v:set_eternal(true)
+                            end
+                        end
+                        if G.GAME.modifiers.set_joker_slots_ante and (G.GAME.round_resets.ante == G.GAME.modifiers.set_joker_slots_ante) then 
+                            G.jokers.config.card_limit = 0
+                        end
+                        delay(0.4)
+                        SMODS.ante_end = true
+                        ease_ante(1)
+                        SMODS.ante_end = nil
+                        delay(0.4)
+                        check_for_unlock({type = 'ante_up', ante = G.GAME.round_resets.ante + 1})
+                    end
+                    G.FUNCS.draw_from_discard_to_deck()
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'after',
+                        delay = 0.3,
+                        func = function()
+                            if SMODS.get_current_state().args.trigger_callbacks then
+                                SMODS.get_active_ap_node():trigger_callbacks("defeated")
+                            end
+                            G.STATE_COMPLETE = false
+
+                            if G.GAME.round_resets.blind == G.P_BLINDS.bl_small then
+                                -- TODO : Check/Replace blind_states
+                                G.GAME.round_resets.blind_states.Small = 'Defeated'
+                            elseif G.GAME.round_resets.blind == G.P_BLINDS.bl_big then
+                                G.GAME.round_resets.blind_states.Big = 'Defeated'
+                            else
+                                G.GAME.current_round.voucher = SMODS.get_next_vouchers()
+                                G.GAME.round_resets.blind_states.Boss = 'Defeated'
+                                for k, v in ipairs(G.playing_cards) do
+                                    v.ability.played_this_ante = nil
+                                end
+                            end
+
+                            if G.GAME.round_resets.temp_handsize then G.hand:change_size(-G.GAME.round_resets.temp_handsize); G.GAME.round_resets.temp_handsize = nil end
+                            if G.GAME.round_resets.temp_reroll_cost then G.GAME.round_resets.temp_reroll_cost = nil; calculate_reroll_cost(true) end
+
+                            reset_idol_card()
+                            reset_mail_rank()
+                            reset_ancient_card()
+                            reset_castle_card()                        
+                            for _, mod in ipairs(SMODS.mod_list) do
+                                if mod.reset_game_globals and type(mod.reset_game_globals) == 'function' then
+                                    mod.reset_game_globals(false)
+                                end
+                            end
+                            for k, v in ipairs(G.playing_cards) do
+                                v.ability.discarded = nil
+                                v.ability.forced_selection = nil
+                            end
+                        return true
+                        end
+                    }))
+                end
+                return true
+            end
+        }))
+    end
+
+    -- get_blind_main_colour()
+    function get_blind_main_colour(blind)
+    
+    end
+
+    -- Toggle Shop -> Functionality is handled by custom SMODS.GameStates and APNodeCallbacks
+    function G.FUNCS.toggle_shop(e)
+        if SMODS.get_current_state().args.trigger_callbacks then
+            SMODS.get_active_ap_node():trigger_callbacks("shop_ended")
+        end
+    end
+
+    -- Select Blind -> Replaced by SMODS.GameStates.BLIND:on_enter()
+    function G.FUNCS.select_blind(e) end
+
+    -- Skip Blind (-> use own func in UI defs)
+    function G.FUNCS.skip_blind(e) end
+
+    -- Reroll Boss (-> use own func in UI defs)
+    function G.FUNCS.reroll_boss(e) end
+
+    function G.FUNCS.reroll_boss_button(e) end
+
+    ease_bg_col_bl_ref = ease_background_colour_blind
+    function ease_background_colour_blind(state, blind_override)
+        if SMODS.GameStates[state] and SMODS.GameStates[state].ease_background_colour then
+            return SMODS.GameStates[state]:ease_background_colour(blind_override)
+        end
+        return ease_bg_col_bl_ref(state, blind_override)
+    end
+
+    -------------------------------------------------------------------------------------------------
+    ----- API CODE SMODS.GameState
+    -------------------------------------------------------------------------------------------------
+
+    SMODS.STATES = {
+        BOOSTER_OPENED = "BOOSTER_OPENED",
+        REDEEM_VOUCHER = "REDEEM_VOUCHER",
+        SHOP = "SHOP",
+        ROUND_EVAL = "ROUND_EVAL",
+        BLIND = "BLIND",
+        BLIND_SELECT = "BLIND_SELECT"
+    }
+    SMODS.default_state = SMODS.STATES.BLIND_SELECT
+
+    SMODS.state_stack = {}
+
+    function SMODS.get_current_state()
+        return #SMODS.state_stack > 0 and SMODS.state_stack[#SMODS.state_stack]
+    end
+
+    function SMODS.push_to_state_stack(state, args)
+        table.insert(SMODS.state_stack, {state=state, args=args})
+    end
+
+    function SMODS.pop_from_state_stack(state)
+        if #SMODS.state_stack < 1 then return end
+        if SMODS.state_stack[#SMODS.state_stack].state == state then
+            table.remove(SMODS.state_stack, #SMODS.state_stack)
+        end
+    end
+
+    function SMODS.clear_states(exempt_map)
+        exempt_map = exempt_map or {}
+        if G.blind_select and not exempt_map[SMODS.STATES.BLIND_SELECT] then G.blind_select:remove(); G.blind_select = nil end
+        if G.shop and not exempt_map[SMODS.STATES.SHOP] then G.shop:remove(); G.shop = nil end
+        if G.buttons and not exempt_map[SMODS.STATES.BLIND] then G.buttons:remove(); G.buttons = nil end
+        if G.round_eval and not exempt_map[SMODS.STATES.ROUND_EVAL] then G.round_eval:remove(); G.round_eval = nil end
+    end
+
+    function SMODS.enter_state(state, args, hold_state)
+        if G.STATE == state then return end
+        if SMODS.GameStates[G.STATE] and hold_state then
+            SMODS.GameStates[G.STATE]:on_exit({new_state=state}, true)
+        end
+        if not hold_state then
+            SMODS.pop_from_state_stack(G.STATE)
+        end
+        G.STATE = state
+        if SMODS.GameStates[G.STATE] then
+            SMODS.GameStates[G.STATE]:on_enter(args)
+        end
+        SMODS.push_to_state_stack(state, args)
+    end
+
+    function SMODS.exit_state(args)
+        if SMODS.GameStates[G.STATE] then
+            SMODS.GameStates[G.STATE]:on_exit(args)
+        end
+        SMODS.pop_from_state_stack(G.STATE)
+        if #SMODS.context_stack < 1 then
+            G.STATE = nil
+            SMODS.enter_state(SMODS.default_state)
+            return
+        end
+        G.STATE = SMODS.context_stack[#SMODS.context_stack].state
+        if SMODS.GameStates[G.STATE] then
+            SMODS.GameStates[G.STATE]:on_enter(args, true)
+        end
+    end
+
+    SMODS.GameStates = {}
+    SMODS.GameState = SMODS.GameObject:extend{
+        set = 'GameState',
+        obj_table = SMODS.GameStates,
+        obj_buffer = {},
+        required_parameters = {
+            'key',
+        },
+        on_enter = function (self, args, from_hold) end,
+        on_exit = function (self, args, from_hold) end,
+        update = function (self, dt) end,
+        ease_background_colour = nil, -- function
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.BOOSTER_OPENED,
+        update = function (self, dt)
+            SMODS.OPENED_BOOSTER.config.center:update_pack(dt)
+        end
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.REDEEM_VOUCHER
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.SHOP,
+        on_enter = function (self, args, from_hold)
+            G.E_MANAGER:add_event(Event({
+                trigger = "immediate",
+                func = function ()
+                    SMODS.clear_states({[SMODS.STATES.SHOP] = true})
+                    stop_use()
+                    G.STATE_COMPLETE = true
+                    ease_background_colour_blind(G.STATES.SHOP)
+                    local shop_exists = not not G.shop
+                    G.shop = G.shop or UIBox{
+                        definition = G.UIDEF.shop(),
+                        config = {align='tmi', offset = {x=0,y=G.ROOM.T.y+11},major = G.hand, bond = 'Weak'}
+                    }
+                    -- Moved here from G.FUNCS.cash_out()
+                    G.GAME.current_round.jokers_purchased = 0
+                    G.GAME.shop_free = nil
+                    G.GAME.shop_d6ed = nil
+                    -------
+                    G.E_MANAGER:add_event(Event({
+                        func = function()
+                            G.shop.alignment.offset.y = -5.3
+                            G.shop.alignment.offset.x = 0
+                            G.E_MANAGER:add_event(Event({
+                                trigger = 'after',
+                                delay = 0.2,
+                                blockable = false,
+                                func = function()
+                                    if math.abs(G.shop.T.y - G.shop.VT.y) < 3 then
+                                        G.ROOM.jiggle = G.ROOM.jiggle + 3
+                                        play_sound('cardFan2')
+                                        for i = 1, #G.GAME.tags do
+                                            G.GAME.tags[i]:apply_to_run({type = 'shop_start'})
+                                        end
+                                        local nosave_shop = nil
+                                        if not shop_exists then
+                                            if G.load_shop_jokers then 
+                                                nosave_shop = true
+                                                G.shop_jokers:load(G.load_shop_jokers)
+                                                for k, v in ipairs(G.shop_jokers.cards) do
+                                                    create_shop_card_ui(v)
+                                                    if v.ability.consumeable then v:start_materialize() end
+                                                    for _kk, vvv in ipairs(G.GAME.tags) do
+                                                        if vvv:apply_to_run({type = 'store_joker_modify', card = v}) then break end
+                                                    end
+                                                end
+                                                G.load_shop_jokers = nil
+                                            else
+                                                for i = 1, G.GAME.shop.joker_max - #G.shop_jokers.cards do
+                                                    G.shop_jokers:emplace(create_card_for_shop(G.shop_jokers))
+                                                end
+                                            end
+
+                                            if G.load_shop_vouchers then
+                                                nosave_shop = true
+                                                G.shop_vouchers:load(G.load_shop_vouchers)
+                                                for k, v in ipairs(G.shop_vouchers.cards) do
+                                                    create_shop_card_ui(v)
+                                                    v:start_materialize()
+                                                end
+                                                G.load_shop_vouchers = nil
+                                            else
+                                                local vouchers_to_spawn = 0
+                                                for _,_ in pairs(G.GAME.current_round.voucher.spawn) do vouchers_to_spawn = vouchers_to_spawn + 1 end
+                                                if vouchers_to_spawn < G.GAME.starting_params.vouchers_in_shop + (G.GAME.modifiers.extra_vouchers or 0) then
+                                                    SMODS.get_next_vouchers(G.GAME.current_round.voucher)
+                                                end
+                                                for _, key in ipairs(G.GAME.current_round.voucher or {}) do
+                                                    if G.P_CENTERS[key] and G.GAME.current_round.voucher.spawn[key] then
+                                                        SMODS.add_voucher_to_shop(key)
+                                                    end
+                                                end
+                                            end
+
+                                            if G.load_shop_booster then 
+                                                nosave_shop = true
+                                                G.shop_booster:load(G.load_shop_booster)
+                                                for k, v in ipairs(G.shop_booster.cards) do
+                                                    create_shop_card_ui(v)
+                                                    v:start_materialize()
+                                                end
+                                                G.load_shop_booster = nil
+                                            else
+                                                for i=1, G.GAME.starting_params.boosters_in_shop + (G.GAME.modifiers.extra_boosters or 0) do
+                                                    G.GAME.current_round.used_packs = G.GAME.current_round.used_packs or {}
+                                                    if not G.GAME.current_round.used_packs[i] then
+                                                        G.GAME.current_round.used_packs[i] = get_pack('shop_pack').key
+                                                    end
+
+                                                    if G.GAME.current_round.used_packs[i] ~= 'USED' then 
+                                                        local card = Card(G.shop_booster.T.x + G.shop_booster.T.w/2,
+                                                        G.shop_booster.T.y, G.CARD_W*1.27, G.CARD_H*1.27, G.P_CARDS.empty, G.P_CENTERS[G.GAME.current_round.used_packs[i]], {bypass_discovery_center = true, bypass_discovery_ui = true})
+                                                        create_shop_card_ui(card, 'Booster', G.shop_booster)
+                                                        card.ability.booster_pos = i
+                                                        card:start_materialize()
+                                                        G.shop_booster:emplace(card)
+                                                    end
+                                                end
+
+                                                for i = 1, #G.GAME.tags do
+                                                    G.GAME.tags[i]:apply_to_run({type = 'voucher_add'})
+                                                end
+                                                for i = 1, #G.GAME.tags do
+                                                    G.GAME.tags[i]:apply_to_run({type = 'shop_final_pass'})
+                                                end
+                                            end
+                                        end
+
+                                        if not nosave_shop then SMODS.calculate_context({starting_shop = true}) end
+                                        G.CONTROLLER:snap_to({node = G.shop:get_UIE_by_ID('next_round_button')})
+                                        if not nosave_shop then G.E_MANAGER:add_event(Event({ func = function() save_run(); return true end})) end
+                                        return true
+                                    end
+                                end
+                            }))
+                            return true
+                        end
+                    }))
+                    return true
+                end
+            }))
+        end,
+        on_exit = function (self, args, from_hold)
+            stop_use()
+            G.CONTROLLER.locks.toggle_shop = true
+            if G.shop then
+                if not from_hold then
+                    SMODS.calculate_context({ending_shop = true})
+                end
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'immediate',
+                    func = function()
+                        G.shop.alignment.offset.y = G.ROOM.T.y + 29
+                        G.SHOP_SIGN.alignment.offset.y = -15
+                        return true
+                    end
+                }))
+                if from_hold then
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'after',
+                        delay = 0.5,
+                        func = function ()
+                            G.CONTROLLER.locks.toggle_shop = nil
+                            return true
+                        end
+                    }))
+                    return
+                end
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    delay = 0.5,
+                    func = function()
+                        G.shop:remove()
+                        G.shop = nil
+                        G.SHOP_SIGN:remove()
+                        G.SHOP_SIGN = nil
+                        G.STATE_COMPLETE = false
+                        G.CONTROLLER.locks.toggle_shop = nil
+                        return true
+                    end
+                }))
+            end
+        end,
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.ROUND_EVAL,
+        on_enter = function (self, args, from_hold)
+            G.E_MANAGER:add_event(Event({
+                trigger = "immediate",
+                func = function ()
+                    SMODS.clear_states()
+                    stop_use()
+                    G.STATE_COMPLETE = true
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = function()
+                            save_run()
+                            ease_background_colour_blind(G.STATES.ROUND_EVAL)
+                            G.round_eval = UIBox{
+                                definition = create_UIBox_round_evaluation(),
+                                config = {align="bm", offset = {x=0,y=G.ROOM.T.y + 19},major = G.hand, bond = 'Weak'}
+                            }
+                            G.round_eval.alignment.offset.x = 0
+                            G.E_MANAGER:add_event(Event({
+                                trigger = 'immediate',
+                                func = function()
+                                    if G.round_eval.alignment.offset.y ~= -7.8 then
+                                        G.round_eval.alignment.offset.y = -7.8
+                                    else
+                                        if math.abs(G.round_eval.T.y - G.round_eval.VT.y) < 3 then
+                                            G.ROOM.jiggle = G.ROOM.jiggle + 3
+                                            play_sound('cardFan2')
+                                            delay(0.1)
+                                            G.FUNCS.evaluate_round()
+                                            return true
+                                        end
+                                    end
+                                end}))
+                            return true
+                        end
+                    }))
+                    return true
+                end
+            }))
+        end,
+        on_exit = function (self, args, from_hold)
+            stop_use()
+            if G.round_eval then
+                G.round_eval.alignment.offset.y = G.ROOM.T.y + 15
+                G.round_eval.alignment.offset.x = 0
+                G.deck:shuffle('cashout'..G.GAME.round_resets.ante)
+                G.deck:hard_set_T()
+                delay(0.3)
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'immediate',
+                    func = function()
+                        if G.round_eval then
+                            G.round_eval:remove()
+                            G.round_eval = nil
+                        end
+                        -- G.STATE_COMPLETE = false
+                        return true
+                    end
+                }))
+                ease_dollars(G.GAME.current_round.dollars)
+                G.E_MANAGER:add_event(Event({
+                    func = function()
+                        G.GAME.previous_round.dollars = G.GAME.dollars
+                        return true
+                    end
+                }))
+                play_sound("coin7")
+                G.VIBRATION = G.VIBRATION + 1
+            end
+            ease_chips(0)
+            reset_blinds()
+            delay(0.6)
+        end
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.BLIND,
+        on_enter = function (self, args, from_hold)
+            G.E_MANAGER:add_event(Event({
+                trigger = "immediate",
+                func = function ()
+                    SMODS.clear_states()
+                    stop_use()
+                    G.GAME.facing_blind = true
+
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = function()
+                            ease_round(1)
+                            inc_career_stat('c_rounds', 1)
+                            if _DEMO then
+                                G.SETTINGS.DEMO_ROUNDS = (G.SETTINGS.DEMO_ROUNDS or 0) + 1
+                                inc_steam_stat('demo_rounds')
+                                G:save_settings()
+                            end
+                            G.GAME.round_resets.blind = G.P_BLINDS[args.key]
+                            G.GAME.round_resets.blind_states[G.GAME.blind_on_deck] = 'Current' -- TODO : Check this / G.GAME.blind_on_deck 
+                            delay(0.2)
+                            return true
+                    end}))
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'immediate',
+                        func = function()
+                            new_round()
+                            return true
+                        end
+                    }))
+                    return true
+                end
+            }))
+        end,
+        on_exit = function (self, args, from_hold)
+            G.GAME.facing_blind = nil
+            if not from_hold then
+                -- Taken from G.FUNC.evaluate_round(), defeats blind
+                -- The extra nested immediate event should hopefully preserve the vanilla timing
+                G.E_MANAGER:add_event(Event({
+                    trigger = "immediate",
+                    func = function ()
+                        G.E_MANAGER:add_event(Event({
+                            trigger = 'before',
+                            delay = 1.3*math.min(G.GAME.blind.dollars+2, 7)/2*0.15 + 0.5,
+                            func = function()
+                                G.GAME.blind:defeat()
+                                G.GAME.current_round.discards_left = math.max(0, G.GAME.round_resets.discards + G.GAME.round_bonus.discards)
+                                G.GAME.current_round.hands_left = (math.max(1, G.GAME.round_resets.hands + G.GAME.round_bonus.next_hands))
+                                return true
+                            end
+                        }))
+                        return true
+                    end
+                }))
+                ------
+            end
+
+        end,
+        ease_background_colour = function (self, blind_override)
+            local blindname = ((blind_override or (G.GAME.blind and G.GAME.blind.name ~= '' and G.GAME.blind.name)) or 'Small Blind')
+            blindname = (blindname == '' and 'Small Blind' or blindname)
+            
+            local boss_col = G.C.BLACK
+            for k, v in pairs(G.P_BLINDS) do
+                if v.name == blindname then
+                    if v.boss and v.boss.showdown or v.blind_types and v.blind_types.Showdown then
+                        ease_background_colour{new_colour = G.C.BLUE, special_colour = G.C.RED, tertiary_colour = darken(G.C.BLACK, 0.4), contrast = 3}
+                        return
+                    end
+                    boss_col = v.boss_colour or G.C.BLACK
+                end
+            end
+            ease_background_colour{new_colour = lighten(mix_colours(boss_col, G.C.BLACK, 0.3), 0.1), special_colour = boss_col, contrast = 2}
+        end
+    }
+
+    SMODS.GameState {
+        key = SMODS.STATES.BLIND_SELECT,
+        on_enter = function (self, args, from_hold)
+            G.E_MANAGER:add_event(Event({
+                trigger = "immediate",
+                func = function()
+                    SMODS.clear_states()
+                    stop_use()
+                    ease_background_colour_blind(SMODS.STATES.BLIND_SELECT)
+                    G.E_MANAGER:add_event(Event({ func = function() save_run(); return true end}))
+                    G.CONTROLLER.interrupt.focus = true
+                    G.E_MANAGER:add_event(Event({ func = function()
+                        G.E_MANAGER:add_event(Event({
+                            trigger = 'immediate',
+                            func = function()
+                                play_sound('cancel')
+                                G.blind_select = SMODS.get_ante_path():create_ui()
+                                G.blind_select.alignment.offset.y = 0.8-(G.hand.T.y - G.jokers.T.y) + G.blind_select.T.h
+                                G.ROOM.jiggle = G.ROOM.jiggle + 3
+                                G.blind_select.alignment.offset.x = 0
+                                G.CONTROLLER.lock_input = false
+                                for i = 1, #G.GAME.tags do
+                                    G.GAME.tags[i]:apply_to_run({type = 'immediate'})
+                                end
+                                for i = 1, #G.GAME.tags do
+                                    if G.GAME.tags[i]:apply_to_run({type = 'new_blind_choice'}) then break end
+                                end
+                                return true
+                            end
+                        }))
+                        return true
+                    end}))
+                    return true
+                end
+            }))
+        end,
+        on_exit = function (self, args, from_hold)
+            -- TODO : Figure out what this was doing
+            G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext1').config.object.pop_delay = 0
+            G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext1').config.object:pop_out(5)
+            G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext2').config.object.pop_delay = 0
+            G.blind_prompt_box:get_UIE_by_ID('prompt_dynatext2').config.object:pop_out(5) 
+
+            G.E_MANAGER:add_event(Event({
+                trigger = 'before', delay = 0.2,
+                func = function()
+                    G.blind_prompt_box.alignment.offset.y = -10
+                    G.blind_select.alignment.offset.y = 40
+                    G.blind_select.alignment.offset.x = 0
+                    return true
+            end}))
+            G.E_MANAGER:add_event(Event({
+                trigger = "immediate",
+                func = function ()
+                    G.blind_select:remove()
+                    G.blind_prompt_box:remove()
+                    G.blind_select = nil
+                    return true
+                end
+            }))
+
+        end
+    }
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
