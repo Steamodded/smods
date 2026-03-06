@@ -834,7 +834,7 @@ elseif string.find(config.name, 'joker') then
 payload = '''
 elseif string.find(config.name, 'custom') then
     if config.number then table.insert(left_text, {n=G.UIT.T, config={text = config.number, scale = 0.8*scale, colour = config.number_colour or G.C.FILTER, shadow = true, juice = true}}) end
-    table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = {" "..config.text}, colours = {config.text_colour or G.C.UI.TEXT_LIGHT}, shadow = true, pop_in = 0, scale = (config.scale or 0.4)*scale, silent = true})}})
+    table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = {""..config.text}, colours = {config.text_colour or G.C.UI.TEXT_LIGHT}, shadow = true, pop_in = 0, scale = (config.scale or 0.4)*scale, silent = true})}})
 '''
 
 [[patches]]
@@ -847,7 +847,7 @@ table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = localize
 '''
 payload = '''
 local loc_opts = config.loc_opts or {}
-table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = loc_opts.text or localize{type = 'name_text', set = loc_opts.set or config.card.config.center.set, key = loc_opts.key or config.card.config.center.key}, colours = {loc_opts.text_colour or G.C.FILTER}, shadow = true, pop_in = 0, scale = 0.6*scale, silent = true})}})
+table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = loc_opts.text or localize{type = 'name_text', set = loc_opts.set or config.card.config.center.set, key = loc_opts.key or config.card.config.center.key}, colours = {loc_opts.text_colour or G.C.FILTER}, shadow = true, pop_in = 0, scale = (loc_opts.scale or 0.6)*scale, silent = true})}})
 '''
 
 
