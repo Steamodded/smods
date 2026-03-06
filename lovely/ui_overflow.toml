@@ -24,15 +24,19 @@ pattern = '''_nt.h = math.max(_ct.h + padding, _nt.h)-- '''
 position = "after"
 payload = '''
 if node.config and node.config.no_overflow then
-    if node.config.w then
-        _nt.w = node.config.w
-    elseif node.config.maxw then
-        _nt.w = math.min(_nt.w, node.config.maxw)
+    if string.find(node.config.no_overflow, "h") then
+        if node.config.w then
+            _nt.w = node.config.w
+        elseif node.config.maxw then
+            _nt.w = math.min(_nt.w, node.config.maxw)
+        end
     end
-    if node.config.h then
-        _nt.h = node.config.h
-    elseif node.config.maxh then
-        _nt.h = math.min(_nt.h, node.config.maxh)
+    if string.find(node.config.no_overflow, "v") then
+        if node.config.h then
+            _nt.h = node.config.h
+        elseif node.config.maxh then
+            _nt.h = math.min(_nt.h, node.config.maxh)
+        end
     end
 end
 '''
@@ -46,7 +50,7 @@ target = "engine/ui.lua"
 pattern = '''fac = fac*restriction/(node.config.maxw and _ct.w or _ct.h)'''
 position = "after"
 payload = '''
-if node.config.no_overflow then fac = _scale or 1 end
+if node.config.no_overflow and string.find(node.config.no_overflow, node.config.maxw and "h" or "v") then fac = _scale or 1 end
 '''
 match_indent = true
 
@@ -59,15 +63,19 @@ pattern = '''if w.UIT == G.UIT.C then w.T.h = _max_h end'''
 position = "after"
 payload = '''
 if w.config and w.config.no_overflow then
-    if w.config.w then
-        w.T.w = w.config.w
-    elseif w.config.maxw then
-        w.T.w = math.min(w.T.w, w.config.maxw)
+    if string.find(w.config.no_overflow, "h") then
+        if w.config.w then
+            w.T.w = w.config.w
+        elseif w.config.maxw then
+            w.T.w = math.min(w.T.w, w.config.maxw)
+        end
     end
-    if w.config.h then
-        w.T.h = w.config.h
-    elseif w.config.maxh then
-        w.T.h = math.min(w.T.h, w.config.maxh)
+    if string.find(w.config.no_overflow, "v") then
+        if w.config.h then
+            w.T.h = w.config.h
+        elseif w.config.maxh then
+            w.T.h = math.min(w.T.h, w.config.maxh)
+        end
     end
 end
 '''

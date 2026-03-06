@@ -55,25 +55,45 @@ end
 
 --
 
+local uieInitRef = UIElement.init
+function UIElement:init(...)
+    uieInitRef(self, ...)
+    if self.config and self.config.no_overflow and self.config.no_overflow == true then
+        self.config.no_overflow = "vh"
+    end
+end
+
 local uieDrawChildrenRef = UIElement.draw_children
 function UIElement:draw_children(...)
 	local stenciled = false
 	if self.states.visible and self.config and self.config.no_overflow then
-        -- draw stencil for overflow container
-		stenciled = true
-		SMODS.push_to_stencil_stack(function(exit)
-			prep_draw(self, 1)
-			love.graphics.scale(1 / G.TILESIZE)
-			love.graphics.setColor(0, 0, 0, 1)
+        local v = string.find(self.config.no_overflow, 'v')
+        local h = string.find(self.config.no_overflow, 'h')
+        if v or h then
+            -- draw stencil for overflow container
+            stenciled = true
+            SMODS.push_to_stencil_stack(function(exit)
+                prep_draw(self, 1)
+                love.graphics.scale(1 / G.TILESIZE)
+                love.graphics.setColor(0, 0, 0, 1)
 
-			if self.config.r and self.VT.w > 0.01 then
-				self:draw_pixellated_rect("fill", 0)
-			else
-				love.graphics.rectangle("fill", 0, 0, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE)
-			end
-
-			love.graphics.pop()
-		end)
+                local scale_factor = math.max(1 / self.VT.scale, 1)
+    
+                if v and h then
+                    if self.config.r and self.VT.w > 0.01 then
+                        self:draw_pixellated_rect("fill", 0)
+                    else
+                        love.graphics.rectangle("fill", 0, 0, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE)
+                    end
+                elseif v then
+                    love.graphics.rectangle("fill", -G.WINDOWTRANS.w * scale_factor, 0, self.VT.w * G.TILESIZE + G.WINDOWTRANS.w * scale_factor, self.VT.h * G.TILESIZE)
+                elseif h then
+                    love.graphics.rectangle("fill", 0, -G.WINDOWTRANS.h * scale_factor, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE + G.WINDOWTRANS.h * scale_factor)
+                end
+    
+                love.graphics.pop()
+            end)
+        end
 	end
 	uieDrawChildrenRef(self, ...)
     -- cancel stencil for overflow container
@@ -138,7 +158,7 @@ function SMODS.UIScrollBox:init(args)
 	self.content_container = UIBox(args.container)
 
     args.overflow.config = SMODS.merge_defaults(args.overflow.config, {})
-    args.overflow.node_config = SMODS.merge_defaults(args.overflow.node_config, { colour = G.C.CLEAR, no_overflow = true })
+    args.overflow.node_config = SMODS.merge_defaults(args.overflow.node_config, { colour = G.C.CLEAR, no_overflow = "vh" })
 	args.overflow.definition = {
 		n = G.UIT.ROOT,
 		config = args.overflow.node_config,
@@ -1291,20 +1311,35 @@ local function createClickableModBox(modInfo, scale)
         local tx = concatAuthors(modInfo.author, 12)
         local the_colour = mix_colours(G.C.BLACK, G.C.WHITE, 0.2)
         the_colour[4] = 0.8
-        local authorDynatext = DynaText{
-            string = tx,
-            scale = scale * 0.7,
-            colours = {the_colour},
-            shadow = true,
-            maxw = 2.4,
-            marquee = true,
-        }
+        local scroll_container = SMODS.UIScrollBox({
+            content = DynaText{
+                string = tx,
+                scale = scale * 0.7,
+                colours = {the_colour},
+                shadow = true,
+            },
+            overflow = {
+                node_config = {
+                    maxw = 2.4,
+                    no_overflow = "h"
+                }
+            },
+            sync_mode = "progress",
+            scroll_move = function(self, dt)
+                self.real_progress = ((self.real_progress or 0) + G.real_dt / 8) % 1
+                if self.real_progress < 0.25 then
+                    self.scroll_progress.x = 0
+                elseif self.real_progress > 0.75 then
+                    self.scroll_progress.x = 1
+                else
+                    self.scroll_progress.x = (self.real_progress - 0.25) / 0.5
+                end
+            end,
+        })
         table.insert(label_nodes,
             { n = G.UIT.R, config = { padding = 0, align = "lc", maxw = 4.5, maxh = 1.5, }, nodes = {
                 { n = G.UIT.T, config = {text= localize('b_by'), scale = scale*0.7, colour = the_colour}},
-                {
-                    n = G.UIT.O, config = {object = authorDynatext}
-                }
+                { n = G.UIT.O, config = {object = scroll_container}}
             }
         })
     end
