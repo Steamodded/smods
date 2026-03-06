@@ -75,6 +75,7 @@ position = 'before'
 payload = '''
 EMPTY(self.loc_debuff_lines)
 if G.localization.descriptions[target.set][target.key] then
+    self.update_loc_debuff_lines = true
     for k, v in ipairs(G.localization.descriptions[target.set][target.key].text_parsed) do
         self.loc_debuff_lines[k] = v
     end
