@@ -786,25 +786,29 @@ for _, area in ipairs(SMODS.get_card_areas('jokers')) do
 end
 i = 0
 for _, target in ipairs(SMODS.get_card_areas('individual', 'calc_dollar_bonus')) do
-    local ret, ret_opts = target.object:calc_dollar_bonus()
-    ret_opts = ret_opts or {}
-    local name
-    
-    -- TARGET: calc_dollar_bonus per individual object
-    if ret then
-        if ret_opts.text then
-            name = text
-        elseif (ret_opts.set or target.set) and (ret_opts.key or target.key) then
-            if ret_opts.set == "Challenge" or target.set == "Challenge" then
-                name = localize(ret_opts.key or target.key, 'challenge_names')
-            else
-                name = localize{type = 'name_text', set = ret_opts.set or target.set, key = ret_opts.key or target.key}
+    if type(target.object.calc_dollar_bonus) == 'function' then
+        local ret, ret_opts = target.object:calc_dollar_bonus()
+        ret_opts = ret_opts or {}
+        local name
+        
+        -- TARGET: calc_dollar_bonus per individual object
+        if ret then
+            if ret_opts.text then
+                name = text
+            elseif (ret_opts.set or target.set) and (ret_opts.key or target.key) then
+                if ret_opts.set == "Challenge" or (not ret_opts.set and target.set == "Challenge") then
+                    name = localize(ret_opts.key or target.key, 'challenge_names')
+                elseif (ret_opts.set == "Mod" or (not ret_opts.set and target.set == "Mod")) and not (G.localization.descriptions.Mod or {})[ret_opts.key or target.key] then
+                    name = (SMODS.Mods[ret_opts.key or target.key] or {}).name
+                else
+                    name = localize{type = 'name_text', set = ret_opts.set or target.set, key = ret_opts.key or target.key}
+                end
             end
+            i = i+1
+            add_round_eval_row({dollars = ret, bonus = true, name='custom_individual'..i, pitch = pitch, text_colour = ret_opts.text_colour or G.C.FILTER, text = name or 'ERROR', scale = ret_opts.scale or 0.6})
+            pitch = pitch + 0.06
+            dollars = dollars + ret
         end
-        i = i+1
-        add_round_eval_row({dollars = ret, bonus = true, name='custom_individual'..i, pitch = pitch, text_colour = ret_opts.text_colour or G.C.FILTER, text = name or 'ERROR', scale = ret_opts.scale or 0.6})
-        pitch = pitch + 0.06
-        dollars = dollars + ret
     end
 end
 '''
