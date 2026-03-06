@@ -614,7 +614,7 @@ payload = '''
 for _, _area in ipairs(SMODS.get_card_areas('individual')) do
     local effects = {}
     -- Calculate context.main_scoring for individual areas
-    local _eval, post = SMODS.eval_individual(_area, { cardarea = G.jokers, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, main_scoring = true })
+    local _eval, post = SMODS.eval_individual(_area, { full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, main_scoring = true })
     if next(_eval) then
         table.insert(effects, _eval)
         _eval.individual.juice_card = _area.scored_card
