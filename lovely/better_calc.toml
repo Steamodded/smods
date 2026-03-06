@@ -752,7 +752,7 @@ SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, 
 
 -- TARGET: effects after hand evaluation'''
 
-# calc_dollar_bonus call through consumeables
+# calc_dollar_bonus call through other objects
 [[patches]]
 [patches.pattern]
 target = 'functions/state_events.lua'
@@ -772,15 +772,39 @@ payload = '''
 local i = 0
 for _, area in ipairs(SMODS.get_card_areas('jokers')) do
         for _, _card in ipairs(area.cards) do
-        local ret = _card:calculate_dollar_bonus()
+        local ret, ret_opts = _card:calculate_dollar_bonus()
+        ret_opts = ret_opts or {}
 
         -- TARGET: calc_dollar_bonus per card
         if ret then
             i = i+1
-            add_round_eval_row({dollars = ret, bonus = true, name='joker'..i, pitch = pitch, card = _card})
+            add_round_eval_row({dollars = ret, bonus = true, name='joker'..i, pitch = pitch, card = _card, loc_opts = ret_opts})
             pitch = pitch + 0.06
             dollars = dollars + ret
         end
+    end
+end
+i = 0
+for _, target in ipairs(SMODS.get_card_areas('individual', 'calc_dollar_bonus')) do
+    local ret, ret_opts = target.object:calc_dollar_bonus()
+    ret_opts = ret_opts or {}
+    local name
+    
+    -- TARGET: calc_dollar_bonus per individual object
+    if ret then
+        if ret_opts.text then
+            name = text
+        elseif (ret_opts.set or target.set) and (ret_opts.key or target.key) then
+            if ret_opts.set == "Challenge" or target.set == "Challenge" then
+                name = localize(ret_opts.key or target.key, 'challenge_names')
+            else
+                name = localize{type = 'name_text', set = ret_opts.set or target.set, key = ret_opts.key or target.key}
+            end
+        end
+        i = i+1
+        add_round_eval_row({dollars = ret, bonus = true, name='custom_individual'..i, pitch = pitch, text_colour = ret_opts.text_colour or G.C.FILTER, text = name or 'ERROR', scale = ret_opts.scale or 0.6})
+        pitch = pitch + 0.06
+        dollars = dollars + ret
     end
 end
 '''
@@ -808,9 +832,22 @@ pattern = '''
 elseif string.find(config.name, 'joker') then
 '''
 payload = '''
-elseif config.name == 'custom' then
+elseif string.find(config.name, 'custom') then
     if config.number then table.insert(left_text, {n=G.UIT.T, config={text = config.number, scale = 0.8*scale, colour = config.number_colour or G.C.FILTER, shadow = true, juice = true}}) end
-    table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = {" "..config.text}, colours = {config.text_colour or G.C.UI.TEXT_LIGHT}, shadow = true, pop_in = 0, scale = 0.4*scale, silent = true})}})
+    table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = {" "..config.text}, colours = {config.text_colour or G.C.UI.TEXT_LIGHT}, shadow = true, pop_in = 0, scale = (config.scale or 0.4)*scale, silent = true})}})
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = localize{type = 'name_text', set = config.card.config.center.set, key = config.card.config.center.key}, colours = {G.C.FILTER}, shadow = true, pop_in = 0, scale = 0.6*scale, silent = true})}})
+'''
+payload = '''
+local loc_opts = config.loc_opts or {}
+table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = loc_opts.text or localize{type = 'name_text', set = loc_opts.set or config.card.config.center.set, key = loc_opts.key or config.card.config.center.key}, colours = {loc_opts.text_colour or G.C.FILTER}, shadow = true, pop_in = 0, scale = 0.6*scale, silent = true})}})
 '''
 
 
