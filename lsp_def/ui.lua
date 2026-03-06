@@ -56,7 +56,7 @@ G.UIT = {
 ---@field vert? boolean Sets if the text is drawn vertically.
 ---@field object? Node Object to render.
 ---@field role? "Major"|"Minor"|"Glued" Sets object's role type.
----@field no_overflow? boolean Renders node as overflow container: constrain it's size, truncate drawing and prevent colliding child nodes which go outside of parent's boundaries
+---@field no_overflow? boolean | "v" | "h" | "vh" | "hv" Renders node as overflow container: constrain it's size, truncate drawing and prevent colliding child nodes which go outside of parent's boundaries. `v` for preventing vertical overflow, `h` for horizontal, `vh` or `hv` for both directions.
 
 --- Internal class for annotating UIBox/UIElement tables before being turned into objects.
 ---@class UINode: table
