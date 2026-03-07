@@ -493,10 +493,18 @@ function SMODS.create_mod_badges(obj, badges)
                   {n=G.UIT.B, config={h=0.1,w=0.03}},
                   {n=G.UIT.O, config={object = SMODS.UIScrollBox({
                     content = badge_text,
+                    container = {
+                        config = {
+                            can_collide = false,
+                        }
+                    },
                     overflow = {
                         node_config = {
                             no_overflow = not mod.no_marquee and "h" or false,
                             maxw = not mod.no_marquee and max_text_width or nil,
+                        },
+                        config = {
+                            can_collide = false,
                         }
                     },
                     sync_mode = "offset",

@@ -1299,10 +1299,18 @@ local function createClickableModBox(modInfo, scale)
                     shadow = true,
                     scale = scale,
                 }),
+                container = {
+                    config = {
+                        can_collide = false,
+                    }
+                },
                 overflow = {
                     node_config = {
                         no_overflow = "h",
                         w = 3,
+                    },
+                    config = {
+                        can_collide = false,
                     }
                 },
                 sync_mode = "progress",
