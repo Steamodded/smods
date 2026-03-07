@@ -508,18 +508,21 @@ function SMODS.create_mod_badges(obj, badges)
                             maxw = not mod.no_marquee and max_text_width or nil,
                         }
                     },
-                    sync_mode = "progress",
+                    sync_mode = "offset",
                     scroll_move = function(self, dt)
-                        -- 1 - 2 - 1 - 2
-                        self.real_progress = ((self.real_progress or 0) + G.real_dt / 1.5) % 6
-                        if self.real_progress < 1 then
-                            self.scroll_progress.x = 0
-                        elseif self.real_progress < 3 then
-                            self.scroll_progress.x = (self.real_progress - 1) / 2
-                        elseif self.real_progress < 4 then
-                            self.scroll_progress.x = 1
+                        local dx = self:get_scroll_distance()
+                        if dx == 0 or mod.no_marquee then return end
+                        if not self.scroll_start_pause then
+                            self.scroll_start_pause = 1.5
+                        end
+                        if self.scroll_start_pause > 0 and self.scroll_offset.x >= 0 then
+                            self.scroll_start_pause = self.scroll_start_pause - G.real_dt
                         else
-                            self.scroll_progress.x = 1 - (self.real_progress - 4) / 2
+                            self.scroll_offset.x = (self.scroll_offset.x or 0) + G.real_dt / 1.5
+                            if self.scroll_offset.x > self.content_container.T.w then
+                                self.scroll_start_pause = 1.5
+                                self.scroll_offset.x = -self.T.w - 0.1
+                            end
                         end
                     end,
                   }) }},
