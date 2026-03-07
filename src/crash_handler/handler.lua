@@ -259,6 +259,8 @@ function crashHandler:initResetStates()
     if G and G.C and G.C.BLACK then self.background = G.C.BLACK end
 
     for i=1, love.graphics.getStackDepth() do love.graphics.pop() end
+    love.graphics.setShader()
+    love.graphics.setCanvas()
     love.graphics.reset()
     love.graphics.clear(self.background)
     love.graphics.origin()
