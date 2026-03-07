@@ -8,6 +8,7 @@ local errorGen = {
 }
 
 --- @protected
+--- @param line string
 function errorGen:put(line)
     table.insert(self.lines, line)
 end
@@ -15,7 +16,7 @@ end
 --- @protected
 --- @param fmt string
 function errorGen:putf(fmt, ...)
-    table.insert(self.lines, fmt:format(...))
+    return self:put(fmt:format(...))
 end
 
 --- @protected
@@ -201,7 +202,7 @@ function errorGen:injectPatchAnalysis()
     local pad = 2
 
     local first = true
-    local data = require"json".decode(content)
+    local data = require"json".decode(content) --- @diagnostic disable-line
     for i, patchEntry in ipairs(data.entries) do
         for j, patchRegion in ipairs(patchEntry.regions) do
             local match = false

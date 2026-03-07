@@ -5,6 +5,8 @@ local ffi = require("ffi")
 --- @field refs table
 local stackfmt = {
     lines = {},
+    size = 0,
+    maxSize = 1000000,
     refs = {},
 
     maxStringLength = 1000,
@@ -93,15 +95,22 @@ end
 --#endregion
 
 --- @protected
---- @param str string
-function stackfmt:put(str)
-    table.insert(self.lines, str)
+--- @param line string
+function stackfmt:put(line)
+    if self:sizeLimitReached() then return end
+    self.size = self.size + #line
+    table.insert(self.lines, line)
 end
 
 --- @protected
 --- @param fmt string
 function stackfmt:putf(fmt, ...)
-    table.insert(self.lines, fmt:format(...))
+    return self:put(fmt:format(...))
+end
+
+--- @protected
+function stackfmt:sizeLimitReached()
+    return self.size >= self.maxSize
 end
 
 --- @protected
@@ -144,6 +153,7 @@ end
 --- @protected
 --- @param stack SMODS.CrashHandler.Stack
 function stackfmt:formatStack(stack)
+    if self:sizeLimitReached() then return end
     self:put(self:formatHead(stack))
 
     self:put('   locals:')
@@ -198,16 +208,22 @@ function stackfmt:inspectTable(tbl, stack, maxDepth, indentLevel)
 end
 
 --- @param stacklist SMODS.CrashHandler.Stack[]
-function stackfmt:format(stacklist)
+--- @param maxSize? number
+function stackfmt:format(stacklist, maxSize)
     self.lines = {}
     self.refs = {}
+    self.size = 0
+    self.maxSize = maxSize or 1000000
+
     for i,stack in ipairs(stacklist) do
+        if self:sizeLimitReached() then break end
         self:formatStack(stack)
     end
     if next(self.refs) then
         self:put("")
         self:put("References:")
         for k in pairs(self.refs) do
+            if self:sizeLimitReached() then break end
             self:putf("[%p]: %s", k, self:inspectTable(k))
             self:putf("")
         end
