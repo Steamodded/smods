@@ -30,6 +30,7 @@ local strmap = {
     ["\v"] = "\\v",
     ["\""] = "\\\"",
     ["\\"] = "\\\\",
+    ["\0"] = "\\0",
 }
 
 local function strrep(match)
@@ -47,7 +48,7 @@ stackfmt.types["string"] = function(val, fmt)
     end
 
     -- replace control characters
-    val = val:gsub("[\r\n\t\v\"\\]", strrep)
+    val = val:gsub("[\r\n\t\v\"\\%z]", strrep)
 
     -- quotation marks
     if hasMore then
