@@ -1897,6 +1897,7 @@ function SMODS.score_card(card, context)
     local reps = { 1 }
     local j = 1
     while j <= #reps do
+        card.repetition_trigger = j > 1 and j - 1
         if reps[j] ~= 1 then
             local _, eff = next(reps[j])
             while eff.retrigger_flag do
@@ -1932,6 +1933,7 @@ function SMODS.score_card(card, context)
         context.other_card = nil
         card.lucky_trigger = nil
     end
+    card.repetition_trigger = nil
 end
 
 function SMODS.calculate_main_scoring(context, scoring_hand)
@@ -1968,6 +1970,7 @@ function SMODS.calculate_end_of_round_effects(context)
         local reps = {1}
         local j = 1
         while j <= #reps do
+            card.repetition_trigger = j > 1 and j - 1
             percent = (i-0.999)/(#context.cardarea.cards-0.998) + (j-1)*0.1
             if reps[j] ~= 1 then
                 local _, eff = next(reps[j])
@@ -2004,6 +2007,7 @@ function SMODS.calculate_end_of_round_effects(context)
 
             -- TARGET: effects after end of round evaluation
         end
+        card.repetition_trigger = nil
     end
 end
 
