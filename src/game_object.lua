@@ -1219,8 +1219,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 target.set = res.set or target.set
                 target.scale = res.scale
                 target.text_colour = res.text_colour
-                full_UI_table.box_starts = res.box_starts
-                full_UI_table.box_ends = res.box_ends
+                if desc_nodes == full_UI_table.main then
+                    full_UI_table.box_starts = res.box_starts
+                    full_UI_table.box_ends = res.box_ends
+                end
             end
 
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
@@ -2984,8 +2986,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 target.set = res.set or target.set
                 target.scale = res.scale
                 target.text_colour = res.text_colour
-                full_UI_table.box_starts = res.box_starts
-                full_UI_table.box_ends = res.box_ends
+                if desc_nodes == full_UI_table.main then
+                    full_UI_table.box_starts = res.box_starts
+                    full_UI_table.box_ends = res.box_ends
+                end
             end
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize { type = 'name', set = target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or res.vars or {} }
