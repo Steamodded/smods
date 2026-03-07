@@ -37,7 +37,7 @@ self.config = setmetatable({card_limits = {card_limit}}, {
         if key == 'card_limit' then
             if not t.card_limits.base then rawset(t.card_limits, 'base', value) end
             if not t.card_limits.total_slots then rawset(t.card_limits, 'total_slots', value) end
-            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0))
+            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0) + (t.card_limits.extra_slots_used or 0))
         else
             rawset(t, key, value)
         end
@@ -66,7 +66,7 @@ self.config = setmetatable(cardAreaTable.config, {
     __newindex = function(t, key, value)
         if key == 'card_limit' then
             if not t.card_limits.base then rawset(t.card_limits, 'base', value) end
-            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0))
+            rawset(t.card_limits, 'mod', value - t.card_limits.base - (t.card_limits.extra_slots or 0) + (t.card_limits.extra_slots_used or 0))
         else
             rawset(t, key, value)
         end

@@ -219,13 +219,24 @@ local function handle_loc_file(dir, language, force, mod_id)
     end
 end
 
-function SMODS.handle_loc_file(path, mod_id)
-    local dir = path .. 'localization/'
+function SMODS.load_mod_localization(path, mod_id, depth)
+    local dir = path .. (depth and '' or 'localization/')
+    depth = (depth or 0) + 1
     handle_loc_file(dir, 'en-us', true, mod_id)
     handle_loc_file(dir, 'default', true, mod_id)
     handle_loc_file(dir, G.SETTINGS.language, true, mod_id)
     if G.SETTINGS.real_language then handle_loc_file(dir, G.SETTINGS.real_language, true, mod_id) end
+    if depth >= 4 then return end
+    for _,v in ipairs(SMODS.NFS.getDirectoryItems(dir)) do
+        local new_path = dir .. v
+        local file_type = SMODS.NFS.getInfo(new_path).type
+        if file_type == 'directory' or file_type == 'symlink' then
+            SMODS.load_mod_localization(new_path..'/', mod_id, depth)
+        end
+    end
 end
+-- deprecated, old identifier kept for compatibility
+SMODS.handle_loc_file = SMODS.load_mod_localization
 
 function SMODS.insert_pool(pool, center, replace)
     assert(pool, ("Attempted to insert object \"%s\" into an empty pool."):format(center.key or "UNKNOWN"))
@@ -364,7 +375,7 @@ function SMODS.create_card(t)
     if not t.area and t.key and G.P_CENTERS[t.key] then
         t.area = G.P_CENTERS[t.key].consumeable and G.consumeables or G.P_CENTERS[t.key].set == 'Joker' and G.jokers
     end
-    if not t.area and not t.key and t.set and SMODS.ConsumableTypes[t.set] or t.set == 'Consumeables' then
+    if not t.area and not t.key and t.set and (SMODS.ConsumableTypes[t.set] or t.set == 'Consumeables') then
         t.area = G.consumeables
     end
     if not t.key and t.set == 'Playing Card' or t.set == 'Base' or t.set == 'Enhanced' or (not t.set and (t.front or t.rank or t.suit)) then
@@ -881,7 +892,7 @@ function Card:add_sticker(sticker, bypass_check)
 end
 
 function Card:remove_sticker(sticker)
-    if self.ability[sticker] then
+    if (sticker == 'pinned' and self.pinned) or self.ability[sticker] then
         SMODS.Stickers[sticker]:apply(self, false)
         SMODS.enh_cache:write(self, nil)
     end
@@ -1179,6 +1190,11 @@ end
 -- This function handles the calculation of each effect returned to evaluate play.
 -- Can easily be hooked to add more calculation effects ala Talisman
 SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, from_edition)
+    if key == 'pre_func' then
+        effect.pre_func()
+        return true
+    end
+
     if SMODS.Scoring_Parameter_Calculation[key] then
         return SMODS.Scoring_Parameters[SMODS.Scoring_Parameter_Calculation[key]]:calc_effect(effect, scored_card, key, amount, from_edition)
     end
@@ -1363,7 +1379,7 @@ SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
     local ret = {}
     for _, key in ipairs(SMODS.calculation_keys) do
         if effect[key] then
-            if effect.juice_card and not SMODS.no_resolve then
+            if effect.juice_card and not SMODS.no_resolve and not effect.no_juice then
                 G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function ()
                     effect.juice_card:juice_up(0.1)
                     if (not effect.message_card) or (effect.message_card and effect.message_card ~= scored_card) then
@@ -1387,6 +1403,9 @@ SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
 end
 
 SMODS.calculation_keys = {}
+SMODS.pre_scoring_calculation_keys = {
+    'pre_func'
+}
 SMODS.scoring_parameter_keys = {
     'chips', 'h_chips', 'chip_mod',
     'mult', 'h_mult', 'mult_mod',
@@ -1878,6 +1897,7 @@ function SMODS.score_card(card, context)
     local reps = { 1 }
     local j = 1
     while j <= #reps do
+        card.repetition_trigger = j > 1 and j - 1
         if reps[j] ~= 1 then
             local _, eff = next(reps[j])
             while eff.retrigger_flag do
@@ -1913,6 +1933,7 @@ function SMODS.score_card(card, context)
         context.other_card = nil
         card.lucky_trigger = nil
     end
+    card.repetition_trigger = nil
 end
 
 function SMODS.calculate_main_scoring(context, scoring_hand)
@@ -1949,6 +1970,7 @@ function SMODS.calculate_end_of_round_effects(context)
         local reps = {1}
         local j = 1
         while j <= #reps do
+            card.repetition_trigger = j > 1 and j - 1
             percent = (i-0.999)/(#context.cardarea.cards-0.998) + (j-1)*0.1
             if reps[j] ~= 1 then
                 local _, eff = next(reps[j])
@@ -1985,6 +2007,7 @@ function SMODS.calculate_end_of_round_effects(context)
 
             -- TARGET: effects after end of round evaluation
         end
+        card.repetition_trigger = nil
     end
 end
 
@@ -3236,17 +3259,10 @@ function SMODS.upgrade_poker_hands(args)
     -- args.from
     -- args.StatusText
 
-    local function get_keys(t)
-        local keys = {}
-        for k, _ in pairs(t) do
-            table.insert(keys, k)
-        end
-        return keys
-    end
 
-    args.hands = args.hands or get_keys(G.GAME.hands)
+    args.hands = args.hands or G.handlist
     if type(args.hands) == 'string' then args.hands = {args.hands} end
-    args.parameters = args.parameters or get_keys(SMODS.Scoring_Parameters)
+    args.parameters = args.parameters or SMODS.Scoring_Parameter.obj_buffer
     local instant = args.instant
 
     if not args.func then
@@ -3270,8 +3286,11 @@ function SMODS.upgrade_poker_hands(args)
     end
 
     local displayed = false
+    ---@type CalcContext
+    local context = {card = args.from, poker_hand_changed = true}
     for _, hand in ipairs(args.hands) do
         displayed = hand == SMODS.displayed_hand
+        context.scoring_name = hand
         if not instant then
             update_hand_text({sound = 'button', volume = 0.7, pitch = 0.8, delay = 0.3}, {handname=localize(hand, 'poker_hands'), level=G.GAME.hands[hand].level})
             for name, p in pairs(SMODS.Scoring_Parameters) do
@@ -3279,9 +3298,13 @@ function SMODS.upgrade_poker_hands(args)
                 update_hand_text({nopulse = nil, delay = 0}, {[name] = p.current})
             end
         end
+        context.old_parameters = {}
+        context.new_parameters = {}
         for i, parameter in ipairs(args.parameters) do
             if G.GAME.hands[hand][parameter] then
+                context.old_parameters[parameter] = G.GAME.hands[hand][parameter]
                 G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
+                context.new_parameters[parameter] = G.GAME.hands[hand][parameter]
                 if not instant then
                     local StatusText = true
                     if args.StatusText ~= nil then
@@ -3302,7 +3325,9 @@ function SMODS.upgrade_poker_hands(args)
             end
         end
         if args.level_up then
+            context.old_level = G.GAME.hands[hand].level
             G.GAME.hands[hand].level = G.GAME.hands[hand].level + (type(args.level_up) == 'number' and args.level_up or 1)
+            context.new_level = G.GAME.hands[hand].level
             if not instant then
                 G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.9, func = function()
                     play_sound('tarot1')
@@ -3313,6 +3338,7 @@ function SMODS.upgrade_poker_hands(args)
             end
         end
         if not instant then delay(1.3) end
+        SMODS.calculate_context(context)
     end
 
     if not instant and not displayed then
@@ -3406,7 +3432,7 @@ function save_run()
         end
     end
     smods_hook_save_run()
-    if SMODS.last_hand then
+    if SMODS.last_hand and G.culled_table then
         G.culled_table.SMODS = {
         last_hand = {
                 scoring_name = SMODS.last_hand.scoring_name,
@@ -3420,3 +3446,27 @@ end
 SMODS.custom_debuff_handling = {
     'j_shoot_the_moon', 'j_baron', 'j_reserved_parking', 'j_raised_fist'
 }
+
+function SMODS.get_card_type_text_colour(type, center, card)
+    if (card or {}).debuff then return end
+    if (center or {}).badge_text_colour then return center.badge_text_colour end
+    if type == 'Joker' and center then
+        local rarity = ({"Common", "Uncommon", "Rare", "Legendary"})[center.rarity] or center.rarity
+        return SMODS.Rarities[rarity] and SMODS.Rarities[rarity].text_colour
+    end
+    if type and SMODS.ConsumableTypes[type] then
+        return SMODS.ConsumableTypes[type].text_colour
+    end
+end
+
+function SMODS.get_badge_text_colour(key)
+    if not key then return end
+    if (SMODS.Rarities[key] or {}).text_colour then return SMODS.Rarities[key].text_colour end
+    if (SMODS.Stickers[key] or {}).text_colour then return SMODS.Stickers[key].text_colour end
+    for _, v in ipairs(G.P_CENTER_POOLS.Edition) do
+        if v.key:sub(3) == key and v.text_colour then return v.text_colour end
+    end
+    for k, v in pairs(SMODS.Seals) do
+        if k:lower()..'_seal' == key and v.text_colour then return v.text_colour end
+    end
+end

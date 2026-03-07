@@ -654,13 +654,52 @@ if success then st = _st else sendWarnMessage(_st, "LuaSteam"); st = {} end"""
 overwrite = true
 match_indent = true
 
+# copy_card: Reorder timings
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+for k, v in pairs(other.ability) do
+    if type(v) == 'table' then 
+        new_card.ability[k] = copy_table(v)
+    else
+        new_card.ability[k] = v
+    end
+end
+'''
+payload = '''
+'''
+
+# copy_card: Reorder timings
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+return new_card
+'''
+payload = '''
+for k, v in pairs(other.ability) do
+    if type(v) == 'table' then 
+        new_card.ability[k] = copy_table(v)
+    else
+        new_card.ability[k] = v
+    end
+end
+'''
+
+
+
 # copy_card: Subtract from .ability.card_limit
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
 position = 'before'
 match_indent = true
-pattern = 'if not strip_edition then'
+pattern = 'for k, v in pairs(other.ability) do'
 payload = '''
 if other.edition then
     new_card.ability.card_limit = new_card.ability.card_limit - (other.edition.card_limit or 0)
@@ -851,3 +890,26 @@ local card = Card(_area.T.x, _area.T.y, G.CARD_W, G.CARD_H, card_init.front, car
 payload = '''
 card:add_to_deck()
 '''
+
+
+# display negative chips from card's rank
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'nominal_chips = self.base.nominal > 0 and self.base.nominal or nil,'
+position = "at"
+payload = 'nominal_chips = self.base.nominal ~= 0 and self.base.nominal or nil,'
+match_indent = true
+
+# negative chips from card's rank proper localization
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+localize{type = 'other', key = 'card_chips', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
+'''
+position = "at"
+payload = '''
+localize{type = 'other', key = 'card_chips'..(specific_vars.nominal_chips < 0 and '_minus' or ''), nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
+'''
+match_indent = true

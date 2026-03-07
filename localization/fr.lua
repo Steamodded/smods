@@ -62,7 +62,12 @@ return {
                     'Ce mod a été',
                     '{C:attention}désactivé!{}'
                 }
-            }
+            },
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{} Jetons'
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {

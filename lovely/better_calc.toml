@@ -1030,7 +1030,7 @@ for i=1, hand_space do --draw cards from deckL
 end
 '''
 payload = '''
-SMODS.cards_to_draw = (SMODS.cards_to_draw or 0) + space_taken
+SMODS.cards_to_draw = (SMODS.cards_to_draw or 0) + hand_space
 SMODS.drawn_cards = {}
 '''
 [[patches]]
@@ -1051,7 +1051,7 @@ payload = '''
 G.E_MANAGER:add_event(Event({
     trigger = 'immediate',
     func = function()                
-        SMODS.cards_to_draw = SMODS.cards_to_draw - space_taken
+        SMODS.cards_to_draw = SMODS.cards_to_draw - hand_space
         return true
     end
 }))

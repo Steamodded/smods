@@ -31,7 +31,7 @@ v_mt = {
         (a.rev == b.rev or minorWildcard or patchWildcard or betaWildcard) and
         (betaWildcard or a.beta == b.beta)
     end,
-    __le = function(a, b)
+    __lt = function(a, b)
         local b = {
             major = b.major + (b.minor == -2 and 1 or 0),
             minor = b.minor == -2 and 0 or (b.minor + (b.patch == -2 and 1 or 0)),
@@ -51,10 +51,10 @@ v_mt = {
         if a.minor ~= b.minor then return a.minor < b.minor end
         if a.patch ~= b.patch then return a.patch < b.patch end
         if a.beta ~= b.beta then return a.beta < b.beta end
-        return a.rev <= b.rev
+        return a.rev < b.rev
     end,
-    __lt = function(a, b)
-        return a <= b and not (a == b)
+    __le = function(a, b)
+        return a < b or a == b
     end,
     __call = function(_, str)
         str = str or '0.0.0'

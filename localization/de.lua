@@ -150,6 +150,11 @@ return {
                     "auf der Hand ist",
                 },
             },
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{} Chips'
+                }
+            },
             artist = {
                 text = {
                     "{C:inactive}Künstler",

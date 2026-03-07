@@ -62,7 +62,12 @@ return {
                     'Este mod foi',
                     '{C:attention}desabilitado!{}'
                 }
-            }
+            },
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{} fichas'
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {
