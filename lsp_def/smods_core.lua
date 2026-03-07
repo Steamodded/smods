@@ -12,6 +12,14 @@ MODDED_VERSION = ""
 --- Path to SMODS directory
 SMODS.path = ""
 
+---@class mod.LoadIssues
+---@field dependencies? string[] Missing dependencies (exmple string `Talisman (>=2.7)`)
+---@field conflicts? string[] Unresolved conflicts (exmple string `Talisman (<=2.7)`)
+---@field outdated? boolean
+---@field main_file_not_found? string Main file of the mod, if it cannot be found
+---@field version_mismatch? string SMODS version mismatch
+---@field prefix_conflict? string Conflicting prefix
+
 ---@class Mod
 ---@field id? string Unique ID.
 ---@field name? string Name of the mod.
@@ -30,7 +38,7 @@ SMODS.path = ""
 ---@field config_file? string Path to the config file of this mod. Defaults to "config.lua" if not provided.
 ---@field config? table Config values for this mod.
 ---@field can_load? boolean `true` if the mod is able to load.
----@field calculate? fun(self: Mod|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
+---@field calculate? fun(self: Mod|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details.
 ---@field config_tab? fun(): table Creates this mod's config tab UI.
 ---@field extra_tabs? fun(): table[] Creates additional tabs within this mod's menu.
 ---@field custom_collection_tabs? fun(): table[] Creates additional buttons displayed inside the "Other" tab in collections.
@@ -45,6 +53,9 @@ SMODS.path = ""
 ---@field optional_features? SMODS.optional_features|(fun(): SMODS.optional_features) Table of optional SMODS features to enable inserted into `SMODS.optional_features`. If function, returns table.
 ---@field save_mod_config? fun(mod: Mod) If defined, this funciton will be called over `SMODS.save_mod_config` when SMODS goes to save this mod's config.
 ---@field meta_mod? boolean Marked as a "meta mod" by SMODS. Only "Steamodded", "Lovely", and "Balatro" are provided by default.
+---@field load_issues mod.LoadIssues
+---@field debug_info? string | table
+---@field path? string
 
 ---@type table<string, Mod|table>
 SMODS.Mods = {}
