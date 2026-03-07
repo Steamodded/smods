@@ -166,7 +166,7 @@ end
 
 --- @protected
 function errorGen:getKnownError()
-    if false and smods_dupe then
+    if smods_dupe then
         return '[!] Duplicate installation of Steamodded detected! [!]'
             ..'\n\nPlease remove the duplicate steamodded/smods folder/zip in your mods folder.'
             ..'\n\nPossible location: ' .. smods_dupe
