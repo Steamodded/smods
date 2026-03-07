@@ -1287,11 +1287,43 @@ local function createClickableModBox(modInfo, scale)
         text_col = G.C.TEXT_DARK
     end
     bg_col = mix_colours({0.5,0.5,0.5,0.2},col,0.5)
-    local label_nodes = {}
-    local modname_split = SMODS.smart_line_splitter(modInfo.name,18,true)
-    for _,v in ipairs(modname_split) do
-        table.insert(label_nodes,createTextColNode(v, scale * 1.2, text_col))
-    end
+    local label_nodes = {
+        {
+            n = G.UIT.R,
+            nodes = {
+                {
+                    n = G.UIT.O,
+                    config = {
+                        object = SMODS.UIScrollBox({
+                            content = DynaText({
+                                string = modInfo.name,
+                                colours = { text_col or G.C.UI.TEXT_LIGHT },
+                                shadow = true,
+                                scale = scale,
+                            }),
+                            overflow = {
+                                node_config = {
+                                    no_overflow = "h",
+                                    w = 3,
+                                }
+                            },
+                            sync_mode = "progress",
+                            scroll_move = function(self, dt)
+                                self.real_progress = ((self.real_progress or 0) + G.real_dt / 8) % 1
+                                if self.real_progress < 0.25 then
+                                    self.scroll_progress.x = 0
+                                elseif self.real_progress > 0.75 then
+                                    self.scroll_progress.x = 1
+                                else
+                                    self.scroll_progress.x = (self.real_progress - 0.25) / 0.5
+                                end
+                            end,
+                        })
+                    }
+                }
+            }
+        }
+    }
     local version_col = copy_table(G.C.WHITE)
     version_col[4] = 0.6
     if modInfo.lovely_only then
@@ -1332,7 +1364,7 @@ local function createClickableModBox(modInfo, scale)
         })
     end
     if not modInfo.lovely_only then
-        local tx = concatAuthors(modInfo.author, 12)
+        local tx = localize('b_by') .. concatAuthors(modInfo.author, 12)
         local the_colour = mix_colours(G.C.BLACK, G.C.WHITE, 0.2)
         the_colour[4] = 0.8
         local scroll_container = SMODS.UIScrollBox({
@@ -1349,8 +1381,8 @@ local function createClickableModBox(modInfo, scale)
             },
             overflow = {
                 node_config = {
-                    maxw = 2.4,
-                    no_overflow = "h"
+                    w = 3,
+                    no_overflow = "h",
                 },
                 config = {
                     can_collide = false
@@ -1369,8 +1401,7 @@ local function createClickableModBox(modInfo, scale)
             end,
         })
         table.insert(label_nodes,
-            { n = G.UIT.R, config = { padding = 0, align = "lc", maxw = 4.5, maxh = 1.5, }, nodes = {
-                { n = G.UIT.T, config = {text= localize('b_by'), scale = scale*0.7, colour = the_colour}},
+            { n = G.UIT.R, config = { padding = 0, align = "lc" }, nodes = {
                 { n = G.UIT.O, config = {object = scroll_container}}
             }
         })
