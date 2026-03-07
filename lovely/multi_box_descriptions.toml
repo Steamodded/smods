@@ -73,6 +73,8 @@ local multi_boxes = {}
 if AUT.multi_box then
     for i, box in ipairs(AUT.multi_box) do
         box.background_colour = box.background_colour or AUT.box_colours and AUT.box_colours[i+1] or nil
+        if AUT.box_starts and AUT.box_starts[i] then table.insert(box, 1, AUT.box_starts[i]) end
+        if AUT.box_ends and AUT.box_ends[i] then table.insert(box, AUT.box_ends[i]) end
         multi_boxes[#multi_boxes+1] = desc_from_rows(box)
     end
 end
