@@ -1287,43 +1287,38 @@ local function createClickableModBox(modInfo, scale)
         text_col = G.C.TEXT_DARK
     end
     bg_col = mix_colours({0.5,0.5,0.5,0.2},col,0.5)
-    local label_nodes = {
-        {
-            n = G.UIT.R,
-            nodes = {
-                {
-                    n = G.UIT.O,
-                    config = {
-                        object = SMODS.UIScrollBox({
-                            content = DynaText({
-                                string = modInfo.name,
-                                colours = { text_col or G.C.UI.TEXT_LIGHT },
-                                shadow = true,
-                                scale = scale,
-                            }),
-                            overflow = {
-                                node_config = {
-                                    no_overflow = "h",
-                                    w = 3,
-                                }
-                            },
-                            sync_mode = "progress",
-                            scroll_move = function(self, dt)
-                                self.real_progress = ((self.real_progress or 0) + G.real_dt / 8) % 1
-                                if self.real_progress < 0.25 then
-                                    self.scroll_progress.x = 0
-                                elseif self.real_progress > 0.75 then
-                                    self.scroll_progress.x = 1
-                                else
-                                    self.scroll_progress.x = (self.real_progress - 0.25) / 0.5
-                                end
-                            end,
-                        })
+    local label_nodes = {}
+    table.insert(label_nodes, {
+        n = G.UIT.R,
+        nodes = {{
+            n = G.UIT.O,
+            config = { object = SMODS.UIScrollBox({
+                content = DynaText({
+                    string = modInfo.name,
+                    colours = { text_col or G.C.UI.TEXT_LIGHT },
+                    shadow = true,
+                    scale = scale,
+                }),
+                overflow = {
+                    node_config = {
+                        no_overflow = "h",
+                        w = 3,
                     }
-                }
-            }
-        }
-    }
+                },
+                sync_mode = "progress",
+                scroll_move = function(self, dt)
+                    self.real_progress = ((self.real_progress or 0) + G.real_dt / 8) % 1
+                    if self.real_progress < 0.25 then
+                        self.scroll_progress.x = 0
+                    elseif self.real_progress > 0.75 then
+                        self.scroll_progress.x = 1
+                    else
+                        self.scroll_progress.x = (self.real_progress - 0.25) / 0.5
+                    end
+                end,
+            })}
+        }}
+    })
     local version_col = copy_table(G.C.WHITE)
     version_col[4] = 0.6
     if modInfo.lovely_only then
