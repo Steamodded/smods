@@ -178,7 +178,11 @@ function stackfmt:inspectTable(tbl, stack, maxDepth, indentLevel)
     local prop = 0
     for k,v in pairs(tbl) do
         prop = prop + 1
-        if prop > 50 then break end
+        if prop > 50 then
+            table.insert(parts, indent)
+            table.insert(parts, '(more...)')
+            break
+        end
 
         table.insert(parts, indent)
         table.insert(parts, self:formatVal(k))
