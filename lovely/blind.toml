@@ -386,10 +386,14 @@ end
 [[patches]]
 [patches.pattern]
 target = 'functions/UI_definitions.lua'
-pattern = "local text_table = loc_target"
+pattern = '''
+local loc_name = localize{type = 'name_text', key = blind_choice.config.key, set = 'Blind'}
+local text_table = loc_target
+'''
 match_indent = true
 position = 'at'
 payload = '''
+local loc_name = localize{type = 'name_text', key = target.key or blind_choice.config.key, set = target.set or 'Blind'}
 local text_table = G.localization.descriptions[target.set][target.key].text_parsed
 '''
 
@@ -397,7 +401,10 @@ local text_table = G.localization.descriptions[target.set][target.key].text_pars
 [[patches]]
 [patches.pattern]
 target = 'functions/UI_definitions.lua'
-pattern = '''local loc_target = localize{type = 'raw_descriptions', key = blind.key, set = 'Blind', vars = vars or blind.vars}'''
+pattern = '''
+local loc_target = localize{type = 'raw_descriptions', key = blind.key, set = 'Blind', vars = vars or blind.vars}
+local loc_name = localize{type = 'name_text', key = blind.key, set = 'Blind'}
+'''
 match_indent = true
 position = 'at'
 payload = '''
@@ -410,7 +417,8 @@ if blind.collection_loc_vars and type(blind.collection_loc_vars) == 'function' t
     target.scale = res.scale
     target.text_colour = res.text_colour
 end
-local loc_target = G.localization.descriptions[target.set][target.key].text_parsed'''
+local loc_target = G.localization.descriptions[target.set][target.key].text_parsed
+local loc_name = localize{type = 'name_text', key = target.key or blind.key, set = target.set or 'Blind'}'''
 
 [[patches]]
 [patches.pattern]
@@ -422,6 +430,36 @@ match_indent = true
 position = 'at'
 payload = '''
 ability_text[#ability_text + 1] = {n=G.UIT.R, config={align = "cm"}, nodes=SMODS.localize_box(v, {default_col = target.text_colour or G.C.WHITE, shadow = true, vars = target.vars, scale = target.scale})}
+'''
+
+# create_UIBox_round_scores_row()
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+local blind_choice = {config = G.GAME.blind.config.blind or G.P_BLINDS.bl_small}
+'''
+match_indent = true
+position = 'after'
+payload = '''
+local target = {type = 'name_text', key = blind_choice.config.key, set = 'Blind'}
+if blind_choice.config.loc_vars and type(blind_choice.config.loc_vars) == 'function' then
+    local res = blind_choice.config:loc_vars() or {}
+    target.key = res.key or target.key
+    target.set = res.set or target.set
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+{n=G.UIT.O, config={object = DynaText({string = localize(target), colours = {G.C.WHITE},shadow = true, float = true,maxw = 2.2, scale = 0.45})}}
+'''
+match_indent = true
+position = 'at'
+payload = '''
+{n=G.UIT.O, config={object = DynaText({string = localize{type ='name_text', key = blind_choice.config.key, set = 'Blind'}, colours = {G.C.WHITE},shadow = true, float = true,maxw = 2.2, scale = 0.45})}}
 '''
 
 # get_new_boss()
