@@ -54,7 +54,7 @@ match_indent = true
 [patches.pattern]
 target = "card.lua"
 pattern = '''
-self.VT.h = self.T.H
+self.VT.h = self.T.h
 self.VT.w = self.T.w
 '''
 position = "before"

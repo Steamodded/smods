@@ -165,12 +165,35 @@ return {
                     '{C:dark_edition}#1#{} area slots'
                 }
             },
+            generic_card_limit_pc = {
+                name = "Hand Size",
+                text = {
+                    '{C:dark_edition}#1#{} hand size'
+                }
+            },
+            generic_card_limit_pc_plural = {
+                name = "Hand Size",
+                text = {
+                    '{C:dark_edition}#1#{} hand size'
+                }
+            },
             generic_extra_slots = {
                 name = "Slots Used",
                 text = {
                     'Fills {C:dark_edition}#1#{} slots'
                 }
-            }
+            },
+            generic_extra_slots_pc = {
+                name = "Hand Space",
+                text = {
+                    'Fills {C:dark_edition}#1#{} hand space'
+                }
+            },
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{} chips'
+                }
+            },
         },
         Edition = {
             e_negative_playing_card = {

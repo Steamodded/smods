@@ -99,7 +99,7 @@ pattern = "bypass_lock = self.bypass_lock,"
 position = "after"
 payload = """
 unique_val = self.unique_val,
-unique_val__saved_ID = self.ID,
+unique_val__saved_ID = self.unique_val__saved_ID or self.ID,
 ignore_base_shader = self.ignore_base_shader,
 ignore_shadow = self.ignore_shadow,"""
 match_indent = true
@@ -112,6 +112,7 @@ pattern = "self.bypass_lock = cardTable.bypass_lock"
 position = "after"
 payload = """
 self.unique_val = cardTable.unique_val or self.unique_val
+self.unique_val__saved_ID = cardTable.unique_val__saved_ID or self.unique_val__saved_ID
 if cardTable.unique_val__saved_ID and G.ID <= cardTable.unique_val__saved_ID then
     G.ID = cardTable.unique_val__saved_ID + 1
 end
@@ -131,11 +132,6 @@ position = 'at'
 match_indent = true
 payload = '''function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges, hide_desc, main_start, main_end, card)
     if _c.specific_vars then specific_vars = _c.specific_vars end
-    local is_info_queue = false
-    if specific_vars and specific_vars.is_info_queue then
-        is_info_queue = true
-        specific_vars = nil
-    end
 '''
 
 [[patches]]
@@ -213,6 +209,7 @@ payload = '''
 local new_ability = $2
 self.ability = self.ability or {}
 new_ability.extra_value = nil
+new_ability.debuff_sources = {}
 self.ability.extra_value = self.ability.extra_value or 0
 for k, v in pairs(new_ability) do
     self.ability[k] = v
@@ -221,7 +218,6 @@ end
 -- handles card_limit/extra_slots_used changes
 self.ability.card_limit = self.ability.card_limit + (center.config.card_limit or 0)
 self.ability.extra_slots_used = self.ability.extra_slots_used + (center.config.extra_slots_used or 0)
-if self.area then self.area:handle_card_limit(center.config.card_limit, center.config.extra_slots_used) end
 
 
 -- reset keys do not persist on ability change
@@ -250,6 +246,17 @@ payload = "self.label = center.label or self.config.card and self.config.card.la
 ### Fix Matador
 
 # These patches have been removed for altering vanilla behavior. Git blame this line to see what they were
+
+### Debuffing boss blinds and Verdant Leaf don't debuff things
+### that aren't a Joker or playing card
+
+## Blind:debuff_card
+[[patches]]
+[patches.regex]
+target = 'blind.lua'
+pattern = '''card\.area ~= G.jokers'''
+position = 'at'
+payload = """card.playing_card"""
 
 ### Fix Crimson Heart
 
@@ -422,6 +429,15 @@ target = "functions/state_events.lua"
 pattern = "local game_over = true"
 position = "before"
 payload = "G.GAME.blind.in_blind = false"
+match_indent = true
+
+# Allow winning game if winning ante is skipped
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "if G.GAME.round_resets.ante == G.GAME.win_ante and G.GAME.blind:get_type() == 'Boss' then"
+position = "at"
+payload = "if not G.GAME.won and G.GAME.round_resets.ante >= G.GAME.win_ante and G.GAME.blind_on_deck == 'Boss' then"
 match_indent = true
 
 
@@ -597,8 +613,8 @@ target = 'main.lua'
 match_indent = true
 position = 'after'
 pattern = '--To control when steam communication happens, make sure to send updates to steam as little as possible'
-payload = '''local cwd = NFS.getWorkingDirectory()
-NFS.setWorkingDirectory(love.filesystem.getSourceBaseDirectory())
+payload = '''local cwd = SMODS.NFS.getWorkingDirectory()
+SMODS.NFS.setWorkingDirectory(love.filesystem.getSourceBaseDirectory())
 '''
 
 [[patches]]
@@ -607,7 +623,7 @@ target = 'main.lua'
 match_indent = true
 position = 'before'
 pattern = '--Set up the render window and the stage for the splash screen, then enter the gameloop with :update'
-payload = '''NFS.setWorkingDirectory(cwd)
+payload = '''SMODS.NFS.setWorkingDirectory(cwd)
 '''
 
 [[patches]]
@@ -638,13 +654,52 @@ if success then st = _st else sendWarnMessage(_st, "LuaSteam"); st = {} end"""
 overwrite = true
 match_indent = true
 
-# copy_card edition config
+# copy_card: Reorder timings
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
-position = 'at'
 match_indent = true
-pattern = 'new_card:set_edition(other.edition or {}, nil, true)'
+position = 'at'
+pattern = '''
+for k, v in pairs(other.ability) do
+    if type(v) == 'table' then 
+        new_card.ability[k] = copy_table(v)
+    else
+        new_card.ability[k] = v
+    end
+end
+'''
+payload = '''
+'''
+
+# copy_card: Reorder timings
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+return new_card
+'''
+payload = '''
+for k, v in pairs(other.ability) do
+    if type(v) == 'table' then 
+        new_card.ability[k] = copy_table(v)
+    else
+        new_card.ability[k] = v
+    end
+end
+'''
+
+
+
+# copy_card: Subtract from .ability.card_limit
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+position = 'before'
+match_indent = true
+pattern = 'for k, v in pairs(other.ability) do'
 payload = '''
 if other.edition then
     new_card.ability.card_limit = new_card.ability.card_limit - (other.edition.card_limit or 0)
@@ -653,8 +708,16 @@ end
 if other.seal then
     new_card.ability.card_limit = new_card.ability.card_limit - (other.ability.seal.card_limit or 0)
     new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.ability.seal.extra_slots_used or 0)
-end
-new_card:set_edition(other.edition or {}, nil, true)
+end'''
+
+# copy_card edition config
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+position = 'after'
+match_indent = true
+pattern = 'new_card:set_edition(other.edition or {}, nil, true)'
+payload = '''
 for k,v in pairs(other.edition or {}) do
     if type(v) == 'table' then
         new_card.edition[k] = copy_table(v)
@@ -799,3 +862,54 @@ function pseudoshuffle(list, seed)
 payload = '''
     if seed and type(seed) == "string" then seed = pseudoseed(seed) end
 '''
+
+## Add initial playing cards to deck when starting run
+# card_from_control
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+local _card = Card(G.deck.T.x, G.deck.T.y, G.CARD_W, G.CARD_H, G.P_CARDS[control.s..'_'..control.r], G.P_CENTERS[control.e or 'c_base'], {playing_card = G.playing_card})
+if control.d then _card:set_edition({[control.d] = true}, true, true) end
+if control.g then _card:set_seal(control.g, true, true) end
+'''
+payload = '''
+_card:add_to_deck()
+'''
+## Add cards created by create_playing_card to deck
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+local card = Card(_area.T.x, _area.T.y, G.CARD_W, G.CARD_H, card_init.front, card_init.center, {playing_card = G.playing_card})
+'''
+payload = '''
+card:add_to_deck()
+'''
+
+
+# display negative chips from card's rank
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'nominal_chips = self.base.nominal > 0 and self.base.nominal or nil,'
+position = "at"
+payload = 'nominal_chips = self.base.nominal ~= 0 and self.base.nominal or nil,'
+match_indent = true
+
+# negative chips from card's rank proper localization
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+localize{type = 'other', key = 'card_chips', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
+'''
+position = "at"
+payload = '''
+localize{type = 'other', key = 'card_chips'..(specific_vars.nominal_chips < 0 and '_minus' or ''), nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
+'''
+match_indent = true

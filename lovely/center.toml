@@ -36,6 +36,25 @@ for k, v in pairs(center.config) do
 end"""
 match_indent = true
 
+# Clean up sprites
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self:set_sprites(center)
+'''
+payload = '''
+if delay_sprites ~= 'quantum' then
+    SMODS.clean_up_children(self.children)
+    if self.canvas_text then SMODS.clean_up_canvas_text(self) end
+    if self.ability and (center.set == 'Enhanced' or center.set == 'Default') and not self:should_hide_front() then self:set_sprites(nil, self.config.card) end
+    self:set_sprites(center)
+end
+'''
+
+
 # Card:calculate_joker()
 [[patches]]
 [patches.pattern]
@@ -103,22 +122,8 @@ match_indent = true
 payload = '''
 elseif _c.generate_ui and type(_c.generate_ui) == 'function' then
     local specific_vars = specific_vars or {}
-    if is_info_queue then specific_vars.is_info_queue = true end
+    -- TODO: refactor the multiple generate_ui cases to work off a base implementation
     _c:generate_ui(info_queue, card, desc_nodes, specific_vars, full_UI_table)
-    if is_info_queue then
-        desc_nodes.loc_name = {}
-        local set = name_override and "Other" or _c.set
-        local key = name_override or _c.key
-        if set == "Seal" then
-            if G.localization.descriptions["Other"][_c.key.."_seal"] then set = "Other"; key = key.."_seal" end
-        else
-            if not G.localization.descriptions[set] or not G.localization.descriptions[set][_c.key] then set = "Other" end
-        end
-
-        --localize{type = 'name', key = key, set = set, nodes = desc_nodes.loc_name, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars({}, _c:create_fake_card()) or {}).vars) or {colours = {}}} 
-        --desc_nodes.loc_name = SMODS.info_queue_desc_from_rows(desc_nodes.loc_name, true)
-        --desc_nodes.loc_name.config.align = "cm"
-    end
     if specific_vars and specific_vars.pinned then info_queue[#info_queue+1] = {key = 'pinned_left', set = 'Other'} end
     if specific_vars and specific_vars.sticker then info_queue[#info_queue+1] = {key = string.lower(specific_vars.sticker)..'_sticker', set = 'Other'} end'''
 
@@ -303,7 +308,7 @@ pattern = "(?<indent>[\t ]*)for _, v in pairs\\(G.DISCOVER_TALLIES\\) do"
 line_prepend = '$indent'
 position = 'before'
 payload = '''
-for _, v in ipairs(SMODS.ConsumableType.ctype_buffer) do
+for _, v in ipairs(SMODS.ConsumableType.obj_buffer) do
     G.DISCOVER_TALLIES[v:lower()..'s'] = {tally = 0, of = 0}
 end'''
 
@@ -357,7 +362,7 @@ match_indent = true
 position = 'at'
 payload = '''
 local total_rate = G.GAME.joker_rate + G.GAME.playing_card_rate
-for _,v in ipairs(SMODS.ConsumableType.ctype_buffer) do
+for _,v in ipairs(SMODS.ConsumableType.obj_buffer) do
     total_rate = total_rate + G.GAME[v:lower()..'_rate']
 end'''
 
@@ -370,7 +375,7 @@ position = 'at'
 payload = '''
 -- need to preserve order to leave RNG unchanged
 local rates = $li
-for _, v in ipairs(SMODS.ConsumableType.ctype_buffer) do
+for _, v in ipairs(SMODS.ConsumableType.obj_buffer) do
     if not (v == 'Tarot' or v == 'Planet' or v == 'Spectral') then
         table.insert(rates, { type = v, val = G.GAME[v:lower()..'_rate'] })
     end
@@ -385,11 +390,24 @@ pattern = "if not forced_key and soulable and (not G.GAME.banned_keys['c_soul'])
 match_indent = true
 position = 'after'
 payload = '''
+    local soul_total_rate = 0
+    local non_soul_rate = 1
+    local modded_souls = {}
     for _, v in ipairs(SMODS.Consumable.legendaries) do
         if (_type == v.type.key or _type == v.soul_set) and not (G.GAME.used_jokers[v.key] and not SMODS.showman(v.key) and not v.can_repeat_soul) and SMODS.add_to_pool(v) then
-            if pseudorandom('soul_'..v.key.._type..G.GAME.round_resets.ante) > (1 - v.soul_rate) then
-                forced_key = v.key
-            end
+            soul_total_rate = soul_total_rate + v.soul_rate
+            non_soul_rate = non_soul_rate * (1 - v.soul_rate)
+            non_soul_rate = math.max(non_soul_rate, 0)
+            table.insert(modded_souls, v)
+        end
+    end
+    local roll = pseudorandom('soul_smods_'.._type..G.GAME.round_resets.ante)
+    local threshold = 1
+    for _, v in ipairs(modded_souls) do
+        threshold = threshold - v.soul_rate/soul_total_rate * (1-non_soul_rate)
+        if roll > threshold then
+            forced_key = v.key
+            break
         end
     end'''
 
@@ -491,18 +509,33 @@ end'''
 [[patches]]
 [patches.pattern]
 target = 'functions/button_callbacks.lua'
-pattern = "if card.area then card.area:remove_card(card) end"
 match_indent = true
 position = 'at'
+pattern = '''
+if G.booster_pack and not G.booster_pack.alignment.offset.py and (card.ability.consumeable or not (G.GAME.pack_choices and G.GAME.pack_choices > 1)) then
+'''
 payload = '''
 local nc
-local select_to = card.area == G.pack_cards and booster_obj and booster_obj.select_card and card:selectable_from_pack(booster_obj)
+local select_to = card.area == G.pack_cards and G.pack_cards and booster_obj and SMODS.card_select_area(card, booster_obj) and card:selectable_from_pack(booster_obj)
 if card.ability.consumeable and not select_to then
     local obj = card.config.center
     if obj.keep_on_use and type(obj.keep_on_use) == 'function' then
         nc = obj:keep_on_use(card)
     end
 end
+if G.booster_pack and not G.booster_pack.alignment.offset.py and ((not select_to and card.ability.consumeable) or not (G.GAME.pack_choices and G.GAME.pack_choices > 1)) then
+
+'''
+
+
+# G.FUNCS.use_card()
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = "if card.area then card.area:remove_card(card) end"
+match_indent = true
+position = 'at'
+payload = '''
 if not card.from_area then card.from_area = card.area end
 if card.area and (not nc or card.area == G.pack_cards) then card.area:remove_card(card) end'''
 [[patches]]
@@ -553,15 +586,6 @@ payload = '''
     end
 '''
 
-# no_blueprint check
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'at'
-pattern = 'if other_joker and other_joker ~= self then'
-payload = 'if other_joker and other_joker ~= self and not other_joker.debuff and not context.no_blueprint then'
-
 # extract joker loc_vars
 [[patches]]
 [patches.pattern]
@@ -601,3 +625,32 @@ payload = '''
         main_end = ret[3]
     end
     '''
+
+## Handle tracking cusotm consumable usage
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = '''
+elseif card.config.center.set == 'Spectral' then  G.GAME.consumeable_usage_total.spectral = G.GAME.consumeable_usage_total.spectral + 1
+'''
+position = 'after'
+payload = '''
+else 
+    G.GAME.consumeable_usage_total[card.config.center.set:lower()] = G.GAME.consumeable_usage_total[card.config.center.set:lower()] or 0
+    G.GAME.consumeable_usage_total[card.config.center.set:lower()] = G.GAME.consumeable_usage_total[card.config.center.set:lower()] + 1
+'''
+match_indent = true
+
+# Card:remove()
+# Clean up canvas_text when cards are removed
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+remove_all(self.children)
+'''
+payload = '''
+if self.canvas_text then SMODS.clean_up_canvas_text(self) end
+'''

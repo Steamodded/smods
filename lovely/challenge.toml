@@ -8,15 +8,26 @@ priority = -5
 [patches.pattern]
 target = "functions/UI_definitions.lua"
 pattern = "local challenge_unlocked = G.PROFILES[G.SETTINGS.profile].challenges_unlocked and (G.PROFILES[G.SETTINGS.profile].challenges_unlocked >= k)"
-position = 'after'
-payload = """
-if v.unlocked and type(v.unlocked) == 'function' then
-	challenge_unlocked = v:unlocked()
-elseif type(v.unlocked) == 'boolean' then
-    challenge_unlocked = v.unlocked
-end
-challenge_unlocked = challenge_unlocked or G.PROFILES[G.SETTINGS.profile].all_unlocked
+position = 'at'
+payload = "local challenge_unlocked = SMODS.challenge_is_unlocked(v, k)"
+match_indent = true
 
+# function G.UIDEF.challenges() - fix challenge unlock count
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = """
+local _ch_tab = {comp = _ch_comp, unlocked = G.PROFILES[G.SETTINGS.profile].challenges_unlocked}
+"""
+position = 'at'
+payload = """
+local unlock_count = 0
+for k, v in ipairs(G.CHALLENGES) do
+    if SMODS.challenge_is_unlocked(v, k) then
+        unlock_count = unlock_count + 1
+    end
+end
+local _ch_tab = {comp = _ch_comp, unlocked = unlock_count}
 """
 match_indent = true
 
@@ -28,7 +39,7 @@ pattern = "UIBox_button({id = k, col = true, label = {challenge_unlocked and loc
 position = 'at'
 match_indent = true
 payload = '''
-UIBox_button({id = k, col = true, label = {challenge_unlocked and localize(v.id, 'challenge_names') or localize('k_locked'),}, button = challenge_unlocked and 'change_challenge_description' or 'nil', colour = challenge_unlocked and (v.button_colour or G.C.RED) or G.C.GREY, minw = 4, scale = 0.4, minh = 0.6, focus_args = {snap_to = not snapped}}),
+UIBox_button({id = k, col = true, label = {challenge_unlocked and localize(v.id, 'challenge_names') or localize('k_locked'),}, button = challenge_unlocked and 'change_challenge_description' or 'nil', text_colour = v.text_colour, colour = challenge_unlocked and (v.button_colour or G.C.RED) or G.C.GREY, minw = 4, scale = 0.4, minh = 0.6, focus_args = {snap_to = not snapped}}),
 '''
 
 [[patches]]

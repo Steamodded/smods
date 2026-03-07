@@ -1,0 +1,87 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Allow use stencil in global canvas
+# Game:draw()
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''love.graphics.setCanvas{self.CANVAS}'''
+position = "at"
+payload = '''
+love.graphics.setCanvas{self.CANVAS, stencil = true}
+'''
+match_indent = true
+
+# Limit overflow container size
+# UIBox:calculate_xywh()
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+pattern = '''_nt.h = math.max(_ct.h + padding, _nt.h)-- '''
+position = "after"
+payload = '''
+if node.config and node.config.no_overflow then
+    if node.config.w then
+        _nt.w = node.config.w
+    elseif node.config.maxw then
+        _nt.w = math.min(_nt.w, node.config.maxw)
+    end
+    if node.config.h then
+        _nt.h = node.config.h
+    elseif node.config.maxh then
+        _nt.h = math.min(_nt.h, node.config.maxh)
+    end
+end
+'''
+match_indent = true
+
+# Prevent text be rescaled by overflow container
+# UIBox:calculate_xywh()
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+pattern = '''fac = fac*restriction/(node.config.maxw and _ct.w or _ct.h)'''
+position = "after"
+payload = '''
+if node.config.no_overflow then fac = _scale or 1 end
+'''
+match_indent = true
+
+# Limit overflow container size during filling
+# UIElement:set_wh()
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+pattern = '''if w.UIT == G.UIT.C then w.T.h = _max_h end'''
+position = "after"
+payload = '''
+if w.config and w.config.no_overflow then
+    if w.config.w then
+        w.T.w = w.config.w
+    elseif w.config.maxw then
+        w.T.w = math.min(w.T.w, w.config.maxw)
+    end
+    if w.config.h then
+        w.T.h = w.config.h
+    elseif w.config.maxh then
+        w.T.h = math.min(w.T.h, w.config.maxh)
+    end
+end
+'''
+match_indent = true
+
+# Exclude overflowed elements from colliding
+# Controller:get_cursor_collision()
+[[patches]]
+[patches.pattern]
+target = "engine/controller.lua"
+pattern = '''if v:collides_with_point(cursor_trans) and not v.REMOVED then'''
+position = "at"
+payload = '''
+if v:collides_with_point(cursor_trans) and not v.REMOVED and v:inside_overflow_boundaries(cursor_trans) then
+'''
+match_indent = true
+overwrite = false

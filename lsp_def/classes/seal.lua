@@ -8,6 +8,7 @@
 ---@field atlas? string Key to the seal's atlas. 
 ---@field pos? table|{x: integer, y: integer} Position of the seal's sprite. 
 ---@field unlocked? boolean Sets the unlock state of the center. 
+---@field text_colour? table Colour of the label for the badge.
 ---@field badge_colour? table HEX color the seal badge uses. 
 ---@field sound? table|{} Controls the sound that plays when the seal is applied. `sound`: Key to the sound, `per`: Sound pitch, `vol`: Sound volume. 
 ---@field badge_to_key? string[] Contains keys to each seal indexed by seal badge (`key:lower()..'_seal`). 
