@@ -13,11 +13,6 @@ match_indent = true
 
 [[patches]]
 [patches.module]
-source = "src/crash_handler/additional_context.lua"
-name = "SMODS.crash_handler.additional_context"
-
-[[patches]]
-[patches.module]
 source = "src/crash_handler/errorgen.lua"
 name = "SMODS.crash_handler.errorgen"
 
