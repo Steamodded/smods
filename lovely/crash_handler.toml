@@ -12,12 +12,26 @@ payload = "if false then"
 match_indent = true
 
 [[patches]]
-[patches.copy]
-target = "main.lua"
-position = "prepend"
-sources = [
-    "src/crash_handler.lua",
-]
+[patches.module]
+source = "src/crash_handler/additional_context.lua"
+name = "SMODS.crash_handler.additional_context"
+
+[[patches]]
+[patches.module]
+source = "src/crash_handler/errorgen.lua"
+name = "SMODS.crash_handler.errorgen"
+
+[[patches]]
+[patches.module]
+source = "src/crash_handler/stack_format.lua"
+name = "SMODS.crash_handler.stack_format"
+
+[[patches]]
+[patches.module]
+source = "src/crash_handler/handler.lua"
+name = "SMODS.crash_handler.handler"
+before = "main.lua"
+load_now = true
 
 [[patches]]
 [patches.pattern]
