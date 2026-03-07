@@ -56,6 +56,7 @@ SMODS.path = ""
 ---@field load_issues mod.LoadIssues
 ---@field debug_info? string | table
 ---@field path? string
+---@field load_state? string
 
 ---@type table<string, Mod|table>
 SMODS.Mods = {}

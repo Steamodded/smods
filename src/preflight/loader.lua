@@ -672,6 +672,7 @@ function loadMods(modsDirectory)
                     SMODS.mod_list[#SMODS.mod_list + 1] = mod -- keep mod list in prioritized load order
                     if mod.can_load and not mod.lovely_only then
                         SMODS.current_mod = mod
+                        mod.load_state = 'loading'
                         if mod.outdated then
                             SMODS.compat_0_9_8.with_compat(function()
                                 mod.config = {}
@@ -685,6 +686,7 @@ function loadMods(modsDirectory)
                             SMODS.load_mod_config(mod)
                             assert(load(NFS.read(mod.path..mod.main_file), ('=[SMODS %s "%s"]'):format(mod.id, mod.main_file)))()
                         end
+                        mod.load_state = 'loaded'
                         SMODS.current_mod = nil
                     elseif not mod.lovely_only then
                         sendTraceMessage(string.format("Mod %s was unable to load: %s%s%s%s", mod.id,
