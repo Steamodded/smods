@@ -454,12 +454,12 @@ end
 [patches.pattern]
 target = 'functions/UI_definitions.lua'
 pattern = '''
-{n=G.UIT.O, config={object = DynaText({string = localize(target), colours = {G.C.WHITE},shadow = true, float = true,maxw = 2.2, scale = 0.45})}}
+{n=G.UIT.O, config={object = DynaText({string = localize{type ='name_text', key = blind_choice.config.key, set = 'Blind'}, colours = {G.C.WHITE},shadow = true, float = true,maxw = 2.2, scale = 0.45})}}
 '''
 match_indent = true
 position = 'at'
 payload = '''
-{n=G.UIT.O, config={object = DynaText({string = localize{type ='name_text', key = blind_choice.config.key, set = 'Blind'}, colours = {G.C.WHITE},shadow = true, float = true,maxw = 2.2, scale = 0.45})}}
+{n=G.UIT.O, config={object = DynaText({string = localize(target), colours = {G.C.WHITE},shadow = true, float = true,maxw = 2.2, scale = 0.45})}}
 '''
 
 # get_new_boss()
