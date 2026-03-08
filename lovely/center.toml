@@ -41,20 +41,6 @@ match_indent = true
 [patches.pattern]
 target = 'card.lua'
 match_indent = true
-position = 'at'
-pattern = '''
-self:set_sprites(center)
-'''
-payload = '''
-    SMODS.clean_up_children(self.children)
-    if self.canvas_text then SMODS.clean_up_canvas_text(self) end
-    if self.ability and (center.set == 'Enhanced' or center.set == 'Default') and not self:should_hide_front() then self:set_sprites(nil, self.config.card) end
-    self:set_sprites(center)
-'''
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
 position = 'after'
 pattern = '''
 if delay_sprites then 
@@ -73,6 +59,20 @@ else
 '''
 payload = '''
 end
+'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self:set_sprites(center)
+'''
+payload = '''
+    SMODS.clean_up_children(self.children)
+    if self.canvas_text then SMODS.clean_up_canvas_text(self) end
+    if self.ability and (center.set == 'Enhanced' or center.set == 'Default') and not self:should_hide_front() then self:set_sprites(nil, self.config.card) end
+    self:set_sprites(center)
 '''
 
 

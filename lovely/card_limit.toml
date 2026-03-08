@@ -74,8 +74,8 @@ self.config = setmetatable(cardAreaTable.config, {
 })
 
 -- CRIMSON BEAN EXPLOIT REIMPLEMNTATION
-if cardAreaTable.config.card_limits.total_slots ~= cardAreaTable.config.card_limits.base + cardAreaTable.config.card_limits.mod then
-    self.config.card_limits.base = cardAreaTable.config.card_limits.total_slots
+if self.config.type == 'hand' and cardAreaTable.config.card_limits.total_slots ~= cardAreaTable.config.card_limits.base + cardAreaTable.config.card_limits.mod + cardAreaTable.config.card_limits.extra_slots then
+    self.config.card_limits.base = cardAreaTable.config.card_limits.total_slots - cardAreaTable.config.card_limits.extra_slots
 end
 -- CRIMSON BEAN EXPLOIT REIMPLEMNTATION
 
