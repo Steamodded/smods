@@ -201,7 +201,7 @@ return {
             b_authors = 'Авторы',
             b_unknown = 'Неизвестно',
             b_lovely_mod = '(Мод на Lovely) ',
-            b_by = ' От: ',
+            b_by = 'От: ',
             b_priority = 'Приоритет: ',
 			b_config = "Настройки",
 			b_additions = 'Нововведения',

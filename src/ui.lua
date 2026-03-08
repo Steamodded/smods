@@ -55,25 +55,45 @@ end
 
 --
 
+local uieInitRef = UIElement.init
+function UIElement:init(...)
+    uieInitRef(self, ...)
+    if self.config and self.config.no_overflow and self.config.no_overflow == true then
+        self.config.no_overflow = "vh"
+    end
+end
+
 local uieDrawChildrenRef = UIElement.draw_children
 function UIElement:draw_children(...)
 	local stenciled = false
 	if self.states.visible and self.config and self.config.no_overflow then
-        -- draw stencil for overflow container
-		stenciled = true
-		SMODS.push_to_stencil_stack(function(exit)
-			prep_draw(self, 1)
-			love.graphics.scale(1 / G.TILESIZE)
-			love.graphics.setColor(0, 0, 0, 1)
+        local v = string.find(self.config.no_overflow, 'v')
+        local h = string.find(self.config.no_overflow, 'h')
+        if v or h then
+            -- draw stencil for overflow container
+            stenciled = true
+            SMODS.push_to_stencil_stack(function(exit)
+                prep_draw(self, 1)
+                love.graphics.scale(1 / G.TILESIZE)
+                love.graphics.setColor(0, 0, 0, 1)
 
-			if self.config.r and self.VT.w > 0.01 then
-				self:draw_pixellated_rect("fill", 0)
-			else
-				love.graphics.rectangle("fill", 0, 0, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE)
-			end
+                local ds = math.max(G.WINDOWTRANS.w, G.WINDOWTRANS.h) * math.max(1 / self.VT.scale, 1) * G.TILESIZE * 3
 
-			love.graphics.pop()
-		end)
+                if v and h then
+                    if self.config.r and self.VT.w > 0.01 then
+                        self:draw_pixellated_rect("fill", 0)
+                    else
+                        love.graphics.rectangle("fill", 0, 0, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE)
+                    end
+                elseif v then
+                    love.graphics.rectangle("fill", -ds, 0, self.VT.w * G.TILESIZE + 2 * ds, self.VT.h * G.TILESIZE)
+                elseif h then
+                    love.graphics.rectangle("fill", 0, -ds, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE + 2 * ds)
+                end
+    
+                love.graphics.pop()
+            end)
+        end
 	end
 	uieDrawChildrenRef(self, ...)
     -- cancel stencil for overflow container
@@ -89,17 +109,41 @@ function Node:inside_overflow_boundaries(point)
 	end
 	self.overflow_check_timer = G.TIMERS.REAL
     self.overflow_check_point = point
-    local r = true
+
+    local set_value = function(r)
+        self.overflow_check_result = r
+        return r
+    end
 
     -- No parent = no overflow can be done so collide as usual
-    if not self.parent then r = true
-    -- If parent has overflow then we should check do we collide with it and if not, all children in it cannot be collided too
-    elseif self.parent.config and self.parent.config.no_overflow and not Node.collides_with_point(self.parent, point) then r = false
-    -- Otherwise process all parents looking for first non-collideable overflow
-    else r = Node.inside_overflow_boundaries(self.parent, point) end
+    if not self.parent then return set_value(true) end
 
-    self.overflow_check_result = r
-    return r
+    -- Parent has overflow = should check do we collide with it, accounting overflow directions
+    if self.parent.config and self.parent.config.no_overflow then
+        local v, h = string.find(self.parent.config.no_overflow, "v"), string.find(self.parent.config.no_overflow, "h")
+        -- Do additional check only if at least one direction present
+        if v or h then
+            local r = Node.collides_with_point(self.parent, point)
+            local T = self.parent.CT or self.parent.T
+            local _p = self.parent.ARGS.collides_with_point_point
+            local _b = self.parent.states.hover.is and G.COLLISION_BUFFER or 0
+            
+            -- Both directions = use default collision check
+            if v and h then
+            -- Vertical = only y coordinate
+            elseif v then
+                r = _p.y >= T.y - _b and _p.y <= T.y + T.h + _b
+            -- Horizontal = only x coordinate
+            elseif h then
+                r = _p.x >= T.x - _b and _p.x <= T.x + T.w + _b 
+            end
+
+            -- No collision = mark it and children as non-collideable
+            if not r then return set_value(false) end
+        end
+    end
+
+    return set_value(Node.inside_overflow_boundaries(self.parent, point) or false)
 end
 
 --
@@ -138,7 +182,7 @@ function SMODS.UIScrollBox:init(args)
 	self.content_container = UIBox(args.container)
 
     args.overflow.config = SMODS.merge_defaults(args.overflow.config, {})
-    args.overflow.node_config = SMODS.merge_defaults(args.overflow.node_config, { colour = G.C.CLEAR, no_overflow = true })
+    args.overflow.node_config = SMODS.merge_defaults(args.overflow.node_config, { colour = G.C.CLEAR, no_overflow = "vh" })
 	args.overflow.definition = {
 		n = G.UIT.ROOT,
 		config = args.overflow.node_config,
@@ -1250,10 +1294,45 @@ local function createClickableModBox(modInfo, scale)
     end
     bg_col = mix_colours({0.5,0.5,0.5,0.2},col,0.5)
     local label_nodes = {}
-    local modname_split = SMODS.smart_line_splitter(modInfo.name,18,true)
-    for _,v in ipairs(modname_split) do
-        table.insert(label_nodes,createTextColNode(v, scale * 1.2, text_col))
-    end
+    table.insert(label_nodes, {
+        n = G.UIT.R,
+        nodes = {{
+            n = G.UIT.O,
+            config = { object = SMODS.UIScrollBox({
+                content = DynaText({
+                    string = modInfo.name,
+                    colours = { text_col or G.C.UI.TEXT_LIGHT },
+                    shadow = true,
+                    scale = scale,
+                }),
+                container = {
+                    config = {
+                        can_collide = false,
+                    }
+                },
+                overflow = {
+                    node_config = {
+                        no_overflow = "h",
+                        w = 3,
+                    },
+                    config = {
+                        can_collide = false,
+                    }
+                },
+                sync_mode = "progress",
+                scroll_move = function(self, dt)
+                    self.real_progress = ((self.real_progress or 0) + G.real_dt / 8) % 1
+                    if self.real_progress < 0.25 then
+                        self.scroll_progress.x = 0
+                    elseif self.real_progress > 0.75 then
+                        self.scroll_progress.x = 1
+                    else
+                        self.scroll_progress.x = (self.real_progress - 0.25) / 0.5
+                    end
+                end,
+            })}
+        }}
+    })
     local version_col = copy_table(G.C.WHITE)
     version_col[4] = 0.6
     if modInfo.lovely_only then
@@ -1294,23 +1373,45 @@ local function createClickableModBox(modInfo, scale)
         })
     end
     if not modInfo.lovely_only then
-        local tx = concatAuthors(modInfo.author, 12)
+        local tx = localize('b_by') .. concatAuthors(modInfo.author, 12)
         local the_colour = mix_colours(G.C.BLACK, G.C.WHITE, 0.2)
         the_colour[4] = 0.8
-        local authorDynatext = DynaText{
-            string = tx,
-            scale = scale * 0.7,
-            colours = {the_colour},
-            shadow = true,
-            maxw = 2.4,
-            marquee = true,
-        }
-        table.insert(label_nodes,
-            { n = G.UIT.R, config = { padding = 0, align = "lc", maxw = 4.5, maxh = 1.5, }, nodes = {
-                { n = G.UIT.T, config = {text= localize('b_by'), scale = scale*0.7, colour = the_colour}},
-                {
-                    n = G.UIT.O, config = {object = authorDynatext}
+        local scroll_container = SMODS.UIScrollBox({
+            content = DynaText{
+                string = tx,
+                scale = scale * 0.7,
+                colours = {the_colour},
+                shadow = true,
+            },
+            container = {
+                config = {
+                    can_collide = false
                 }
+            },
+            overflow = {
+                node_config = {
+                    w = 3,
+                    no_overflow = "h",
+                },
+                config = {
+                    can_collide = false
+                }
+            },
+            sync_mode = "progress",
+            scroll_move = function(self, dt)
+                self.real_progress = ((self.real_progress or 0) + G.real_dt / 8) % 1
+                if self.real_progress < 0.25 then
+                    self.scroll_progress.x = 0
+                elseif self.real_progress > 0.75 then
+                    self.scroll_progress.x = 1
+                else
+                    self.scroll_progress.x = (self.real_progress - 0.25) / 0.5
+                end
+            end,
+        })
+        table.insert(label_nodes,
+            { n = G.UIT.R, config = { padding = 0, align = "lc" }, nodes = {
+                { n = G.UIT.O, config = {object = scroll_container}}
             }
         })
     end

@@ -249,7 +249,7 @@ return {
             b_authors = 'Autores',
             b_unknown = 'Desconocido',
             b_lovely_mod = '(Mod de Lovely) ',
-            b_by = ' Por: ',
+            b_by = 'Por: ',
             b_priority = 'Prioridad: ',
             b_config = "Configuración",
             b_additions = 'Adiciones',
