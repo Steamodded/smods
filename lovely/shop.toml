@@ -74,18 +74,18 @@ for _, key in ipairs(G.GAME.current_round.voucher or {}) do
     end
 end
 '''
-# Modify generating vouchers
-[[patches]]
-[patches.pattern]
-target = 'functions/state_events.lua'
-match_indent = true
-position = 'at'
-pattern = '''
-G.GAME.current_round.voucher = get_next_voucher_key()
-'''
-payload = '''
-G.GAME.current_round.voucher = SMODS.get_next_vouchers()
-'''
+# Modify generating vouchers (Incorporated in a larger blind related patch)
+# [[patches]]
+# [patches.pattern]
+# target = 'functions/state_events.lua'
+# match_indent = true
+# position = 'at'
+# pattern = '''
+# G.GAME.current_round.voucher = get_next_voucher_key()
+# '''
+# payload = '''
+# G.GAME.current_round.voucher = SMODS.get_next_vouchers()
+# '''
 [[patches]]
 [patches.pattern]
 target = 'game.lua'

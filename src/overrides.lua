@@ -2677,3 +2677,52 @@ function add_tag(_tag)
 	end
 	add_tag_ref(_tag)
 end
+
+-- Blinds API
+function reset_blinds()
+    G.GAME.round_resets.blind_states = G.GAME.round_resets.blind_states or {Small = 'Select', Big = 'Upcoming', Boss = 'Upcoming'}
+    
+	if G.GAME.round_resets.blind_states.Boss == 'Defeated' then
+        G.GAME.round_resets.blind_states.Small = 'Upcoming'
+        G.GAME.round_resets.blind_states.Big = 'Upcoming'
+        G.GAME.round_resets.blind_states.Boss = 'Upcoming'
+        G.GAME.blind_on_deck = 'Small'
+		SMODS.set_new_blind("Small", G.GAME.round_resets.blind_info.Small.pools)
+		SMODS.set_new_blind("Big", G.GAME.round_resets.blind_info.Big.pools)
+		SMODS.set_new_blind("Boss", G.GAME.round_resets.blind_info.Boss.pools)
+
+		-- Boss rerolled is kept for safety, but no should no longer be used
+        G.GAME.round_resets.boss_rerolled = false
+    end
+end
+
+-- Override vanilla reroll function to allow all blinds to be rerolled by tag and button
+G.FUNCS.reroll_boss = function(e) 
+    stop_use()
+    if not G.from_boss_tag then ease_dollars(-10) end
+    G.from_boss_tag = nil
+    G.CONTROLLER.locks.boss_reroll = true
+
+
+	local blind_slots = {}
+	for k, v in pairs(G.GAME.round_resets.blind_info) do
+		if v.can_reroll then
+			blind_slots[#blind_slots + 1] = k
+		end
+	end 
+
+    for i, v in ipairs(blind_slots) do
+        SMODS.reroll_blind(v)
+    end
+
+	G.E_MANAGER:add_event(Event({
+      trigger = 'after',
+      delay = 0,
+      func = (function()
+		for i = 1, #G.GAME.tags do
+			if G.GAME.tags[i]:apply_to_run({type = 'new_blind_choice'}) then break end
+		end
+			return true
+		end)
+    }))
+end

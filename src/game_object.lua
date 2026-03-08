@@ -1767,6 +1767,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             'key',
         },
         set = 'Blind',
+        blind_pools = {Boss = true},
         get_obj = function(self, key) return G.P_BLINDS[key] end,
         register = function(self)
             self.name = self.name or self.key
@@ -1781,7 +1782,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
         end
     }
+    SMODS.Blind:take_ownership('small', {
+        blind_pools = {Small = true},
+    })
+    SMODS.Blind:take_ownership('big', {
+        blind_pools = {Big = true},
+    })
     SMODS.Blind:take_ownership('eye', {
+        blind_pools = {Boss = true},
         set_blind = function(self, reset, silent)
             if not reset then
                 G.GAME.blind.hands = {}
@@ -1792,6 +1800,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end
     })
     SMODS.Blind:take_ownership('wheel', {
+        blind_pools = {Boss = true},
         loc_vars = function(self)
             return { vars = { SMODS.get_probability_vars(self, 1, 7, 'wheel') } }
         end,
@@ -1813,7 +1822,74 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.Blinds.modifies_draw = {
         bl_serpent = true
     }
+    local game_init_game_object_ref = Game.init_game_object
+    function Game:init_game_object()
+        local t = game_init_game_object_ref(self)
+        t.round_resets.blind_info = {
+            Small = {
+                default_pool_key = "Small", -- Default to fall back to
+                pools = {"Small"}, -- Currently added pools
+                default_key = "bl_small", -- Default boss blind in case pool is empty
+                can_skip = true, -- Whether skip tag is clickable
+                remove_skip = false, -- Whether skip tag is visible at all
+                can_reroll = false, -- Whether blind is rerolled upon using a boss reroll
+                match_boss_status_to_blind = true, -- Whether blind counting as a boss is 
+                                                   --determined by the blind object itself, or the blind info
+                is_boss = false, -- Whether blind counts as a Boss Blind (only checked if match_boss_status_to_blind is false)
+                can_be_showdown = false, -- Whether blinds marked as showdown can spawn in this slot
+                ante_ender = false, -- Whether ante increase and related effects happens upon defeat
+                cannot_be_disabled = false, -- Disallow blind disabling (automatically relevant if blind cannot be disabled normally)
+                unalterable = true, -- Whether effects can alter the requirement
+                blind_multiplier = 1, -- Additional non-blind object specific multiplier
+                forced_blind_num = nil, -- Always sets blind requirement to this, regardless of other prompts
+                -- Potential additional features:
+                
+                transitions_into = "Big" -- transitions into string to allow for adding of additional blind slots
+            },
+            Big = {
+                default_pool_key = "Big",
+                pools = {"Big"},
+                default_key = "bl_big",
+                can_skip = true,
+                remove_skip = false,
+                can_reroll = false, -- Unsure yet on how to handle this
+                is_boss = false,
+                can_be_showdown = false,
+                match_boss_status_to_blind = true,
+                ante_ender = false,
+                cannot_be_disabled = false, -- Disallow blind disabling (automatically relevant if blind cannot be disabled normally)
+                unalterable = true, -- Whether effects can alter the requirement
+                blind_multiplier = 1, -- Additional non-blind object specific multiplier
+                forced_blind_num = nil,
 
+                transitions_into = "Boss" -- transitions into string to allow for adding of additional blind slots
+            },
+            Boss = {
+                default_pool_key = "Boss",
+                pools = {"Boss"},
+                default_key = "bl_manacle",
+                can_skip = false, -- Can never be true for a Boss blind
+                remove_skip = false, -- Can never be true for a Boss blind
+                can_reroll = true,
+                is_boss = true,
+                can_be_showdown = true,
+                match_boss_status_to_blind = false, -- Final blinds are always counted as boss (can be changed)
+                ante_ender = true,
+                cannot_be_disabled = false, -- Disallow blind disabling (automatically relevant if blind cannot be disabled normally)
+                unalterable = true, -- Whether effects can alter the requirement
+                blind_multiplier = 1, -- Additional non-blind object specific multiplier
+                forced_blind_num = nil,
+
+                transitions_into = "Small" -- transitions into string to allow for adding of additional blind slots
+            },
+        }
+        t.forced_blind = {}
+        t.final_ante_showdown = true
+        t.minimum_showdown_ante = 2 -- 2 matches default check
+        t.showdown_antes = {}
+        return t
+    end
+    
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Seal
     -------------------------------------------------------------------------------------------------

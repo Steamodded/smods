@@ -793,3 +793,85 @@ function SMODS.get_card_type_text_colour(type, center, card) end
 ---@param key string
 ---@return table?
 function SMODS.get_badge_text_colour(key) end
+
+
+---@param number number Value by which requirement will be increased
+---@param is_percentage boolean Defaults to False. Increase will be a percentage if set to true
+---@param silent boolean Set to True to skip easing animation
+---@param force boolean Set to True to ignore blind slots alteration immunity
+---@return number
+---Changes the blind requirement by the given number or percentage.
+function SMODS.alter_blind_requirement(number, is_percentage, silent, force) end
+
+---@param new_value number Value to ease to
+---Eases blind requirement UI to new value
+function SMODS.ease_blind_requirement(mod) end
+
+
+---@param blind_slot string Targetted blind slot
+---@param blind_types table Table of keys for blind pools. Defaults to blind slot pool list if nil
+---@param all_qualities boolean set to True to require blind type matches all pools
+---Sets new blind for targetted blind slot
+function SMODS.set_new_blind(blind_slot, blind_types, all_qualities) end
+
+---@param blind_slot string Targetted blind slot
+---@param blind_key string Key of blind to be forced
+---Forces next blind for given slot
+function SMODS.force_blind(blind_slot, blind_key) end
+
+---@param blind_pools table Table of pools to parse
+---@param all_qualities boolean Set to True if blinds must meet all requirements rather than meet one or more
+---@param blind_slot string? Blind slot pool is checked from
+---@return table
+---Constructs a blind pool based on spawn conditions and blind pool types of blinds
+function SMODS.get_blind_pool(blind_pools, all_qualities, blind_slot) end
+
+---@param blind_pools table Table of pools to parse
+---@param all_qualities boolean Set to True if blinds must meet all requirements rather than meet one or more
+---@param blind_slot string? Blind slot pool is checked from
+---@return Blind
+---Randomly selects a blind from the desired blind pools
+function SMODS.get_blind_from_pool(blind_pools, all_qualities) end
+
+---@param key string Key of blind to be added to pool
+---@param blind_pool string Key of blind pool to add blind to
+---Adds blind to a pool for the remainder of the run
+function SMODS.add_blind_to_pool(key, blind_pool) end
+
+---@param blind_slot string Targetted blind slot
+---@param pool_key string Pool to add to available pools for blind slot
+---Adds blind pool to types of blinds that can spawn in the given blind slot
+function SMODS.add_pool_to_blind_slot(blind_slot, pool_key) end
+
+---@param blind_slot string Targetted blind slot
+---@param pool_key string Pool to remove from available pools for blind slot
+---@param full_reset boolean Removes all pools if True, and restores default pool
+---Removes blind pool from types of blinds that can spawn. If all pools are removed, will resort to default for slot
+function SMODS.remove_pool_from_blind_slot(blind_slot, pool_key) end
+
+---@param blind_slot string Targetted blind slot
+---Rerolls the targetted blind slot if possible
+function SMODS.reroll_blind(blind_slot) end
+
+---@param blind_slots table? Table of strings for targetted blind slots
+---Rerolls all blind slots or specified slots
+function SMODS.reload_blinds(blind_slots) end
+
+---@return boolean
+---Checks if the current blind slot will end and transition the ante
+function SMODS.blind_ends_ante() end
+
+---@param ignore_exceptions boolean Set to true to check the state of the blind rather than the blind slot regardless of slot configuration
+---@return boolean
+---Checks if the current blind slot counts as a boss
+function SMODS.blind_is_boss(ignore_exceptions) end
+
+---@return boolean
+---Checks if the current blind slot allows blind effects to be disabled
+function SMODS.blind_can_disable() end
+
+---@param source string Key to identify source
+---@param remove boolean True if skip-disabling effect from this source is removed
+---@param hide boolean True if skip UI should be hidden instead of greyed out by this source
+---Manages ability to skip by either hiding option fully or greying it out
+function SMODS.disable_skip(source, remove, hide) end

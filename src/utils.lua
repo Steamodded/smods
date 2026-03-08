@@ -3456,3 +3456,300 @@ function SMODS.get_badge_text_colour(key)
         if k:lower()..'_seal' == key and v.text_colour then return v.text_colour end
     end
 end
+
+-- Boss Blind API functions
+
+function SMODS.alter_blind_requirement(number, is_percentage, silent, force)
+    if not force and (G.GAME.blind.blind_info and G.GAME.blind.blind_info.unalterable) then
+        print("Cannot alter this blind requirement")
+        return nil
+    end
+    local change
+    if is_percentage then
+        change = G.GAME.blind.chips * (number / 100)
+    else
+        change = number
+    end
+
+    G.GAME.blind.chips = math.ceil(math.max(G.GAME.blind.chips + change, 1))
+    if silent then
+        G.GAME.blind.chips_text = number_format(G.GAME.blind.chips)
+    else
+        SMODS.ease_blind_requirement(G.GAME.blind.chips)
+    end
+    
+    
+    return change
+end
+
+function SMODS.ease_blind_requirement(new_value)
+    G.E_MANAGER:add_event(Event({
+        trigger = 'immediate',
+        func = function()
+            new_value = new_value or 0
+
+            G.E_MANAGER:add_event(Event({
+                trigger = 'ease',
+                blockable = false,
+                ref_table = G.GAME.blind,
+                ref_value = 'chip_text',
+                ease_to = new_value,
+                delay =  0.3,
+                func = (function(t) 
+                    return number_format(math.max(math.floor(t),0))
+                end)
+            }))
+
+            return true
+        end
+      }))
+end
+
+function SMODS.set_new_blind(blind_slot, blind_types, all_qualities)
+    local result = "bl_small"
+    blind_types = blind_types or G.GAME.round_resets.blind_info[blind_slot].pools
+
+    if G.GAME.forced_blind[blind_slot] then
+        result = G.GAME.forced_blind[blind_slot]
+        G.GAME.forced_blind[blind_slot] = nil
+    else
+        result = SMODS.get_blind_from_pool(blind_types, all_qualities, blind_slot) or G.GAME.round_resets.blind_info[blind_slot].default_key
+    end
+
+    G.GAME.blinds_used = G.GAME.blinds_used or {}
+    G.GAME.blinds_used[blind_slot] = G.GAME.blinds_used[blind_slot] or {}
+    G.GAME.blinds_used[blind_slot][result] = G.GAME.blinds_used[blind_slot][result] and G.GAME.blinds_used[blind_slot][result] + 1  or 0
+
+    G.GAME.round_resets.blind_choices[blind_slot] = result
+end
+
+function SMODS.force_blind(blind_slot, blind_key)
+    G.GAME.forced_blind[blind_slot] = blind_key 
+end
+
+function SMODS.get_blind_pool(blind_pools, all_qualities, blind_slot)
+    local eligible_bosses = {}
+    local can_be_showdown_blind = blind_slot and G.GAME.round_resets.blind_info[blind_slot] and G.GAME.round_resets.blind_info[blind_slot].can_be_showdown or false
+    if ((G.GAME.final_ante_showdown and (G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante >= G.GAME.minimum_showdown_ante) or
+    G.GAME.showdown_antes[G.GAME.round_resets.ante] == true) == false then
+        can_be_showdown_blind = false
+    end
+
+    for k, v in pairs(G.P_BLINDS) do
+        local continue = false
+        if v.blind_pools then 
+            for i, blind_pool in ipairs(blind_pools) do
+                if v.blind_pools[blind_pool] and not all_qualities then
+                    continue = true
+                elseif not v.blind_pools[blind_pool] and all_qualities then
+                    continue = false
+                end
+            end
+            
+        else
+            -- Basically adds any blind that isn't a boss
+            v.blind_pools = {}
+            v.blind_pools.Boss = true
+            if #blind_pools == 1 and blind_pools[1] == "Boss" then
+                continue = true
+            end
+        end
+        if continue then
+            local res, options = SMODS.add_to_pool(v)
+            options = options or {}
+
+            if v.ignore_showdown_check then
+                eligible_bosses[k] = res and true or nil
+            elseif v.boss then
+                if v.boss.showdown and can_be_showdown_blind then
+                    eligible_bosses[k] = res and true or nil
+                elseif not can_be_showdown_blind and ((v.boss.min <= math.max(1, G.GAME.round_resets.ante) and 
+                v.boss.max >= math.max(1, G.GAME.round_resets.ante) and 
+                ((math.max(1, G.GAME.round_resets.ante))%G.GAME.win_ante ~= 0 or 
+                G.GAME.round_resets.ante < 2))) 
+                and not v.boss.showdown then
+                    eligible_bosses[k] = res and true or nil
+                end
+            else
+                eligible_bosses[k] = res and true or nil
+            end
+        end
+    end
+    for k, v in pairs(G.GAME.banned_keys) do
+        if eligible_bosses[k] then eligible_bosses[k] = nil end
+    end
+    return eligible_bosses
+end
+
+function SMODS.get_blind_from_pool(blind_pools, all_qualities, blind_slot)
+    if type(blind_pools) == 'string' then
+        blind_pools = {blind_pools}
+    end
+    if #blind_pools == 1 and blind_pools[1] == "Boss" then
+        G.GAME.prescribed_bosses = G.GAME.prescribed_bosses or {
+        }
+        if G.GAME.prescribed_bosses and G.GAME.prescribed_bosses[G.GAME.round_resets.ante] then 
+            local ret_boss = G.GAME.prescribed_bosses[G.GAME.round_resets.ante] 
+            G.GAME.prescribed_bosses[G.GAME.round_resets.ante] = nil
+            G.GAME.bosses_used[ret_boss] = G.GAME.bosses_used[ret_boss] + 1
+            return ret_boss
+        end
+        if G.FORCE_BOSS then return G.FORCE_BOSS end
+    end
+
+    local eligible_bosses = SMODS.get_blind_pool(blind_pools, all_qualities, blind_slot)
+    local _, boss = pseudorandom_element(eligible_bosses, pseudoseed('boss'))    
+    return boss
+end
+
+function SMODS.add_blind_to_pool(key, blind_pool)
+    G.P_BLINDS[key].blind_pools = G.P_BLINDS[key].blind_pools or {}
+    G.P_BLINDS[key].blind_pools[blind_pool] = true
+end
+
+function SMODS.add_pool_to_blind_slot(blind_slot, pool_key)
+    G.GAME.round_resets.blind_info[blind_slot].pools[#G.GAME.round_resets.blind_info[blind_slot].pools + 1] = pool_key
+end
+
+function SMODS.remove_pool_from_blind_slot(blind_slot, pool_key, reset)
+    if reset or #G.GAME.round_resets.blind_info[blind_slot].pools <= 1 then
+        G.GAME.round_resets.blind_info[blind_slot].pools = {G.GAME.round_resets.blind_info[blind_slot].default_pool_key}
+    else
+        local new_pools = {}
+        for i, v in ipairs(G.GAME.round_resets.blind_info[blind_slot].pools) do
+            if v ~= pool_key then
+                new_pools[#new_pools + 1] = v
+            end
+        end
+        G.GAME.round_resets.blind_info[blind_slot].pools = new_pools
+    end
+end
+
+function SMODS.add_showdown_ante(ante_num, remove)
+    G.GAME.showdown_antes[ante_num] = not remove
+end
+
+function SMODS.reroll_blind(blind_slot)
+    local blind_lc = blind_slot:lower()
+    G.GAME.round_resets.blind_rerolled = G.GAME.round_resets.blind_rerolled or {}
+    G.GAME.round_resets.blind_rerolled[blind_slot] = true
+
+    G.CONTROLLER.locks.boss_reroll = true
+    G.E_MANAGER:add_event(Event({
+        trigger = 'immediate',
+        func = function()
+          play_sound('other1')
+          G.blind_select_opts[blind_lc]:set_role({xy_bond = 'Weak'})
+          G.blind_select_opts[blind_lc].alignment.offset.y = 20
+          return true
+        end
+      }))
+    G.E_MANAGER:add_event(Event({
+      trigger = 'after',
+      delay = 0.3,
+      func = (function()
+        local par = G.blind_select_opts[blind_lc].parent
+        SMODS.set_new_blind(blind_slot, G.GAME.round_resets.blind_info[blind_slot].pools)
+
+        G.blind_select_opts[blind_lc]:remove()
+        G.blind_select_opts[blind_lc] = UIBox{
+          T = {par.T.x, 0, 0, 0, },
+          definition =
+            {n=G.UIT.ROOT, config={align = "cm", colour = G.C.CLEAR}, nodes={
+              UIBox_dyn_container({create_UIBox_blind_choice(blind_slot)},false,get_blind_main_colour(blind_slot), mix_colours(G.C.BLACK, get_blind_main_colour(blind_slot), 0.8))
+            }},
+          config = {align="bmi",
+                    offset = {x=0,y=G.ROOM.T.y + 9},
+                    major = par,
+                    xy_bond = 'Weak'
+                  }
+        }
+        par.config.object = G.blind_select_opts[blind_lc]
+        par.config.object:recalculate()
+        G.blind_select_opts[blind_lc].parent = par
+        G.blind_select_opts[blind_lc].alignment.offset.y = 0
+        
+        G.E_MANAGER:add_event(Event({blocking = false, trigger = 'after', delay = 0.5,func = function()
+            G.CONTROLLER.locks.boss_reroll = nil
+            return true
+          end
+        }))
+
+        save_run()
+          return true
+      end)
+    }))
+end
+
+function SMODS.reload_blinds(blind_slots)
+    if not blind_slots then
+        blind_slots = {}
+        for k, v in pairs(G.GAME.round_resets.blind_info) do
+            blind_slots[#blind_slots + 1] = k
+        end 
+    elseif type(blind_slots) == "string" then
+        blind_slots = {blind_slots}
+    end
+
+    for i, v in ipairs(blind_slots) do
+        SMODS.reroll_blind(v)
+    end
+end
+
+local smods_hook_set_blind = Blind.set_blind
+function Blind:set_blind(blind, reset, silent)
+    smods_hook_set_blind(self, blind, reset, silent)
+    G.GAME.last_blind = G.GAME.last_blind or {}
+    G.GAME.last_blind.blind_info = (G.GAME.blind and G.GAME.blind.blind_info) and G.GAME.blind.blind_info or {}
+    G.GAME.blind.blind_info = G.GAME.round_resets.blind_info[G.GAME.blind_on_deck]
+end
+
+function SMODS.blind_ends_ante()
+    return G.GAME.blind.blind_info and G.GAME.blind.blind_info.ante_ender or false
+end
+
+function SMODS.blind_is_boss(ignore_exceptions)
+    if ignore_exceptions or (G.GAME.blind.blind_info and G.GAME.blind.blind_info.match_boss_status_to_blind) then
+        return (G.GAME.blind and G.GAME.blind.boss) and true or false
+    else
+        return G.GAME.blind.blind_info and G.GAME.blind.blind_info.is_boss or false
+    end
+end
+
+function SMODS.blind_can_disable()
+    return G.GAME.blind and ((not G.GAME.blind.disabled) and (SMODS.blind_is_boss(true) and G.GAME.blind.blind_info and (not G.GAME.blind.blind_info.cannot_be_disabled)))
+end
+
+function SMODS.disable_skip(source, remove, hide)
+    if not hide then
+        G.GAME.disable_skip_sources = G.GAME.disable_skip_sources or {}
+        G.GAME.disable_skip_sources[source] = remove and nil or true
+        local _count = 0
+        for k, v in pairs(G.GAME.disable_skip_sources) do
+            _count = _count + 1
+        end
+        G.GAME.disable_skip_sources_count = _count
+    else
+        G.GAME.hide_skip_sources = G.GAME.hide_skip_sources or {}
+        G.GAME.hide_skip_sources[source] = remove and nil or true
+        local _count = 0
+        for k, v in pairs(G.GAME.hide_skip_sources) do
+            _count = _count + 1
+        end
+        G.GAME.hide_skip_sources_count = _count
+    end
+
+    if G.GAME.disable_skip_sources_count >= 1 then
+        G.GAME.disable_skips = true
+    end
+    if G.GAME.hide_skip_sources_count >= 1 then
+        G.GAME.hide_skips = true
+    end
+end
+
+local smods_hook_create_uibox_blind_tag = create_UIBox_blind_tag
+function create_UIBox_blind_tag(blind_choice, run_info)
+    if not G.GAME.round_resets.blind_info[blind_choice].remove_skip and not G.GAME.hide_skips then
+        return smods_hook_create_uibox_blind_tag(blind_choice, run_info)
+    end
+end

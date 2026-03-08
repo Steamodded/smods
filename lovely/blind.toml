@@ -550,3 +550,280 @@ position = "after"
 payload = '''
 effect = self.effect,
 '''
+
+# G.FUNCS.select_blind
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+match_indent = true
+pattern = "G.GAME.round_resets.blind = e.config.ref_table"
+position = "after"
+payload = '''
+G.GAME.round_resets.current_blind_info = G.GAME.round_resets.current_blind_info or {}
+G.GAME.round_resets.current_blind_info[G.GAME.blind_on_deck] = G.GAME.round_resets.blind_info[G.GAME.blind_on_deck]
+'''
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+match_indent = true
+pattern = "self.GAME.round_resets.blind_choices.Boss = get_new_boss()"
+position = "at"
+payload = '''
+SMODS.set_new_blind("Small", G.GAME.round_resets.blind_info.Small.pools)
+SMODS.set_new_blind("Big", G.GAME.round_resets.blind_info.Big.pools)
+SMODS.set_new_blind("Boss", G.GAME.round_resets.blind_info.Boss.pools)
+'''
+
+# end_round()
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+match_indent = true
+pattern = '''
+if G.GAME.round_resets.blind == G.P_BLINDS.bl_small then
+    G.GAME.round_resets.blind_states.Small = 'Defeated'
+elseif G.GAME.round_resets.blind == G.P_BLINDS.bl_big then
+    G.GAME.round_resets.blind_states.Big = 'Defeated'
+else
+    G.GAME.current_round.voucher = get_next_voucher_key()
+    G.GAME.round_resets.blind_states.Boss = 'Defeated'
+    for k, v in ipairs(G.playing_cards) do
+        v.ability.played_this_ante = nil
+    end
+end
+'''
+position = "at"
+payload = '''
+G.GAME.round_resets.blind_states[G.GAME.blind.blind_info.default_pool_key] = "Defeated"
+if SMODS.blind_ends_ante() then
+    G.GAME.current_round.voucher = SMODS.get_next_vouchers()
+    for k, v in ipairs(G.playing_cards) do
+        v.ability.played_this_ante = nil
+    end
+end
+'''
+
+# end_round()
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+match_indent = true
+pattern = '''
+if G.GAME.blind:get_type() == 'Boss' then
+'''
+position = "at"
+payload = '''
+if SMODS.blind_ends_ante() then
+'''
+
+# Card:calculate_joker()
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+match_indent = true
+pattern = '''
+if self.ability.name == 'Campfire' and G.GAME.blind.boss and self.ability.x_mult > 1 then
+'''
+position = "at"
+payload = '''
+if self.ability.name == 'Campfire' and SMODS.blind_is_boss() and self.ability.x_mult > 1 then
+'''
+
+# Card:calculate_joker()
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+match_indent = true
+pattern = '''
+if self.ability.name == 'Rocket' and G.GAME.blind.boss then
+'''
+position = "at"
+payload = '''
+if self.ability.name == 'Rocket' and SMODS.blind_is_boss() then
+'''
+
+# Card:calculate_joker() 
+# Chicot
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+match_indent = true
+pattern = '''
+if self.ability.name == 'Chicot' and G.GAME.blind and G.GAME.blind.boss and not G.GAME.blind.disabled then
+'''
+position = "at"
+payload = '''
+if self.ability.name == 'Chicot' and SMODS.blind_can_disable() then
+'''
+
+# Card:calculate_joker() 
+# Matador
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+match_indent = true
+pattern = '''
+if G.GAME.blind and ((not G.GAME.blind.disabled) and (G.GAME.blind:get_type() == 'Boss')) then 
+'''
+position = "at"
+payload = '''
+if SMODS.blind_can_disable() then 
+'''
+
+# Tag:apply_to_run(_context)
+[[patches]]
+[patches.pattern]
+target = "tag.lua"
+match_indent = true
+pattern = '''
+G.GAME.last_blind and G.GAME.last_blind.blind_info and G.GAME.last_blind.blind_info.is_boss then
+'''
+position = "at"
+payload = '''
+G.GAME.last_blind and G.GAME.last_blind.boss then
+'''
+
+# Tag:apply_to_run(_context)
+[[patches]]
+[patches.pattern]
+target = "back.lua"
+match_indent = true
+pattern = '''
+if self.name == 'Anaglyph Deck' and args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.boss then
+'''
+position = "at"
+payload = '''
+if self.name == 'Anaglyph Deck' and args.context == 'eval' and G.GAME.last_blind and G.GAME.last_blind.blind_info and G.GAME.last_blind.blind_info.is_boss then
+'''
+
+
+# check_for_unlock 
+# hanging chad
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+pattern = '''
+if G.GAME.last_hand_played == card.unlock_condition.extra and G.GAME.blind:get_type() == 'Boss' then
+'''
+position = "at"
+payload = '''
+if G.GAME.last_hand_played == card.unlock_condition.extra and SMODS.blind_is_boss() then
+'''
+
+# check_for_unlock 
+# matador
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+pattern = '''
+G.GAME.blind:get_type() == 'Boss' then
+'''
+position = "at"
+payload = '''
+SMODS.blind_is_boss() then
+'''
+
+# card:generate_uiability_box
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+pattern = '''
+local disableable = G.GAME.blind and ((not G.GAME.blind.disabled) and (G.GAME.blind:get_type() == 'Boss'))
+'''
+position = "at"
+payload = '''
+local disableable = SMODS.blind_can_disable()
+'''
+
+# Disable Skipping
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+pattern = '''
+if _tag and _tag_container then 
+    _tag_container.children[2].config.draw_after = false
+    _tag_container.children[2].config.colour = G.C.BLACK
+    _tag.children[2].config.button = 'skip_blind'
+    _tag.config.outline_colour = adjust_alpha(G.C.BLUE, 0.5)
+    _tag.children[2].config.hover = true
+    _tag.children[2].config.colour = G.C.RED
+    _tag.children[2].children[1].config.colour = G.C.UI.TEXT_LIGHT
+    local _sprite = _tag.config.ref_table
+    _sprite.config.force_focus = nil
+end
+'''
+position = "at"
+payload = '''
+if _tag and _tag_container then
+    if G.GAME.round_resets.blind_info[e.config.id].can_skip and not G.GAME.disable_skips then
+        _tag_container.children[2].config.draw_after = false
+        _tag_container.children[2].config.colour = G.C.BLACK
+        _tag.children[2].config.button = 'skip_blind'
+        _tag.config.outline_colour = adjust_alpha(G.C.BLUE, 0.5)
+        _tag.children[2].config.hover = true
+        _tag.children[2].config.colour = G.C.RED
+        _tag.children[2].children[1].config.colour = G.C.UI.TEXT_LIGHT
+        local _sprite = _tag.config.ref_table
+        _sprite.config.force_focus = nil
+    else
+        _tag.children[2].config.button = nil
+        _tag.config.outline_colour = G.C.UI.BACKGROUND_INACTIVE
+        _tag.children[2].config.hover = false
+        _tag.children[2].config.colour = G.C.UI.BACKGROUND_INACTIVE
+        _tag.children[2].children[1].config.colour = G.C.UI.TEXT_INACTIVE
+    end
+end
+'''
+
+# Disable Skipping
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+match_indent = true
+pattern = '''
+self.chips = get_blind_amount(G.GAME.round_resets.ante)*self.mult*G.GAME.starting_params.ante_scaling
+'''
+position = "at"
+payload = '''
+self.chips = get_blind_amount(G.GAME.round_resets.ante)*self.mult*G.GAME.starting_params.ante_scaling
+
+if G.GAME.blind.blind_info then
+    if G.GAME.blind.blind_info and G.GAME.blind.blind_info.blind_multiplier then
+        self.chips = self.chips * G.GAME.blind.blind_info.blind_multiplier
+    end
+
+    if G.GAME.blind.blind_info and G.GAME.blind.blind_info.forced_blind_num then
+        self.chips = G.GAME.blind.blind_info.forced_blind_num
+    end
+end
+'''
+
+# Disable Skipping
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+pattern = '''
+local blind_amt = get_blind_amount(G.GAME.round_resets.blind_ante)*blind_choice.config.mult*G.GAME.starting_params.ante_scaling
+'''
+position = "at"
+payload = '''
+local blind_amt = get_blind_amount(G.GAME.round_resets.blind_ante)*blind_choice.config.mult*G.GAME.starting_params.ante_scaling
+
+if G.GAME.round_resets.blind_info[type] and G.GAME.round_resets.blind_info[type].blind_multiplier then
+    blind_amt = blind_amt * G.GAME.round_resets.blind_info[type].blind_multiplier
+end
+
+if G.GAME.round_resets.blind_info[type] and G.GAME.round_resets.blind_info[type].forced_blind_num then
+    blind_amt = G.GAME.round_resets.blind_info[type].forced_blind_num
+end
+'''
+
+# NOTE: Should boss music be a separate consideration?
+# (G.GAME.blind and G.GAME.blind.boss and 'music5') or 
+# does check the boss blind state
