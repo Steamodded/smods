@@ -2776,6 +2776,7 @@ function Game:start_run(args)
         trigger = 'immediate',
         func = function()
             SMODS.refresh_score_UI_list()
+            G.HUD:get_UIE_by_ID('hand_operator_container').UIBox:recalculate()
             return true
         end
     }))
