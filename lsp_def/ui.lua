@@ -329,3 +329,26 @@ function create_UIBox_your_collection_stickers() end
 ---@return UINode
 ---@param args ScoreContainerArgs
 function SMODS.GUI.score_container(args) end
+
+---@class ScrollbarArgs
+---@field w number The width of the scrollbar.
+---@field h number The height of the scrollbar.
+---@field bg_colour? table The background color of the scrollbar.
+---@field colour? table The color of the scrollbar's progress.
+---@field knob_colour? table The color of the scrollbar's knob.
+---@field ref_table? table The table whose `ref_value` should be updated based on this scrollbar's progress.
+---@field ref_value? string Is set to a value between `min` and `max`.
+---@field scroll_collision_obj? SMODS.UIScrollBox The object to scroll based on this scrollbar's progress. This scrollbox will only update automatically if `ref_table` or `ref_value` are omitted.
+---@field ui_type? G.UIT Which type of UI node this should be.
+---@field horizontal? boolean Whether or not this scrollbar is horizontal. Default orientation is vertical.
+---@field min? number Minimum value of `ref_value`. Defaults to 0.
+---@field max? number Maximum value of `ref_value` Defaults to 1.
+
+---Returns an UI node that has the functionality of a scrollbar.
+---@param args ScrollbarArgs
+---@return table
+function SMODS.GUI.scrollbar(args) end
+
+--- Handles SMODS.GUI.scrollbar functionality
+---@param e table
+function G.FUNCS.scrollbar(e) end

@@ -382,7 +382,25 @@ function Game:update(dt)
             node.children.alert.states.collide.can = false
         end
     end
+    if math.abs(SMODS.wheel_velocity.x) > 0.01 then
+		SMODS.wheel_velocity.x = SMODS.wheel_velocity.x - SMODS.wheel_velocity.x * math.min(G.real_dt * 20, 1)
+	else
+		SMODS.wheel_velocity.x = 0
+	end
+	if math.abs(SMODS.wheel_velocity.y) > 0.01 then
+		SMODS.wheel_velocity.y = SMODS.wheel_velocity.y - SMODS.wheel_velocity.y * math.min(G.real_dt * 20, 1)
+	else
+		SMODS.wheel_velocity.y = 0
+	end
     gameUpdateRef(self, dt)
+end
+
+SMODS.wheel_velocity = {x = 0, y = 0}
+local scrollRef = love.wheelmoved or function(x, y) end
+function love.wheelmoved(x, y)
+	scrollRef(x, y)
+    SMODS.wheel_velocity.x = SMODS.wheel_velocity.x + x
+	SMODS.wheel_velocity.y = SMODS.wheel_velocity.y + y
 end
 
 local function wrapText(text, maxChars)
@@ -2563,4 +2581,140 @@ function G.UIDEF.custom_deck_tab(_suit)
     G.FUNCS.update_collab_cards(current_option, _suit, true)
 
     return {n=G.UIT.ROOT, config={align = "cm", padding = 0, colour = G.C.CLEAR, r = 0.1, minw = 7, minh = 4.2}, nodes=t}
+end
+
+function SMODS.GUI.scrollbar(args)
+    if not args.scroll_collision_obj and (not args.ref_table or not args.ref_value) then
+        error("args must have a ref_table and a ref_value if args.scroll_collision_obj is nil")
+    end
+    if not args.max then
+        args.max = 1
+    end
+    if not args.min then
+        args.min = 0
+    end
+    if not args.ref_table or not args.ref_value then
+        args.ref_table = args.scroll_collision_obj.scroll_progress
+        args.ref_value = args.horizontal and "x" or "y"
+    end
+    local percent = (args.ref_table[args.ref_value] - args.min) / (args.max - args.min)
+    if args.scroll_collision_obj and (not args.scroll_collision_obj.is or not args.scroll_collision_obj:is(SMODS.UIScrollBox)) then
+        error("args.scroll_collision_obj is not an UIScrollBox")
+    end
+    if not args.w or not args.h then
+        error("args.w and args.h both have to be defined")
+    end
+    if args.w >= args.h and not args.horizontal then
+        error("The width of a vertical scrollbar must be less than its height")
+    end
+    if args.h >= args.w and args.horizontal then
+        error("The height of a horizontal scrollbar must be less than its width")
+    end
+	local track = UIBox({
+		definition = {
+			n = G.UIT.ROOT,
+			config = {
+				r = 0.25,
+				minh = not args.horizontal and args.h or nil,
+				minw = args.horizontal and args.w or nil,
+				colour = args.bg_colour or G.C.CLEAR,
+				focus_args = { type = "slider" },
+				collideable = true,
+				refresh_movement = true,
+				hover = true,
+			},
+			nodes = {
+				{
+					n = args.horizontal and G.UIT.C or G.UIT.R,
+					config = {
+						minh = not args.horizontal and percent * (args.h - args.w) or nil,
+						minw = args.horizontal and percent * (args.w - args.h) or nil,
+						colour = args.colour or G.C.CLEAR,
+					},
+				},
+				{
+					n = args.horizontal and G.UIT.C or G.UIT.R,
+					config = {
+						collideable = true,
+						func = "scrollbar",
+						scroll_dir = args.horizontal and "h" or "v",
+						id = "track_item",
+						minh = args.horizontal and args.h or args.w,
+						minw = args.horizontal and args.h or args.w,
+						colour = args.knob_colour or G.C.WHITE,
+						r = 0,
+						ref_table = args.ref_table,
+						ref_value = args.ref_value,
+						min = args.min,
+						max = args.max,
+						offset = {
+							x = not args.horizontal and 0 or nil,
+							y = args.horizontal and 0 or nil,
+						},
+						scroll_collision_obj = args.scroll_collision_obj,
+					},
+				},
+			},
+		},
+		config = {},
+	})
+	return {
+		n = args.ui_type or (args.horizontal and G.UIT.R or G.UIT.C),
+		config = {},
+		nodes = {
+			{
+				n = G.UIT.O,
+				config = {
+					object = track,
+				},
+			},
+		},
+	}
+end
+
+function G.FUNCS.scrollbar(e)
+	e.states.drag.can = true
+	local scrollbar_track = e.UIBox
+	scrollbar_track.states.drag.can = true
+	local ref_table = e.config.ref_table
+    local ref_value = e.config.ref_value
+    local scrollbox = e.config.scroll_collision_obj
+	if
+		G.CONTROLLER
+		and G.CONTROLLER.dragging.target
+		and (G.CONTROLLER.dragging.target == e or G.CONTROLLER.dragging.target == scrollbar_track)
+	then
+		if e.config.scroll_dir == "h" then
+			local percent = (G.CURSOR.T.x - e.parent.T.x - G.ROOM.T.x - e.T.w / 2) / (scrollbar_track.T.w - e.T.w)
+			percent = math.max(0, math.min(1, percent))
+
+			ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
+			scrollbar_track.UIRoot.children[1].config.minw = percent * (scrollbar_track.T.w - e.T.w)
+			scrollbar_track:recalculate()
+		else
+			local percent = (G.CURSOR.T.y - e.parent.T.y - G.ROOM.T.y - e.T.h / 2) / (scrollbar_track.T.h - e.T.h)
+			percent = math.max(0, math.min(1, percent))
+			ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
+			scrollbar_track.UIRoot.children[1].config.minh = percent * (scrollbar_track.T.h - e.T.h)
+			scrollbar_track:recalculate()
+		end
+	elseif scrollbox and scrollbox:collides_with_point(G.CURSOR.T) or scrollbar_track:collides_with_point(G.CURSOR.T) then
+		local percent = (ref_table[ref_value] - e.config.min) / (e.config.max - e.config.min)
+		local scroll_velocity = -SMODS.wheel_velocity.y
+		if scrollbox then
+			-- some cursed ass shit
+			local dir = e.config.scroll_dir == "v" and "h" or "w"
+			scroll_velocity = scroll_velocity / ((scrollbar_track.T[dir] - e.T[dir]) * scrollbox.content.T[dir])
+		end
+		percent = percent + scroll_velocity
+		percent = math.max(0, math.min(1, percent))
+		ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
+		scrollbar_track.UIRoot.children[1].config.minh = percent * (scrollbar_track.T.h - e.T.h)
+        if e.config.scroll_dir == "h" then
+			scrollbar_track.UIRoot.children[1].config.minw = percent * (scrollbar_track.T.w - e.T.w)
+		else
+			scrollbar_track.UIRoot.children[1].config.minh = percent * (scrollbar_track.T.h - e.T.h)
+		end
+		scrollbar_track:recalculate()
+	end
 end
