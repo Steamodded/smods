@@ -17,7 +17,14 @@ G.FUNCS.HUD_blind_debuff = function(e)
 		local excess_height = (0.3 + padding)*(num_lines - 5)
 		padding = padding - excess_height / (num_lines + 1)
 	end
-	e.config.padding = padding
+    e.config.padding = padding
+    if G.GAME.blind.update_loc_debuff_lines then
+		for i = 1, #e.children do
+			e.children[i]:remove()
+			e.children[i] = nil
+		end
+		G.GAME.blind.update_loc_debuff_lines = nil
+	end
 	if num_lines > #e.children then
         for i = #e.children + 1, num_lines do
 			local node_def 
@@ -2676,4 +2683,13 @@ function add_tag(_tag)
 		_tag = Tag(_tag.key, nil, _tag.blind_type)
 	end
 	add_tag_ref(_tag)
+end
+
+-- Fix visual glitch in deck select
+local g_funcs_change_viewed_back_ref = G.FUNCS.change_viewed_back
+G.FUNCS.change_viewed_back = function(...)
+	for _, card in pairs(G.sticker_card.area.cards) do
+		card.original_T = copy_table(card.T)
+	end
+	return g_funcs_change_viewed_back_ref(...)
 end

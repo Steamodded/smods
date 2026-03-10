@@ -437,7 +437,7 @@ match_indent = true
 target = "functions/state_events.lua"
 pattern = "if G.GAME.round_resets.ante == G.GAME.win_ante and G.GAME.blind:get_type() == 'Boss' then"
 position = "at"
-payload = "if not G.GAME.won and G.GAME.round_resets.ante >= G.GAME.win_ante and G.GAME.blind:get_type() == 'Boss' then"
+payload = "if not G.GAME.won and G.GAME.round_resets.ante >= G.GAME.win_ante and G.GAME.blind_on_deck == 'Boss' then"
 match_indent = true
 
 
@@ -693,21 +693,17 @@ end
 
 
 
-# copy_card: Subtract from .ability.card_limit
+# copy_card: Subtract from .ability.card_limit when edition is stripped
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
 position = 'before'
 match_indent = true
-pattern = 'for k, v in pairs(other.ability) do'
+pattern = 'return new_card'
 payload = '''
-if other.edition then
+if other.edition and strip_edition then
     new_card.ability.card_limit = new_card.ability.card_limit - (other.edition.card_limit or 0)
     new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.edition.extra_slots_used or 0)
-end
-if other.seal then
-    new_card.ability.card_limit = new_card.ability.card_limit - (other.ability.seal.card_limit or 0)
-    new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.ability.seal.extra_slots_used or 0)
 end'''
 
 # copy_card edition config

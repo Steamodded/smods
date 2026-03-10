@@ -91,3 +91,16 @@ if _ch.apply and type(_ch.apply) == "function" then
 end
 '''
 match_indent = true
+
+# enable `seal` field in deck
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''
+if _de.gold_seal then _g = _de.gold_seal end
+'''
+position = "after"
+payload = '''
+if _de.seal then _g = _de.seal end
+'''
+match_indent = true

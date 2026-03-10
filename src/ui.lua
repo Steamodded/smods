@@ -1207,6 +1207,12 @@ function buildModtag(mod)
         G.FUNCS["openModUI_" .. mod.id](self)
     end
     tag_sprite.stop_hover = function(_self) _self.hovering = false; Node.stop_hover(_self); _self.hover_tilt = 0 end
+    tag_sprite.update = function (self, dt)
+        if not self.rescaled then
+            if type(self.rescale) == "function" then self:rescale() end
+            self.rescaled = true
+        end
+    end
 
     tag_sprite:juice_up()
 
@@ -2325,8 +2331,7 @@ create_UIBox_your_collection_poker_hands = function (args)
         ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or (G.ACTIVE_MOD_UI.ui_config or {}).back_colour),
         outline_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
             (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
-        back_func = (args and args.back_func) or G.ACTIVE_MOD_UI and "openModUI_" .. G.ACTIVE_MOD_UI.id or
-            'your_collection_other_gameobjects',
+        back_func = (args and args.back_func) or 'your_collection_other_gameobjects',
         snap_back = args and args.snap_back,
         infotip = args and args.infotip,
         contents = {

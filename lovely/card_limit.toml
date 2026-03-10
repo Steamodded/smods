@@ -73,6 +73,12 @@ self.config = setmetatable(cardAreaTable.config, {
     end
 })
 
+-- CRIMSON BEAN EXPLOIT REIMPLEMNTATION
+if self.config.type == 'hand' and cardAreaTable.config.card_limits.total_slots ~= cardAreaTable.config.card_limits.base + cardAreaTable.config.card_limits.mod + cardAreaTable.config.card_limits.extra_slots then
+    self.config.card_limits.base = cardAreaTable.config.card_limits.total_slots - cardAreaTable.config.card_limits.extra_slots
+end
+-- CRIMSON BEAN EXPLOIT REIMPLEMNTATION
+
 '''
 
 # Bypass CardArea:change_size()
@@ -87,6 +93,13 @@ function CardArea:change_size(delta)
 payload = '''
     if true then
         self.config.card_limits.mod = (self.config.card_limits.mod or 0) + delta
+        if (G.STATE == G.STATES.DRAW_TO_HAND or G.STATE == G.STATES.SELECTING_HAND) and self.config.type == 'hand' and delta > 0 then
+            SMODS.cards_to_draw = (SMODS.cards_to_draw or 0) + delta
+            for i=1, delta do
+                draw_card(G.deck,G.hand, i*100/delta,nil, nil , nil, 0.07)
+                G.E_MANAGER:add_event(Event({func = function() self:sort() return true end}))
+            end
+        end
         return
     end
 '''
