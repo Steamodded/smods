@@ -1894,7 +1894,7 @@ not SMODS.is_eternal(self, {from_sell = true}) then
 local obj = self.config.center
 if self.ability.set ~= "Enhanced" and obj.can_sell and type(obj.can_sell) == 'function' then
 	local o, t = obj:can_sell(self, context)
-	if o or t then return o, t end
+	if o ~= nil or t ~= nil then return o, t end
 end
 '''
 
