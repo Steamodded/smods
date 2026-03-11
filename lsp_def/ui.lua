@@ -336,6 +336,8 @@ function SMODS.GUI.score_container(args) end
 ---@field bg_colour? table The background color of the scrollbar.
 ---@field colour? table The color of the scrollbar's progress.
 ---@field knob_colour? table The color of the scrollbar's knob.
+---@field knob_h? number The height of the scrollbar's knob.
+---@field knob_w? number The width of the scrollbar's knob.
 ---@field ref_table? table The table whose `ref_value` should be updated based on this scrollbar's progress.
 ---@field ref_value? string Is set to a value between `min` and `max`.
 ---@field scroll_collision_obj? SMODS.UIScrollBox The object to scroll based on this scrollbar's progress. This scrollbox will only update automatically if `ref_table` or `ref_value` are omitted.

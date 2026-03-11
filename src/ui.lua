@@ -2593,6 +2593,15 @@ function SMODS.GUI.scrollbar(args)
     if not args.min then
         args.min = 0
     end
+    if args.horizontal then
+        if not args.knob_h and not args.h then
+            error("Height of scrollbar or height of knob must be specified if scrollbar is horizontal")
+        end
+    else
+        if not args.knob_w and not args.w then
+            error("Width of scrollbar or width of knob must be specified if scrollbar is vertical")
+        end
+    end
     if not args.ref_table or not args.ref_value then
         args.ref_table = args.scroll_collision_obj.scroll_progress
         args.ref_value = args.horizontal and "x" or "y"
