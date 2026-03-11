@@ -22,6 +22,7 @@ position = 'before'
 payload = '''love.graphics.setColor(self.config.colour)'''
 match_indent = true
 
+# Game:draw()
 [[patches]]
 [patches.pattern]
 target = 'game.lua'
@@ -59,6 +60,7 @@ for k, v in pairs(self.I.DROPDOWN) do
 end
 '''
 match_indent = true
+
 
 [[patches]]
 [patches.pattern]

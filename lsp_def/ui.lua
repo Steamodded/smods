@@ -331,13 +331,13 @@ function create_UIBox_your_collection_stickers() end
 function SMODS.GUI.score_container(args) end
 
 ---@class ScrollbarArgs
----@field w number The width of the scrollbar.
----@field h number The height of the scrollbar.
+---@field w number? The width of the scrollbar. Is optional if scrollbar is horizontal or knob_w is specified.
+---@field h number? The height of the scrollbar. Is optional if scrollbar is vertical or knob_h is specified.
 ---@field bg_colour? table The background color of the scrollbar.
 ---@field colour? table The color of the scrollbar's progress.
 ---@field knob_colour? table The color of the scrollbar's knob.
----@field knob_h? number The height of the scrollbar's knob.
----@field knob_w? number The width of the scrollbar's knob.
+---@field knob_h? number The height of the scrollbar's knob. Takes precedence over `h` if scrollbar is horizontal.
+---@field knob_w? number The width of the scrollbar's knob. Takes precedence over `w` if scrollbar is vertical.
 ---@field ref_table? table The table whose `ref_value` should be updated based on this scrollbar's progress.
 ---@field ref_value? string Is set to a value between `min` and `max`.
 ---@field scroll_collision_obj? SMODS.UIScrollBox The object to scroll based on this scrollbar's progress. This scrollbox will only update automatically if `ref_table` or `ref_value` are omitted.
