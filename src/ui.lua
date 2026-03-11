@@ -2721,11 +2721,10 @@ function SMODS.GUI.dropdown_select(args)
         end
     end
     if needs_default then
-        args.ref_table[args.ref_value] = args.init_value or args.default
+        args.ref_table[args.ref_value] = args.init_value or args.default or args.options[1]
     end
     args.dropdown_bg_colour = args.dropdown_bg_colour or lighten(G.C.BLACK, 0.2)
     args.selected_colour = args.selected_colour or G.C.BLACK
-    args.progress = args.progress or 0
 	local arrow = SMODS.create_sprite(0, 0, args.scale * 0.75, args.scale * 0.75, "dropdown_arrow", { x = 0, y = 0 })
 	local dropdown_button = UIBox({
 		definition = {
@@ -2737,7 +2736,7 @@ function SMODS.GUI.dropdown_select(args)
                 button_dist = 0,
 				button = "toggle_dropdown_menu",
 				hover = true,
-				ref_table = args,
+				args_table = args,
                 shadow = true,
 			},
 			nodes = {
@@ -2802,7 +2801,7 @@ function G.FUNCS.toggle_dropdown_menu(e)
     }
     if not e.config.dropdown_obj then
         e.config.dropdown_obj = UIBox({
-            definition = SMODS.GUI.create_UIBox_dropdown_menu(e.config.ref_table, e.T.w),
+            definition = SMODS.GUI.create_UIBox_dropdown_menu(e.config.args_table, e.T.w),
             config = cfg
         })
         e.config.dropdown_obj.states.visible = false
@@ -2838,7 +2837,10 @@ function UIElement:remove()
 end
 
 function G.FUNCS.dropdown_select(e)
-    local args = e.config.ref_table
+    local args = e.config.args_table
+    if args.callback then
+        G.FUNCS[args.callback](e)
+    end
     if e.config.value == args.ref_table[args.ref_value] and not args.no_unselect then
         args.ref_table[args.ref_value] = args.default
     else
@@ -2847,13 +2849,15 @@ function G.FUNCS.dropdown_select(e)
 end
 
 function G.FUNCS.update_dropdown_select(e)
-    local args = e.config.ref_table
+    local args = e.config.args_table
     if type(args.is_option_disabled) == "function" and args.is_option_disabled(e.config.value) then
         e.config.button = nil
         e.config.colour = args.disabled_colour or G.C.GREY
+        e.config.hover = false
     else
         e.config.button = "dropdown_select"
         e.config.colour = args.dropdown_bg_colour
+        e.config.hover = true
     end
     if e.config.value == args.ref_table[args.ref_value] then
         e.config.colour = args.selected_colour
@@ -2865,7 +2869,7 @@ end
 function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
     local rows = {}
     for _, opt in ipairs(args.options) do
-        rows[#rows + 1] = type(args.dropdown_element_def) == "function" and args.dropdown_element_def(opt) or {
+        rows[#rows + 1] = {
             n = G.UIT.R,
             config = {
                 align = "cl",
@@ -2877,11 +2881,11 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
                 func = "update_dropdown_select",
                 value = opt,
                 colour = args.dropdown_bg_colour,
-                ref_table = args,
-                minw = parent_width - 0.6
+                args_table = args,
+                minw = args.max_menu_h and (parent_width - 0.55) or (parent_width - 0.2)
             },
             nodes = {
-                {
+                type(args.dropdown_element_def) == "function" and args.dropdown_element_def(opt) or {
                     n = G.UIT.C,
                     config = { align = "cm" },
                     nodes = {
@@ -2893,8 +2897,6 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
                 },
             },
         }
-        rows[#rows].config.func = "update_dropdown_select"
-        rows[#rows].config.button = "dropdown_select"
     end
     for _, r in ipairs(rows) do
         r.config.button = "dropdown_select"
