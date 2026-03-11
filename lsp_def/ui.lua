@@ -381,3 +381,8 @@ function G.FUNCS.scrollbar(e) end
 ---Returns a button that creates a dropdown selection menu when clicked on.
 ---@param args DropdownSelectArgs
 function SMODS.GUI.dropdown_select(args) end
+
+---Handles creating the dropdown menu. Don't call this manually.
+---@param args DropdownSelectArgs
+---@param parent_width number
+function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width) end
