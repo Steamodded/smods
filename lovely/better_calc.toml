@@ -1879,7 +1879,7 @@ if v ~= eligible_card and (not v.ability.eternal) then v:start_dissolve(nil, _fi
 payload = '''
 if v ~= eligible_card and (not SMODS.is_eternal(v, self)) then v.getting_sliced = true; v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
 '''
-# Card:can_sell()
+# Card:can_sell(), Add can_sell API method
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -1890,6 +1890,12 @@ not self.ability.eternal then
 '''
 payload = '''
 not SMODS.is_eternal(self, {from_sell = true}) then
+
+local obj = self.config.center
+if self.ability.set ~= "Enhanced" and obj.can_sell and type(obj.can_sell) == 'function' then
+	local o, t = obj:can_sell(self, context)
+	if o or t then return o, t end
+end
 '''
 
 # Adds tag_added context
