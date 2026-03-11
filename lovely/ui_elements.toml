@@ -23,6 +23,7 @@ payload = '''love.graphics.setColor(self.config.colour)'''
 match_indent = true
 
 # Game:draw()
+# Draw dropdowns right before G.OVERLAY_MENU if the dropdown was created while G.OVERLAY_MENU doesn't exist
 [[patches]]
 [patches.pattern]
 target = 'game.lua'
@@ -42,6 +43,7 @@ end
 '''
 match_indent = true
 
+# Draw dropdowns right before the drag target if the dropdown was created while G.OVERLAY_MENU exists
 [[patches]]
 [patches.pattern]
 target = 'game.lua'
@@ -61,7 +63,8 @@ end
 '''
 match_indent = true
 
-
+# Game:set_globals()
+# Add G.I.DROPDOWN
 [[patches]]
 [patches.pattern]
 target = 'globals.lua'
