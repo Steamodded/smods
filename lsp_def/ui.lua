@@ -333,9 +333,9 @@ function SMODS.GUI.score_container(args) end
 ---@class ScrollbarArgs
 ---@field w number? The width of the scrollbar. Is optional if scrollbar is horizontal or knob_w is specified.
 ---@field h number? The height of the scrollbar. Is optional if scrollbar is vertical or knob_h is specified.
----@field bg_colour? table The background color of the scrollbar.
----@field colour? table The color of the scrollbar's progress.
----@field knob_colour? table The color of the scrollbar's knob.
+---@field bg_colour? table The background colour of the scrollbar.
+---@field colour? table The colour of the scrollbar's progress.
+---@field knob_colour? table The colour of the scrollbar's knob.
 ---@field knob_h? number The height of the scrollbar's knob. Takes precedence over `h` if scrollbar is horizontal.
 ---@field knob_w? number The width of the scrollbar's knob. Takes precedence over `w` if scrollbar is vertical.
 ---@field ref_table? table The table whose `ref_value` should be updated based on this scrollbar's progress.
@@ -345,6 +345,7 @@ function SMODS.GUI.score_container(args) end
 ---@field horizontal? boolean Whether or not this scrollbar is horizontal. Default orientation is vertical.
 ---@field min? number Minimum value of `ref_value`. Defaults to 0.
 ---@field max? number Maximum value of `ref_value` Defaults to 1.
+---@field scroll_mult? number Multiplies the scrolling speed of this scrollbar when scrolled with mouse wheel or something similar.
 
 ---Returns an UI node that has the functionality of a scrollbar.
 ---@param args ScrollbarArgs
@@ -360,12 +361,23 @@ function G.FUNCS.scrollbar(e) end
 ---@field ref_table table The table whose `ref_value` should be updated to this dropdown's current value.
 ---@field ref_value string `ref_table[ref_value]` is set to this dropdown's current value.
 ---@field default? string The default value of this dropdown selection if no value is selected. If not specified, defaults to the first item of `options`.
----@field scale? number The scale of the text displayed as the current option.
+---@field scale? number The scale of the dropdown button's text. Defaults to 0.4.
+---@field dropdown_scale? number The scale of the text of the dropdown options. Defaults to 0.4.
 ---@field minw? number Specifies the minimum width of the box that contains the text displayed as the current option.
----@field dropdown_bg_colour? table The colour of the background
----@field dropdown_text_colour? table The colour of the text of the 
----@field selected_colour? table The colour of the background of the currently selected option.
+---@field dropdown_bg_colour? table The colour of the background of the dropdown menu. Defaults to lighten(G.C.BLACK, 0.2)
+---@field border_colour? table The colour of the border of the dropdown menu. Defaults to lighten(G.C.JOKER_GREY, 0.5).
+---@field dropdown_text_colour? table The colour of the text of the dropdown options. Defaults to G.C.UI.TEXT_LIGHT.
+---@field selected_colour? table The colour of the background of the currently selected option. Defaults to G.C.BLACK.
+---@field colour? table The colour of the dropdown button. Defaults to G.C.RED.
+---@field text_colour? table The colour of the dropdown button's text. Defaults to G.C.UI.TEXT_LIGHT.
+---@field dropdown_element_def? fun(option): table If defined, each option will be displayed according to the UI nodes returned by this function. Note that the result of this function is passed into a row node.
+---@field max_menu_h? number The maximum height that the dropdown options should take up. If set, the dropdown's contents will be scrollable and a scrollbar will automatically appear.
+---@field disabled_colour? table The colour of the background disabled options. Defaults to G.C.CLEAR.
+---@field callback? string If set, dropdown options when clicked will call G.FUNCS[callback](e), with `e` being the specific option button pressed. `e.config.value` gets the value of the clicked option. Will not be called if the option is clicked on while disabled.
+---@field is_option_disabled? fun(option): boolean? If defined, an option will be disabled if this function returns a truthy value. This is called for every option.
+---@field no_unselect? boolean If set to `true`, prevents an option from being unselected.
+---@field align? string Aligns the text of the dropdown button. Works just like aligning regular UI nodes.
 
----Returns a button that creates
----@param args any
+---Returns a button that creates a dropdown selection menu when clicked on.
+---@param args DropdownSelectArgs
 function SMODS.GUI.dropdown_select(args) end

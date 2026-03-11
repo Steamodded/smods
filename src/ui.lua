@@ -2643,6 +2643,7 @@ function SMODS.GUI.scrollbar(args)
 						ref_value = args.ref_value,
 						min = args.min,
 						max = args.max,
+                        scroll_mult = args.scroll_mult,
 						offset = {
 							x = not args.horizontal and 0 or nil,
 							y = args.horizontal and 0 or nil,
@@ -2693,7 +2694,7 @@ function G.FUNCS.scrollbar(e)
 		local scroll_velocity = SMODS.wheel_velocity.y
 		if scrollbox then
 			local dir = e.config.scroll_dir == "v" and "h" or "w"
-			scroll_velocity = scroll_velocity / (scrollbox.T[dir] * G.TILESIZE)
+			scroll_velocity = scroll_velocity * (e.config.scroll_mult or 1) / (scrollbox.T[dir] * G.TILESIZE)
 		end
         percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
 		percent = math.max(0, math.min(1, percent))
@@ -2752,7 +2753,7 @@ function SMODS.GUI.dropdown_select(args)
                             config = {
                                 ref_table = args.ref_table,
                                 ref_value = args.ref_value,
-                                colour = args.text_colour or G.C.WHITE,
+                                colour = args.text_colour or G.C.UI.TEXT_LIGHT,
                                 scale = args.scale,
                             },
                         },
@@ -2852,17 +2853,16 @@ function G.FUNCS.update_dropdown_select(e)
     local args = e.config.args_table
     if type(args.is_option_disabled) == "function" and args.is_option_disabled(e.config.value) then
         e.config.button = nil
-        e.config.colour = args.disabled_colour or G.C.GREY
+        e.config.colour = args.disabled_colour or G.C.CLEAR
         e.config.hover = false
     else
         e.config.button = "dropdown_select"
-        e.config.colour = args.dropdown_bg_colour
+        if e.config.value == args.ref_table[args.ref_value] then
+            e.config.colour = args.selected_colour
+        else
+            e.config.colour = args.dropdown_bg_colour
+        end
         e.config.hover = true
-    end
-    if e.config.value == args.ref_table[args.ref_value] then
-        e.config.colour = args.selected_colour
-    else
-        e.config.colour = args.dropdown_bg_colour
     end
 end
 
@@ -2891,7 +2891,7 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
                     nodes = {
                         {
                             n = G.UIT.T,
-                            config = { scale = args.dropdown_scale or 0.4, text = opt, colour = args.dropdown_text_colour or G.C.WHITE },
+                            config = { scale = args.dropdown_scale or 0.4, text = opt, colour = args.dropdown_text_colour or G.C.UI.TEXT_LIGHT },
                         },
                     },
                 },
@@ -2915,7 +2915,7 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
 		},
         overflow = {
             node_config = {
-				maxh = args.max_menu_h and (args.max_menu_h + 0.1) or nil,
+				maxh = args.max_menu_h,
 				r = 0.1,
 			},
         },
@@ -2965,7 +2965,7 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
                         nodes = {
                             SMODS.GUI.scrollbar({
                                 w = 0.1,
-                                h = args.max_menu_h,
+                                h = args.max_menu_h - 0.1,
                                 scroll_collision_obj = scrollbox,
                                 knob_h = args.max_menu_h / 6,
                                 bg_colour = { 0, 0, 0, 0.15 },
