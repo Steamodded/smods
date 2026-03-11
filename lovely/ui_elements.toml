@@ -22,6 +22,55 @@ position = 'before'
 payload = '''love.graphics.setColor(self.config.colour)'''
 match_indent = true
 
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+if (self.OVERLAY_MENU) or (not self.F_HIDE_BG) then
+'''
+position = 'before'
+payload = '''
+for k, v in pairs(self.I.DROPDOWN) do
+    if v.parent == G.ROOM_ATTACH then
+        love.graphics.push()
+        v:translate_container()
+        v:draw()
+        love.graphics.pop()
+    end
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+if self.CONTROLLER.dragging.target and self.CONTROLLER.dragging.target ~= self.CONTROLLER.focused.target then
+'''
+position = 'before'
+payload = '''
+for k, v in pairs(self.I.DROPDOWN) do
+    if v.parent == G.OVERLAY_MENU then
+        love.graphics.push()
+        v:translate_container()
+        v:draw()
+        love.graphics.pop()
+    end
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'globals.lua'
+pattern = '''
+UIBOX = {},
+'''
+position = 'after'
+payload = '''
+DROPDOWN = {},
+'''
+match_indent = true
 
 ## multiple text input fix
 # create_text_input()
