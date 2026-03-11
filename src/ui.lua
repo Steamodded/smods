@@ -2711,7 +2711,8 @@ function SMODS.GUI.dropdown_select(args)
     if not args.ref_table or not args.ref_value then
         error("args.ref_table and args.ref_value must both be defined")
     end
-    args.default = args.default or ""
+    args.ref_table[args.ref_value] = args.ref_table[args.ref_value] or args.init_value
+    args.default = args.default or args.options[1]
     args.scale = args.scale or 0.4
     local needs_default = true
     for _, v in ipairs(args.options) do
@@ -2720,8 +2721,8 @@ function SMODS.GUI.dropdown_select(args)
             break
         end
     end
-    if needs_default then
-        args.ref_table[args.ref_value] = args.init_value or args.default or args.options[1]
+    if needs_default and not args.ref_table[args.ref_value] then
+        args.ref_table[args.ref_value] = args.default
     end
     args.dropdown_bg_colour = args.dropdown_bg_colour or lighten(G.C.BLACK, 0.2)
     args.selected_colour = args.selected_colour or G.C.BLACK
@@ -2737,7 +2738,6 @@ function SMODS.GUI.dropdown_select(args)
 				button = "toggle_dropdown_menu",
 				hover = true,
 				args_table = args,
-                shadow = true,
 			},
 			nodes = {
 				{
@@ -2752,7 +2752,7 @@ function SMODS.GUI.dropdown_select(args)
                             config = {
                                 ref_table = args.ref_table,
                                 ref_value = args.ref_value,
-                                colour = G.C.WHITE,
+                                colour = args.text_colour or G.C.WHITE,
                                 scale = args.scale,
                             },
                         },
@@ -2760,7 +2760,7 @@ function SMODS.GUI.dropdown_select(args)
                 },
                 {
                     n = G.UIT.C,
-                    config = {align = "cm"},
+                    config = { align = "cm" },
                     nodes = {
                         {
                             n = G.UIT.O,
@@ -2882,7 +2882,7 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
                 value = opt,
                 colour = args.dropdown_bg_colour,
                 args_table = args,
-                minw = args.max_menu_h and (parent_width - 0.55) or (parent_width - 0.2)
+                minw = args.max_menu_h and (parent_width - 0.55) or (parent_width - 0.3)
             },
             nodes = {
                 type(args.dropdown_element_def) == "function" and args.dropdown_element_def(opt) or {
@@ -2891,16 +2891,12 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
                     nodes = {
                         {
                             n = G.UIT.T,
-                            config = { scale = 0.4, text = opt, colour = G.C.WHITE },
+                            config = { scale = args.dropdown_scale or 0.4, text = opt, colour = args.dropdown_text_colour or G.C.WHITE },
                         },
                     },
                 },
             },
         }
-    end
-    for _, r in ipairs(rows) do
-        r.config.button = "dropdown_select"
-        r.config.func = "update_dropdown_select"
     end
 	local scrollbox = SMODS.UIScrollBox({
 		content = {
@@ -2919,11 +2915,15 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
 		},
         overflow = {
             node_config = {
-				maxh = args.max_menu_h,
+				maxh = args.max_menu_h and (args.max_menu_h + 0.1) or nil,
 				r = 0.1,
 			},
         },
 	})
+    if args._progress then
+        scrollbox.scroll_progress.y = args._progress.y
+    end
+    args._progress = scrollbox.scroll_progress
     return {
         n = G.UIT.ROOT,
         config = {

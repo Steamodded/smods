@@ -23,7 +23,7 @@ payload = '''love.graphics.setColor(self.config.colour)'''
 match_indent = true
 
 # Game:draw()
-# Draw dropdowns right before G.OVERLAY_MENU if the dropdown was created while G.OVERLAY_MENU doesn't exist
+# Draw dropdowns right before G.OVERLAY_MENU if the dropdown was created while G.OVERLAY_MENU didn't exist
 [[patches]]
 [patches.pattern]
 target = 'game.lua'

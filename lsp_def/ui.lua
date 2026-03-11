@@ -339,7 +339,7 @@ function SMODS.GUI.score_container(args) end
 ---@field knob_h? number The height of the scrollbar's knob. Takes precedence over `h` if scrollbar is horizontal.
 ---@field knob_w? number The width of the scrollbar's knob. Takes precedence over `w` if scrollbar is vertical.
 ---@field ref_table? table The table whose `ref_value` should be updated based on this scrollbar's progress.
----@field ref_value? string Is set to a value between `min` and `max`.
+---@field ref_value? string `ref_table[ref_value]` is set to a value between `min` and `max`.
 ---@field scroll_collision_obj? SMODS.UIScrollBox The object to scroll based on this scrollbar's progress. This scrollbox will only update automatically if `ref_table` or `ref_value` are omitted.
 ---@field ui_type? G.UIT Which type of UI node this should be.
 ---@field horizontal? boolean Whether or not this scrollbar is horizontal. Default orientation is vertical.
@@ -354,3 +354,18 @@ function SMODS.GUI.scrollbar(args) end
 --- Handles SMODS.GUI.scrollbar functionality
 ---@param e table
 function G.FUNCS.scrollbar(e) end
+
+---@class DropdownSelectArgs
+---@field options string[] A list of all possible options that this dropdown button can have.
+---@field ref_table table The table whose `ref_value` should be updated to this dropdown's current value.
+---@field ref_value string `ref_table[ref_value]` is set to this dropdown's current value.
+---@field default? string The default value of this dropdown selection if no value is selected. If not specified, defaults to the first item of `options`.
+---@field scale? number The scale of the text displayed as the current option.
+---@field minw? number Specifies the minimum width of the box that contains the text displayed as the current option.
+---@field dropdown_bg_colour? table The colour of the background
+---@field dropdown_text_colour? table The colour of the text of the 
+---@field selected_colour? table The colour of the background of the currently selected option.
+
+---Returns a button that creates
+---@param args any
+function SMODS.GUI.dropdown_select(args) end
