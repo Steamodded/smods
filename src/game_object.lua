@@ -785,7 +785,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         pos = { x = 0, y = 0 },
         sticker_pos = { x = 1, y = 0 },
         colour = G.C.WHITE,
-        loc_txt = {}
+        loc_txt = {},
+        hide_from_run_info = true
     }
     SMODS.Stake {
         name = "Red Stake",
