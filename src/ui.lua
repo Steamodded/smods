@@ -2694,7 +2694,7 @@ function G.FUNCS.scrollbar(e)
         percent = math.max(0, math.min(1, percent))
         ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
 	elseif scrollbox and scrollbox:collides_with_point(G.CURSOR.T) or scrollbar_track:collides_with_point(G.CURSOR.T) then
-		local scroll_velocity = SMODS.wheel_velocity.y / G.TILESIZE
+		local scroll_velocity = SMODS.wheel_velocity.y * (e.config.scroll_mult or 1) / G.TILESIZE
         percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
 		percent = math.max(0, math.min(1, percent))
 		ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
