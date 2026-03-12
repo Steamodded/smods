@@ -376,7 +376,10 @@ function G.FUNCS.scrollbar(e) end
 ---@field callback? string If set, dropdown options when clicked will call G.FUNCS[callback](e), with `e` being the specific option button pressed. `e.config.value` gets the value of the clicked option. Will not be called if the option is clicked on while disabled.
 ---@field is_option_disabled? fun(option): boolean? If defined, an option will be disabled if this function returns a truthy value. This is called for every option.
 ---@field no_unselect? boolean If set to `true`, prevents an option from being unselected.
----@field align? string Aligns the text of the dropdown button. Works just like aligning regular UI nodes.
+---@field align? string Aligns the text of the dropdown button. Works just like aligning regular UI nodes. Default is "cm".
+---@field id? string Assigns the given id to the config table of the root of the button UIBox if set.
+---@field option_align? string Aligns the text of the dropdown options. Works just like aligning regular UI nodes. Default is "cl".
+---@field close_on_select? boolean If true, the dropdown menu will automatically close when an option is selected or unselected.
 
 ---Returns a button that creates a dropdown selection menu when clicked on.
 ---@param args DropdownSelectArgs

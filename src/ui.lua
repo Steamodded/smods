@@ -2694,7 +2694,7 @@ function G.FUNCS.scrollbar(e)
 		local scroll_velocity = SMODS.wheel_velocity.y
 		if scrollbox then
 			local dir = e.config.scroll_dir == "v" and "h" or "w"
-			scroll_velocity = scroll_velocity * (e.config.scroll_mult or 1) / (scrollbox.T[dir] * G.TILESIZE)
+			scroll_velocity = scroll_velocity * (e.config.scroll_mult or 1) / (scrollbox.T[dir] * (G.ROOM.T.h / scrollbar_track.T.h))
 		end
         percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
 		percent = math.max(0, math.min(1, percent))
@@ -2739,6 +2739,7 @@ function SMODS.GUI.dropdown_select(args)
 				button = "toggle_dropdown_menu",
 				hover = true,
 				args_table = args,
+                id = args.id
 			},
 			nodes = {
 				{
@@ -2802,7 +2803,7 @@ function G.FUNCS.toggle_dropdown_menu(e)
     }
     if not e.config.dropdown_obj then
         e.config.dropdown_obj = UIBox({
-            definition = SMODS.GUI.create_UIBox_dropdown_menu(e.config.args_table, e.T.w),
+            definition = SMODS.GUI.create_UIBox_dropdown_menu(e.config.args_table, e.T.w, e),
             config = cfg
         })
         e.config.dropdown_obj.states.visible = false
@@ -2847,6 +2848,9 @@ function G.FUNCS.dropdown_select(e)
     if args.callback then
         G.FUNCS[args.callback](e)
     end
+    if args.close_on_select then
+        G.FUNCS.toggle_dropdown_menu(e.config.dropdown_button)
+    end
 end
 
 function G.FUNCS.update_dropdown_select(e)
@@ -2866,14 +2870,13 @@ function G.FUNCS.update_dropdown_select(e)
     end
 end
 
-function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
+function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
     local rows = {}
     for _, opt in ipairs(args.options) do
         rows[#rows + 1] = {
             n = G.UIT.R,
             config = {
-                align = "cl",
-                padding = 0.1,
+                align = args.option_align or "cl",
                 button_dist = 0,
                 r = 0.1,
                 hover = true,
@@ -2882,12 +2885,13 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
                 value = opt,
                 colour = args.dropdown_bg_colour,
                 args_table = args,
+                dropdown_button = parent,
                 minw = args.max_menu_h and (parent_width - 0.55) or (parent_width - 0.3)
             },
             nodes = {
                 type(args.dropdown_element_def) == "function" and args.dropdown_element_def(opt) or {
                     n = G.UIT.C,
-                    config = { align = "cm" },
+                    config = { align = "cm", padding = 0.1 },
                     nodes = {
                         {
                             n = G.UIT.T,
@@ -2920,10 +2924,29 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width)
 			},
         },
 	})
-    if args._progress then
-        scrollbox.scroll_progress.y = args._progress.y
+    if args.max_menu_h then
+        local total_h = scrollbox.content.UIRoot.T.h
+        local scrollbox_rows = scrollbox.content.UIRoot.children[1].children
+        local curr = args.ref_table[args.ref_value]
+        local final_h = 0.05
+        local found = false
+        for _, r in ipairs(scrollbox_rows) do
+            if r.config.value == curr then
+                found = true
+                final_h = final_h + (r.T.h) / 2
+                break
+            else
+                final_h = final_h + r.T.h + 0.05
+            end
+        end
+        if not found then
+            final_h = 0
+        end
+        local temp = total_h - args.max_menu_h
+        local prog = (final_h - args.max_menu_h / 2) / temp
+        prog = math.max(math.min(prog, 1), 0)
+        scrollbox.scroll_progress.y = prog
     end
-    args._progress = scrollbox.scroll_progress
     return {
         n = G.UIT.ROOT,
         config = {
