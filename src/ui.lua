@@ -383,12 +383,12 @@ function Game:update(dt)
         end
     end
     if math.abs(SMODS.wheel_velocity.x) > 0.01 then
-		SMODS.wheel_velocity.x = SMODS.wheel_velocity.x - SMODS.wheel_velocity.x * math.min(dt * 20, 1)
+		SMODS.wheel_velocity.x = SMODS.wheel_velocity.x - SMODS.wheel_velocity.x * math.min(dt * 15, 1)
 	else
 		SMODS.wheel_velocity.x = 0
 	end
 	if math.abs(SMODS.wheel_velocity.y) > 0.01 then
-		SMODS.wheel_velocity.y = SMODS.wheel_velocity.y - SMODS.wheel_velocity.y * math.min(dt * 20, 1)
+		SMODS.wheel_velocity.y = SMODS.wheel_velocity.y - SMODS.wheel_velocity.y * math.min(dt * 15, 1)
 	else
 		SMODS.wheel_velocity.y = 0
 	end
@@ -2603,8 +2603,11 @@ function SMODS.GUI.scrollbar(args)
         end
     end
     if not args.ref_table or not args.ref_value then
-        args.ref_table = args.scroll_collision_obj.scroll_progress
+        args.ref_table = args.scroll_collision_obj.scroll_offset
         args.ref_value = args.horizontal and "x" or "y"
+        args.max = args.scroll_collision_obj.content.T.h - args.scroll_collision_obj.T.h
+        args.scroll_collision_obj.scroll_args.sync_mode = "offset"
+        args.scroll_collision_obj.scroll_sync_mode = "offset"
     end
     if args.scroll_collision_obj and (not args.scroll_collision_obj.is or not args.scroll_collision_obj:is(SMODS.UIScrollBox)) then
         error("args.scroll_collision_obj is not an UIScrollBox")
@@ -2691,11 +2694,7 @@ function G.FUNCS.scrollbar(e)
         percent = math.max(0, math.min(1, percent))
         ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
 	elseif scrollbox and scrollbox:collides_with_point(G.CURSOR.T) or scrollbar_track:collides_with_point(G.CURSOR.T) then
-		local scroll_velocity = SMODS.wheel_velocity.y
-		if scrollbox then
-			local dir = e.config.scroll_dir == "v" and "h" or "w"
-			scroll_velocity = scroll_velocity * (e.config.scroll_mult or 1) / (scrollbox.T[dir] * (G.ROOM.T.h / scrollbar_track.T.h))
-		end
+		local scroll_velocity = SMODS.wheel_velocity.y / G.TILESIZE
         percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
 		percent = math.max(0, math.min(1, percent))
 		ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
@@ -2923,6 +2922,7 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
 				r = 0.1,
 			},
         },
+        sync_mode = "offset",
 	})
     if args.max_menu_h then
         local total_h = scrollbox.content.UIRoot.T.h
@@ -2942,10 +2942,8 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
         if not found then
             final_h = 0
         end
-        local temp = total_h - args.max_menu_h
-        local prog = (final_h - args.max_menu_h / 2) / temp
-        prog = math.max(math.min(prog, 1), 0)
-        scrollbox.scroll_progress.y = prog
+        scrollbox.scroll_offset.y = final_h - (args.max_menu_h / 2)
+        scrollbox.scroll_offset.y = math.min(math.max(scrollbox.scroll_offset.y, 0), total_h - args.max_menu_h)
     end
     return {
         n = G.UIT.ROOT,
