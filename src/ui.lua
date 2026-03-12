@@ -2839,13 +2839,13 @@ end
 
 function G.FUNCS.dropdown_select(e)
     local args = e.config.args_table
-    if args.callback then
-        G.FUNCS[args.callback](e)
-    end
     if e.config.value == args.ref_table[args.ref_value] and not args.no_unselect then
         args.ref_table[args.ref_value] = args.default
     else
         args.ref_table[args.ref_value] = e.config.value
+    end
+    if args.callback then
+        G.FUNCS[args.callback](e)
     end
 end
 
