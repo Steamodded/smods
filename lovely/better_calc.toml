@@ -619,6 +619,16 @@ for _, _area in ipairs(SMODS.get_card_areas('individual')) do
         table.insert(effects, _eval)
         _eval.individual.juice_card = _area.scored_card
         for _, v in ipairs(post) do effects[#effects + 1] = v end
+        if _eval.retriggers then
+            for rt = 1, #_eval.retriggers do
+                local rt_eval, rt_post = SMODS.eval_individual(_area, {full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, main_scoring = true, retrigger_joker = true})
+                if next(rt_eval) then
+                    table.insert(effects, {_eval.retriggers[rt]})
+                    table.insert(effects, rt_eval)
+                    for _, v in ipairs(rt_post) do effects[#effects+1] = v end
+                end
+            end
+        end
     end
 
     SMODS.trigger_effects(effects, _area.scored_card)

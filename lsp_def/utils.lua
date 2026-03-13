@@ -706,9 +706,7 @@ function SMODS.is_eternal(card, trigger) end
 
 ---@param card Card|table
 ---@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: '+'|'X'|'-'|string|fun(ref_table: table, ref_value: string, initial: number, change: number)?, block_overrides: {value: boolean?, scalar: boolean?, message: boolean?}?, scaling_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
----@return table? results
 --- Tells Jokers that this card is scaling allowing for scaling detection
---- Can return scaling_value and scalar_value in results to change the scaling cards values
 --- Args must contain `ref_table`, `ref_value`, and `scalar_value`. It may optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
 function SMODS.scale_card(card, args) end
 
@@ -763,6 +761,7 @@ function SMODS.get_atlas(atlas_key) end
 function SMODS.get_atlas_sprite_class(atlas_key) end
 
 ---@param ... any The same parameters as Sprite() takes individually. The atlas may be an atlas_key instead.
+---@return Sprite|AnimatedSprite|table
 --- This function creates a Sprite or AnimatedSprite depending on the atlas passed
 function SMODS.create_sprite(X, Y, W, H, atlas, pos) end
 
