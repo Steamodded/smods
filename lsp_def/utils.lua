@@ -797,3 +797,12 @@ function SMODS.get_card_type_text_colour(type, center, card) end
 ---@param key string
 ---@return table?
 function SMODS.get_badge_text_colour(key) end
+
+---Check if `challenge` is unlocked.
+---@param mod_score Score_Mod_Parameter Score modification parameter
+function SMODS.mod_score(mod_score) end
+
+---@class Score_Mod_Parameter
+---@field add? number Add score by this number
+---@field mult? number Multiply score by this number
+---@field card? Card Card responsible for score modification action, crucial for score display to work properly
