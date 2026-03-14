@@ -6,7 +6,7 @@
 ---@field px? string|number Width of individual sprites using this atlas. 
 ---@field py? string|number Height of individual sprite using this atlas. 
 ---@field path? string Name of the image file, including extension. 
----@field atlas_table? "ASSET_ATLAS"|"ANIMATION_ATLAS"|"ASSET_IMAGES"|string Type of atlas. `ASSET_ATLAS`: non-animated sprites, `ANIMATION_ATLAS`: animated sprites, `ASSET_IMAGES`: anything else. 
+---@field atlas_table? "ASSET_ATLAS"|"ANIMATION_ATLAS"|"ASSET_IMAGES"|string Type of atlas. `ASSET_ATLAS`: non-animated sprites, `ANIMATION_ATLAS`: animated sprites, `ASSET_IMAGES`: anything other image, e.g. logos. 
 ---@field frames? number Number of frames in the animation. 
 ---@field raw_key? boolean Sets whether the mod prefix is added to atlas key. Used for overriding vanilla sprites. 
 ---@field language? string Key to a language. Restricts the atlas to only when this language is enabled. 
