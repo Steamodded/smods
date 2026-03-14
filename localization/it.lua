@@ -171,6 +171,11 @@ return {
 					'Riempie {C:dark_edition}#1#{} slot'
 				},
 			},
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{} fiche'
+                },
+            },
 		},
 		Edition = {
 			e_negative_playing_card = {

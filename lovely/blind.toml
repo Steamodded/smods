@@ -47,7 +47,9 @@ position = 'before'
 match_indent = true
 payload = '''
 local obj = self.config.blind
-self.children.animatedSprite.atlas = G.ANIMATION_ATLAS[obj.atlas] or G.ANIMATION_ATLAS['blind_chips']'''
+self.children.animatedSprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, obj.atlas or 'blind_chips', obj.pos or G.P_BLINDS.bl_small.pos)
+self.children.animatedSprite.states = self.states
+'''
 
 [[patches]]
 [patches.pattern]
@@ -147,7 +149,8 @@ target = 'cardarea.lua'
 pattern = "local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(self, card)"
 position = 'at'
 match_indent = true
-payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(self, card, area)'''
+payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(self, card, area)
+if SMODS.to_area then to = SMODS.to_area; SMODS.to_area = nil end'''
 
 [[patches]]
 [patches.pattern]
@@ -155,7 +158,9 @@ target = 'functions/common_events.lua'
 pattern = "local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(to, card)"
 position = 'at'
 match_indent = true
-payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(to, card, from)'''
+payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(to, card, from)
+if SMODS.to_area then to = SMODS.to_area; SMODS.to_area = nil end
+'''
 
 # Blind:drawn_to_hand()
 [[patches]]
@@ -253,6 +258,9 @@ if obj.loc_vars and type(obj.loc_vars) == 'function' then
     local res = obj:loc_vars() or {}
     target.vars = res.vars or target.vars
     target.key = res.key or target.key
+    target.set = res.set or target.set
+    target.scale = res.scale
+    target.text_colour = res.text_colour
 end
 local loc_target = localize(target)'''
 
@@ -265,9 +273,8 @@ position = 'after'
 match_indent = true
 payload = '''
 if self.config.blind.atlas then
-    self.children.animatedSprite.atlas = G.ANIMATION_ATLAS[self.config.blind.atlas]
+    self.children.animatedSprite.atlas = SMODS.get_atlas(self.config.blind.atlas)
 end'''
-
 
 # create_UIBox_blind_choice()
 # create_UIBox_round_scores_row()
@@ -277,7 +284,7 @@ target = 'functions/UI_definitions.lua'
 pattern = "(?<indent>[\t ]*)blind_choice.animation = AnimatedSprite\\(0,0, 1.4, 1.4, (?<atlas>G.ANIMATION_ATLAS\\['blind_chips'\\]),  blind_choice.config.pos\\)"
 position = 'at'
 root_capture = 'atlas'
-payload = "G.ANIMATION_ATLAS[blind_choice.config.atlas] or G.ANIMATION_ATLAS['blind_chips']"
+payload = "SMODS.get_atlas(blind_choice.config.atlas) or G.ANIMATION_ATLAS['blind_chips']"
 
 # create_UIBox_your_collection_blinds()
 [[patches]]
@@ -370,14 +377,34 @@ if obj.loc_vars and _G['type'](obj.loc_vars) == 'function' then
     local res = obj:loc_vars() or {}
     target.vars = res.vars or target.vars
     target.key = res.key or target.key
+    target.set = res.set or target.set
+    target.scale = res.scale
+    target.text_colour = res.text_colour
 end
-local loc_target = localize(target)'''
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+local loc_name = localize{type = 'name_text', key = blind_choice.config.key, set = 'Blind'}
+local text_table = loc_target
+'''
+match_indent = true
+position = 'at'
+payload = '''
+local loc_name = localize{type = 'name_text', key = target.key or blind_choice.config.key, set = target.set or 'Blind'}
+local text_table = G.localization.descriptions[target.set][target.key].text_parsed
+'''
 
 # create_UIBox_blind_popup()
 [[patches]]
 [patches.pattern]
 target = 'functions/UI_definitions.lua'
-pattern = '''local loc_target = localize{type = 'raw_descriptions', key = blind.key, set = 'Blind', vars = vars or blind.vars}'''
+pattern = '''
+local loc_target = localize{type = 'raw_descriptions', key = blind.key, set = 'Blind', vars = vars or blind.vars}
+local loc_name = localize{type = 'name_text', key = blind.key, set = 'Blind'}
+'''
 match_indent = true
 position = 'at'
 payload = '''
@@ -386,8 +413,54 @@ if blind.collection_loc_vars and type(blind.collection_loc_vars) == 'function' t
     local res = blind:collection_loc_vars() or {}
     target.vars = res.vars or target.vars
     target.key = res.key or target.key
+    target.set = res.set or target.set
+    target.scale = res.scale
+    target.text_colour = res.text_colour
 end
-local loc_target = localize(target)'''
+local loc_target = G.localization.descriptions[target.set][target.key].text_parsed
+local loc_name = localize{type = 'name_text', key = target.key or blind.key, set = target.set or 'Blind'}'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+ability_text[#ability_text + 1] = {n=G.UIT.R, config={align = "cm"}, nodes={{n=G.UIT.T, config={text = (k ==1 and blind.name == 'The Wheel' and '1' or '')..v, scale = 0.35, shadow = true, colour = G.C.WHITE}}}}
+'''
+match_indent = true
+position = 'at'
+payload = '''
+ability_text[#ability_text + 1] = {n=G.UIT.R, config={align = "cm"}, nodes=SMODS.localize_box(v, {default_col = target.text_colour or G.C.WHITE, shadow = true, vars = target.vars, scale = target.scale})}
+'''
+
+# create_UIBox_round_scores_row()
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+local blind_choice = {config = G.GAME.blind.config.blind or G.P_BLINDS.bl_small}
+'''
+match_indent = true
+position = 'after'
+payload = '''
+local target = {type = 'name_text', key = blind_choice.config.key, set = 'Blind'}
+if blind_choice.config.loc_vars and type(blind_choice.config.loc_vars) == 'function' then
+    local res = blind_choice.config:loc_vars() or {}
+    target.key = res.key or target.key
+    target.set = res.set or target.set
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+{n=G.UIT.O, config={object = DynaText({string = localize{type ='name_text', key = blind_choice.config.key, set = 'Blind'}, colours = {G.C.WHITE},shadow = true, float = true,maxw = 2.2, scale = 0.45})}}
+'''
+match_indent = true
+position = 'at'
+payload = '''
+{n=G.UIT.O, config={object = DynaText({string = localize(target), colours = {G.C.WHITE},shadow = true, float = true,maxw = 2.2, scale = 0.45})}}
+'''
 
 # get_new_boss()
 [[patches]]

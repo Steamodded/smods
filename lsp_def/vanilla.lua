@@ -245,8 +245,8 @@ function get_straight(hand, min_length, skip, wrap) end
 function tally_sprite(pos, value, tooltip, suit) end
 
 ---@param _t table
----@param seed string
----@param args table|{starting_deck?: boolean, in_pool?: fun(v: any, args: table)}
+---@param seed string|number
+---@param args? table|{starting_deck?: boolean, in_pool?: fun(v: any, args: table):boolean}
 ---@return any
 ---@return string|number key
 --- Sets the seed to `seed` and randomly selects an element within `_t`.

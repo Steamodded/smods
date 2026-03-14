@@ -350,3 +350,18 @@ match_indent = true
 position = 'after'
 pattern = '''if self.shop_voucher then G.GAME.current_round.voucher = nil end'''
 payload = '''G.STATE = G.STATES.SMODS_REDEEM_VOUCHER'''
+
+# G.FUNCS.use_card()
+# Consumables in areas other than the consumable don't count 
+# as picking an item in boosters when used
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if area == G.consumeables then
+'''
+payload = '''
+if area ~= G.pack_cards then
+'''

@@ -51,8 +51,9 @@ match_indent = true
 target = 'functions/UI_definitions.lua'
 pattern = '''ui_letters[#ui_letters+1] = {n=G.UIT.B, config={r = 0.03,w=0.1, h=0.4, colour = position_text_colour, id = 'position', func = 'flash'}}'''
 position = 'at'
-payload = '''ui_letters[#ui_letters+1] = {n=G.UIT.B, config={r = 0.03,w=0.1, h=0.4, colour = position_text_colour, id = args.id..'_position', func = 'flash'}}'''
+payload = '''ui_letters[#ui_letters+1] = {n=G.UIT.B, config={r = 0.03,w=0, h=0.4, colour = position_text_colour, id = args.id..'_position', func = 'flash'}}'''
 match_indent = true
+
 [[patches]]
 [patches.pattern]
 target = 'functions/UI_definitions.lua'

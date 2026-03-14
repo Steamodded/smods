@@ -170,7 +170,12 @@ return {
                 text = {
                     '填充{C:dark_edition}#1#{}个槽位'
                 }
-            }
+            },
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{}筹码'
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {

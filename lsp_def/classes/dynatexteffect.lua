@@ -17,10 +17,10 @@
 ---@field inject? fun(self: SMODS.DynaTextEffect|table, i?: number) Called during `inject_class`. Injects the object into the game. 
 ---@field take_ownership? fun(self: SMODS.DynaTextEffect|table, key: string, obj: SMODS.DynaTextEffect|table, silent?: boolean): nil|table|SMODS.DynaTextEffect Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.DynaTextEffect|table, key: string): SMODS.DynaTextEffect|table? Returns an object if one matches the `key`.  
----@field func fun(dynatext: DynaText, index: number, letter: DynaTextLetter|table) function to modify each letter. DynaText being the main object itself. Index is the index of current letter in the dynatext
----@field draw_letter fun(dynatext: DynaText, index: number, letter: DynaTextLetter|table) function to draw each letter. DynaText being the main object itself. Index is the index of current letter in the dynatext
----@field draw_shadow fun(dynatext: DynaText, index: number, letter: DynaTextLetter|table) function to draw each letter's shadow. DynaText being the main object itself. Index is the index of current letter in the dynatext
----@field draw_override fun(dynatext: DynaText) wholly overrides the draw function for the dynatext. you will have to align everything yourselves (advanced)
+---@field func? fun(dynatext: DynaText, index: number, letter: DynaTextLetter|table) function to modify each letter. DynaText being the main object itself. Index is the index of current letter in the dynatext
+---@field draw_letter? fun(dynatext: DynaText, index: number, letter: DynaTextLetter|table) function to draw each letter. DynaText being the main object itself. Index is the index of current letter in the dynatext
+---@field draw_shadow? fun(dynatext: DynaText, index: number, letter: DynaTextLetter|table) function to draw each letter's shadow. DynaText being the main object itself. Index is the index of current letter in the dynatext
+---@field draw_override? fun(dynatext: DynaText) wholly overrides the draw function for the dynatext. you will have to align everything yourselves (advanced)
 ---@overload fun(self: SMODS.DynaTextEffect): SMODS.DynaTextEffect
 SMODS.DynaTextEffect = setmetatable({}, {
     __call = function(self)

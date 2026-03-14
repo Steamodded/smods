@@ -1,0 +1,97 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+
+### Sprite/AnimatedSprite or G.ASSET_ATLAS/ANIMATION_ATLAS -> SMODS.create_sprite() 
+
+# Game:set_render_settings()
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+        self.ANIMATION_ATLAS[self.animation_atli[i].name].frames = self.animation_atli[i].frames
+'''
+position = 'after'
+payload = '''
+self.ANIMATION_ATLAS[self.animation_atli[i].name].atlas_table = "ANIMATION_ATLAS"
+'''
+match_indent = true
+
+# Add custom FPS support
+[[patches]]
+[patches.pattern]
+target = 'engine/animatedsprite.lua'
+match_indent = true
+position = 'at'
+pattern = '''local new_frame = math.floor(G.ANIMATION_FPS*(G.TIMERS.REAL - self.offset_seconds))%self.current_animation.frames'''
+payload = '''local new_frame = math.floor(self.current_animation.FPS*(G.TIMERS.REAL - self.offset_seconds))%self.current_animation.frames'''
+[[patches]]
+[patches.pattern]
+target = 'engine/animatedsprite.lua'
+match_indent = true
+position = 'after'
+pattern = '''frames = self.animation.frames,'''
+payload = '''FPS = self.atlas.fps or G.ANIMATION_FPS,'''
+
+
+
+
+# Case: ..ATLAS[]
+# Blind:init()
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+pattern = '''
+    self.children.animatedSprite = AnimatedSprite(self.T.x, self.T.y, self.T.w, self.T.h, G.ANIMATION_ATLAS['blind_chips'], G.P_BLINDS.bl_small.pos)
+'''
+position = 'at'
+payload = '''
+self.children.animatedSprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, 'blind_chips', G.P_BLINDS.bl_small.pos)
+'''
+match_indent = true
+# Tag:generate_UI()
+[[patches]]
+[patches.pattern]
+target = 'tag.lua' 
+pattern = '''
+    local tag_sprite = Sprite(0,0,_size*1,_size*1,G.ASSET_ATLAS[(not self.hide_ability) and G.P_TAGS[self.key].atlas or "tags"], (self.hide_ability) and G.tag_undiscovered.pos or self.pos)
+'''
+position = 'at'
+payload = '''
+local tag_sprite = SMODS.create_sprite(0, 0, _size*1, _size*1, SMODS.get_atlas((not self.hide_ability) and G.P_TAGS[self.key].atlas or "tags"), (self.hide_ability) and G.tag_undiscovered.pos or self.pos)
+'''
+match_indent = true
+# functions/common_events.lua
+[[patches]] 
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''
+                    local blind_sprite = AnimatedSprite(0, 0, 1.2, 1.2, G.ANIMATION_ATLAS[obj.atlas] or G.ANIMATION_ATLAS['blind_chips'], copy_table(G.GAME.blind.pos))
+'''
+position = 'at'
+payload = '''
+local blind_sprite = SMODS.create_sprite(0, 0, 1.2, 1.2, obj.atlas or 'blind_chips', copy_table(G.GAME.blind.pos))
+'''
+match_indent = true
+[[patches]] 
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''
+                    local blind_sprite = Sprite(0, 0, 0.7,0.7, G.ASSET_ATLAS['tags'], copy_table(config.pos))
+'''
+position = 'at'
+payload = '''
+local blind_sprite = SMODS.create_sprite(0, 0, 0.7,0.7, 'tags', copy_table(config.pos))
+'''
+match_indent = true
+# functions/UI_definitions.lua 
+[[patches]]
+[patches.regex]
+target = 'functions/UI_definitions.lua'
+pattern = '(?<start>[\t ].*)(?:Animated)Sprite\((?<pre>.*)G\.(?:ASSET|ANIMATION)_ATLAS\[(?<key>.*)\],(?<rest>.*)'
+position = 'at'
+payload = '''
+$start SMODS.create_sprite($pre $key, $rest 
+'''

@@ -1,6 +1,201 @@
 SMODS.GUI = {}
 SMODS.GUI.DynamicUIManager = {}
 
+-- used to properly truncate overflow content inside another overflow content
+SMODS.stencil_stack = {}
+
+function SMODS.push_to_stencil_stack(stencil_fn)
+    assert(type(stencil_fn) == "function", "No stencil function passed to SMODS.push_to_stencil_stack")
+    local old_level = #SMODS.stencil_stack
+	local new_level = old_level + 1
+
+    love.graphics.setStencilTest("equal", old_level)
+	love.graphics.stencil(function()
+		stencil_fn(false)
+	end, "increment", 1, true)
+	love.graphics.setStencilTest("equal", new_level)
+
+	SMODS.stencil_stack[new_level] = stencil_fn
+end
+function SMODS.pop_from_stencil_stack()
+    local old_level = #SMODS.stencil_stack
+	local new_level = old_level - 1
+
+    local stencil_fn = SMODS.stencil_stack[old_level]
+	if not stencil_fn then
+		return
+	end
+
+    love.graphics.setStencilTest("equal", old_level)
+	love.graphics.stencil(function()
+		stencil_fn(true)
+	end, "decrement", 1, true)
+	love.graphics.setStencilTest("equal", new_level)
+
+	SMODS.stencil_stack[old_level] = nil
+end
+function SMODS.reset_stencil_stack()
+    EMPTY(SMODS.stencil_stack)
+    love.graphics.setStencilTest()
+    love.graphics.stencil(function() end)
+end
+function SMODS.reload_stencil_stack()
+    local stack_snapshot = SMODS.shallow_copy(SMODS.stencil_stack)
+    SMODS.reset_stencil_stack()
+    for _, stencil_fn in ipairs(stack_snapshot) do
+        SMODS.push_to_stencil_stack(stencil_fn)
+    end
+end
+
+local gameDrawRef = Game.draw
+function Game:draw(...)
+    SMODS.reset_stencil_stack()
+    gameDrawRef(self, ...)
+end
+
+--
+
+local uieDrawChildrenRef = UIElement.draw_children
+function UIElement:draw_children(...)
+	local stenciled = false
+	if self.states.visible and self.config and self.config.no_overflow then
+        -- draw stencil for overflow container
+		stenciled = true
+		SMODS.push_to_stencil_stack(function(exit)
+			prep_draw(self, 1)
+			love.graphics.scale(1 / G.TILESIZE)
+			love.graphics.setColor(0, 0, 0, 1)
+
+			if self.config.r and self.VT.w > 0.01 then
+				self:draw_pixellated_rect("fill", 0)
+			else
+				love.graphics.rectangle("fill", 0, 0, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE)
+			end
+
+			love.graphics.pop()
+		end)
+	end
+	uieDrawChildrenRef(self, ...)
+    -- cancel stencil for overflow container
+	if stenciled then SMODS.pop_from_stencil_stack() end
+end
+
+
+-- collision check
+function Node:inside_overflow_boundaries(point)
+    -- Use cached value if present for current point
+	if self.overflow_check_timer == G.TIMERS.REAL and self.overflow_check_point == point then
+		return self.overflow_check_result or false
+	end
+	self.overflow_check_timer = G.TIMERS.REAL
+    self.overflow_check_point = point
+    local r = true
+
+    -- No parent = no overflow can be done so collide as usual
+    if not self.parent then r = true
+    -- If parent has overflow then we should check do we collide with it and if not, all children in it cannot be collided too
+    elseif self.parent.config and self.parent.config.no_overflow and not Node.collides_with_point(self.parent, point) then r = false
+    -- Otherwise process all parents looking for first non-collideable overflow
+    else r = Node.inside_overflow_boundaries(self.parent, point) end
+
+    self.overflow_check_result = r
+    return r
+end
+
+--
+
+SMODS.UIScrollBox = UIBox:extend()
+function SMODS.UIScrollBox:init(args)
+    args = SMODS.merge_defaults(args, { content = {}, container = {}, overflow = {}, sync_mode = "progress" })
+    args.progress = SMODS.merge_defaults(args.progress, { x = 0, y = 0 })
+    args.offset = SMODS.merge_defaults(args.offset, { x = 0, y = 0 })
+
+	self.scroll_args = args
+	self.scroll_progress = args.progress
+	self.scroll_offset = args.offset
+	self.scroll_sync_mode = args.sync_mode
+
+	if args.content and args.content.is and args.content:is(Object) then
+		self.content = args.content
+	else
+		self.content = UIBox(args.content)
+	end
+
+    args.container.config = SMODS.merge_defaults(args.container.config, { align = "cm", offset = { x = 0, y = 0 } })
+    args.container.node_config = SMODS.merge_defaults(args.container.node_config, { colour = G.C.CLEAR })
+	args.container.definition = {
+		n = G.UIT.ROOT,
+		config = args.container.node_config,
+		nodes = {
+			{
+				n = G.UIT.O,
+				config = {
+					object = self.content,
+				},
+			},
+		},
+	}
+	self.content_container = UIBox(args.container)
+
+    args.overflow.config = SMODS.merge_defaults(args.overflow.config, {})
+    args.overflow.node_config = SMODS.merge_defaults(args.overflow.node_config, { colour = G.C.CLEAR, no_overflow = true })
+	args.overflow.definition = {
+		n = G.UIT.ROOT,
+		config = args.overflow.node_config,
+		nodes = {
+			{
+				n = G.UIT.O,
+				config = {
+					object = self.content_container,
+				},
+			},
+		},
+	}
+
+	UIBox.init(self, args.overflow)
+
+	self:sync_scroll(0, true)
+end
+function SMODS.UIScrollBox:get_scroll_distance()
+	return math.max(0, self.content_container.T.w - self.T.w), math.max(0, self.content_container.T.h - self.T.h)
+end
+function SMODS.UIScrollBox:sync_scroll_offset()
+	local dx, dy = self:get_scroll_distance()
+	self.scroll_offset.x = dx * (self.scroll_progress.x or 0)
+	self.scroll_offset.y = dy * (self.scroll_progress.y or 0)
+end
+function SMODS.UIScrollBox:sync_scroll_progress()
+	local dx, dy = self:get_scroll_distance()
+	self.scroll_progress.x = (dx == 0 and 0) or ((self.scroll_offset.x or 0) / dx)
+	self.scroll_progress.y = (dy == 0 and 0) or ((self.scroll_offset.y or 0) / dy)
+end
+function SMODS.UIScrollBox:set_scroll_offset(t)
+	self.scroll_offset = SMODS.merge_defaults(t, { x = 0, y = 0 })
+	self:sync_scroll_progress()
+end
+function SMODS.UIScrollBox:set_scroll_progress(t)
+	self.scroll_progress = SMODS.merge_defaults(t, { x = 0, y = 0 })
+	self:sync_scroll_offset()
+end
+function SMODS.UIScrollBox:sync_scroll(dt, init)
+	if self.scroll_sync_mode == "progress" then
+        self:sync_scroll_offset()
+	elseif self.scroll_sync_mode == "offset" then
+		self:sync_scroll_progress()
+	end
+	self.content_container.config.offset.x = -(self.scroll_offset.x or 0)
+	self.content_container.config.offset.y = -(self.scroll_offset.y or 0)
+end
+function SMODS.UIScrollBox:update(dt)
+	if self.scroll_args.scroll_move then
+		self.scroll_args.scroll_move(self, dt)
+	end
+	self:sync_scroll(dt)
+	UIBox.update(self, dt)
+end
+
+--
+
 function STR_UNPACK(str)
     local chunk, err = loadstring(str)
     if chunk then
@@ -31,10 +226,10 @@ SMODS.trim_string = function (s)
     end
     return string.sub(s,l,r)
 end
-SMODS.smart_line_splitter = function(phrase, length, always_new_line) 
-    local words = {} 
+SMODS.smart_line_splitter = function(phrase, length, always_new_line)
+    local words = {}
     local current_line = ""
-    for word in phrase:gmatch("%S+") do 
+    for word in phrase:gmatch("%S+") do
         -- concat string if it is not at the limit
         if string.len(current_line .. word) <= length then
             current_line = current_line .. word .. " "
@@ -45,7 +240,7 @@ SMODS.smart_line_splitter = function(phrase, length, always_new_line)
                 SMODS.trim_string(current_line)
                 table.insert(words,current_line)
                 current_line = word .. " "
-                
+
             else
                 current_line = current_line .. word
                 table.insert(words,current_line)
@@ -93,13 +288,79 @@ function Game:main_menu(change_context)
             major = G.ROOM_ATTACH
         }
     })
+
+    math.randomseed(os.time()) -- for creating a random card from a set
+    local funcs = {}
+    local remove_original = false
+    for i, v in pairs(SMODS.Mods) do
+        if not v.disabled and v.menu_cards then
+            local tbl = v.menu_cards() or {}
+            if tbl.func then funcs[#funcs + 1] = tbl.func end
+            if tbl.remove_original then remove_original = true end
+            if tbl.set or tbl.key then tbl = { tbl } end
+            if not tbl[1] and not tbl.func then
+                print(("Invalid return for %s.menu_cards(), ignoring"):format(i)); tbl = {}
+            end
+            
+            for _, w in ipairs(tbl) do
+                w.area = G.title_top
+                w.bypass_discovery_center = true
+                w.skip_materialize = true
+                if not w.edition then w.no_edition = true end
+                
+                if w.set then
+                    w.key = pseudorandom_element(G.P_CENTER_POOLS[w.set]).key
+                    w.set = nil
+                end
+                local card = SMODS.create_card(w)
+                card.mod_flag = i
+                -- the magic incantation
+                G.title_top.T.w = G.title_top.T.w + (1.7675 / math.max(#G.title_top.cards, 1))
+                G.title_top.T.x = G.title_top.T.x - (0.885 / math.max(#G.title_top.cards, 1)) -- everyone who used -0.8 was WRONG
+                card.T.w = card.T.w * 1.1 * 1.2
+                card.T.h = card.T.h * 1.1 * 1.2
+                -- card:hard_set_T(card.VT.x, card.VT.y, card.T.w * 1.32, card.T.h * 1.32)
+                remove_all(card.children)
+                card:set_sprites(card.config.center, card.base.id and card.config.card)
+                
+                G.title_top:emplace(card)
+                card.no_ui = true
+                card.states.visible = false
+                
+                G.E_MANAGER:add_event(Event({
+                    trigger = "after",
+                    delay = change_context == 'game' and 1.5 or 0,
+                    blockable = false,
+                    blocking = false,
+                    func = function()
+                        card.states.visible = true
+                        if change_context == "splash" then
+                            card:start_materialize({ G.C.WHITE, G.C.WHITE }, true, 2.5)
+                        else
+                            card:start_materialize({ G.C.WHITE, G.C.WHITE }, nil, 1.2)
+                        end
+                        return true
+                    end
+                }))
+            end
+
+        end
+    end
+    if remove_original then
+        if not G.title_top.cards[1].mod_flag then 
+            G.title_top.cards[1]:remove()
+            G.title_top.T.w = G.title_top.T.w - (1.7675 / math.max(#G.title_top.cards, 1))
+            G.title_top.T.x = G.title_top.T.x + (0.885 / math.max(#G.title_top.cards, 1))
+        end
+    end
+    for i, v in ipairs(funcs) do v() end
 end
 
 local gameUpdateRef = Game.update
 function Game:update(dt)
     if G.STATE ~= G.STATES.SPLASH and G.MAIN_MENU_UI then
         local node = G.MAIN_MENU_UI:get_UIE_by_ID("main_menu_play")
-
+        
         if node and not node.children.alert then
             node.children.alert = UIBox({
                 definition = create_UIBox_card_alert({
@@ -160,7 +421,7 @@ function create_UIBox_mods(args)
     local additions_tab = buildAdditionsTab(mod)
     if additions_tab then table.insert(mod_tabs, additions_tab) end
     local credits_func = mod.credits_tab
-    if credits_func and type(credits_func) == 'function' then 
+    if credits_func and type(credits_func) == 'function' then
         table.insert(mod_tabs, {
             label = localize("b_credits"),
             chosen = SMODS.LAST_SELECTED_MOD_TAB == "credits" or false,
@@ -171,7 +432,7 @@ function create_UIBox_mods(args)
         })
     end
     local config_func = mod.config_tab
-    if config_func and type(config_func) == 'function' then 
+    if config_func and type(config_func) == 'function' then
         table.insert(mod_tabs, {
             label = localize("b_config"),
             chosen = SMODS.LAST_SELECTED_MOD_TAB == "config" or false,
@@ -186,7 +447,7 @@ function create_UIBox_mods(args)
     for _, v in pairs(SMODS.Achievements) do
         if v.mod.id == mod.id then mod_has_achievement = true end
     end
-    if mod_has_achievement then table.insert(mod_tabs, 
+    if mod_has_achievement then table.insert(mod_tabs,
         {
             label = localize("b_achievements"),
             chosen = SMODS.LAST_SELECTED_MOD_TAB == "achievements" or false,
@@ -340,17 +601,17 @@ function buildModDescTab(mod)
                     n = G.UIT.R, config = { align = "cm", r = 0.1, minw = 6, minh = 0.6, colour = G.SETTINGS.reduced_motion and G.C.RED or SMODS.Gradients.warning_bg, padding = 0.1 }, nodes={
                         {
                             n = G.UIT.C, config = { align = 'cm' }, nodes = {
-                                { n = G.UIT.O, config = { object = Sprite(0, 0, 0.8, 0.8, G.ASSET_ATLAS['mod_tags'], { x = 0, y = 0 }) } },
+                                { n = G.UIT.O, config = { object = SMODS.create_sprite(0, 0, 0.8, 0.8, 'mod_tags', { x = 0, y = 0 }) } },
                             }
-                        }, 
-                        { 
+                        },
+                        {
                             n = G.UIT.C, config = { align = 'cm' }, nodes = text_nodes
                         },
                         {
                             n = G.UIT.C, config = { align = 'cm' }, nodes = {
-                                { n = G.UIT.O, config = { object = Sprite(0, 0, 0.8, 0.8, G.ASSET_ATLAS['mod_tags'], { x = 0, y = 0 }) } },
+                                { n = G.UIT.O, config = { object = SMODS.create_sprite(0, 0, 0.8, 0.8, 'mod_tags', { x = 0, y = 0 }) } },
                             }
-                        }, 
+                        },
                     }
                 })
             end
@@ -459,7 +720,7 @@ end
 local set_alerts_ref = set_alerts
 function set_alerts()
     if G.ACTIVE_MOD_UI then
-    else 
+    else
         set_alerts_ref()
     end
 end
@@ -480,7 +741,11 @@ function create_UIBox_Other_GameObjects()
         {
             count = G.ACTIVE_MOD_UI and modsCollectionTally(SMODS.Stickers), --Returns nil outside of G.ACTIVE_MOD_UI but we don't use it anyways
             button = UIBox_button({button = 'your_collection_stickers', label = {localize('b_stickers')}, count = G.ACTIVE_MOD_UI and modsCollectionTally(SMODS.Stickers), minw = 5, id = 'your_collection_stickers'})
-        }
+        },
+        {
+            count = G.ACTIVE_MOD_UI and modsCollectionTally(SMODS.PokerHands, nil, true),
+            button = UIBox_button({button = 'your_collection_poker_hands', label = {localize('b_poker_hands')}, count = G.ACTIVE_MOD_UI and modsCollectionTally(SMODS.PokerHands, nil, true), minw = 5, id = 'your_collection_poker_hands'})
+        },
     }
 
     if G.ACTIVE_MOD_UI then
@@ -525,7 +790,7 @@ function create_UIBox_Other_GameObjects()
         local t = {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, padding = 0.1, emboss = 0.05, minw = 7}, nodes={
             {n=G.UIT.R, config={align = "cm", padding = 0.15}, nodes = custom_gameobject_rows}
         }}
-    
+
         return create_UIBox_generic_options({
             colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
             (G.ACTIVE_MOD_UI.ui_config or {}).colour),
@@ -575,9 +840,9 @@ G.FUNCS.your_collection_consumables_page = function(args)
     if not args or not args.cycle_config then return end
   if G.OVERLAY_MENU then
     local uie = G.OVERLAY_MENU:get_UIE_by_ID('consumable_collection')
-    if uie then 
-      if uie.config.object then 
-        uie.config.object:remove() 
+    if uie then
+      if uie.config.object then
+        uie.config.object:remove()
       end
       uie.config.object = UIBox{
         definition =  G.UIDEF.consumable_collection_page(args.cycle_config.current_option),
@@ -621,13 +886,13 @@ G.UIDEF.consumable_collection_page = function(page)
             if not key then
                 if i == _start then break end
                 t[#t+1] = { n = G.UIT.R, config = { align ='cm', minh = 0.81 }, nodes = {}}
-            else 
+            else
                 local id = 'your_collection_'..key:lower()..'s'
                 t[#t+1] = UIBox_button({button = id, label = {localize('b_'..key:lower()..'_cards')}, count = G.ACTIVE_MOD_UI and modsCollectionTally(G.P_CENTER_POOLS[key]) or G.DISCOVER_TALLIES[key:lower()..'s'], minw = 4, id = id, colour = G.C.SECONDARY_SET[key], text_colour = G.C.UI[key]})
             end
         end
         return t
-    end 
+    end
 
     local t = { n = G.UIT.C, config = { align = 'cm' }, nodes = {
         {n=G.UIT.R, config = {align="cm"}, nodes = {
@@ -645,28 +910,32 @@ function buildAchievementsTab(mod, current_page)
     local achievement_matrix = {{},{}}
     local achievements_per_row = 3
     local achievements_pool = {}
-    for k, v in pairs(G.ACHIEVEMENTS) do
-        if v.mod and v.mod.id == mod.id then achievements_pool[#achievements_pool+1] = v end
+    local achievement_original_order = {}
+    for k, v in ipairs(SMODS.Achievement.obj_buffer) do
+        local ach = SMODS.Achievements[v]
+        if ach then
+            if ach.mod and ach.mod.id == mod.id then achievements_pool[#achievements_pool+1] = ach end
+        end
     end
 
     local achievement_tab = {}
-    for k, v in pairs(achievements_pool) do
+    for k, v in ipairs(achievements_pool) do
+        achievement_original_order[v.key] = #achievement_tab
         achievement_tab[#achievement_tab+1] = v
     end
-    
-    table.sort(achievement_tab, function(a, b) return (a.order or 1) < (b.order or 1) end)
-    
+    table.sort(achievement_tab, function(a, b) if a.order and b.order then return (a.order or 1) < (b.order or 1) else return achievement_original_order[a.key] < achievement_original_order[b.key] end end)
+
     local row = 1
     local max_lines = 2
     for i = 1, achievements_per_row*2 do
         local v = achievement_tab[i+((achievements_per_row*2)*(current_page-1))]
         if not v then break end
-        local temp_achievement = Sprite(0,0,1.1,1.1,G.ASSET_ATLAS[v.atlas or "achievements"], v.earned and v.pos or v.hidden_pos)
+        local temp_achievement = SMODS.create_sprite(0, 0, 1.1, 1.1, v.atlas or "achievements", v.earned and v.pos or v.hidden_pos)
         temp_achievement:define_draw_steps({
             {shader = 'dissolve', shadow_height = 0.05},
             {shader = 'dissolve'}
         })
-        if i == 1 then 
+        if i == 1 then
             G.E_MANAGER:add_event(Event({
             trigger = 'immediate',
             func = (function()
@@ -681,14 +950,14 @@ function buildAchievementsTab(mod, current_page)
         temp_achievement.states.collide.can = true
         --temp_achievement.config = {blind = v, force_focus = true}
         temp_achievement.hover = function()
-            if not G.CONTROLLER.dragging.target or G.CONTROLLER.using_touch then 
+            if not G.CONTROLLER.dragging.target or G.CONTROLLER.using_touch then
                 if not temp_achievement.hovering and temp_achievement.states.visible then
                     temp_achievement.hovering = true
                     temp_achievement.hover_tilt = 3
                     temp_achievement:juice_up(0.05, 0.02)
                     play_sound('chips1', math.random()*0.1 + 0.55, 0.12)
                     Node.hover(temp_achievement)
-                    if temp_achievement.children.alert then 
+                    if temp_achievement.children.alert then
                         temp_achievement.children.alert:remove()
                         temp_achievement.children.alert = nil
                         v.alerted = true
@@ -706,7 +975,7 @@ function buildAchievementsTab(mod, current_page)
             local wrappedText = {""}
             local curr_line = 1
             local currentLineLength = 0
-        
+
             for word in text:gmatch("%S+") do
                 if currentLineLength + #word <= maxChars then
                     wrappedText[curr_line] = wrappedText[curr_line] .. word .. ' '
@@ -719,11 +988,11 @@ function buildAchievementsTab(mod, current_page)
                     currentLineLength = #word + 1
                 end
             end
-        
+
             wrappedText[curr_line] = string.sub(wrappedText[curr_line], 0, -2)
             return wrappedText
         end
-    
+
         local loc_target
         if (v.hidden_text and not v.earned) then
             loc_target = (localize(v.key.."_hidden", 'achievement_descriptions') ~= 'ERROR') and localize(v.key.."_hidden", 'achievement_descriptions') or {localize("hidden_achievement", 'achievement_descriptions')}
@@ -735,7 +1004,7 @@ function buildAchievementsTab(mod, current_page)
         else loc_name = localize(v.key, 'achievement_names') end
 
         local ability_text = {}
-        if loc_target then 
+        if loc_target then
             for k, v in ipairs(loc_target) do
                 ability_text[#ability_text + 1] = {n=G.UIT.R, config={align = "cm"}, nodes={{n=G.UIT.T, config={text = v, scale = 0.35, shadow = true, colour = G.C.WHITE}}}}
             end
@@ -763,7 +1032,7 @@ function buildAchievementsTab(mod, current_page)
                 }},
             },
         })
-        if #achievement_matrix[row] == achievements_per_row then 
+        if #achievement_matrix[row] == achievements_per_row then
             row = row + 1
             achievement_matrix[row] = {}
             max_lines = 2
@@ -776,7 +1045,7 @@ function buildAchievementsTab(mod, current_page)
     end
 
     local t = {
-        {n=G.UIT.C, config={}, nodes={ 
+        {n=G.UIT.C, config={}, nodes={
         {n=G.UIT.C, config={align = "cm"}, nodes={
         {n=G.UIT.R, config={align = "cm"}, nodes={
             {n=G.UIT.R, config={align = "cm", padding = 0.1 }, nodes=achievement_matrix[1]},
@@ -813,8 +1082,8 @@ G.FUNCS.achievments_tab_page = function(args)
     tab_contents.UIBox:recalculate()
 end
 
--- TODO: Optimize this. 
-function modsCollectionTally(pool, set)
+-- TODO: Optimize this.
+function modsCollectionTally(pool, set, ignore_discovered)
     local set = set or nil
     local obj_tally = {tally = 0, of = 0}
 
@@ -823,13 +1092,13 @@ function modsCollectionTally(pool, set)
             if set then
                 if v.set and v.set == set then
                     obj_tally.of = obj_tally.of+1
-                    if v.discovered then 
+                    if ignore_discovered or v.discovered then
                         obj_tally.tally = obj_tally.tally+1
                     end
                 end
             else
                 obj_tally.of = obj_tally.of+1
-                if v.discovered then 
+                if ignore_discovered or v.discovered then
                     obj_tally.tally = obj_tally.tally+1
                 end
             end
@@ -894,14 +1163,8 @@ function buildModtag(mod)
     local tag_atlas, tag_pos, tag_message, specific_vars = getModtagInfo(mod)
 
     local tag_sprite_tab = nil
-    local units = 1
-    local animated = G.ANIMATION_ATLAS[tag_atlas] or nil
-    local tag_sprite
-    if animated then
-      tag_sprite = AnimatedSprite(0, 0, 0.8*1, 0.8*1, animated or G.ASSET_ATLAS[tag_atlas] or G.ASSET_ATLAS['tags'], tag_pos)
-    else
-      tag_sprite = Sprite(0, 0, 0.8*1, 0.8*1, G.ASSET_ATLAS[tag_atlas] or G.ASSET_ATLAS['tags'], tag_pos)
-    end
+    local units = 1.1
+    local tag_sprite = SMODS.create_sprite(0, 0, 0.8*1, 0.8*1, SMODS.get_atlas(tag_atlas) or SMODS.get_atlas('tags'), tag_pos)
     tag_sprite.T.scale = 1
     tag_sprite_tab = {n= G.UIT.C, config={align = "cm", padding = 0}, nodes={
         {n=G.UIT.O, config={w=units, h=units, colour = G.C.BLUE, object = tag_sprite, focus_with_object = true}},
@@ -917,7 +1180,7 @@ function buildModtag(mod)
     tag_sprite.states.collide.can = true
 
     tag_sprite.hover = function(_self)
-        if not G.CONTROLLER.dragging.target or G.CONTROLLER.using_touch then 
+        if not G.CONTROLLER.dragging.target or G.CONTROLLER.using_touch then
             if not _self.hovering and _self.states.visible then
                 _self.hovering = true
                 if _self == tag_sprite then
@@ -930,7 +1193,7 @@ function buildModtag(mod)
                 _self.config.h_popup =  G.UIDEF.card_h_popup(_self)
                 _self.config.h_popup_config ={align = 'tm', offset = {x= 0,y=-0.1},parent = _self}
                 Node.hover(_self)
-                if _self.children.alert then 
+                if _self.children.alert then
                     _self.children.alert:remove()
                     _self.children.alert = nil
                     G:save_progress()
@@ -944,6 +1207,12 @@ function buildModtag(mod)
         G.FUNCS["openModUI_" .. mod.id](self)
     end
     tag_sprite.stop_hover = function(_self) _self.hovering = false; Node.stop_hover(_self); _self.hover_tilt = 0 end
+    tag_sprite.update = function (self, dt)
+        if not self.rescaled then
+            if type(self.rescale) == "function" then self:rescale() end
+            self.rescaled = true
+        end
+    end
 
     tag_sprite:juice_up()
 
@@ -951,7 +1220,7 @@ function buildModtag(mod)
 end
 
 local function createTextColNode(text, scale, colour, node)
-    return { n = node or G.UIT.R, config = { padding = 0, align = "lc", maxw = 2.8, maxh = 1.5, }, nodes = { 
+    return { n = node or G.UIT.R, config = { padding = 0, align = "lc", maxw = 2.8, maxh = 1.5, }, nodes = {
                 { n = G.UIT.T, config = { text = text, colour = colour or G.C.UI.TEXT_LIGHT, scale = scale * 0.7 } },
         }
     }
@@ -970,7 +1239,7 @@ local function createClickableModBox(modInfo, scale)
     if SMODS.full_restart == nil then
         SMODS.full_restart = 0
     end
-    
+
     if modInfo.can_load then
         col = mix_colours(G.C.UI.TEXT_DARK, {0.7,0.8,0.9,1}, 0.8)
     elseif modInfo.disabled then
@@ -999,17 +1268,17 @@ local function createClickableModBox(modInfo, scale)
         local is_config_func = type(modInfo.config_tab) == "function"
         table.insert(under_checkbox_nodes, {
             n = G.UIT.R,
-            config = { 
+            config = {
                 page = is_config_func and "config",
-                padding = 0.1, 
-                align = "cm", 
-                colour = is_config_func and G.C.BLUE, 
+                padding = 0.1,
+                align = "cm",
+                colour = is_config_func and G.C.BLUE,
                 button = is_config_func and ("openModUI_" .. modInfo.id), shadow = is_config_func, shadow_height = 0.5, r = 0.1, hover = is_config_func },
             nodes = {
                 {
                     n = G.UIT.O,
                     config = {
-                        object = Sprite(0,0,0.3,0.3, G.ASSET_ATLAS['mod_tags'], {x=2,y=0})
+                        object = SMODS.create_sprite(0, 0, 0.3, 0.3, 'mod_tags', {x=2,y=0})
                     }
                 }
             }
@@ -1037,7 +1306,7 @@ local function createClickableModBox(modInfo, scale)
             marquee = true,
         }
         table.insert(label_nodes,
-            { n = G.UIT.R, config = { padding = 0, align = "lc", maxw = 4.5, maxh = 1.5, }, nodes = { 
+            { n = G.UIT.R, config = { padding = 0, align = "lc", maxw = 4.5, maxh = 1.5, }, nodes = {
                 { n = G.UIT.T, config = {text= localize('b_by'), scale = scale*0.7, colour = the_colour}},
                 {
                     n = G.UIT.O, config = {object = authorDynatext}
@@ -1048,7 +1317,7 @@ local function createClickableModBox(modInfo, scale)
     if not _RELEASE_MODE and modInfo.priority then
         table.insert(label_nodes, createTextColNode(('%s%s'):format(localize('b_priority'), number_format(modInfo.priority)), scale, version_col))
     end
-    
+
     return {
         n = G.UIT.C,
         config = { align = "cm", padding = 0.05 },
@@ -1057,16 +1326,16 @@ local function createClickableModBox(modInfo, scale)
                 nodes = {
                     {
                         n = G.UIT.C,
-                        config = { 
-                            padding = 0.1, 
-                            align = "lc", 
-                            button = "openModUI_" .. modInfo.id, 
-                            minw = 4.25, 
-                            minh = 1.4, 
-                            maxh = 1.4, 
-                            r = 0.1, 
+                        config = {
+                            padding = 0.1,
+                            align = "lc",
+                            button = "openModUI_" .. modInfo.id,
+                            minw = 4.25,
+                            minh = 1.4,
+                            maxh = 1.4,
+                            r = 0.1,
                             colour = col,
-                            shadow = true, 
+                            shadow = true,
                             shadow_height = 0.5,
                             hover = true,
                         },
@@ -1105,9 +1374,17 @@ local function createClickableModBox(modInfo, scale)
                                     callback = (
                                         function(_set_toggle)
                                             if not modInfo.should_enable then
-                                                NFS.write(modInfo.path .. '.lovelyignore', '')
+                                                require"SMODS.preflight.loader".addToBlacklist(modInfo.blacklist_name)
+                                                modInfo.blacklisted = true
                                             else
-                                                NFS.remove(modInfo.path .. '.lovelyignore')
+                                                if modInfo.lovelyIgnored then
+                                                    NFS.remove(SMODS.MODS_DIR.. "/" .. modInfo.blacklist_name ..'/.lovelyignore')
+                                                    modInfo.lovelyIgnored = false
+                                                end
+                                                if modInfo.blacklisted then
+                                                    require"SMODS.preflight.loader".removeFromBlacklist(modInfo.blacklist_name)
+                                                    modInfo.blacklisted = false
+                                                end
                                             end
                                             local toChange = 1
                                             if modInfo.should_enable == not modInfo.disabled then
@@ -1125,7 +1402,7 @@ local function createClickableModBox(modInfo, scale)
             }
         }
     }
-    
+
 end
 
 function G.FUNCS.openModsDirectory(options)
@@ -1148,7 +1425,7 @@ function SMODS.load_mod_config(mod)
     if not s1 or type(config) ~= 'table' then config = {} end
     if not s2 or type(default_config) ~= 'table' then default_config = {} end
     mod.config = default_config
-    
+
     local function insert_saved_config(savedCfg, defaultCfg)
         for savedKey, savedVal in pairs(savedCfg) do
             local savedValType = type(savedVal)
@@ -1161,7 +1438,7 @@ function SMODS.load_mod_config(mod)
             elseif savedVal ~= defaultCfg[savedKey] then
                 defaultCfg[savedKey] = savedVal
             end
-            
+
         end
     end
 
@@ -1182,7 +1459,7 @@ end
 function SMODS.save_all_config()
     SMODS:save_mod_config()
     for _, v in ipairs(SMODS.mod_list) do
-        if v.can_load then 
+        if v.can_load then
             local save_func = type(v.save_mod_config) == 'function' and v.save_mod_config or SMODS.save_mod_config
             save_func(v)
         end
@@ -1403,7 +1680,7 @@ function create_UIBox_mods_button()
                                                             colour = G.C.UI.TEXT_LIGHT
                                                         }
                                                     },
-                                                    
+
                                                 }
                                             },
                                         }
@@ -1498,7 +1775,7 @@ function create_UIBox_main_menu_buttons()
     local menu = create_UIBox_main_menu_buttonsRef()
     table.insert(menu.nodes[1].nodes[1].nodes, modsButton)
     menu.nodes[1].nodes[1].config = {align = "cm", padding = 0.15, r = 0.1, emboss = 0.1, colour = G.C.L_BLACK, mid = true}
-    if SMODS.mod_button_alert then 
+    if SMODS.mod_button_alert then
         G.E_MANAGER:add_event(Event({
             func = function()
                 if G.MAIN_MENU_UI then -- Wait until the ui is rendered before spawning the alert
@@ -1831,7 +2108,7 @@ function SMODS.GUI.dynamicModListContent(page)
         local modCount = 0
         local id = 0
         local current_row = {}
-        
+
         for _, condition in ipairs({
             function(m) return not m.can_load and not m.disabled end,
             function(m) return m.can_load and m.config_tab end,
@@ -1847,7 +2124,7 @@ function SMODS.GUI.dynamicModListContent(page)
                         modCount = modCount + 1
                         if math.fmod(modCount, modsColPerRow) == 0 then
                             table.insert(modNodes, {
-                                n = G.UIT.R, 
+                                n = G.UIT.R,
                                 config = { padding = 0, align = "lc"},
                                 nodes = current_row
                             })
@@ -1859,7 +2136,7 @@ function SMODS.GUI.dynamicModListContent(page)
         end
         if #current_row > 0 then
             table.insert(modNodes, {
-                n = G.UIT.R, 
+                n = G.UIT.R,
                 config = { padding = 0, align = "lc"},
                 nodes = current_row
             })
@@ -1903,10 +2180,10 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
             G.your_collection[j] = CardArea(
                 G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h,
                 (args.w_mod*rows[j]+0.25)*G.CARD_W,
-                args.h_mod*G.CARD_H, 
+                args.h_mod*G.CARD_H,
                 {card_limit = rows[j], type = args.area_type or 'title', highlight_limit = 0, collection = true}
             )
-            table.insert(deck_tables, 
+            table.insert(deck_tables,
             {n=G.UIT.R, config={align = "cm", padding = 0.07, no_fill = true}, nodes={
                 {n=G.UIT.O, config={object = G.your_collection[j]}}
             }})
@@ -1941,7 +2218,7 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
     end
 
     G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
-    
+
     local t = create_UIBox_generic_options({
         colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or (G.ACTIVE_MOD_UI.ui_config or {}).colour),
         bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour),
@@ -1949,7 +2226,7 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
         outline_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
                 (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
         back_func = (args and args.back_func) or G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', snap_back = args.snap_back, infotip = args.infotip, contents = {
-          {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables}, 
+          {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables},
           (not args.hide_single_page or cards_per_page < #pool) and {n=G.UIT.R, config={align = "cm"}, nodes={
             create_option_cycle({options = options, w = 4.5, cycle_shoulders = true, opt_callback = 'SMODS_card_collection_page', current_option = 1, colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED, no_pips = true, focus_args = {snap_to = true, nav = 'wide'}})
           }} or nil,
@@ -1957,9 +2234,9 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
     return t
 end
 
-create_UIBox_your_collection_jokers = function() 
+create_UIBox_your_collection_jokers = function()
     return SMODS.card_collection_UIBox(G.P_CENTER_POOLS.Joker, {5,5,5}, {
-        no_materialize = true, 
+        no_materialize = true,
         modify_card = function(card, center) card.sticker = get_joker_win_sticker(center) end,
         h_mod = 0.95,
     })
@@ -1967,7 +2244,7 @@ end
 create_UIBox_your_collection_boosters = function()
     return SMODS.card_collection_UIBox(G.P_CENTER_POOLS.Booster, {4,4}, {
         h_mod = 1.3,
-        w_mod = 1.25, 
+        w_mod = 1.25,
         card_scale = 1.27,
     })
 end
@@ -1987,7 +2264,7 @@ create_UIBox_your_collection_enhancements = function()
         infotip = localize('ml_edition_seal_enhancement_explanation'),
         hide_single_page = true,
     })
-end 
+end
 create_UIBox_your_collection_editions = function()
     return SMODS.card_collection_UIBox(G.P_CENTER_POOLS.Edition, {5,5}, {
         snap_back = true,
@@ -2023,7 +2300,7 @@ G.FUNCS.your_collection_stickers = function(e)
 end
 
 create_UIBox_your_collection_stickers = function()
-    return SMODS.card_collection_UIBox(SMODS.Stickers, {5,5}, {
+    return SMODS.card_collection_UIBox(SMODS.Stickers, { 5, 5 }, {
         snap_back = true,
         hide_single_page = true,
         collapse_single_page = true,
@@ -2035,7 +2312,33 @@ create_UIBox_your_collection_stickers = function()
             center:apply(card, true)
         end,
     })
-end 
+end
+
+G.FUNCS.your_collection_poker_hands = function(e)
+    G.SETTINGS.paused = true
+    G.FUNCS.overlay_menu{
+      definition = create_UIBox_your_collection_poker_hands(),
+    }
+end
+
+create_UIBox_your_collection_poker_hands = function (args)
+    return create_UIBox_generic_options({
+        colour = G.ACTIVE_MOD_UI and
+        ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or (G.ACTIVE_MOD_UI.ui_config or {}).colour),
+        bg_colour = G.ACTIVE_MOD_UI and
+        ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or (G.ACTIVE_MOD_UI.ui_config or {}).bg_colour),
+        back_colour = G.ACTIVE_MOD_UI and
+        ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or (G.ACTIVE_MOD_UI.ui_config or {}).back_colour),
+        outline_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+            (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
+        back_func = (args and args.back_func) or 'your_collection_other_gameobjects',
+        snap_back = args and args.snap_back,
+        infotip = args and args.infotip,
+        contents = {
+            create_UIBox_current_hands(nil, true)
+        }
+    })
+end
 
 -- warning for updating during run
 local igo = Game.init_game_object
@@ -2062,17 +2365,17 @@ function G.UIDEF.run_setup_option(_type)
             n = G.UIT.R, config = { align = "cm", r = 0.1, minw = 6, minh = 0.6, colour = G.SETTINGS.reduced_motion and G.C.RED or SMODS.Gradients.warning_bg, padding = 0.1 }, nodes={
                 {
                     n = G.UIT.C, config = { align = 'cm' }, nodes = {
-                        { n = G.UIT.O, config = { object = Sprite(0, 0, 0.8, 0.8, G.ASSET_ATLAS['mod_tags'], { x = 0, y = 0 }) } },
+                        { n = G.UIT.O, config = { object = SMODS.create_sprite(0, 0, 0.8, 0.8, 'mod_tags', { x = 0, y = 0 }) } },
                     }
-                }, 
-                { 
+                },
+                {
                     n = G.UIT.C, config = { align = 'cm' }, nodes = text_nodes
                 },
                 {
                     n = G.UIT.C, config = { align = 'cm' }, nodes = {
-                        { n = G.UIT.O, config = { object = Sprite(0, 0, 0.8, 0.8, G.ASSET_ATLAS['mod_tags'], { x = 0, y = 0 }) } },
+                        { n = G.UIT.O, config = { object = SMODS.create_sprite(0, 0, 0.8, 0.8, 'mod_tags', { x = 0, y = 0 }) } },
                     }
-                }, 
+                },
             }
         })
     end
@@ -2135,7 +2438,7 @@ function SMODS.GUI.operator(scale)
 end
 
 function SMODS.GUI.mult_container(scale)
-    return 
+    return
     {n=G.UIT.C, config={align = 'cm', id = 'hand_mult_container'}, nodes = {
         SMODS.GUI.score_container({
             type = 'mult'
@@ -2168,10 +2471,96 @@ end
 -- Internal function to automatically update UI boxes for new scoring parameters
 G.FUNCS.hand_type_UI_set = function(e)
   local new_mult_text = number_format(G.GAME.current_round.current_hand[e.config.type] or SMODS.Scoring_Parameters[e.config.type].default_value)
-  if new_mult_text ~= G.GAME.current_round.current_hand[e.config.text] then 
+  if new_mult_text ~= G.GAME.current_round.current_hand[e.config.text] then
     G.GAME.current_round.current_hand[e.config.text] = new_mult_text
     e.config.object.scale = scale_number(G.GAME.current_round.current_hand[e.config.type], e.config.scale, 1000)
     e.config.object:update_text()
-    if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and G.GAME.current_round.current_hand[e.config.type] or 1)))) end
+    if not G.TAROT_INTERRUPT_PULSE then G.FUNCS.text_super_juice(e, math.max(0,math.floor(math.log10(type(G.GAME.current_round.current_hand[e.config.type]) == 'number' and math.abs(G.GAME.current_round.current_hand[e.config.type]) or 1)))) end
   end
+end
+
+function G.UIDEF.custom_deck_tab(_suit)
+    local t = {}
+
+    local rankCount = 0
+    local lookup = {}
+    for i, s in ipairs(SMODS.Suit:obj_list(true)) do
+        local options = G.COLLABS.options[s.key]
+        for i = 1, #options do
+            local skin = SMODS.DeckSkins[options[i]]
+            if skin.palettes and not (skin.display_ranks or skin.ranks) then
+                for _, p in ipairs(skin.palettes) do
+                    local p_ranks = p.display_ranks or p.ranks
+                    for j = 1, #p_ranks do
+                        if not lookup[p_ranks[j]] then
+                            lookup[p_ranks[j]] = true
+                            rankCount = rankCount + 1
+                        end
+                    end
+                end
+            elseif not skin.palettes and (skin.display_ranks or skin.ranks) then
+                local ranks = skin.display_ranks or skin.ranks
+                for j = 1, #ranks do
+                    if not lookup[skin.ranks[j]] then
+                        lookup[skin.ranks[j]] = true
+                        rankCount = rankCount + 1
+                    end
+                end
+            end
+        end
+    end
+
+    G.cdds_cards = CardArea(
+        0,0,
+        math.min(math.max(rankCount*G.CARD_W*0.6, 4*G.CARD_W), 10*G.CARD_W),
+        1.4*G.CARD_H,
+        {card_limit = rankCount, type = 'title', highlight_limit = 0})
+    G.cdds_cards.rankCount = rankCount
+
+    table.insert(t, {n=G.UIT.R, config={align = "cm", colour = G.C.BLACK, r = 0.1, padding = 0.07, no_fill = true}, nodes={
+        {n=G.UIT.O, config={object = G.cdds_cards}}
+    }})
+
+    local r = {n=G.UIT.R, config={align = "tm", minh = 1.35}, nodes={{n=G.UIT.R, config={align = "cm", minh = 0.3}, nodes = {}}}}
+    local loc_options = localize(_suit, 'collabs')
+    local conv_loc_options = {}
+    for k, v in pairs(loc_options) do
+      conv_loc_options[tonumber(k)] = v
+    end
+
+    loc_options = conv_loc_options
+
+    local current_option = 1
+    for k, v in pairs(G.COLLABS.options[_suit]) do
+      if G.SETTINGS.CUSTOM_DECK.Collabs[_suit] == v then current_option = k end
+    end
+
+    local collab_cycle = create_option_cycle({options = loc_options, w = 5.5, cycle_shoulders = true, curr_suit = _suit, opt_callback = 'change_collab', current_option = current_option, colour = G.C.RED, focus_args = {snap_to = true, nav = 'wide'}})
+    collab_cycle.nodes[2].config.padding = 0
+    collab_cycle.nodes[2].nodes[1].config.padding = 0.085
+
+    table.insert(r.nodes, {n=G.UIT.R, config={align = "cm"}, nodes={
+        collab_cycle
+    }})
+
+    local deckskin_key = G.COLLABS.options[_suit][current_option]
+    local palette_loc_options = SMODS.DeckSkin.get_palette_loc_options(deckskin_key, _suit)
+    local selected_palette = 1
+    for i, v in ipairs(G.COLLABS.colour_palettes[deckskin_key]) do
+        if G.SETTINGS.colour_palettes[_suit] == v then
+            selected_palette = i
+        end
+    end
+
+    local palette_cycle =  #palette_loc_options > 1 and create_option_cycle({options = palette_loc_options, w = 4.5, h = 0.5, text_scale = 0.3, cycle_shoulders = false, curr_suit = _suit, curr_skin = deckskin_key, opt_callback = 'change_colour_palette', current_option = selected_palette, colour = G.C.ORANGE, focus_args = {snap_to = true, nav = 'wide'}}) or nil
+    if palette_cycle then palette_cycle.nodes[1].config.padding = 0.085 end
+
+    table.insert(r.nodes, {n=G.UIT.R, config={align = "cm", id = 'palette_selector', minh = 0.85}, nodes={
+        palette_cycle
+    }})
+    table.insert(t, r)
+
+    G.FUNCS.update_collab_cards(current_option, _suit, true)
+
+    return {n=G.UIT.ROOT, config={align = "cm", padding = 0, colour = G.C.CLEAR, r = 0.1, minw = 7, minh = 4.2}, nodes=t}
 end

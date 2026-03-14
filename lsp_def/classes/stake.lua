@@ -12,7 +12,8 @@
 ---@field above_stake? string Key to the stake that this stake appeard above in the run menu. By default, stakes are added on top of the last injected stake. 
 ---@field colour? table HEX color of the stake in the stake selection menu. 
 ---@field unlocked? boolean Sets if the stake is unlocked by default. 
----@field shiny? boolean Draws the shiny shader on State sticker. 
+---@field shiny? boolean Draws the shiny shader on State sticker.
+---@field hide_from_run_info? boolean If true it hides the stake description on the Run Info screen
 ---@field __call? fun(self: SMODS.Stake|table, o: SMODS.Stake|table): nil|table|SMODS.Stake
 ---@field extend? fun(self: SMODS.Stake|table, o: SMODS.Stake|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Stake|table): boolean? Ensures objects already registered will not register. 
@@ -29,6 +30,7 @@
 ---@field get_obj? fun(self: SMODS.Stake|table, key: string): SMODS.Stake|table? Returns an object if one matches the `key`. 
 ---@field modifiers? fun() Applies changes to the game state when this stake is applied at the start of a run.
 ---@field calculate? fun(self: SMODS.Stake|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
+---@field loc_vars? fun(self: SMODS.Stake|table): table? Provides control over displaying descriptions of the stake. See [SMODS.Stakes `loc_vars` implementation](https://github.com/Steamodded/smods/wiki/SMODS.Stake#api-methods) documentation for details. 
 ---@overload fun(self: SMODS.Stake): SMODS.Stake
 SMODS.Stake = setmetatable({}, {
     __call = function(self)
