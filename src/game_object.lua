@@ -480,6 +480,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         px = 66,
         py = 66,
     }
+    SMODS.Atlas {
+        key = 'dropdown_arrow',
+        path = 'dropdown_arrow.png',
+        px = 66,
+        py = 66,
+    }
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Sound
