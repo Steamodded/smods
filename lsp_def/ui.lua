@@ -370,11 +370,11 @@ function G.FUNCS.scrollbar(e) end
 ---@field selected_colour? table The colour of the background of the currently selected option. Defaults to G.C.BLACK.
 ---@field colour? table The colour of the dropdown button. Defaults to G.C.RED.
 ---@field text_colour? table The colour of the dropdown button's text. Defaults to G.C.UI.TEXT_LIGHT.
----@field dropdown_element_def? fun(option): table If defined, each option will be displayed according to the UI nodes returned by this function. Note that the result of this function is passed into a row node.
+---@field dropdown_element_def? fun(option: string, args: DropdownSelectArgs): table If defined, each option will be displayed according to the UI nodes returned by this function. Note that the result of this function is passed into a row node.
 ---@field max_menu_h? number The maximum height that the dropdown options should take up. If set, the dropdown's contents will be scrollable and a scrollbar will automatically appear.
 ---@field disabled_colour? table The colour of the background disabled options. Defaults to G.C.CLEAR.
 ---@field callback? string If set, dropdown options when clicked will call G.FUNCS[callback](e), with `e` being the specific option button pressed. `e.config.value` gets the value of the clicked option. Will not be called if the option is clicked on while disabled.
----@field is_option_disabled? fun(option): boolean? If defined, an option will be disabled if this function returns a truthy value. This is called for every option.
+---@field is_option_disabled? fun(option: string): boolean? If defined, an option will be disabled if this function returns a truthy value. This is called for every option.
 ---@field no_unselect? boolean If set to `true`, prevents an option from being unselected.
 ---@field align? string Aligns the text of the dropdown button. Works just like aligning regular UI nodes. Default is "cm".
 ---@field id? string Assigns the given id to the config table of the root of the button UIBox if set.

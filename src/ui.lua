@@ -2888,7 +2888,7 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
                 minw = args.max_menu_h and (parent_width - 0.55) or (parent_width - 0.3)
             },
             nodes = {
-                type(args.dropdown_element_def) == "function" and args.dropdown_element_def(opt) or {
+                type(args.dropdown_element_def) == "function" and args.dropdown_element_def(opt, args) or {
                     n = G.UIT.C,
                     config = { align = "cm", padding = 0.1 },
                     nodes = {
