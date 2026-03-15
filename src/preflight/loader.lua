@@ -231,7 +231,7 @@ function loadMods(modsDirectory)
 
     -- Function to process each directory (including subdirectories) with depth tracking
     local function processDirectory(directory, depth, flags)
-        if depth > 3 or directory..'/' == SMODS.path then
+        if depth > 3 or SMODS.path:sub(-#(directory..'/')) == directory..'/' then
             return
         end
 
