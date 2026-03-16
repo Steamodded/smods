@@ -105,7 +105,7 @@ return {
             b_authors = 'Autores',
             b_unknown = 'Desconhecido',
             b_lovely_mod = '(Mod do Lovely) ',
-            b_by = ' Por: ',
+            b_by = 'Por: ',
 			b_config = "Config.",
 			b_additions = 'Adições',
       		b_stickers = 'Adesivos',

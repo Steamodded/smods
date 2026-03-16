@@ -226,7 +226,7 @@ return {
             b_authors = 'Autoren',
             b_unknown = 'Unbekannt',
             b_lovely_mod = '(Lovely-Mod) ',
-            b_by = ' Von: ',
+            b_by = 'Von: ',
             b_priority = 'Priorität: ',
 			b_config = "Einstellungen",
 			b_additions = 'Änderungen',
