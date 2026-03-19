@@ -537,7 +537,7 @@ function Card.selectable_from_pack(card, pack) end
 
 ---@param card Card|table
 ---@param pack SMODS.Booster|table
----@return string|table<string,string>
+---@return string|{[string]: string}
 --- Controls the area a card should be after selection from a Booster Pack.
 function SMODS.card_select_area(card, pack) end
 
