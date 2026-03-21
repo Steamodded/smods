@@ -2127,18 +2127,18 @@ function SMODS.get_card_areas(_type, _context)
     end
     if _type == 'individual' then
         local t = {
-            { object = G.GAME.selected_back, scored_card = G.deck.cards[1] or G.deck },
+            { object = G.GAME.selected_back, scored_card = G.deck and G.deck.cards[1] or G.deck },
         }
 
         if G.GAME.blind and G.GAME.blind.children and G.GAME.blind.children.animatedSprite then
             t[#t + 1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite }
         end
-        if G.GAME.challenge then t[#t + 1] = { object = SMODS.Challenges[G.GAME.challenge], scored_card = G.deck.cards[1] or G.deck } end
+        if G.GAME.challenge then t[#t + 1] = { object = SMODS.Challenges[G.GAME.challenge], scored_card = G.deck and G.deck.cards[1] or G.deck } end
         for _, stake in ipairs(SMODS.get_stake_scoring_targets()) do
-            t[#t + 1] = { object = stake, scored_card = G.deck.cards[1] or G.deck }
+            t[#t + 1] = { object = stake, scored_card = G.deck and G.deck.cards[1] or G.deck }
         end
         for _, mod in ipairs(SMODS.get_mods_scoring_targets()) do
-            t[#t + 1] = { object = mod, scored_card = G.deck.cards[1] or G.deck }
+            t[#t + 1] = { object = mod, scored_card = G.deck and G.deck.cards[1] or G.deck }
         end
         -- TARGET: add your own individual scoring targets
         return t
@@ -2330,12 +2330,8 @@ function SMODS.get_next_vouchers(vouchers)
     vouchers = vouchers or {spawn = {}}
     local _pool, _pool_key = get_current_pool('Voucher')
     for i=#vouchers+1, math.min(SMODS.size_of_pool(_pool), G.GAME.starting_params.vouchers_in_shop + (G.GAME.modifiers.extra_vouchers or 0)) do
-        local center = pseudorandom_element(_pool, pseudoseed(_pool_key))
-        local it = 1
-        while center == 'UNAVAILABLE' or vouchers.spawn[center] do
-            it = it + 1
-            center = pseudorandom_element(_pool, pseudoseed(_pool_key..'_resample'..it))
-        end
+        print "get voucher pls"
+        local center = SMODS.poll_object({pool = _pool})
 
         vouchers[#vouchers+1] = center
         vouchers.spawn[center] = true
@@ -3203,7 +3199,7 @@ function CardArea:handle_card_limit()
                             trigger = 'immediate',
                             func = function()
                                 if (self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0)) > 0 and #G.deck.cards > (SMODS.cards_to_draw or 0) then
-                                    G.FUNCS.draw_from_deck_to_hand(self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0))
+                                    G.FUNCS.draw_from_deck_to_hand()
                                 end
                                 return true
                             end
@@ -3213,7 +3209,7 @@ function CardArea:handle_card_limit()
                 }))
             elseif G.STATE == G.STATES.SELECTING_HAND and #G.deck.cards > 0 and self.config.card_limits.old_slots < self.config.card_limits.total_slots then
                 if (self.config.card_limits.total_slots - self.config.card_limits.old_slots) > 0 then
-                    G.FUNCS.draw_from_deck_to_hand((self.config.card_limits.total_slots - self.config.card_limits.old_slots))
+                    G.FUNCS.draw_from_deck_to_hand()
                 end
             end
             if self == G.hand and G.STATE == G.STATES.SELECTING_HAND or G.STATE == G.STATES.DRAW_TO_HAND then

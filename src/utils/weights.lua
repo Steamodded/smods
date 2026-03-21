@@ -10,15 +10,16 @@ function SMODS.poll_object(args)
     -- Prepare pool
     local pool = args.pool or {}
     local types = args.labels or {args.type}
-    local total_weight = 0
-    local modded_weight = 0
-    local chance = (args.guaranteed and 1 or args.chance or SMODS.base_rate_percentage[args.type] or 1) * (args.mod or 1)
-    local poll_key = pseudorandom(pseudoseed(args.seed or SMODS.get_poll_key(args.type)))
+    print('Polling', table_as_string(types))
+
+    -- Populate pool
+    local types_used = {}
     if not args.pool then
         for _, label in ipairs(types) do
+            types_used[label] = true
             local temp_pool = {}
             for i=1, #(args.rarities or {true}) do
-                local _p = label == 'Blind' and get_new_boss(true) or get_current_pool(label, args.rarities and args.rarities[i])
+                local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or get_current_pool(label, args.rarities and args.rarities[i])
                 if label == 'Edition' then
                     local _options = {}
                     for _, edition in ipairs(_p) do
@@ -43,54 +44,80 @@ function SMODS.poll_object(args)
     -- Check pool has valid options
     assert(#pool > 0, "SMODS.poll_object called with an empty pool."..SMODS.log_crash_info(debug.getinfo(2)))
     
-    local final_pool = {}
+    local total_weight = 0
+    local weight_pool = {}
     for _, key in ipairs(pool) do
         local weight_table = {}
         
         local w, m_w = SMODS.get_weight_of_object(G[SMODS.game_table_from_type[key.type] or 'P_CENTERS'][key.key or key], key.weight)
-        modded_weight = modded_weight + m_w
-        weight_table = {key = key.key or key, weight = w, mod_weight = modded_weight}
+        weight_table = {key = key.key or key, weight = m_w}
         
-        total_weight = total_weight + weight_table.weight
-        table.insert(final_pool, weight_table)
-        if args.print then print(string.format("Key: %s, Weight: %s, Modded Weight: %s", weight_table.key, weight_table.weight, weight_table.mod_weight)) end
+        total_weight = total_weight + w
+        weight_pool[#weight_pool + 1] = weight_table
+        weight_pool[key.key or key] = weight_table
+        
+        if args.print then print(string.format("Key: %s, Base weight: %s, Final weight: %s", weight_table.key, w, weight_table.weight)) end
     end
-
     
-    if args.print then print('Total Weight: '..total_weight) end
-    if args.print then print('Modded Weight:'..modded_weight) end
-    if args.print then print('Base Chance: '..chance) end
+    -- Allow calculate functions to modify the pool table
+    SMODS.calculate_context({modify_weights = true, pool = weight_pool, pool_types = types_used})
+    local modded_weight = 0
 
+    -- Prepare final table to poll
+    local final_pool = {}
+    for _, weight_table in ipairs(weight_pool) do
+        modded_weight = modded_weight + weight_pool[weight_table.key].weight
+        weight_table.mod_weight = modded_weight
+        final_pool[#final_pool + 1] = weight_table
+        if args.print then print(string.format("Key: %s, Weight: %s, Position: %s", weight_table.key, weight_table.weight, weight_table.mod_weight)) end
+    end
+    
+    local chance = args.guaranteed and 1 or ((args.chance or SMODS.base_rate_percentage[args.type] or 1) * (args.mod or 1) * (modded_weight/total_weight))
     -- Adjust chance based on modified weightings
-    chance = chance * (modded_weight/total_weight)
-    if args.print then print('Mod Chance: '..chance) end
-    if args.print then print('Poll Key:'..poll_key) end
+    -- chance = chance * (modded_weight/total_weight)
+    local key = 'UNAVAILABLE'
+    while key == 'UNAVAILABLE' do
+        local poll_key = pseudorandom(pseudoseed(args.seed or SMODS.get_poll_key(args.type)))
+        
+        if args.print then print('Total Weight: '..total_weight) end
+        if args.print then print('Modded Weight:'..modded_weight) end
+        if args.print then print('Base Chance: '..chance) end
 
-    if poll_key < (1 - chance) then
-        if args.print then print('Poll failed') end
-        return
+        if args.print then print('Mod Chance: '..chance) end
+        if args.print then print('Poll Key:'..poll_key) end
+
+        if poll_key < (1 - chance) then
+            if args.print then print('Poll failed') end
+            return
+        end
+
+        if not SMODS.no_repoll[args.type] then
+            poll_key = pseudorandom(pseudoseed(args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')))
+            if args.print then print('Poll key string:', args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')) end
+            chance = 1
+        end
+        if args.print then print('Poll key: '..poll_key) end
+
+        -- Find weight
+        local poll_weight = modded_weight - (poll_key - (1 - chance))/chance * modded_weight
+        if args.print then print('Looking for item: '..poll_weight) end
+
+        if poll_weight > final_pool[1].mod_weight then
+            key = final_pool[SMODS.select_by_weight(final_pool, poll_weight, 1, #final_pool)].key
+        else 
+            key = final_pool[1].key
+        end
     end
+        -- Edition specific functionality
+        if args.no_negative and key == 'e_negative' then return 'e_polychrome' end
+        print("Result: "..key)
+        return key
+end
 
-    if not SMODS.no_repoll[args.type] then
-        poll_key = pseudorandom(pseudoseed(args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')))
-        if args.print then print('Poll key string:', args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')) end
-        chance = 1
-    end
-    if args.print then print('Poll key: '..poll_key) end
-
-    -- Find weight
-    local poll_weight = modded_weight - (poll_key - (1 - chance))/chance * modded_weight
-    if args.print then print('Looking for item: '..poll_weight) end
-    local low = 1
-    local high = #final_pool
-    local ind = 1
-    if poll_weight > final_pool[1].mod_weight then ind = SMODS.select_by_weight(final_pool, poll_weight, low, high) end
-    -- print('Index: '..ind)
-    -- print(final_pool[ind].key)
-
-    if args.no_negative and final_pool[ind].key == 'e_negative' then return 'e_polychrome' end
-
-    return final_pool[ind].key
+function table_as_string(t)
+    local str = ''
+    for _, v in ipairs(t) do str = str .. v .. ', ' end
+    return str
 end
 
 -- Returns the `weight` and `modified_weight` or a given object
@@ -149,11 +176,11 @@ function SMODS.create_blind_pool(type, skip_cull)
         local res, options = SMODS.add_to_pool(v)
         options = options or {}
         if not v[type] then
-        elseif options.ignore_showdown_check then
+        elseif v.ignore_showdown_check or options.ignore_showdown_check then
             eligible_bosses[k] = res and true or nil
         elseif type == 'boss' then
             if
-                ((SMODS.is_showdown_ante()) == (v.boss.showdown or false)) and ((v[type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante)) and ((v[type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante)
+                ((SMODS.is_showdown_ante()) == (v[type].showdown or false)) and ((v[type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante)) and ((v[type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante)
             then
                 eligible_bosses[k] = res and true or nil
             end
@@ -167,7 +194,13 @@ function SMODS.create_blind_pool(type, skip_cull)
         if eligible_bosses[k] then eligible_bosses[k] = nil end
     end
 
-    if skip_cull then return eligible_bosses end
+    if skip_cull then 
+        local final_pool = {}
+        for k, _ in pairs(eligible_bosses) do
+            final_pool[#final_pool + 1] = k
+        end
+        return final_pool
+    end
 
     local min_use = 100
     for k, v in pairs(G.GAME.bosses_used) do
@@ -178,17 +211,130 @@ function SMODS.create_blind_pool(type, skip_cull)
             end
         end
     end
+    local final_pool = {}
     for k, v in pairs(eligible_bosses) do
         if eligible_bosses[k] then
             if eligible_bosses[k] > min_use then 
                 eligible_bosses[k] = nil
+            else
+                final_pool[#final_pool + 1] = k
             end
         end
     end
     
-    return eligible_bosses
+    return final_pool
 end
 
 function SMODS.is_showdown_ante()
     return G.GAME.round_resets.ante%G.GAME.win_ante == 0 and G.GAME.round_resets.ante > 0
 end
+
+-- New create_card_for_shop structure
+function create_card_for_shop(area)
+    -- Tutorial Override
+    if area == G.shop_jokers and G.SETTINGS.tutorial_progress and G.SETTINGS.tutorial_progress.forced_shop and G.SETTINGS.tutorial_progress.forced_shop[#G.SETTINGS.tutorial_progress.forced_shop] then
+        local t = G.SETTINGS.tutorial_progress.forced_shop
+        local _center = G.P_CENTERS[t[#t]] or G.P_CENTERS.c_empress
+        local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, _center, {bypass_discovery_center = true, bypass_discovery_ui = true})
+        t[#t] = nil
+        if not t[1] then G.SETTINGS.tutorial_progress.forced_shop = nil end
+        
+        create_shop_card_ui(card)
+        return card
+    end
+    -- Tags that affect shop override
+    local forced_tag = nil
+    for k, v in ipairs(G.GAME.tags) do
+        if not forced_tag then
+            forced_tag = v:apply_to_run({type = 'store_joker_create', area = area})
+            if forced_tag then
+                for kk, vv in ipairs(G.GAME.tags) do
+                    if vv:apply_to_run({type = 'store_joker_modify', card = forced_tag}) then break end
+                end
+            return forced_tag
+            end
+        end
+    end
+
+    -- Poll a type for the shop
+    local card_args = {
+        type = SMODS.poll_object_type({seed = 'cdt'..G.GAME.round_resets.ante}),
+        area = area
+    }
+    card_args.key = SMODS.poll_object({type = card_args.type, append = 'sho'})
+
+    local flags = SMODS.calculate_context({create_shop_card = true, set = card_args.type, key = card_args.key})
+
+    local card = SMODS.create_card(SMODS.merge_defaults(flags.shop_create_flags or {}, card_args))
+
+    SMODS.calculate_context({modify_shop_card = true, card = card})
+
+    create_shop_card_ui(card)
+
+    -- Tag modifier check
+    G.E_MANAGER:add_event(Event({
+        func = (function()
+            for k, v in ipairs(G.GAME.tags) do
+                if v:apply_to_run({type = 'store_joker_modify', card = card}) then break end
+            end
+            return true
+        end)
+    }))
+
+    if (card.ability.set == 'Default' or card.ability.set == 'Enhanced') and G.GAME.used_vouchers["v_illusion"] and pseudorandom(pseudoseed('illusion')) > 0.8 then 
+        card:set_edition(poll_edition('illusion', nil, true, true))
+    end
+
+    return card
+end
+
+function SMODS.poll_object_type(args)
+    print "Using SMODS.poll_object_type"
+    args = args or {}
+    
+    -- If no types are given to select between, populate the list with all valid types
+    if not args.types then
+        args.types = {
+            'Joker', 'playing_card',
+        }
+        for _,v in ipairs(SMODS.ConsumableType.obj_buffer) do
+            args.types[#args.types + 1] = v
+        end
+    else
+        -- Ensure types are in correct format
+        assert(type(args.types) == 'table',  "SMODS.poll_object_type called with invalid types table."..SMODS.log_crash_info(debug.getinfo(2)))
+    end
+
+    local total_rate = 0
+    local weighted_table = {}
+    -- Populate `weighted_table` by finding the rates in G.GAME
+    for _, type in ipairs(args.types) do
+        total_rate = total_rate + G.GAME[type:lower()..'_rate']
+        weighted_table[#weighted_table + 1] = {type = type, rate = G.GAME[type:lower()..'_rate'], mod_weight = total_rate}
+
+        -- Playing Card modify type between Base and Enhanced
+        if type == 'playing_card' then weighted_table[#weighted_table].type = (G.GAME.used_vouchers["v_illusion"] and pseudorandom(pseudoseed('illusion')) > 0.6) and 'Enhanced' or 'Base' end
+
+        if args.print then print(string.format("Type: %s, Weight: %s, Position: %s", type, G.GAME[type:lower()..'_rate'], total_rate)) end
+    end
+
+    -- Adjust the pseudorandom number by the total_rate to obtain a number to check against the `mod_weight` values
+    local poll_weight = pseudorandom(args.seed or 'smods_poll_object_type') * total_rate
+
+    if args.print then print('Looking for item: '..poll_weight) end
+
+    local ind = 1
+    -- If first element is not target, find correct index
+    if poll_weight > weighted_table[1].mod_weight then ind = SMODS.select_by_weight(weighted_table, poll_weight, 1, #weighted_table) end
+
+    return weighted_table[ind].type
+end
+
+-- function get_pack(_key, _type)
+--     if not G.GAME.first_shop_buffoon and not G.GAME.banned_keys['p_buffoon_normal_1'] then
+--         G.GAME.first_shop_buffoon = true
+--         return G.P_CENTERS['p_buffoon_normal_'..(math.random(1, 2))]
+--     end
+
+--     return G.P_CENTERS[SMODS.poll_object({type = 'Booster', seed = 'sho'..G.GAME.round_resets.ante})]
+-- end
