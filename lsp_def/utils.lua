@@ -775,7 +775,7 @@ function SMODS.is_active_blind(key, ignore_disabled) end
 ---@return boolean
 function SMODS.challenge_is_unlocked(challenge, k) end
 
----@param args table|{hands?: table, parameters?: table, level_up?: number|boolean, func?: fun(base: number, hand: string, param: string), instant?: boolean, StatusText?: boolean|string|table|fun(hand: string, parameter: string)}
+---@param args table|{hands?: table, parameters?: table, level_up?: number|boolean, func?: fun(base: number, hand: string, param: string, level_up?: number|boolean), instant?: boolean, StatusText?: boolean|string|table|fun(hand: string, parameter: string)}
 --- This functions handles upgrading poker hands in more complex ways. You can define
 --- a custom `func` to modify the values in specific ways. `hands` and `parameters` can
 --- be limited to specific ones, or default to using all of `G.GAME.hands` and `SMODS.Scoring_Parameters`.

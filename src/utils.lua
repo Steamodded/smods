@@ -3386,7 +3386,7 @@ function SMODS.upgrade_poker_hands(args)
         for i, parameter in ipairs(args.parameters) do
             if G.GAME.hands[hand][parameter] then
                 context.old_parameters[parameter] = G.GAME.hands[hand][parameter]
-                G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
+                G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter, args.level_up)
                 context.new_parameters[parameter] = G.GAME.hands[hand][parameter]
                 if not instant then
                     local StatusText = true
