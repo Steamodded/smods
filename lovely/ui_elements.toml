@@ -187,9 +187,9 @@ payload = '''
             local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
 
             G.SHADERS[shader]:send(key, args)
-            G.SHADERS[shader]:send("uibox_details", {self.VT.x * tile_scale, self.VT.y * tile_scale, self.VT.w * tile_scale, self.VT.h * tile_scale})
-            G.SHADERS[shader]:send("uibox_scale", self.VT.scale)
-            G.SHADERS[shader]:send("uibox_rot", self.VT.r)
+            G.SHADERS[shader]:send("uie_details", {self.VT.x * tile_scale, self.VT.y * tile_scale, self.VT.w * tile_scale, self.VT.h * tile_scale})
+            G.SHADERS[shader]:send("uie_scale", self.VT.scale)
+            G.SHADERS[shader]:send("uie_rot", self.VT.r)
         end
 
         local p_shader = SMODS.Shader.obj_table[shader or 'dissolve']
