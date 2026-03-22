@@ -189,7 +189,7 @@ payload = '''
             -- actually supported
             G.SHADERS[shader]:send(key, args)
             G.SHADERS[shader]:send("uibox_size", {self.VT.w * tile_scale, self.VT.h * tile_scale})
-            G.SHADERS[shader]:send("uibox_pos", {self.T.x * tile_scale, self.T.y * tile_scale})
+            G.SHADERS[shader]:send("uibox_pos", {self.VT.x * tile_scale, self.VT.y * tile_scale})
         end
 
         love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
