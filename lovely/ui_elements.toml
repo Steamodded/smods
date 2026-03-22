@@ -186,11 +186,27 @@ payload = '''
             local key = SMODS.Shaders[shader].original_key
             local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
 
-            -- actually supported
             G.SHADERS[shader]:send(key, args)
-            G.SHADERS[shader]:send("uibox_size", {self.VT.w * tile_scale, self.VT.h * tile_scale})
-            G.SHADERS[shader]:send("uibox_pos", {self.VT.x * tile_scale, self.VT.y * tile_scale})
+            G.SHADERS[shader]:send("uibox_details", {self.VT.x * tile_scale, self.VT.y * tile_scale, self.VT.w * tile_scale, self.VT.h * tile_scale})
+            G.SHADERS[shader]:send("uibox_scale", self.VT.scale)
+            G.SHADERS[shader]:send("uibox_rot", self.VT.r)
         end
+
+        local p_shader = SMODS.Shader.obj_table[shader or 'dissolve']
+        if p_shader and type(p_shader.send_vars) == "function" then
+            local sh = G.SHADERS[shader or 'dissolve']
+            local send_vars = p_shader.send_vars(self)
+        
+            if type(send_vars) == "table" then
+                for key, value in pairs(send_vars) do
+                    sh:send(key, value)
+                end
+            end
+        end
+
+        love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
+        _draw()
+        love.graphics.setShader()
 
         love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
         _draw()
