@@ -286,11 +286,11 @@ SMODS.DrawStep {
     order = 10,
     func = function(self)
         if (self.ability.set == 'Voucher' or self.config.center.demo) and (self.ability.name ~= 'Antimatter' or not (self.config.center.discovered or self.bypass_discovery_center)) then
-            if self:should_draw_base_shader() then
+            if self:should_draw_base_shader() and not self.config.center.disable_shine then
                 self.children.center:draw_shader('voucher', nil, self.ARGS.send_to_shader)
             end
         end
-        if (self.ability.set == 'Booster' or self.ability.set == 'Spectral') and self:should_draw_base_shader() then
+        if (self.ability.set == 'Booster' or self.ability.set == 'Spectral') and self:should_draw_base_shader() and not self.config.center.disable_shine then
             self.children.center:draw_shader('booster', nil, self.ARGS.send_to_shader)
         end
     end,
