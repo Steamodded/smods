@@ -73,6 +73,12 @@ self.config = setmetatable(cardAreaTable.config, {
     end
 })
 
+-- CRIMSON BEAN EXPLOIT REIMPLEMNTATION
+if self.config.type == 'hand' and cardAreaTable.config.card_limits.total_slots ~= cardAreaTable.config.card_limits.base + cardAreaTable.config.card_limits.mod + cardAreaTable.config.card_limits.extra_slots then
+    self.config.card_limits.base = cardAreaTable.config.card_limits.total_slots - cardAreaTable.config.card_limits.extra_slots
+end
+-- CRIMSON BEAN EXPLOIT REIMPLEMNTATION
+
 '''
 
 # Bypass CardArea:change_size()
@@ -85,6 +91,7 @@ pattern = '''
 function CardArea:change_size(delta)
 '''
 payload = '''
+    -- SMODS BYPASS ORIGINAL FUNCTION
     if true then
         self.config.card_limits.mod = (self.config.card_limits.mod or 0) + delta
         return

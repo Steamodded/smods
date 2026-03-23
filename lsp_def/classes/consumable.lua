@@ -6,7 +6,8 @@
 ---@field soul_set? string Key to the ConsumableType set this consumable can replace. Requires `hidden` to be true.
 ---@field soul_rate? number Chance this card replaces a consumable. Requires `hidden` to be true.
 ---@field type? SMODS.ConsumableType|table ConsumableType this center belongs to. 
----@field legendaries? (SMODS.Consumable|table)[] All injected "legendary" consumables. 
+---@field legendaries? (SMODS.Consumable|table)[] All injected "legendary" consumables.
+---@field disable_shine? boolean If true, disables the default shine shader (for Spectrals).
 ---@field __call? fun(self: SMODS.Consumable|table, o: SMODS.Consumable|table): nil|table|SMODS.Consumable
 ---@field extend? fun(self: SMODS.Consumable|table, o: SMODS.Consumable|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Consumable|table): boolean? Ensures objects already registered will not register. 

@@ -289,6 +289,7 @@ function loadMods(modsDirectory)
             elseif filename:lower():match('%.json') and depth > 1 then
                 local json_str = NFS.read(file_path)
                 local parsed, mod = pcall(JSON.decode, json_str)
+                if mod and mod.name and mod.name:find('Steamodded') then smods_dupe = directory end
                 local valid = true
                 local err
                 if not parsed then
@@ -477,7 +478,6 @@ function loadMods(modsDirectory)
                 name = name:match("^(.*).zip$")
             end
             local path = SMODS.MODS_DIR.. "/" .. flags.name .. "/"
-            if flags.name:find('smods') then smods_dupe = true end
             local mod = {
                 name = name,
                 id = "lovely-compat-" .. flags.name,

@@ -746,30 +746,55 @@ function SMODS.stake_from_index(index)
 end
 
 function convert_save_data()
-    for k, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
-        local first_pass = not v.wins_by_key and not v.losses_by_key
-        v.wins_by_key = v.wins_by_key or {}
-        for index, number in pairs(v.wins or {}) do
-            if index > 8 and not first_pass then break end
-            v.wins_by_key[SMODS.stake_from_index(index)] = number
+    local stakecount = #G.P_CENTER_POOLS.Stake
+    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
+        if v.wins_by_key then
+            v.wins = {}
+            for kk,vv in pairs(v.wins_by_key) do
+                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
+                if index then v.wins[index] = vv end
+            end
+        else
+            v.wins_by_key = {}
+            for index=1,stakecount do
+                v.wins_by_key[SMODS.stake_from_index(index)] = v.wins[index]
+            end
         end
-        v.losses_by_key = v.losses_by_key or {}
-        for index, number in pairs(v.losses or {}) do
-            if index > 8 and not first_pass then break end
-            v.losses_by_key[SMODS.stake_from_index(index)] = number
+        if v.losses_by_key then
+            for kk,vv in pairs(v.losses_by_key) do
+                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
+                if index then v.losses[index] = vv end
+            end
+        else
+            v.losses_by_key = {}
+            for index=1,stakecount do
+                v.losses_by_key[SMODS.stake_from_index(index)] = v.losses[index]
+            end
         end
     end
-    for k, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
-        local first_pass = not v.wins_by_key and not v.losses_by_key
-        v.wins_by_key = v.wins_by_key or {}
-        for index, number in pairs(v.wins or {}) do
-            if index > 8 and not first_pass then break end
-            v.wins_by_key[SMODS.stake_from_index(index)] = number
+    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
+        if v.wins_by_key then
+            v.wins = {}
+            for kk,vv in pairs(v.wins_by_key) do
+                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
+                if index then v.wins[index] = vv end
+            end
+        else
+            v.wins_by_key = {}
+            for index=1,stakecount do
+                v.wins_by_key[SMODS.stake_from_index(index)] = v.wins[index]
+            end
         end
-        v.losses_by_key = v.losses_by_key or {}
-        for index, number in pairs(v.losses or {}) do
-            if index > 8 and not first_pass then break end
-            v.losses_by_key[SMODS.stake_from_index(index)] = number
+        if v.losses_by_key then
+            for kk,vv in pairs(v.losses_by_key) do
+                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
+                if index then v.losses[index] = vv end
+            end
+        else
+            v.losses_by_key = {}
+            for index=1,stakecount do
+                v.losses_by_key[SMODS.stake_from_index(index)] = v.losses[index]
+            end
         end
     end
     G:save_settings()
@@ -1326,13 +1351,40 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return true
     end
 
-    if key == 'prevent_debuff' or key == 'add_to_hand' or key == 'remove_from_hand' or key == 'stay_flipped' or key == 'prevent_stay_flipped' or key == 'prevent_trigger' then
-        return key
+    local key_return_flags = {
+        'prevent_debuff',
+        'add_to_hand',
+        'remove_from_hand',
+        'stay_flipped',
+        'prevent_stay_flipped',
+        'prevent_trigger'
+    }
+
+    for _, flag in ipairs(key_return_flags) do
+        if key == flag then
+            return key
+        end
     end
 
-    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or
-        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'modify' or key == 'shop_create_flags'  then
-        return { [key] = amount }
+    local amount_return_flags = {
+        'remove',
+        'debuff_text',
+        'cards_to_draw',
+        'numerator',
+        'denominator',
+        'no_destroy',
+        'replace_scoring_name',
+        'replace_display_name',
+        'replace_poker_hands',
+        'modify',
+        'shop_create_flags',
+        'booster_create_flags'
+    }
+
+    for _, flag in ipairs(amount_return_flags) do
+        if key == flag then
+            return { [key] = amount }
+        end
     end
 
     if key == 'debuff' then
@@ -1909,6 +1961,7 @@ function SMODS.score_card(card, context)
     local reps = { 1 }
     local j = 1
     while j <= #reps do
+        card.repetition_trigger = j > 1 and j - 1
         if reps[j] ~= 1 then
             local _, eff = next(reps[j])
             while eff.retrigger_flag do
@@ -1944,6 +1997,7 @@ function SMODS.score_card(card, context)
         context.other_card = nil
         card.lucky_trigger = nil
     end
+    card.repetition_trigger = nil
 end
 
 function SMODS.calculate_main_scoring(context, scoring_hand)
@@ -1980,6 +2034,7 @@ function SMODS.calculate_end_of_round_effects(context)
         local reps = {1}
         local j = 1
         while j <= #reps do
+            card.repetition_trigger = j > 1 and j - 1
             percent = (i-0.999)/(#context.cardarea.cards-0.998) + (j-1)*0.1
             if reps[j] ~= 1 then
                 local _, eff = next(reps[j])
@@ -2016,6 +2071,7 @@ function SMODS.calculate_end_of_round_effects(context)
 
             -- TARGET: effects after end of round evaluation
         end
+        card.repetition_trigger = nil
     end
 end
 
@@ -2310,7 +2366,6 @@ G.FUNCS.can_select_from_booster = function(e)
   end
 
 function Card.selectable_from_pack(card, pack)
-    if card.config.center.select_card then return card.config.center.select_card end
     if pack and pack.select_exclusions then
         for _, key in ipairs(pack.select_exclusions) do
             if key == card.config.center_key then return false end
@@ -2818,7 +2873,7 @@ G.FUNCS.SMODS_scoring_calculation_function = function(e)
         if G.GAME.current_scoring_calculation.colour and operator then
             operator.children[1].config.colour = type(G.GAME.current_scoring_calculation.colour) == 'function' and G.GAME.current_scoring_calculation:colour() or G.GAME.current_scoring_calculation.colour
         end
-        if operator and (type(G.GAME.current_scoring_calculation.colour) == 'function' or type(G.GAME.current_scoring_calculation.text) == 'function') then operator.UIBox:recalculate() end
+        if operator and (first or (type(G.GAME.current_scoring_calculation.colour) == 'function' or type(G.GAME.current_scoring_calculation.text) == 'function')) then operator.UIBox:recalculate() end
     end
 end
 
@@ -2871,6 +2926,19 @@ function SMODS.scale_card(card, args)
                     if ret.override_message and not args.block_overrides.message then scaling_message = SMODS.merge_defaults(ret.override_message, scaling_message) end
                     if ret.post then ret.post.source = _card; scaling_responses[#scaling_responses + 1] = ret.post end
                     SMODS.calculate_effect(ret, _card)
+                end
+            end
+            if card.edition then
+                local edition = G.P_CENTERS[card.edition.key]
+                if edition.calc_scaling and type(edition.calc_scaling) == 'function' then
+                    local ret = edition:calc_scaling(_card, card, initial, scalar_value, args)
+                    if ret then
+                        if ret.override_value and not args.block_overrides.value then initial = ret.override_value.value; SMODS.calculate_effect(ret.override_value, _card) end
+                        if ret.override_scalar_value and not args.block_overrides.scalar then scalar_value = ret.override_scalar_value.value; SMODS.calculate_effect(ret.override_scalar_value, _card) end
+                        if ret.override_message and not args.block_overrides.message then scaling_message = SMODS.merge_defaults(ret.override_message, scaling_message) end
+                        if ret.post then ret.post.source = _card; scaling_responses[#scaling_responses + 1] = ret.post end
+                        SMODS.calculate_effect(ret, _card)
+                    end
                 end
             end
         end
@@ -2995,6 +3063,51 @@ function SMODS.challenge_is_unlocked(challenge, k)
     end
     challenge_unlocked = challenge_unlocked or G.PROFILES[G.SETTINGS.profile].all_unlocked
     return challenge_unlocked
+end
+
+function SMODS.stake_is_unlocked(stake_key, deck_key)
+    if not (SMODS.Stakes[stake_key] and G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key]) then return stake_key == SMODS.stake_from_index(1) end
+    if G.PROFILES[G.SETTINGS.profile].all_unlocked then return true end
+    local stake = SMODS.Stakes[stake_key]
+    if stake.unlocked then return true end
+    local unlocked = true
+    local wins = G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key].wins_by_key
+    for i,v in ipairs(stake.applied_stakes) do
+        if not (wins[v] and wins[v] > 0) then
+            unlocked = false
+        end
+    end
+    return unlocked
+end
+
+function SMODS.next_stake(stake_key, deck_key, ignore_unlock)
+    if not (stake_key and SMODS.Stakes[stake_key]) then return SMODS.stake_from_index(1) end
+    local next_stake
+    local looking_for_won = true
+    local wins = (G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key] or {}).wins_by_key
+    for k,v in pairs(SMODS.Stakes) do
+        local is_next = false
+        local unlocked = ignore_unlock or SMODS.stake_is_unlocked(k, deck_key)
+        if unlocked and v.applied_stakes then
+            for ii,vv in ipairs(v.applied_stakes) do
+                if vv == stake_key then
+                    is_next = true
+                    break
+                end
+            end
+        end
+        if is_next then
+            if not next_stake then
+                next_stake = v
+            elseif looking_for_won and (not wins[v.key] or v.order > next_stake.order) then
+                next_stake = v
+            elseif v.order < next_stake.order then
+                next_stake = v
+            end
+            looking_for_won = looking_for_won and not not (wins or {})[v.key]
+        end
+    end
+    return (next_stake or SMODS.Stakes.stake_white).key
 end
 
 function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
@@ -3323,7 +3436,7 @@ function SMODS.upgrade_poker_hands(args)
         for i, parameter in ipairs(args.parameters) do
             if G.GAME.hands[hand][parameter] then
                 context.old_parameters[parameter] = G.GAME.hands[hand][parameter]
-                G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
+                G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter, args.level_up)
                 context.new_parameters[parameter] = G.GAME.hands[hand][parameter]
                 if not instant then
                     local StatusText = true
