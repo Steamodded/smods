@@ -480,6 +480,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         px = 66,
         py = 66,
     }
+    SMODS.Atlas {
+        key = 'dropdown_arrow',
+        path = 'dropdown_arrow.png',
+        px = 66,
+        py = 66,
+    }
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Sound
@@ -1230,13 +1236,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = self.set == 'Enhanced' and 'temp_value' or localize { type = 'name', set = target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {} }
-            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name and not full_UI_table.from_detailed_tooltip then
+            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
                 desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = target.set }
-                desc_nodes.name_styled = {}
-  
-                localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
-                desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
-                desc_nodes.name_styled.config.align = "cm"
+                if (full_UI_table.from_detailed_tooltip and full_UI_table.info[1] == desc_nodes) 
+                    and not full_UI_table.no_styled_name then
+                    desc_nodes.name_styled = {}
+    
+                    localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
+                    desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.name_styled.config.align = "cm"
+                end
             end
             if specific_vars and specific_vars.debuffed and not res.replace_debuff then
                 target = { type = 'other', key = 'debuffed_' ..
@@ -1472,13 +1481,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize{type = 'name', set = 'Other', key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {}}
-            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name and not full_UI_table.from_detailed_tooltip then
-                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = 'Other' }
-                desc_nodes.name_styled = {}
+            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
+                desc_nodes.name = localize { type = 'name_text', key = res.name_key or target.key, set = 'Other' }
+                if (full_UI_table.from_detailed_tooltip and full_UI_table.info[1] == desc_nodes) 
+                    and not full_UI_table.no_styled_name then
+                    desc_nodes.name_styled = {}
 
-                localize{type = 'name', key = res.name_key or target.key, set = 'Other', nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
-                desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
-                desc_nodes.name_styled.config.align = "cm"
+                    localize{type = 'name', key = res.name_key or target.key, set = 'Other', nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
+                    desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.name_styled.config.align = "cm"
+                end
             end
             localize(target)
             desc_nodes.background_colour = res.background_colour
@@ -1886,13 +1898,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize { type = 'name', set = target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {} }
-            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name and not full_UI_table.from_detailed_tooltip then
+            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
                 desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = target.set }
-                desc_nodes.name_styled = {}
+                if (full_UI_table.from_detailed_tooltip and full_UI_table.info[1] == desc_nodes) 
+                    and not full_UI_table.no_styled_name then
+                    desc_nodes.name_styled = {}
 
-                localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
-                desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
-                desc_nodes.name_styled.config.align = "cm"
+                    localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
+                    desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.name_styled.config.align = "cm"
+                end
             end
             if res.main_start then
                 desc_nodes[#desc_nodes + 1] = res.main_start
@@ -3011,13 +3026,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize { type = 'name', set = target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or res.vars or {} }
-            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name and not full_UI_table.from_detailed_tooltip then
+            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
                 desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = target.set }
-                desc_nodes.name_styled = {}
+                if (full_UI_table.from_detailed_tooltip and full_UI_table.info[1] == desc_nodes) 
+                    and not full_UI_table.no_styled_name then
+                    desc_nodes.name_styled = {}
 
-                localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
-                desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
-                desc_nodes.name_styled.config.align = "cm"
+                    localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
+                    desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.name_styled.config.align = "cm"
+                end
             end
             if res.main_start then
                 desc_nodes[#desc_nodes + 1] = res.main_start

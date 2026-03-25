@@ -1341,13 +1341,40 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return true
     end
 
-    if key == 'prevent_debuff' or key == 'add_to_hand' or key == 'remove_from_hand' or key == 'stay_flipped' or key == 'prevent_stay_flipped' or key == 'prevent_trigger' then
-        return key
+    local key_return_flags = {
+        'prevent_debuff',
+        'add_to_hand',
+        'remove_from_hand',
+        'stay_flipped',
+        'prevent_stay_flipped',
+        'prevent_trigger'
+    }
+
+    for _, flag in ipairs(key_return_flags) do
+        if key == flag then
+            return key
+        end
     end
 
-    if key == 'remove' or key == 'debuff_text' or key == 'cards_to_draw' or key == 'numerator' or key == 'denominator' or key == 'no_destroy' or
-        key == 'replace_scoring_name' or key == 'replace_display_name' or key == 'replace_poker_hands' or key == 'modify' or key == 'shop_create_flags'  then
-        return { [key] = amount }
+    local amount_return_flags = {
+        'remove',
+        'debuff_text',
+        'cards_to_draw',
+        'numerator',
+        'denominator',
+        'no_destroy',
+        'replace_scoring_name',
+        'replace_display_name',
+        'replace_poker_hands',
+        'modify',
+        'shop_create_flags',
+        'booster_create_flags'
+    }
+
+    for _, flag in ipairs(amount_return_flags) do
+        if key == flag then
+            return { [key] = amount }
+        end
     end
 
     if key == 'debuff' then
@@ -2327,7 +2354,6 @@ G.FUNCS.can_select_from_booster = function(e)
   end
 
 function Card.selectable_from_pack(card, pack)
-    if card.config.center.select_card then return card.config.center.select_card end
     if pack and pack.select_exclusions then
         for _, key in ipairs(pack.select_exclusions) do
             if key == card.config.center_key then return false end
@@ -2890,18 +2916,18 @@ function SMODS.scale_card(card, args)
                     SMODS.calculate_effect(ret, _card)
                 end
             end
-            if card.edition then
-                local edition = G.P_CENTERS[card.edition.key]
-                if edition.calc_scaling and type(edition.calc_scaling) == 'function' then
-                    local ret = edition:calc_scaling(_card, card, initial, scalar_value, args)
-                    if ret then
-                        if ret.override_value and not args.block_overrides.value then initial = ret.override_value.value; SMODS.calculate_effect(ret.override_value, _card) end
-                        if ret.override_scalar_value and not args.block_overrides.scalar then scalar_value = ret.override_scalar_value.value; SMODS.calculate_effect(ret.override_scalar_value, _card) end
-                        if ret.override_message and not args.block_overrides.message then scaling_message = SMODS.merge_defaults(ret.override_message, scaling_message) end
-                        if ret.post then ret.post.source = _card; scaling_responses[#scaling_responses + 1] = ret.post end
-                        SMODS.calculate_effect(ret, _card)
-                    end
-                end
+        end
+    end
+    if card.edition then
+        local edition = G.P_CENTERS[card.edition.key]
+        if edition.calc_scaling and type(edition.calc_scaling) == 'function' then
+            local ret = edition:calc_scaling(card, card, initial, scalar_value, args)
+            if ret then
+                if ret.override_value and not args.block_overrides.value then initial = ret.override_value.value; SMODS.calculate_effect(ret.override_value, card) end
+                if ret.override_scalar_value and not args.block_overrides.scalar then scalar_value = ret.override_scalar_value.value; SMODS.calculate_effect(ret.override_scalar_value, card) end
+                if ret.override_message and not args.block_overrides.message then scaling_message = SMODS.merge_defaults(ret.override_message, scaling_message) end
+                if ret.post then ret.post.source = card; scaling_responses[#scaling_responses + 1] = ret.post end
+                SMODS.calculate_effect(ret, card)
             end
         end
     end
@@ -3386,7 +3412,7 @@ function SMODS.upgrade_poker_hands(args)
         for i, parameter in ipairs(args.parameters) do
             if G.GAME.hands[hand][parameter] then
                 context.old_parameters[parameter] = G.GAME.hands[hand][parameter]
-                G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter)
+                G.GAME.hands[hand][parameter] = args.func(G.GAME.hands[hand][parameter], hand, parameter, args.level_up)
                 context.new_parameters[parameter] = G.GAME.hands[hand][parameter]
                 if not instant then
                     local StatusText = true

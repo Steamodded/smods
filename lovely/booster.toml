@@ -60,7 +60,12 @@ local _size = math.max(1, self.ability.extra + (G.GAME.modifiers.booster_size_mo
 target = "card.lua"
 pattern = '''(?<indent>[\t ]*)if self\.ability\.name:find\('Arcana'\) then[\t\n ]*if G\.GAME\.used_vouchers\.v_omen_globe and pseudorandom\('omen_globe'\) > 0\.8 then''' # Possibly try to target something else
 position = "at"
-payload = '''if booster_obj.create_card and type(booster_obj.create_card) == "function" then
+payload = '''local flags = SMODS.calculate_context({create_booster_card = true, booster = self, index = i})
+if flags.booster_create_flags then
+    card = SMODS.create_card(flags.booster_create_flags)
+end
+if card then
+elseif booster_obj.create_card and type(booster_obj.create_card) == "function" then
     local _card_to_spawn = booster_obj:create_card(self, i)
     if type((_card_to_spawn or {}).is) == 'function' and _card_to_spawn:is(Card) then
         card = _card_to_spawn
@@ -70,6 +75,19 @@ payload = '''if booster_obj.create_card and type(booster_obj.create_card) == "fu
 elseif self.ability.name:find('Arcana') then
     if G.GAME.used_vouchers.v_omen_globe and pseudorandom('omen_globe') > 0.8 then'''
 line_prepend = '$indent'
+
+# modify_booster_card context
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+card.T.x = self.T.x
+'''
+payload = '''
+SMODS.calculate_context({modify_booster_card = true, booster = self, card = card, index = i})
+'''
 
 # Game:set_globals
 [[patches]]
