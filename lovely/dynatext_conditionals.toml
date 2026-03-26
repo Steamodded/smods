@@ -1,0 +1,64 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+### allows conditional dynatext messages
+
+# store conditionals
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = '''
+        if self.strings[k].H > self.config.H then self.config.H = self.strings[k].H; self.strings[k].H_offset = 0 end'''
+position = 'after'
+payload = '''
+if first_pass and type(mem_v) == "table" and mem_v.condition then
+	self.strings[k].condition = mem_v.condition
+end
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = '''    for k, v in ipairs(self.config.string) do'''
+position = 'after'
+payload = '''
+local mem_v = v
+'''
+match_indent = true
+
+# check conditionals
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = '''self.focused_string = (self.config.random_element and math.random(1, #self.strings)) or self.focused_string ==  #self.strings and 1 or self.focused_string+1'''
+position = 'at'
+payload = '''
+while true do
+	self.focused_string = (self.config.random_element and math.random(1, #self.strings)) or self.focused_string ==  #self.strings and 1 or self.focused_string+1
+	if type(self.strings[self.focused_string]) ~= 'table' or not self.strings[self.focused_string].condition then break
+	elseif self.strings[self.focused_string].condition() then break end
+end
+'''
+match_indent = true
+
+# Check condition for the initial string
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = '''for k, v in ipairs(self.strings) do'''
+position = 'before'
+payload = '''
+if first_pass and type(self.strings[self.focused_string]) == 'table' and 
+type(self.strings[self.focused_string].condition) == 'function' and not self.strings[self.focused_string].condition() then
+	while true do
+		self.focused_string = (self.config.random_element and math.random(1, #self.strings)) or self.focused_string ==  #self.strings and 1 or self.focused_string+1
+		if type(self.strings[self.focused_string]) ~= 'table' or not self.strings[self.focused_string].condition then break
+		elseif self.strings[self.focused_string].condition() then break end
+	end
+end
+
+'''
+match_indent = true
