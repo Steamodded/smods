@@ -266,10 +266,10 @@ function Card:get_h_dollars()
     return ret
 end
 
-function Card:get_bonus_add_score()
+function Card:get_bonus_score()
     if self.debuff then return 0 end
-    local ret = (self.ability.perma_add_score or 0)
-    -- TARGET: get_bonus_add_score
+    local ret = (self.ability.perma_score or 0)
+    -- TARGET: get_bonus_score
     return ret
 end
 
@@ -280,10 +280,10 @@ function Card:get_bonus_x_score()
     return ret
 end
 
-function Card:get_bonus_h_add_score()
+function Card:get_bonus_h_score()
     if self.debuff then return 0 end
-    local ret = (self.ability.perma_h_add_score or 0)
-    -- TARGET: get_bonus_h_add_score
+    local ret = (self.ability.perma_h_score or 0)
+    -- TARGET: get_bonus_h_score
     return ret
 end
 

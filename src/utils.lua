@@ -1250,7 +1250,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         SMODS.mod_score({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus })
         return true
     end
-    if (key == 'score' or key == 'h_score' or key == 'add_score' or key == 'h_add_score') and amount ~= 0 then
+    if (key == 'score' or key == 'h_score') and amount ~= 0 then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         SMODS.mod_score({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus })
         return true
@@ -1476,7 +1476,7 @@ SMODS.scoring_parameter_keys = {
 }
 SMODS.other_calculation_keys = {
     'p_dollars', 'dollars', 'h_dollars',
-    'score', 'add_score', 'h_score', 'h_add_score',
+    'score', 'h_score',
     'xscore', 'x_score', 'h_x_score', 'h_xscore',
     'swap', 'balance',
     'saved', 'effect', 'remove',
