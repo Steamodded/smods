@@ -2696,3 +2696,81 @@ G.FUNCS.change_viewed_back = function(...)
 	end
 	return g_funcs_change_viewed_back_ref(...)
 end
+
+local uie_draw_self_ref = UIElement.draw_self
+function UIElement:draw_self(...)
+    local function _draw_layer(shader, send, ...)
+        local args = {
+            G.TIMERS.REAL/28,
+            G.TIMERS.REAL
+        }
+        
+        if shader == "none" or shader == "dissolve" then
+            uie_draw_self_ref(self, ...)
+            return
+        elseif send then
+            for _, v in ipairs(send) do
+                local val = v.val or (v.func and v.func(self)) or v.ref_table[v.ref_value]
+                -- TARGET: Convert v.val to a number if your mod adds an alternate number data type (ala Talisman)
+
+                G.SHADERS[shader]:send(v.name, val)
+            end
+        elseif shader == "vortex" then
+            G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
+        else
+            local key = SMODS.Shaders[shader].original_key
+            local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
+
+            G.SHADERS[shader]:send(key, args)
+            G.SHADERS[shader]:send("uie_details", {self.VT.x * tile_scale, self.VT.y * tile_scale, self.VT.w * tile_scale, self.VT.h * tile_scale})
+            G.SHADERS[shader]:send("uie_scale", self.VT.scale)
+            G.SHADERS[shader]:send("uie_rot", self.VT.r)
+        end
+
+        local p_shader = SMODS.Shader.obj_table[shader or 'dissolve']
+        if p_shader and type(p_shader.send_vars) == "function" then
+            local sh = G.SHADERS[shader or 'dissolve']
+            local send_vars = p_shader.send_vars(self)
+        
+            if type(send_vars) == "table" then
+                for key, value in pairs(send_vars) do
+                    sh:send(key, value)
+                end
+            end
+        end
+
+        love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
+        uie_draw_self_ref(self, ...)
+        love.graphics.setShader()
+
+		-- duplicated call placeholder
+    end
+
+    if self.config.shader and self.states.visible then
+        -- simple single shader
+        if type(self.config.shader) == "string" then
+            _draw_layer(self.config.shader, nil, ...)
+
+        -- more complex shader calls
+        elseif type(self.config.shader) == "table" then
+            -- one shader pass with a custom send
+            if self.config.shader.shader then
+                _draw_layer(self.config.shader.shader, self.config.shader.send, ...)
+
+            -- list of shaders
+            elseif #shader > 0 then
+                for _, v in ipairs(self.config.shader) do
+                    if type(v) == "string" then
+                        _draw_layer(v.shader, nil, ...)
+                    elseif type(v) == "table" then
+                        _draw_layer(v.shader, v.send, ...)
+                    end
+                end
+            end
+        end
+
+    -- no shader
+    else
+        uie_draw_self_ref(self, ...)
+    end
+end
