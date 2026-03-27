@@ -33,7 +33,7 @@ match_indent = true
 target = "engine/text.lua"
 pattern = '''function DynaText:draw()'''
 position = "before"
-payload = '''-- overriden by SMODS in src/overrides.lua'''
+payload = '''-- overridden by SMODS in src/overrides.lua'''
 match_indent = true
 
 # Mark UIElement:draw_self as overridden
@@ -42,5 +42,5 @@ match_indent = true
 target = "engine/ui.lua"
 pattern = '''function UIElement:draw_self()'''
 position = "before"
-payload = '''-- overriden by SMODS in src/overrides.lua'''
+payload = '''-- overridden by SMODS in src/overrides.lua'''
 match_indent = true
