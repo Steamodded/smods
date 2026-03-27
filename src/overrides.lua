@@ -3118,35 +3118,36 @@ function DynaText:set_letter_shader(letter, shadow, shader, send)
         G.TIMERS.REAL/28,
         G.TIMERS.REAL
     }
+	local shadered = true
     
     if not self.states.visible or not shader or shader == "none" or shader == "dissolve" then
         shadered = false
-    elseif send then
-        for _, v in ipairs(send) do
-            local val = v.val or (v.func and v.func(self)) or v.ref_table[v.ref_value]
-            -- TARGET: DynaTextShader - Convert v.val to a number if your mod adds an alternate number data type (ala Talisman)
+	elseif send then
+		for _, v in ipairs(send) do
+			local val = v.val or (v.func and v.func(self)) or v.ref_table[v.ref_value]
+			-- TARGET: DynaTextShader - Convert val to a number if your mod adds an alternate number data type (ala Talisman)
 
-            G.SHADERS[shader]:send(v.name, val)
-        end
-    elseif shader == "vortex" then
-        G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
-    else
-        local key = SMODS.Shaders[shader].original_key
-        local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
-        local _shadow_norm = (not shadow) and self.ARGS.draw_shadow_norm or {x=0, y=0}
+			G.SHADERS[shader]:send(v.name, val)
+		end
+	elseif shader == "vortex" then
+		G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
+	else
+		local key = SMODS.Shaders[shader].original_key
+		local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
+		local _shadow_norm = (not shadow) and self.ARGS.draw_shadow_norm or {x=0, y=0}
 
-        local letter_x, letter_y = 0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.x,
-            0.5*(letter.dims.y - letter.offset.y)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.y
-        
-        G.SHADERS[shader]:send(key, args)
-        G.SHADERS[shader]:send("text_details", {self.T.x * tile_scale, self.T.y * tile_scale, self.T.w * tile_scale, self.T.h * tile_scale})
-        G.SHADERS[shader]:send("text_scale", self.scale)
-        G.SHADERS[shader]:send("text_rot", self.T.r)
-        G.SHADERS[shader]:send("letter_details", {letter_x, letter_y, letter.dims.x * tile_scale, letter.dims.y * tile_scale})
-        G.SHADERS[shader]:send("letter_scale", letter.scale)
-        G.SHADERS[shader]:send("letter_rot", letter.r)
-        G.SHADERS[shader]:send("text_shadow", not not shadow)
-    end
+		local letter_x, letter_y = 0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.x,
+			0.5*(letter.dims.y - letter.offset.y)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.y
+		
+		G.SHADERS[shader]:send(key, args)
+		G.SHADERS[shader]:send("text_details", {self.T.x * tile_scale, self.T.y * tile_scale, self.T.w * tile_scale, self.T.h * tile_scale})
+		G.SHADERS[shader]:send("text_scale", self.scale)
+		G.SHADERS[shader]:send("text_rot", self.T.r)
+		G.SHADERS[shader]:send("letter_details", {letter_x, letter_y, letter.dims.x * tile_scale, letter.dims.y * tile_scale})
+		G.SHADERS[shader]:send("letter_scale", letter.scale)
+		G.SHADERS[shader]:send("letter_rot", letter.r)
+		G.SHADERS[shader]:send("text_shadow", not not shadow)
+	end
 
     if shadered then
         local p_shader = SMODS.Shader.obj_table[shader or 'dissolve']
@@ -3160,7 +3161,8 @@ function DynaText:set_letter_shader(letter, shadow, shader, send)
                 end
             end
         end
+
+		self.shadered = true
         love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
-        self.shadered = true
     end
 end
