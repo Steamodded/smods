@@ -813,7 +813,7 @@ match_indent = true
 payload = '''
 local i = 0
 for _, area in ipairs(SMODS.get_card_areas('jokers')) do
-        for _, _card in ipairs(area.cards) do
+    for _, _card in ipairs(area.cards) do
         local ret, ret_opts = _card:calculate_dollar_bonus()
         ret_opts = ret_opts or {}
 
