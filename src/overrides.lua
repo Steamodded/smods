@@ -3075,3 +3075,202 @@ function UIElement:draw_self()
 
     self:draw_boundingrect()
 end
+
+function DynaText:draw()
+    if self.config.text_effect and SMODS.DynaTextEffects[self.config.text_effect] and type(SMODS.DynaTextEffects[self.config.text_effect].draw_override) == "function" then
+        SMODS.DynaTextEffects[self.config.text_effect].draw_override(self)
+        return
+    end
+    if self.children.particle_effect then self.children.particle_effect:draw() end
+    local start_index = 1
+    local end_index = #self.strings[self.focused_string].letters
+    if self.config.marquee and self.config.marquee ~= 'no' then
+        local padding = math.floor(#self.strings[self.focused_string].letters / (self.config.marquee_width or 1)) - 1
+        if self.dt and (self.dt - self.config.hold) / self.config.scroll_speed > (#self.strings[self.focused_string].letters + math.ceil(padding/4)) then self.dt = 0 end
+        if self.dt and self.dt > self.config.hold then
+            start_index = 1 + (math.floor((self.dt - self.config.hold) / self.config.scroll_speed) % (#self.strings[self.focused_string].letters + math.ceil(padding/4)))
+        end
+        end_index = math.min(start_index + padding, #self.strings[self.focused_string].letters)
+    end
+
+	local _shadow_norm
+
+	local function _draw_letter(letter, shadow)
+		local real_pop_in = self.config.min_cycle_time == 0 and 1 or letter.pop_in
+		if shadow then
+			if self.config.text_effect and SMODS.DynaTextEffects[self.config.text_effect] and type(SMODS.DynaTextEffects[self.config.text_effect].draw_shadow) == "function" then
+                SMODS.DynaTextEffects[self.config.text_effect].draw_shadow(self, k, letter) -- shadow
+            else
+				love.graphics.draw(
+					letter.letter,
+					0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE -self.shadow_parrallax.x*self.scale/(G.TILESIZE),
+					0.5*(letter.dims.y)*self.font.FONTSCALE/G.TILESIZE -self.shadow_parrallax.y*self.scale/(G.TILESIZE), 
+					letter.r or 0,
+					real_pop_in*self.scale*self.font.FONTSCALE/G.TILESIZE,
+					real_pop_in*self.scale*self.font.FONTSCALE/G.TILESIZE,
+					0.5*letter.dims.x/self.scale,
+					0.5*letter.dims.y/self.scale
+				)
+			end
+		else
+			if self.config.text_effect and SMODS.DynaTextEffects[self.config.text_effect] and type(SMODS.DynaTextEffects[self.config.text_effect].draw_letter) == "function" then
+				SMODS.DynaTextEffects[self.config.text_effect].draw_letter(self, k, letter, false) -- actual text
+			else
+				love.graphics.draw(
+					letter.letter,
+					0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.x,
+					0.5*(letter.dims.y - letter.offset.y)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.y, 
+					letter.r or 0,
+					real_pop_in*letter.scale*self.scale*self.font.FONTSCALE/G.TILESIZE,
+					real_pop_in*letter.scale*self.scale*self.font.FONTSCALE/G.TILESIZE,
+					0.5*letter.dims.x/(self.scale),
+					0.5*letter.dims.y/(self.scale)
+				)
+			end
+		end
+	end
+	local function _draw_letter_layer(letter, shader, send, shadow)
+		local args = {
+			G.TIMERS.REAL/28,
+			G.TIMERS.REAL
+		}
+		
+		if shader == "none" or shader == "dissolve" then
+			_draw_letter(letter, shadow)
+			return
+		elseif send then
+			for _, v in ipairs(send) do
+				local val = v.val or (v.func and v.func(self)) or v.ref_table[v.ref_value]
+				-- TARGET: Convert v.val to a number if your mod adds an alternate number data type (ala Talisman)
+
+				G.SHADERS[shader]:send(v.name, val)
+			end
+		elseif shader == "vortex" then
+			G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
+		else
+			local key = SMODS.Shaders[shader].original_key
+			local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
+			local _shadow_norm_local = _shadow_norm or {x=0, y=0}
+
+			local letter_x, letter_y = 0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm_local.x,
+				0.5*(letter.dims.y - letter.offset.y)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm_local.y
+			
+			G.SHADERS[shader]:send(key, args)
+			G.SHADERS[shader]:send("text_details", {self.T.x * tile_scale, self.T.y * tile_scale, self.T.w * tile_scale, self.T.h * tile_scale})
+			G.SHADERS[shader]:send("text_scale", self.scale)
+			G.SHADERS[shader]:send("text_rot", self.T.r)
+			G.SHADERS[shader]:send("letter_details", {letter_x, letter_y, letter.dims.x * tile_scale, letter.dims.y * tile_scale})
+			G.SHADERS[shader]:send("letter_scale", letter.scale)
+			G.SHADERS[shader]:send("letter_rot", letter.r)
+			G.SHADERS[shader]:send("text_shadow", not not shadow)
+		end
+
+		local p_shader = SMODS.Shader.obj_table[shader or 'dissolve']
+		if p_shader and type(p_shader.send_vars) == "function" then
+			local sh = G.SHADERS[shader or 'dissolve']
+			local send_vars = p_shader.send_vars(self)
+		
+			if type(send_vars) == "table" then
+				for key, value in pairs(send_vars) do
+					sh:send(key, value)
+				end
+			end
+		end
+
+		love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
+		_draw_letter(letter, shadow)
+		love.graphics.setShader()
+	end
+
+    if self.shadow then 
+        prep_draw(self, 1)
+        love.graphics.translate(self.strings[self.focused_string].W_offset + self.text_offset.x*self.font.FONTSCALE/G.TILESIZE, self.strings[self.focused_string].H_offset + self.text_offset.y*self.font.FONTSCALE/G.TILESIZE)
+        if self.config.spacing then love.graphics.translate(self.config.spacing*self.font.FONTSCALE/G.TILESIZE, 0) end
+        if self.config.shadow_colour then
+            love.graphics.setColor(self.config.shadow_colour)
+        else 
+            love.graphics.setColor(0, 0, 0, 0.3*self.colours[1][4])
+        end
+        for k=start_index, end_index do
+            local letter = self.strings[self.focused_string].letters[k]
+			local shader = letter.shader or (self.shaders and self.shaders[k%#self.shaders + 1])
+			if shader and self.states.visible and self.UIT ~= G.UIT.T then
+				-- simple single shader
+				if type(shader) == "string" then
+					_draw_letter_layer(letter, shader, nil, true)
+
+				-- more complex shader calls
+				elseif type(shader) == "table" then
+					-- one shader pass with a custom send
+					if shader.shader then
+						_draw_letter_layer(letter, shader.shader, shader.send)
+
+					-- list of shaders
+					elseif #shader > 0 then
+						for _, v in ipairs(shader) do
+							if type(v) == "string" then
+								_draw_letter_layer(letter, v.shader, nil, true)
+							elseif type(v) == "table" then
+								_draw_letter_layer(letter, v.shader, v.send, true)
+							end
+						end
+					end
+				end
+
+			-- no shader
+			else
+				_draw_letter(letter, true)
+			end
+			love.graphics.translate(letter.dims.x*self.font.FONTSCALE/G.TILESIZE, 0)
+        end
+        love.graphics.pop()
+    end
+
+    prep_draw(self, 1)
+    love.graphics.translate(self.strings[self.focused_string].W_offset + self.text_offset.x*self.font.FONTSCALE/G.TILESIZE, self.strings[self.focused_string].H_offset + self.text_offset.y*self.font.FONTSCALE/G.TILESIZE)
+    if self.config.spacing then love.graphics.translate(self.config.spacing*self.font.FONTSCALE/G.TILESIZE, 0) end
+    self.ARGS.draw_shadow_norm = self.ARGS.draw_shadow_norm or {}
+    _shadow_norm = self.ARGS.draw_shadow_norm
+    _shadow_norm.x, _shadow_norm.y = 
+        self.shadow_parrallax.x/math.sqrt(self.shadow_parrallax.y*self.shadow_parrallax.y + self.shadow_parrallax.x*self.shadow_parrallax.x)*self.font.FONTSCALE/G.TILESIZE,
+        self.shadow_parrallax.y/math.sqrt(self.shadow_parrallax.y*self.shadow_parrallax.y + self.shadow_parrallax.x*self.shadow_parrallax.x)*self.font.FONTSCALE/G.TILESIZE
+    
+    for k=start_index, end_index do
+        local letter = self.strings[self.focused_string].letters[k]
+        love.graphics.setColor(letter.prefix or letter.suffix or letter.colour or self.colours[k%#self.colours + 1])
+
+		local shader = letter.shader or (self.shaders and self.shaders[k%#self.shaders + 1])
+		if shader and self.states.visible and self.UIT ~= G.UIT.T then
+			-- simple single shader
+			if type(shader) == "string" then
+				_draw_letter_layer(letter, shader, nil)
+
+			-- more complex shader calls
+			elseif type(shader) == "table" then
+				-- one shader pass with a custom send
+				if shader.shader then
+					_draw_letter_layer(letter, shader.shader, shader.send)
+
+				-- list of shaders
+				elseif #shader > 0 then
+					for _, v in ipairs(shader) do
+						if type(v) == "string" then
+							_draw_letter_layer(letter, v.shader, nil)
+						elseif type(v) == "table" then
+							_draw_letter_layer(letter, v.shader, v.send)
+						end
+					end
+				end
+			end
+
+		-- no shader
+		else
+			_draw_letter(letter)
+		end
+        love.graphics.translate(letter.dims.x*self.font.FONTSCALE/G.TILESIZE, 0)
+    end
+    love.graphics.pop()
+
+    add_to_drawhash(self)
+    self:draw_boundingrect()
+end
