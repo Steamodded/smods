@@ -16,46 +16,65 @@ end
 '''
 position = "before"
 payload = '''
-local last_canvas = self.CANVAS
-G.SHADER_CANVAS_A = G.SHADER_CANVAS_A or SMODS.create_canvas()
-G.SHADER_CANVAS_B = G.SHADER_CANVAS_B or SMODS.create_canvas()
+last_canvas = self.CANVAS
+
+local active_shaders = {}
 for index, key in ipairs(SMODS.ScreenShader.obj_buffer) do
     local shader = SMODS.ScreenShaders[key]
-	if (shader.should_apply and shader:should_apply()) or (not shader.should_apply) then
-        --hypothetically less table accesses
+    if (shader.should_apply and shader:should_apply()) or (not shader.should_apply) then
+        active_shaders[#active_shaders + 1] = shader
+    end
+end
+
+if #active_shaders == 0 then
+
+elseif #active_shaders == 1 then
+    local shader = active_shaders[1]
+    local shader_object = G.SHADERS[shader.shader]
+    if shader.send_vars then
+        local vars = shader:send_vars()
+        for k,v in pairs(vars) do
+            shader_object:send(k, unpack( (type(v) == "table" and v.array) and v.array or {v} ))
+        end
+    end
+    love.graphics.setCanvas()
+    love.graphics.setShader(shader_object)
+    love.graphics.push()
+        love.graphics.scale(1/G.CANV_SCALE)
+        love.graphics.draw(last_canvas, 0, 0)
+    love.graphics.pop()
+    love.graphics.setShader()
+else
+    G.SHADER_CANVAS_A = G.SHADER_CANVAS_A or SMODS.create_canvas()
+    G.SHADER_CANVAS_B = G.SHADER_CANVAS_B or SMODS.create_canvas()
+
+    for _, shader in ipairs(active_shaders) do
         local shader_object = G.SHADERS[shader.shader]
-		assert(shader_object, "Shader " .. shader.key .. " not found in G.SHADERS")
-
-        -- effectively swaps between A and B
+        assert(shader_object, "Shader " .. shader.key .. " not found in G.SHADERS")
         local current_canvas = (last_canvas == G.SHADER_CANVAS_A) and G.SHADER_CANVAS_B or G.SHADER_CANVAS_A
-
         if shader.send_vars then
             local vars = shader:send_vars()
             for k,v in pairs(vars) do
                 shader_object:send(k, unpack( (type(v) == "table" and v.array) and v.array or {v} ))
             end
-
         end
-		
-		love.graphics.setCanvas(current_canvas)
-		love.graphics.setShader(shader_object)
-		love.graphics.draw(last_canvas, 0, 0)
-
+        love.graphics.setCanvas(current_canvas)
+        love.graphics.setShader(shader_object)
+        love.graphics.draw(last_canvas, 0, 0)
         last_canvas = current_canvas
-	end
-end
--- I don't like having this out here but id rather not run it when i don't have to
--- also less setcanvas and setshader means it should run a smidge faster
-love.graphics.setCanvas()
-love.graphics.setShader()
-if last_canvas then
-    love.graphics.draw(last_canvas, 0, 0)
-    -- Draw everything we just did to the main canvas (what the player actually sees)
+    end
+
+    love.graphics.setCanvas()
+    love.graphics.setShader()
+    if last_canvas ~= self.CANVAS then
+        love.graphics.push()
+            love.graphics.scale(1/G.CANV_SCALE)
+            love.graphics.draw(last_canvas, 0, 0)
+        love.graphics.pop()
+    end
 end
 '''
 match_indent = true
-
-
 
 [[patches]]
 [patches.pattern]
@@ -70,3 +89,21 @@ G.SHADER_CANVAS_A = SMODS.create_canvas()
 G.SHADER_CANVAS_B = SMODS.create_canvas()
 '''
 match_indent = true
+
+[[patches]]
+[patches.regex]
+target = "game.lua"
+pattern = ".*G\\.SHADERS\\['CRT'\\].*\n"
+position = "at"
+payload = ""
+match_indent = true
+times = 13
+
+[[patches]]
+[patches.regex]
+target = "game.lua"
+pattern = ".*G\\.SETTINGS\\.GRAPHICS\\.crt.*\n"
+position = "at"
+payload = ""
+match_indent = true
+times = 2
