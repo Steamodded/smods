@@ -26,21 +26,3 @@ pattern = '''self.config = config'''
 position = "after"
 payload = '''self.shaders = config.shaders'''
 match_indent = true
-
-# Mark DynaText:draw as overridden
-[[patches]]
-[patches.pattern]
-target = "engine/text.lua"
-pattern = '''function DynaText:draw()'''
-position = "before"
-payload = '''-- overridden by SMODS in src/overrides.lua'''
-match_indent = true
-
-# Mark UIElement:draw_self as overridden
-[[patches]]
-[patches.pattern]
-target = "engine/ui.lua"
-pattern = '''function UIElement:draw_self()'''
-position = "before"
-payload = '''-- overridden by SMODS in src/overrides.lua'''
-match_indent = true
