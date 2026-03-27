@@ -328,7 +328,7 @@ match_indent = true
 target = "card.lua"
 pattern = "if not G.OVERLAY_MENU then "
 position = "before"
-payload = '''if self.ability and not initial then
+payload = '''if self.ability and not initial and not delay_sprites then
   self.front_hidden = self:should_hide_front()
 end'''
 match_indent = true

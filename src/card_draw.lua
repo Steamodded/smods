@@ -49,7 +49,7 @@ function SMODS.clean_up_canvas_text(t)
 end
 
 function SMODS.clean_up_children(t)
-	local ignore = {center = true, shadow = true, back = true, h_popup = true}
+	local ignore = {center = true, shadow = true, back = true, h_popup = true, front = true}
     for k, v in pairs(t) do
         if not ignore[k] then
             if type(v) == 'table' and v.remove then v:remove() end
@@ -286,11 +286,11 @@ SMODS.DrawStep {
     order = 10,
     func = function(self)
         if (self.ability.set == 'Voucher' or self.config.center.demo) and (self.ability.name ~= 'Antimatter' or not (self.config.center.discovered or self.bypass_discovery_center)) then
-            if self:should_draw_base_shader() then
+            if self:should_draw_base_shader() and not self.config.center.disable_shine then
                 self.children.center:draw_shader('voucher', nil, self.ARGS.send_to_shader)
             end
         end
-        if (self.ability.set == 'Booster' or self.ability.set == 'Spectral') and self:should_draw_base_shader() then
+        if (self.ability.set == 'Booster' or self.ability.set == 'Spectral') and self:should_draw_base_shader() and not self.config.center.disable_shine then
             self.children.center:draw_shader('booster', nil, self.ARGS.send_to_shader)
         end
     end,

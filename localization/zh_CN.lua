@@ -251,7 +251,7 @@ return {
             b_authors = '作者',
             b_unknown = '未知',
             b_lovely_mod = '(依赖Lovely加载器的补丁模组)',
-            b_by = ' 作者：',
+            b_by = '作者：',
             b_priority = '优先级：',
             b_config = "配置",
             b_additions = '新增内容',

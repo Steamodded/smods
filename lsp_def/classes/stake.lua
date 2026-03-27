@@ -12,7 +12,8 @@
 ---@field above_stake? string Key to the stake that this stake appeard above in the run menu. By default, stakes are added on top of the last injected stake. 
 ---@field colour? table HEX color of the stake in the stake selection menu. 
 ---@field unlocked? boolean Sets if the stake is unlocked by default. 
----@field shiny? boolean Draws the shiny shader on State sticker. 
+---@field shiny? boolean Draws the shiny shader on State sticker.
+---@field hide_from_run_info? boolean If true it hides the stake description on the Run Info screen
 ---@field __call? fun(self: SMODS.Stake|table, o: SMODS.Stake|table): nil|table|SMODS.Stake
 ---@field extend? fun(self: SMODS.Stake|table, o: SMODS.Stake|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Stake|table): boolean? Ensures objects already registered will not register. 

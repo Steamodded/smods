@@ -111,6 +111,13 @@
 ---@field old? string Key of the old center after a card's ability is set.
 ---@field new? string Key of the new center after a card's ability is set.
 ---@field unchanged? boolean `true` if the key of the old center is the same as the new one after a card's ability is set.
+---@field create_shop_card? true Check if `true` for when the shop is creating a card.
+---@field set? string Set of the card the shop is creating.
+---@field modify_shop_card? true Check if `true` for modifying a card in the shop after its creation.
+---@field create_booster_card? true Check if `true` for when a booster is creating a card.
+---@field modify_booster_card? true Check if `true` for modifying a card in a booster after its creation.
+---@field booster? Card|table Booster object.
+---@field index? integer Index of the card to be created by a booster.
 ---@field poker_hand_changed? boolean `true` if a poker hand's values are being altered.
 ---@field old_level? integer Level of the poker hand before the alteration, if it was changed.
 ---@field new_level? integer Level of the poker hand after the alteration, if it was changed.
@@ -531,9 +538,15 @@ function SMODS.debug_calculation() end
 
 ---@param card Card|table
 ---@param pack SMODS.Booster|table
----@return boolean
+---@return boolean|string
 --- Controls if the card should be selectable from a Booster Pack.
 function Card.selectable_from_pack(card, pack) end
+
+---@param card Card|table
+---@param pack SMODS.Booster|table
+---@return string|{[string]: string}
+--- Controls the area a card should be after selection from a Booster Pack.
+function SMODS.card_select_area(card, pack) end
 
 ---@param pool (string|"UNAVAILABLE")[]
 ---@return number
@@ -706,9 +719,7 @@ function SMODS.is_eternal(card, trigger) end
 
 ---@param card Card|table
 ---@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: '+'|'X'|'-'|string|fun(ref_table: table, ref_value: string, initial: number, change: number)?, block_overrides: {value: boolean?, scalar: boolean?, message: boolean?}?, scaling_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
----@return table? results
 --- Tells Jokers that this card is scaling allowing for scaling detection
---- Can return scaling_value and scalar_value in results to change the scaling cards values
 --- Args must contain `ref_table`, `ref_value`, and `scalar_value`. It may optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
 function SMODS.scale_card(card, args) end
 
@@ -754,15 +765,16 @@ function SMODS.is_getter_context(context) end
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
 
----@param atlas_key string The key of the atlas 
+---@param atlas_key string The key of the atlas
 --- This function gets an atlas from G.ASSET_ATLAS or G.ANIMATION_ATLAS
 function SMODS.get_atlas(atlas_key) end
 
----@param atlas_key string The key of the atlas 
+---@param atlas_key string The key of the atlas
 --- This function returns the Sprite or the AnimatedSprite class depending on the atlas type
 function SMODS.get_atlas_sprite_class(atlas_key) end
 
 ---@param ... any The same parameters as Sprite() takes individually. The atlas may be an atlas_key instead.
+---@return Sprite|AnimatedSprite|table
 --- This function creates a Sprite or AnimatedSprite depending on the atlas passed
 function SMODS.create_sprite(X, Y, W, H, atlas, pos) end
 
@@ -776,7 +788,7 @@ function SMODS.is_active_blind(key, ignore_disabled) end
 ---@return boolean
 function SMODS.challenge_is_unlocked(challenge, k) end
 
----@param args table|{hands?: table, parameters?: table, level_up?: number|boolean, func?: fun(base: number, hand: string, param: string), instant?: boolean, StatusText?: boolean|string|table|fun(hand: string, parameter: string)}
+---@param args table|{hands?: table, parameters?: table, level_up?: number|boolean, func?: fun(base: number, hand: string, param: string, level_up?: number|boolean), instant?: boolean, StatusText?: boolean|string|table|fun(hand: string, parameter: string)}
 --- This functions handles upgrading poker hands in more complex ways. You can define
 --- a custom `func` to modify the values in specific ways. `hands` and `parameters` can
 --- be limited to specific ones, or default to using all of `G.GAME.hands` and `SMODS.Scoring_Parameters`.
@@ -798,3 +810,14 @@ function SMODS.get_card_type_text_colour(type, center, card) end
 ---@param key string
 ---@return table?
 function SMODS.get_badge_text_colour(key) end
+
+---Check if `challenge` is unlocked.
+---@param mod_score Score_Mod_Parameter Score modification parameter
+function SMODS.mod_score(mod_score) end
+
+---@class Score_Mod_Parameter
+---@field add? number Add this number to score
+---@field mult? number Multiply score by this number
+---@field card? Card Card responsible for score modification action, crucial for score display to work properly
+---@field effect? table Table of effects that were calculated
+---@field from_edition? boolean 
