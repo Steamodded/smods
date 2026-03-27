@@ -816,6 +816,8 @@ function SMODS.get_badge_text_colour(key) end
 function SMODS.mod_score(mod_score) end
 
 ---@class Score_Mod_Parameter
----@field add? number Add score by this number
+---@field add? number Add this number to score
 ---@field mult? number Multiply score by this number
 ---@field card? Card Card responsible for score modification action, crucial for score display to work properly
+---@field effect? table Table of effects that were calculated
+---@field from_edition? boolean 

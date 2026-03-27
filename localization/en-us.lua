@@ -341,8 +341,8 @@ return {
             a_xchips = "X#1# Chips",
             a_xchips_minus = "-X#1# Chips",
             a_score="#1# Score",
-            a_score_x="X#1# Score",
-            a_score_x_minus="-X#1# Score",
+            a_xscore="X#1# Score",
+            a_xscore_minus="-X#1# Score",
             smods_version_mismatch = {
                 "Your Steamodded version has changed",
                 "since this run was started!",

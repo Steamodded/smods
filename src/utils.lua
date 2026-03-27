@@ -1247,12 +1247,12 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     end
     if (key == 'xscore' or key == 'h_xscore' or key == 'x_score' or key == 'h_x_score') and amount ~= 1 then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        SMODS.mod_score({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus })
+        SMODS.mod_score({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
         return true
     end
     if (key == 'score' or key == 'h_score') and amount ~= 0 then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        SMODS.mod_score({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus })
+        SMODS.mod_score({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
         return true
     end
 
@@ -3615,26 +3615,34 @@ SMODS.mod_score = function(score_mod)
         local absoluted = math.abs(score_mod.mult)
         score_cal = score_cal * score_mod.mult
         table.insert(G.SCORE_DISPLAY_QUEUE, old)
-        table.insert(score_fx, {score_mod.mult < 0 and "a_score_x_minus" or "a_score_x", absoluted, "xscore"})
+        score_fx[#score_fx+1] = {key = score_mod.mult < 0 and "a_xscore_minus" or "a_xscore", value = absoluted, sound = "xscore", message_key = "xscore_message"}
     end
     if score_mod.add and score_mod.add ~= 0 then
         local absoluted = math.abs(score_mod.add)
         score_cal = score_cal + score_mod.add
         table.insert(G.SCORE_DISPLAY_QUEUE, old)
-        table.insert(score_fx, {"a_score", score_mod.add, "gong"})
+        score_fx[#score_fx+1] = { key = "a_score", value = score_mod.add, sound = "gong", message_key = 'score_message'}
     end
     -- TARGET: lower priority score operation
     G.GAME.chips = score_cal
-    if score_mod.card then
-        for _, values in ipairs(score_fx) do
-            card_eval_status_text(score_mod.card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= values[1],vars={values[2]}}, update_score = true, volume = 0.5, sound_override = values[3], colour =  G.C.PURPLE})
-            -- this check is in case some skip animation mods is there, may be removed in the future
-            if G.CARD_EVAL_TRIGGERED then
-                G.SCORE_DISPLAY_QUEUE = nil
+
+    if not (score_mod.effect and score_mod.effect.remove_default_message) and score_mod.card then
+        for _,v in ipairs(score_fx) do
+            if score_mod.from_edition then
+                card_eval_status_text(score_mod.card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = v.key, vars = {v.value}}, update_score = true, colour = G.C.EDITION, edition = true, sound = v.sound, volume = 0.5 })
+            elseif score_mod.effect and score_mod.effect[v.message_key] then
+                score_mod.effect[v.message_key].update_score = true
+                card_eval_status_text(score_mod.card, 'extra', v.value, percent, nil, score_mod.effect[v.message_key])
+            else
+                card_eval_status_text(score_mod.card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= v.key,vars={v.value}}, update_score = true, volume = 0.5, sound_override = v.sound, colour =  G.C.PURPLE})
             end
+        end 
+        -- this check is in case some skip animation mods is there, may be removed in the future
+        if G.CARD_EVAL_TRIGGERED then
+            G.SCORE_DISPLAY_QUEUE = nil
         end
-    else
-        G.SCORE_DISPLAY_QUEUE = nil
+    elseif score_mod.effect then
+        score_mod.effect.update_score = true
     end
     delay(0.2)
 end
