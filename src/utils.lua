@@ -3564,8 +3564,17 @@ end
 
 
 -- Used for SMODS.ScreenShader, just to save lines re-creating canvases when relevant
+-- mitigate High-DPI density issue rendersize on mobile devices
 function SMODS.create_canvas()
-    local canvas = love.graphics.newCanvas(love.window.fromPixels(love.graphics.getWidth()) * G.CANV_SCALE, love.window.fromPixels(love.graphics.getHeight()) * G.CANV_SCALE, { type = '2d', readable = true })
+    local w, h
+    if love.system.getOS() == "Android" then
+        w = love.graphics.getPixelWidth()
+        h = love.graphics.getPixelHeight()
+    else
+        w = love.window.fromPixels(love.graphics.getWidth()) * G.CANV_SCALE
+        h = love.window.fromPixels(love.graphics.getHeight()) * G.CANV_SCALE
+    end
+    local canvas = love.graphics.newCanvas(w, h, { type = '2d', readable = true })
     canvas:setFilter('linear', 'linear')
     return canvas
 end
