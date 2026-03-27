@@ -3133,10 +3133,10 @@ function DynaText:set_letter_shader(letter, shadow, shader, send)
     else
         local key = SMODS.Shaders[shader].original_key
         local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
-        local _shadow_norm_local = _shadow_norm or {x=0, y=0}
+        local _shadow_norm = (not shadow) and self.ARGS.draw_shadow_norm or {x=0, y=0}
 
-        local letter_x, letter_y = 0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm_local.x,
-            0.5*(letter.dims.y - letter.offset.y)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm_local.y
+        local letter_x, letter_y = 0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.x,
+            0.5*(letter.dims.y - letter.offset.y)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.y
         
         G.SHADERS[shader]:send(key, args)
         G.SHADERS[shader]:send("text_details", {self.T.x * tile_scale, self.T.y * tile_scale, self.T.w * tile_scale, self.T.h * tile_scale})
