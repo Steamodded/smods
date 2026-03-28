@@ -1,5 +1,7 @@
--- TODO: labels are union or interset
--- TODO: filter function accepted
+-- TODO: object labels SMODS class
+-- TODO: populate vanilla object labels (chips, mult, xmult, food, space, generation, diamond, heart, spade, club)
+-- TODO: object labels integrated into `get_current_pool`
+
 
 -- Returns a `key` of the polled object type
 ---@param args table|{type: string?, labels: table[string]?, pool: table[string]?, seed: string?, chance: number?, guaranteed: boolean?}
@@ -21,30 +23,9 @@ function SMODS.poll_object(args)
 
     -- Populate pool
     local types_used = {}
+
     if not args.pool then
-        for _, label in ipairs(types) do
-            types_used[label] = true
-            local temp_pool = {}
-            local join_func = args.intersect and SMODS.intersect_lists or SMODS.merge_lists
-            for i=1, #(args.rarities or {true}) do
-                local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or get_current_pool(label, args.rarities and args.rarities[i])
-                if label == 'Edition' then
-                    local _options = {}
-                    for _, edition in ipairs(_p) do
-                        if G.P_CENTERS[edition] and G.P_CENTERS[edition].vanilla then
-                            table.insert(_options, 1, edition)
-                        elseif G.P_CENTERS[edition] then
-                            table.insert(_options, edition)
-                        end
-                    end
-                    _p = _options
-                end
-                temp_pool = join_func({temp_pool, _p})
-            end
-            for _, v in ipairs(temp_pool) do
-                if G[SMODS.game_table_from_type[label] or 'P_CENTERS'][v] then table.insert(pool, {key = v, type = label}) end
-            end
-        end
+        pool, types_used = SMODS.create_poll_pool(types, args)
     end
     
     if args.filter then pool = args.filter(pool) end
@@ -119,7 +100,7 @@ function SMODS.poll_object(args)
     end
         -- Edition specific functionality
         if args.no_negative and key == 'e_negative' then return 'e_polychrome' end
-        print("Result: "..key)
+        if SMODS.debug_prints then print("Result: "..key) end
         return key
 end
 
@@ -232,6 +213,45 @@ function SMODS.create_blind_pool(blind_type, skip_cull)
     end
     
     return output
+end
+
+-- Create a table of {key = string, type = label} items to be polled
+function SMODS.create_poll_pool(labels, args)
+    local labels_used = {}
+    local pool = {}
+    local final_pool
+    
+    for _, label in ipairs(labels) do
+        labels_used[label] = true
+        local temp_pool = {}
+        local join_func = args.intersect and SMODS.intersect_lists or SMODS.merge_lists
+        for i=1, #(args.rarities or {true}) do
+            local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or get_current_pool(label, args.rarities and args.rarities[i])
+            if label == 'Edition' then
+                local _options = {}
+                for _, edition in ipairs(_p) do
+                    if G.P_CENTERS[edition] and G.P_CENTERS[edition].vanilla then
+                        table.insert(_options, 1, edition)
+                    elseif G.P_CENTERS[edition] then
+                        table.insert(_options, edition)
+                    end
+                end
+                _p = _options
+            end
+            temp_pool = SMODS.merge_lists({temp_pool, _p})
+        end
+        for _, v in ipairs(temp_pool) do
+            if G[SMODS.game_table_from_type[label] or 'P_CENTERS'][v] then pool[v] = {key = v, type = label} end
+        end
+        final_pool = final_pool and join_func({final_pool, temp_pool}) or temp_pool
+    end
+
+    local ret_pool = {}
+    for i, k in ipairs(final_pool) do
+        table.insert(ret_pool, pool[k])
+    end
+
+    return ret_pool, labels_used
 end
 
 function SMODS.is_showdown_ante()
