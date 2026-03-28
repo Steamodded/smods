@@ -687,9 +687,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         inject = function(self)
             G.P_STAKES[self.key] = self
-            self.count = #G.P_CENTER_POOLS[self.set] + 1
-            self.order = self.count
-                SMODS.insert_pool(G.P_CENTER_POOLS.Stake, self)
+            self.count = self.count or #G.P_CENTER_POOLS[self.set] + 1
+            self.order = self.order or self.count
+            SMODS.insert_pool(G.P_CENTER_POOLS.Stake, self)
             if not self.injected then
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
