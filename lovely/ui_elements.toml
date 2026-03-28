@@ -214,6 +214,9 @@ pattern = """if self.config.colour[4] > 0.01 then"""
 position = "before"
 payload = """
 local function _draw(self, shader, send)
+if self.UIT ~= G.UIT.T then
+    self:set_element_shader(shader, send, false)
+end
 """
 match_indent = true
 
@@ -224,6 +227,9 @@ pattern = """--Draw the 'chosen triangle'
     if self.config.chosen then """
 position = "before"
 payload = """
+if self.UIT ~= G.UIT.T then
+    self:set_element_shader()
+end
 end
 
 local element_shader = self.config.shader or nil
@@ -297,28 +303,5 @@ for _, v in ipairs(text_shaders) do
     )
     self:set_text_shader()
 end
-"""
-match_indent = true
-
-# Apply shader on element (shadow)
-# UIElement:draw_self
-[[patches]]
-[patches.pattern]
-target = 'engine/ui.lua'
-pattern = """
-if self.config.r and self.VT.w > 0.01 then 
-    self:draw_pixellated_rect('shadow', parallax_dist)
-else
-    love.graphics.rectangle('fill', -self.shadow_parrallax.x*parallax_dist, -self.shadow_parrallax.y*parallax_dist, self.VT.w*G.TILESIZE, self.VT.h*G.TILESIZE)
-end"""
-position = "at"
-payload = """
-self:set_element_shader(shader, send, true)
-if self.config.r and self.VT.w > 0.01 then 
-    self:draw_pixellated_rect('shadow', parallax_dist)
-else
-    love.graphics.rectangle('fill', -self.shadow_parrallax.x*parallax_dist, -self.shadow_parrallax.y*parallax_dist, self.VT.w*G.TILESIZE, self.VT.h*G.TILESIZE)
-end
-self:set_element_shader()
 """
 match_indent = true
