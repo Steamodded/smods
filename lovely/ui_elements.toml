@@ -227,9 +227,98 @@ payload = """
 end
 
 local element_shader = self.config.shader or nil
-local element_shaders = SMODS.resolve_ui_shaders(self.states.visible and not self.UIT ~= G.UIT.T and element_shader or nil, nil)
+local element_shaders = SMODS.resolve_ui_shaders(self.states.visible and self.UIT ~= G.UIT.T and element_shader or nil, nil)
 for _, v in ipairs(element_shaders) do
     _draw(self, v.shader, v.send)
 end
+"""
+match_indent = true
+
+# Apply shader on element text (shadow)
+# UIElement:draw_self
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """
+love.graphics.draw(
+    self.config.text_drawable,
+    (self.config.lang.font.TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    (self.config.lang.font.TEXT_OFFSET.y + (self.config.vert and self.ARGS.text_parallax.sx or self.ARGS.text_parallax.sy))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    0,
+    (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+)"""
+position = "at"
+payload = """
+local text_shader = self.config.shader or nil
+local text_shaders = SMODS.resolve_ui_shaders(self.states.visible and text_shader or nil, nil)
+for _, v in ipairs(text_shaders) do
+    self:set_text_shader(v.shader, v.send, true)
+    love.graphics.draw(
+        self.config.text_drawable,
+        (self.config.lang.font.TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        (self.config.lang.font.TEXT_OFFSET.y + (self.config.vert and self.ARGS.text_parallax.sx or self.ARGS.text_parallax.sy))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        0,
+        (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+    )
+    self:set_text_shader()
+end
+"""
+match_indent = true
+
+# Apply shader on element text
+# UIElement:draw_self
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """
+love.graphics.draw(
+    self.config.text_drawable,
+    self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    self.config.lang.font.TEXT_OFFSET.y*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    0,
+    (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+)"""
+position = "at"
+payload = """
+local text_shader = self.config.shader or nil
+local text_shaders = SMODS.resolve_ui_shaders(self.states.visible and text_shader or nil, nil)
+for _, v in ipairs(text_shaders) do
+    self:set_text_shader(v.shader, v.send, false)
+    love.graphics.draw(
+        self.config.text_drawable,
+        self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        self.config.lang.font.TEXT_OFFSET.y*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        0,
+        (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+    )
+    self:set_text_shader()
+end
+"""
+match_indent = true
+
+# Apply shader on element (shadow)
+# UIElement:draw_self
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """
+if self.config.r and self.VT.w > 0.01 then 
+    self:draw_pixellated_rect('shadow', parallax_dist)
+else
+    love.graphics.rectangle('fill', -self.shadow_parrallax.x*parallax_dist, -self.shadow_parrallax.y*parallax_dist, self.VT.w*G.TILESIZE, self.VT.h*G.TILESIZE)
+end"""
+position = "at"
+payload = """
+self:set_element_shader(shader, send, true)
+if self.config.r and self.VT.w > 0.01 then 
+    self:draw_pixellated_rect('shadow', parallax_dist)
+else
+    love.graphics.rectangle('fill', -self.shadow_parrallax.x*parallax_dist, -self.shadow_parrallax.y*parallax_dist, self.VT.w*G.TILESIZE, self.VT.h*G.TILESIZE)
+end
+self:set_element_shader()
 """
 match_indent = true

@@ -2697,6 +2697,16 @@ G.FUNCS.change_viewed_back = function(...)
 	return g_funcs_change_viewed_back_ref(...)
 end
 
+-- TODO:
+--- element
+--- outline
+--- emboss
+--- chosen triangle + shadow
+--- G.UIT.O
+-- Done:
+--- text + shadow
+--- element's shadow
+
 -- -- local uie_draw_self_ref = UIElement.draw_self
 -- function UIElement:draw_self()
 --     if not self.states.visible then 
