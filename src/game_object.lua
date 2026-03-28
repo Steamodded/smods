@@ -480,6 +480,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         px = 66,
         py = 66,
     }
+    SMODS.Atlas {
+        key = 'dropdown_arrow',
+        path = 'dropdown_arrow.png',
+        px = 66,
+        py = 66,
+    }
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Sound
@@ -611,6 +617,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     SMODS.Sound{ key = 'xchips', path = 'xchips.ogg'}
+    SMODS.Sound{ key = 'xscore', path = 'xscore.ogg'}
 
     -------------------------------------------------------------------------------------------------
     ------- API CODE GameObject.Gradient
@@ -674,24 +681,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             'applied_stakes'
         },
         pre_inject_class = function(self)
+            convert_save_data()
             G.P_CENTER_POOLS[self.set] = {}
             G.P_STAKES = {}
         end,
         inject = function(self)
+            G.P_STAKES[self.key] = self
+            self.count = #G.P_CENTER_POOLS[self.set] + 1
+            self.order = self.count
+                SMODS.insert_pool(G.P_CENTER_POOLS.Stake, self)
             if not self.injected then
-                -- Inject stake in the correct spot
-                self.count = #G.P_CENTER_POOLS[self.set] + 1
-                self.order = self.count
-                if self.above_stake and G.P_STAKES[self.above_stake] then
-                    self.order = G.P_STAKES[self.above_stake].order + 1
-                end
-                for _, v in pairs(G.P_STAKES) do
-                    if v.order >= self.order then
-                        v.order = v.order + 1
-                    end
-                end
-                G.P_STAKES[self.key] = self
-                table.insert(G.P_CENTER_POOLS.Stake, self)
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
                     G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos)
@@ -699,15 +698,24 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 else
                     G.sticker_map[self.key] = nil
                 end
-            else
-                G.P_STAKES[self.key] = self
-                SMODS.insert_pool(G.P_CENTER_POOLS.Stake, self)
+            end
+            -- Sorts stake into the correct spot
+            if self.above_stake and G.P_STAKES[self.above_stake] then
+                self.order = G.P_STAKES[self.above_stake].order + 1
+            end
+            for _, v in pairs(G.P_STAKES) do
+                if v.order >= self.order then
+                    v.order = v.order + 1
+                end
             end
             self.injected = true
             -- should only need to do this once per injection routine
         end,
         post_inject_class = function(self)
             table.sort(G.P_CENTER_POOLS[self.set], function(a, b) return a.order < b.order end)
+            for i,v in ipairs(G.P_CENTER_POOLS[self.set]) do
+                G.P_STAKES[v.key].order = i
+            end
             for _,stake in pairs(G.P_CENTER_POOLS.Stake) do
                 local applied = SMODS.build_stake_chain(stake)
                 stake.stake_level = 0
@@ -719,6 +727,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             for i = 1, #G.P_CENTER_POOLS[self.set] do
                 G.C.STAKES[i] = G.P_CENTER_POOLS[self.set][i].colour or G.C.WHITE
             end
+            convert_save_data()
         end,
         process_loc_text = function(self)
             -- empty loc_txt indicates there are existing values that shouldn't be changed or it isn't necessary
@@ -783,7 +792,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         pos = { x = 0, y = 0 },
         sticker_pos = { x = 1, y = 0 },
         colour = G.C.WHITE,
-        loc_txt = {}
+        loc_txt = {},
+        hide_from_run_info = true
     }
     SMODS.Stake {
         name = "Red Stake",
@@ -1219,16 +1229,24 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 target.set = res.set or target.set
                 target.scale = res.scale
                 target.text_colour = res.text_colour
+                if desc_nodes == full_UI_table.main then
+                    full_UI_table.box_starts = res.box_starts
+                    full_UI_table.box_ends = res.box_ends
+                end
             end
 
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = self.set == 'Enhanced' and 'temp_value' or localize { type = 'name', set = target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {} }
-            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name and not full_UI_table.from_detailed_tooltip then
-                desc_nodes.name_styled = {}
-  
-                localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
-                desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
-                desc_nodes.name_styled.config.align = "cm"
+            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
+                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = target.set }
+                if (full_UI_table.from_detailed_tooltip and full_UI_table.info[1] == desc_nodes) 
+                    and not full_UI_table.no_styled_name then
+                    desc_nodes.name_styled = {}
+    
+                    localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
+                    desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.name_styled.config.align = "cm"
+                end
             end
             if specific_vars and specific_vars.debuffed and not res.replace_debuff then
                 target = { type = 'other', key = 'debuffed_' ..
@@ -1464,12 +1482,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize{type = 'name', set = 'Other', key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {}}
-            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name and not full_UI_table.from_detailed_tooltip then
-                desc_nodes.name_styled = {}
+            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
+                desc_nodes.name = localize { type = 'name_text', key = res.name_key or target.key, set = 'Other' }
+                if (full_UI_table.from_detailed_tooltip and full_UI_table.info[1] == desc_nodes) 
+                    and not full_UI_table.no_styled_name then
+                    desc_nodes.name_styled = {}
 
-                localize{type = 'name', key = res.name_key or target.key, set = 'Other', nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
-                desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
-                desc_nodes.name_styled.config.align = "cm"
+                    localize{type = 'name', key = res.name_key or target.key, set = 'Other', nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
+                    desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.name_styled.config.align = "cm"
+                end
             end
             localize(target)
             desc_nodes.background_colour = res.background_colour
@@ -1877,12 +1899,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             end
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize { type = 'name', set = target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {} }
-            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name and not full_UI_table.from_detailed_tooltip then
-                desc_nodes.name_styled = {}
+            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
+                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = target.set }
+                if (full_UI_table.from_detailed_tooltip and full_UI_table.info[1] == desc_nodes) 
+                    and not full_UI_table.no_styled_name then
+                    desc_nodes.name_styled = {}
 
-                localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
-                desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
-                desc_nodes.name_styled.config.align = "cm"
+                    localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
+                    desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.name_styled.config.align = "cm"
+                end
             end
             if res.main_start then
                 desc_nodes[#desc_nodes + 1] = res.main_start
@@ -2994,15 +3020,23 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 target.set = res.set or target.set
                 target.scale = res.scale
                 target.text_colour = res.text_colour
+                if desc_nodes == full_UI_table.main then
+                    full_UI_table.box_starts = res.box_starts
+                    full_UI_table.box_ends = res.box_ends
+                end
             end
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize { type = 'name', set = target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or res.vars or {} }
-            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name and not full_UI_table.from_detailed_tooltip then
-                desc_nodes.name_styled = {}
+            elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
+                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = target.set }
+                if (full_UI_table.from_detailed_tooltip and full_UI_table.info[1] == desc_nodes) 
+                    and not full_UI_table.no_styled_name then
+                    desc_nodes.name_styled = {}
 
-                localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
-                desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
-                desc_nodes.name_styled.config.align = "cm"
+                    localize{type = 'name', key = res.name_key or target.key, set = target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
+                    desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.name_styled.config.align = "cm"
+                end
             end
             if res.main_start then
                 desc_nodes[#desc_nodes + 1] = res.main_start

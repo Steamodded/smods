@@ -116,6 +116,14 @@ if context.cardarea == G.play and context.main_scoring then
         ret.playing_card.x_chips = x_chips
     end
 
+    local score = card:get_bonus_score()
+    if score ~= 0 then
+        ret.playing_card.score = score
+    end
+    local x_score = card:get_bonus_x_score()
+    if x_score ~= 1 then
+        ret.playing_card.x_score = x_score
+    end
     -- TARGET: main scoring on played cards
 end
 if context.end_of_round and context.cardarea == G.hand and context.playing_card_end_of_round then
@@ -168,6 +176,15 @@ if context.cardarea == G.hand and context.main_scoring then
     local h_x_chips = card:get_chip_h_x_bonus()
     if h_x_chips > 0 then
         ret.playing_card.x_chips = h_x_chips
+    end
+
+    local h_score = card:get_bonus_h_score()
+    if h_score ~= 0 then
+        ret.playing_card.score = h_score
+    end
+    local h_x_score = card:get_bonus_h_x_score()
+    if h_x_score ~= 1 then
+        ret.playing_card.h_x_score = h_x_score
     end
 
     -- TARGET: main scoring on held cards
@@ -602,7 +619,7 @@ SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, 
 
 SMODS.displayed_hand = nil'''
 
-# context.final_scoring_step
+# context.main_scoring for individual areas and context.final_scoring_step
 [[patches]]
 [patches.pattern]
 target = "functions/state_events.lua"
@@ -610,6 +627,31 @@ pattern = '''local nu_chip, nu_mult = G.GAME.selected_back:trigger_effect{contex
 match_indent = true
 position = "before"
 payload = '''
+--- context.main_scoring for individual area calculations
+for _, _area in ipairs(SMODS.get_card_areas('individual')) do
+    local effects = {}
+    -- Calculate context.main_scoring for individual areas
+    local _eval, post = SMODS.eval_individual(_area, { full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, main_scoring = true })
+    if next(_eval) then
+        table.insert(effects, _eval)
+        _eval.individual.juice_card = _area.scored_card
+        for _, v in ipairs(post) do effects[#effects + 1] = v end
+        if _eval.retriggers then
+            for rt = 1, #_eval.retriggers do
+                local rt_eval, rt_post = SMODS.eval_individual(_area, {full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, main_scoring = true, retrigger_joker = true})
+                if next(rt_eval) then
+                    table.insert(effects, {_eval.retriggers[rt]})
+                    table.insert(effects, rt_eval)
+                    for _, v in ipairs(rt_post) do effects[#effects+1] = v end
+                end
+            end
+        end
+    end
+
+    SMODS.trigger_effects(effects, _area.scored_card)
+end
+
+
 -- context.final_scoring_step calculations
 SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, final_scoring_step = true})
 
@@ -2036,4 +2078,3 @@ if saveTable then
 	end
 end
 '''
-

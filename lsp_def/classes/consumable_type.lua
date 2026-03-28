@@ -26,6 +26,7 @@
 ---@field take_ownership? fun(self: SMODS.ConsumableType|table, key: string, obj: SMODS.ConsumableType|table, silent?: boolean): nil|table|SMODS.ConsumableType Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.ConsumableType|table, key: string): SMODS.ConsumableType|table? Returns an object if one matches the `key`. 
 ---@field create_UIBox_your_collection? fun(self: SMODS.ConsumableType|table): table Creates the UIBox of the ConsumableType's collections menu. 
+---@field select_card? string|{[string]: string}|fun(self: SMODS.ConsumableType|table, card: Card|table, pack: SMODS.Booster|table): string|{[string]: string} Key to the CardArea (e.x. `G[SMODS.ConsumableType.select_card]`). As a table, each key-value pair is a card set as key and CardArea string as values. Or return either formers as a function. 
 ---@overload fun(self: SMODS.ConsumableType): SMODS.ConsumableType
 SMODS.ConsumableType = setmetatable({}, {
     __call = function(self)

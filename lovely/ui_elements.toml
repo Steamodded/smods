@@ -22,6 +22,60 @@ position = 'before'
 payload = '''love.graphics.setColor(self.config.colour)'''
 match_indent = true
 
+# Game:draw()
+# Draw dropdowns right before G.OVERLAY_MENU if the dropdown was created while G.OVERLAY_MENU didn't exist
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+if (self.OVERLAY_MENU) or (not self.F_HIDE_BG) then
+'''
+position = 'before'
+payload = '''
+for k, v in pairs(self.I.DROPDOWN) do
+    if v.parent == G.ROOM_ATTACH then
+        love.graphics.push()
+        v:translate_container()
+        v:draw()
+        love.graphics.pop()
+    end
+end
+'''
+match_indent = true
+
+# Draw dropdowns right before the drag target if the dropdown was created while G.OVERLAY_MENU exists
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+if self.CONTROLLER.dragging.target and self.CONTROLLER.dragging.target ~= self.CONTROLLER.focused.target then
+'''
+position = 'before'
+payload = '''
+for k, v in pairs(self.I.DROPDOWN) do
+    if v.parent == G.OVERLAY_MENU then
+        love.graphics.push()
+        v:translate_container()
+        v:draw()
+        love.graphics.pop()
+    end
+end
+'''
+match_indent = true
+
+# Game:set_globals()
+# Add G.I.DROPDOWN
+[[patches]]
+[patches.pattern]
+target = 'globals.lua'
+pattern = '''
+UIBOX = {},
+'''
+position = 'after'
+payload = '''
+DROPDOWN = {},
+'''
+match_indent = true
 
 ## multiple text input fix
 # create_text_input()
@@ -149,4 +203,96 @@ if deck_center.check_for_unlock and type(deck_center.check_for_unlock) == "funct
     localize{type = 'unlocks', key = key_override or deck_center.key, set = "Back", nodes = deck_criteria, vars = loc_args, default_col = G.C.WHITE, shadow = true}
 end
 """
+match_indent = true
+
+## UIBox shaders
+# UIElement:draw_pixellated_rect()
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+pattern = '''love.graphics.polygon((_type == 'line' or _type == 'line_emboss') and 'line' or "fill", self.pixellated_rect[_type].vertices)'''
+position = "at"
+payload = '''
+    local function _draw()
+        -- don't duplicate the line
+        love.graphics.polygon((_type == 'line' or _type == 'line_emboss') and 'line' or "fill", self.pixellated_rect[_type].vertices)
+    end
+
+    local function _draw_layer(shader, send)
+        local args = {
+            G.TIMERS.REAL/28,
+            G.TIMERS.REAL
+        }
+        
+        if shader == "none" or shader == "dissolve" then
+            _draw()
+            return
+        elseif send then
+            for _, v in ipairs(send) do
+                local val = v.val or (v.func and v.func(self)) or v.ref_table[v.ref_value]
+                -- TARGET: Convert v.val to a number if your mod adds an alternate number data type (ala Talisman)
+
+                G.SHADERS[shader]:send(v.name, val)
+            end
+        elseif shader == "vortex" then
+            G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
+        else
+            local key = SMODS.Shaders[shader].original_key
+            local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
+
+            G.SHADERS[shader]:send(key, args)
+            G.SHADERS[shader]:send("uie_details", {self.VT.x * tile_scale, self.VT.y * tile_scale, self.VT.w * tile_scale, self.VT.h * tile_scale})
+            G.SHADERS[shader]:send("uie_scale", self.VT.scale)
+            G.SHADERS[shader]:send("uie_rot", self.VT.r)
+        end
+
+        local p_shader = SMODS.Shader.obj_table[shader or 'dissolve']
+        if p_shader and type(p_shader.send_vars) == "function" then
+            local sh = G.SHADERS[shader or 'dissolve']
+            local send_vars = p_shader.send_vars(self)
+        
+            if type(send_vars) == "table" then
+                for key, value in pairs(send_vars) do
+                    sh:send(key, value)
+                end
+            end
+        end
+
+        love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
+        _draw()
+        love.graphics.setShader()
+
+        love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
+        _draw()
+        love.graphics.setShader()
+    end
+
+    if self.config.shader then
+        -- simple single shader
+        if type(self.config.shader) == "string" then
+            _draw_layer(self.config.shader)
+
+        -- more complex shader calls
+        elseif type(self.config.shader) == "table" then
+            -- one shader pass with a custom send
+            if self.config.shader.shader then
+                _draw_layer(self.config.shader.shader, self.config.shader.send)
+
+            -- list of shaders
+            elseif #shader > 0 then
+                for _, v in ipairs(self.config.shader) do
+                    if type(v) == "string" then
+                        _draw_layer(v.shader)
+                    elseif type(v) == "table" then
+                        _draw_layer(v.shader, v.send)
+                    end
+                end
+            end
+        end
+
+    -- no shader
+    else
+        _draw()
+    end
+'''
 match_indent = true

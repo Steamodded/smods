@@ -52,6 +52,7 @@
 ---@field calculate? fun(self: SMODS.Center|table, card: Card|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
 ---@field create_fake_card? fun(self: SMODS.Center|table): table Creates a fake card representing this center. Used internally for `generate_ui` in cases where recieved `card` param is nil. 
 ---@field on_select? fun(self: SMODS.Center|table, card: Card|table) Called when the card is selected from a booster pack. 
+---@field select_card? string|{[string]: string}|fun(self: SMODS.Center|table, card: Card|table, pack: SMODS.Booster|table): string|{[string]: string} Key to the CardArea (e.x. `G[SMODS.Center.select_card]`). As a table, each key-value pair is a card set as key and CardArea string as values. Or return either formers as a function. 
 ---@overload fun(self: SMODS.Center): SMODS.Center
 SMODS.Center = setmetatable({}, {
     __call = function(self)

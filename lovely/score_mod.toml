@@ -1,0 +1,72 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Score Modification!
+
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = """        if extra.edition then """
+position = "before"
+payload = """
+if extra.sound_override then
+    sound = extra.sound_override
+end
+if extra.update_score then
+    G.CARD_EVAL_TRIGGERED = nil
+    update_score = true
+end
+"""
+overwrite = true
+match_indent = true
+
+
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = """    local trigger = 'before'"""
+position = "before"
+payload = """
+local update_score = nil
+"""
+overwrite = true
+match_indent = true
+
+
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = """play_sound(sound, 0.8+percent*0.2, volume)"""
+position = "before"
+payload = """
+if update_score then
+    G.SCORE_DISPLAY_QUEUE = G.SCORE_DISPLAY_QUEUE or {}
+    table.remove(G.SCORE_DISPLAY_QUEUE, 1)
+    G.HUD:get_UIE_by_ID('chip_UI_count'):juice_up(0.3, 0.3)
+end
+"""
+overwrite = true
+match_indent = true
+
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+pattern = """  local new_chips_text = number_format(G.GAME.chips)"""
+position = "after"
+payload = """if G.SCORE_DISPLAY_QUEUE and G.SCORE_DISPLAY_QUEUE[1] then 
+    new_chips_text = number_format(G.SCORE_DISPLAY_QUEUE[1])
+    if G.GAME.chips_text ~= new_chips_text then
+        e.config.scale = math.min(0.8, scale_number(G.SCORE_DISPLAY_QUEUE[1], 1.1))
+        G.GAME.chips_text = new_chips_text
+    end
+    return
+end
+"""
+overwrite = true
+match_indent = true
