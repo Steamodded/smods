@@ -3692,8 +3692,6 @@ function UIElement:set_element_shader(shader, send, shadow)
         default_send_func = function(element, shader, shadow)
             local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
 
-            -- TODO: shadow parallax
-
             G.SHADERS[shader]:send("uie_details", {element.VT.x * tile_scale, element.VT.y * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
             G.SHADERS[shader]:send("uie_scale", element.VT.scale)
             G.SHADERS[shader]:send("uie_rot", element.VT.r)
@@ -3709,8 +3707,6 @@ function UIElement:set_text_shader(shader, send, shadow)
         extra = { shadow },
         default_send_func = function(element, shader, shadow)
             local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
-
-            -- TODO: shadow parallax
 
             G.SHADERS[shader]:send("text_details", {element.VT.x * tile_scale, element.VT.y * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
             G.SHADERS[shader]:send("text_scale", element.VT.scale)
