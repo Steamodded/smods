@@ -70,9 +70,10 @@ payload = """
 if self.config.text_effect and SMODS.DynaTextEffects[self.config.text_effect] and type(SMODS.DynaTextEffects[self.config.text_effect].draw_shadow) == "function" then
     SMODS.DynaTextEffects[self.config.text_effect].draw_shadow(self, k, letter) -- shadow
 else
-    local letter_shaders = self:get_letter_shaders(letter, true, letter.shader or (self.shaders and self.shaders[k%#self.shaders + 1]))
+    local letter_shader = letter.shader or (self.shaders and self.shaders[k%#self.shaders + 1])
+    local letter_shaders = SMODS.resolve_ui_shaders(self.states.visible and letter_shader or nil, nil)
     for _, v in ipairs(letter_shaders) do
-        self:set_letter_shader(letter, true, v.shader, v.send)
+        self:set_letter_shader(v.shader, v.send, true, letter)
             love.graphics.draw(
                 letter.letter,
                 0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE -self.shadow_parrallax.x*self.scale/(G.TILESIZE),
@@ -109,9 +110,10 @@ payload = """
 if self.config.text_effect and SMODS.DynaTextEffects[self.config.text_effect] and type(SMODS.DynaTextEffects[self.config.text_effect].draw_letter) == "function" then
     SMODS.DynaTextEffects[self.config.text_effect].draw_letter(self, k, letter, false) -- actual text
 else
-    local letter_shaders = self:get_letter_shaders(letter, false, letter.shader or (self.shaders and self.shaders[k%#self.shaders + 1]))
+    local letter_shader = letter.shader or (self.shaders and self.shaders[k%#self.shaders + 1])
+    local letter_shaders = SMODS.resolve_ui_shaders(self.states.visible and letter_shader or nil, nil)
     for _, v in ipairs(letter_shaders) do
-        self:set_letter_shader(letter, false, v.shader, v.send)
+        self:set_letter_shader(v.shader, v.send, false, letter)
         love.graphics.draw(
             letter.letter,
             0.5*(letter.dims.x - letter.offset.x)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.x,

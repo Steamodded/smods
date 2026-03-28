@@ -204,3 +204,32 @@ if deck_center.check_for_unlock and type(deck_center.check_for_unlock) == "funct
 end
 """
 match_indent = true
+
+# Cover drawing into function
+# UIElemennt:draw_self
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """if self.config.colour[4] > 0.01 then"""
+position = "before"
+payload = """
+local function _draw(self, shader, send)
+"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """--Draw the 'chosen triangle'
+    if self.config.chosen then """
+position = "before"
+payload = """
+end
+
+local element_shader = self.config.shader or nil
+local element_shaders = SMODS.resolve_ui_shaders(self.states.visible and not self.UIT ~= G.UIT.T and element_shader or nil, nil)
+for _, v in ipairs(element_shaders) do
+    _draw(self, v.shader, v.send)
+end
+"""
+match_indent = true
