@@ -810,3 +810,14 @@ function SMODS.get_card_type_text_colour(type, center, card) end
 ---@param key string
 ---@return table?
 function SMODS.get_badge_text_colour(key) end
+
+--- Gets a list of shaders to apply to a UI element.
+--- @param shader UIShaderDeclaration
+--- @param send table?
+--- @return UINode.shader_config[]
+function SMODS.resolve_ui_shaders(shader, send) end
+
+--- Sets the shader for a UI element. If no arguments provided, resets the current shader.
+--- @param element UIElement|DynaText
+--- @param input_args table?
+function SMODS.set_ui_element_shader(element, input_args) end

@@ -3579,3 +3579,143 @@ function SMODS.get_badge_text_colour(key)
         if k:lower()..'_seal' == key and v.text_colour then return v.text_colour end
     end
 end
+
+function SMODS.resolve_ui_shaders(shader, send)
+    local shaders = {}
+    -- simple single shader
+    if type(shader) == "string" then
+        shaders[#shaders+1] = { shader = shader, send = send }
+
+    -- more complex shader calls
+    elseif type(shader) == "table" then
+        -- one shader pass with a custom send
+        if shader.shader then
+            shaders[#shaders+1] = { shader = shader.shader, send = shader.send }
+
+        -- list of shaders
+        elseif #shader > 0 then
+            for _, v in ipairs(shader) do
+                if type(v) == "string" then
+                    shaders[#shaders+1] = { shader = v }
+                elseif type(v) == "table" then
+                    shaders[#shaders+1] = { shader = v.shader, send = v.send }
+                end
+            end
+        end
+    end
+    if #shaders == 0 then
+        return { { no_shader = true } }
+    end
+    return shaders
+end
+function SMODS.set_ui_element_shader(element, input_args)
+    input_args = input_args or {}
+    local can_apply = input_args.can_apply
+    local shader, send = input_args.shader, input_args.send
+    local default_send_func = input_args.default_send_func or function() end
+    local extra = input_args.extra or {}
+
+    local args = {
+        G.TIMERS.REAL/28,
+        G.TIMERS.REAL
+    }
+	local shadered = true
+    
+    if not can_apply or not shader or shader == "none" or shader == "dissolve" then
+        shadered = false
+	elseif send then
+		for _, v in ipairs(send) do
+			local val = v.val or (v.func and v.func(element, unpack(extra))) or v.ref_table[v.ref_value]
+			-- TARGET: SMODS.set_ui_element_shader - Convert val to a number if your mod adds an alternate number data type (ala Talisman)
+
+			G.SHADERS[shader]:send(v.name, val)
+		end
+	elseif shader == "vortex" then
+		G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
+	else
+		local key = SMODS.Shaders[shader].original_key
+		
+		G.SHADERS[shader]:send(key, args)
+        default_send_func(element, shader, unpack(extra))
+	end
+
+    if shadered then
+        local p_shader = SMODS.Shader.obj_table[shader or 'dissolve']
+        if p_shader and type(p_shader.send_vars) == "function" then
+            local sh = G.SHADERS[shader or 'dissolve']
+            local send_vars = p_shader.send_vars(element, unpack(extra))
+        
+            if type(send_vars) == "table" then
+                for key, value in pairs(send_vars) do
+                    sh:send(key, value)
+                end
+            end
+        end
+
+		element.shadered = true
+        love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
+    else
+        if element.shadered then love.graphics.setShader() end
+        element.shadered = nil
+    end
+end
+
+function DynaText:set_letter_shader(shader, send, shadow, letter)
+    SMODS.set_ui_element_shader(self, {
+        can_apply = self.states.visible and letter,
+        shader = shader,
+        send = send,
+        extra = { shadow, letter },
+        default_send_func = function(element, shader, shadow, letter)
+            local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
+            local _shadow_norm = (not shadow) and element.ARGS.draw_shadow_norm or {x=0, y=0}
+
+            local letter_x, letter_y = 0.5*(letter.dims.x - letter.offset.x)*element.font.FONTSCALE/G.TILESIZE + _shadow_norm.x,
+                0.5*(letter.dims.y - letter.offset.y)*element.font.FONTSCALE/G.TILESIZE + _shadow_norm.y
+            
+            G.SHADERS[shader]:send("text_details", {element.T.x * tile_scale, element.T.y * tile_scale, element.T.w * tile_scale, element.T.h * tile_scale})
+            G.SHADERS[shader]:send("text_scale", element.scale)
+            G.SHADERS[shader]:send("text_rot", element.T.r)
+            G.SHADERS[shader]:send("letter_details", {letter_x, letter_y, letter.dims.x * tile_scale, letter.dims.y * tile_scale})
+            G.SHADERS[shader]:send("letter_scale", letter.scale)
+            G.SHADERS[shader]:send("letter_rot", letter.r)
+            G.SHADERS[shader]:send("text_shadow", not not shadow)
+        end
+    })
+end
+function UIElement:set_element_shader(shader, send, shadow)
+    SMODS.set_ui_element_shader(self, {
+        can_apply = self.states.visible,
+        shader = shader,
+        send = send,
+        extra = { shadow },
+        default_send_func = function(element, shader, shadow)
+            local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
+
+            -- TODO: shadow parallax
+
+            G.SHADERS[shader]:send("uie_details", {element.VT.x * tile_scale, element.VT.y * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
+            G.SHADERS[shader]:send("uie_scale", element.VT.scale)
+            G.SHADERS[shader]:send("uie_rot", element.VT.r)
+            G.SHADERS[shader]:send("uie_shadow", not not shadow)
+        end
+    })
+end
+function UIElement:set_text_shader(shader, send, shadow)
+    SMODS.set_ui_element_shader(self, {
+        can_apply = self.states.visible,
+        shader = shader,
+        send = send,
+        extra = { shadow },
+        default_send_func = function(element, shader, shadow)
+            local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
+
+            -- TODO: shadow parallax
+
+            G.SHADERS[shader]:send("text_details", {element.VT.x * tile_scale, element.VT.y * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
+            G.SHADERS[shader]:send("text_scale", element.VT.scale)
+            G.SHADERS[shader]:send("text_rot", element.VT.r)
+            G.SHADERS[shader]:send("text_shadow", not not shadow)
+        end
+    })
+end
