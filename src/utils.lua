@@ -2330,8 +2330,7 @@ function SMODS.get_next_vouchers(vouchers)
     vouchers = vouchers or {spawn = {}}
     local _pool, _pool_key = get_current_pool('Voucher')
     for i=#vouchers+1, math.min(SMODS.size_of_pool(_pool), G.GAME.starting_params.vouchers_in_shop + (G.GAME.modifiers.extra_vouchers or 0)) do
-        print "get voucher pls"
-        local center = SMODS.poll_object({pool = _pool})
+        local center = SMODS.WEIGHTS.poll_object({type = 'Voucher'})
 
         vouchers[#vouchers+1] = center
         vouchers.spawn[center] = true

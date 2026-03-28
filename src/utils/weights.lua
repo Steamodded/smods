@@ -1,11 +1,13 @@
+SMODS.WEIGHTS = {}
+
 -- TODO: labels are union or interset
 -- TODO: filter function accepted
 
 -- Returns a `key` of the polled object type
 ---@param args table|{type: string?, labels: table[string]?, pool: table[string]?, seed: string?, chance: number?, guaranteed: boolean?}
-function SMODS.poll_object(args)
-    assert(args, "SMODS.poll_object called with no args."..SMODS.log_crash_info(debug.getinfo(2)))
-    assert((args.type or (args.labels and type(args.labels) == 'table') or (args.pool and type(args.pool) == 'table')), "SMODS.poll_object called without a pool source." .. SMODS.log_crash_info(debug.getinfo(2)))
+function SMODS.WEIGHTS.poll_object(args)
+    assert(args, "SMODS.WEIGHTS.poll_object called with no args."..SMODS.log_crash_info(debug.getinfo(2)))
+    assert((args.type or (args.labels and type(args.labels) == 'table') or (args.pool and type(args.pool) == 'table')), "SMODS.WEIGHTS.poll_object called without a pool source." .. SMODS.log_crash_info(debug.getinfo(2)))
 
     -- Prepare pool
     local pool = args.pool or {}
@@ -18,6 +20,7 @@ function SMODS.poll_object(args)
         for _, label in ipairs(types) do
             types_used[label] = true
             local temp_pool = {}
+            local join_func = args.intersect and SMODS.WEIGHTS.intersect_lists or SMODS.merge_lists
             for i=1, #(args.rarities or {true}) do
                 local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or get_current_pool(label, args.rarities and args.rarities[i])
                 if label == 'Edition' then
@@ -31,10 +34,10 @@ function SMODS.poll_object(args)
                     end
                     _p = _options
                 end
-                temp_pool = SMODS.merge_lists({temp_pool, _p})
+                temp_pool = join_func({temp_pool, _p})
             end
             for _, v in ipairs(temp_pool) do
-                if G[SMODS.game_table_from_type[label] or 'P_CENTERS'][v] then table.insert(pool, {key = v, type = label}) end
+                if G[SMODS.WEIGHTS.game_table_from_type[label] or 'P_CENTERS'][v] then table.insert(pool, {key = v, type = label}) end
             end
         end
     end
@@ -42,14 +45,14 @@ function SMODS.poll_object(args)
     if args.filter then pool = args.filter(pool) end
     
     -- Check pool has valid options
-    assert(#pool > 0, "SMODS.poll_object called with an empty pool."..SMODS.log_crash_info(debug.getinfo(2)))
+    assert(#pool > 0, "SMODS.WEIGHTS.poll_object called with an empty pool."..SMODS.log_crash_info(debug.getinfo(2)))
     
     local total_weight = 0
     local weight_pool = {}
     for _, key in ipairs(pool) do
         local weight_table = {}
         
-        local w, m_w = SMODS.get_weight_of_object(G[SMODS.game_table_from_type[key.type] or 'P_CENTERS'][key.key or key], key.weight)
+        local w, m_w = SMODS.WEIGHTS.get_weight_of_object(G[SMODS.WEIGHTS.game_table_from_type[key.type] or 'P_CENTERS'][key.key or key], key.weight)
         weight_table = {key = key.key or key, weight = m_w}
         
         total_weight = total_weight + w
@@ -72,12 +75,12 @@ function SMODS.poll_object(args)
         if args.print then print(string.format("Key: %s, Weight: %s, Position: %s", weight_table.key, weight_table.weight, weight_table.mod_weight)) end
     end
     
-    local chance = args.guaranteed and 1 or ((args.chance or SMODS.base_rate_percentage[args.type] or 1) * (args.mod or 1) * (modded_weight/total_weight))
+    local chance = args.guaranteed and 1 or ((args.chance or SMODS.WEIGHTS.base_rate_percentage[args.type] or 1) * (args.mod or 1) * (modded_weight/total_weight))
     -- Adjust chance based on modified weightings
     -- chance = chance * (modded_weight/total_weight)
     local key = 'UNAVAILABLE'
     while key == 'UNAVAILABLE' do
-        local poll_key = pseudorandom(pseudoseed(args.seed or SMODS.get_poll_key(args.type)))
+        local poll_key = pseudorandom(pseudoseed(args.seed or SMODS.WEIGHTS.get_poll_key(args.type)))
         
         if args.print then print('Total Weight: '..total_weight) end
         if args.print then print('Modded Weight:'..modded_weight) end
@@ -91,19 +94,19 @@ function SMODS.poll_object(args)
             return
         end
 
-        if not SMODS.no_repoll[args.type] then
-            poll_key = pseudorandom(pseudoseed(args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')))
-            if args.print then print('Poll key string:', args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')) end
-            chance = 1
-        end
-        if args.print then print('Poll key: '..poll_key) end
+    if not SMODS.WEIGHTS.no_repoll[args.type] then
+        poll_key = pseudorandom(pseudoseed(args.type_key or SMODS.WEIGHTS.get_poll_key(args.type, args.append or 'type')))
+        if args.print then print('Poll key string:', args.type_key or SMODS.WEIGHTS.get_poll_key(args.type, args.append or 'type')) end
+        chance = 1
+    end
+    if args.print then print('Poll key: '..poll_key) end
 
         -- Find weight
         local poll_weight = modded_weight - (poll_key - (1 - chance))/chance * modded_weight
         if args.print then print('Looking for item: '..poll_weight) end
 
         if poll_weight > final_pool[1].mod_weight then
-            key = final_pool[SMODS.select_by_weight(final_pool, poll_weight, 1, #final_pool)].key
+            key = final_pool[SMODS.WEIGHTS.select_by_weight(final_pool, poll_weight, 1, #final_pool)].key
         else 
             key = final_pool[1].key
         end
@@ -122,7 +125,7 @@ end
 
 -- Returns the `weight` and `modified_weight` or a given object
 ---@param args table|{key: string, no_mod: boolean?} 
-function SMODS.get_weight_of_object(obj, opt_weight)
+function SMODS.WEIGHTS.get_weight_of_object(obj, opt_weight)
     if not obj then return 10, 10 end
     local w = opt_weight or obj.weight or 10
     local m = not opt_weight and obj.get_weight and obj:get_weight(w) or w
@@ -130,7 +133,7 @@ function SMODS.get_weight_of_object(obj, opt_weight)
     return w, m
 end
 
-function SMODS.select_by_weight(pool, poll, low, high, depth)
+function SMODS.WEIGHTS.select_by_weight(pool, poll, low, high, depth)
     if high - low <= 1 then return high end
     local check = math.floor((low + high)/2)
     if poll < pool[check].mod_weight then
@@ -138,20 +141,20 @@ function SMODS.select_by_weight(pool, poll, low, high, depth)
     else
         low = check
     end
-    return SMODS.select_by_weight(pool, poll, low, high, (depth or 0) + 1)
+    return SMODS.WEIGHTS.select_by_weight(pool, poll, low, high, (depth or 0) + 1)
 end
 
-SMODS.base_rate_percentage = {
+SMODS.WEIGHTS.base_rate_percentage = {
     Enhanced = 0.40,
     Seal = 0.02,
     Edition = 0.04
 }
 
-SMODS.no_repoll = {
+SMODS.WEIGHTS.no_repoll = {
     Edition = true,
 }
 
-SMODS.game_table_from_type = {
+SMODS.WEIGHTS.game_table_from_type = {
     Seal = 'P_SEALS',
     Tag = 'P_TAGS',
     Blind = 'P_BLINDS',
@@ -159,33 +162,34 @@ SMODS.game_table_from_type = {
     Stake = 'P_STAKES'
 }
 
-SMODS.poll_keys = {
+SMODS.WEIGHTS.poll_keys = {
     Edition = {str = 'edition_generic', block_infill = true},
     Seal = {str = 'stdseal', ante = true},
     Enhanced = {str = 'Enhanced', ante = true}
 }
 
-function SMODS.get_poll_key(type, infill)
-    local t = SMODS.poll_keys[type] or {str = 'std_smods_poll', ante = true}
+function SMODS.WEIGHTS.get_poll_key(type, infill)
+    local t = SMODS.WEIGHTS.poll_keys[type] or {str = 'std_smods_poll', ante = true}
     return t.str .. (t.block_infill and "" or infill or "") .. (t.ante and G.GAME.round_resets.ante or "")
 end
 
-function SMODS.create_blind_pool(type, skip_cull)
+function SMODS.create_blind_pool(blind_type, skip_cull)
+    assert(type(blind_type) == 'string', "SMODS.create_blind_pool called with a non-string type argument."..SMODS.log_crash_info(debug.getinfo(2)))
     local eligible_bosses = {}
     for k, v in pairs(G.P_BLINDS) do
         local res, options = SMODS.add_to_pool(v)
         options = options or {}
-        if not v[type] then
-        elseif v.ignore_showdown_check or options.ignore_showdown_check then
+        if not v[blind_type] then
+        elseif options.ignore_showdown_check then
             eligible_bosses[k] = res and true or nil
-        elseif type == 'boss' then
+        elseif blind_type == 'boss' then
             if
-                ((SMODS.is_showdown_ante()) == (v[type].showdown or false)) and ((v[type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante)) and ((v[type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante)
+                ((SMODS.is_showdown_ante()) == (v.boss.showdown or false)) and ((v[blind_type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante)) and ((v[blind_type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante)
             then
                 eligible_bosses[k] = res and true or nil
             end
         else
-            if (v[type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante) and (v[type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante then
+            if (v[blind_type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante) and (v[blind_type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante then
                 eligible_bosses[k] = res and true or nil
             end
         end
@@ -221,8 +225,13 @@ function SMODS.create_blind_pool(type, skip_cull)
             end
         end
     end
+
+    local output = {}
+    for k, _ in pairs(eligible_bosses) do
+        output[#output + 1] = k
+    end
     
-    return final_pool
+    return output
 end
 
 function SMODS.is_showdown_ante()
@@ -230,7 +239,7 @@ function SMODS.is_showdown_ante()
 end
 
 -- New create_card_for_shop structure
-function create_card_for_shop(area)
+function SMODS.WEIGHTS.create_shop_card(area)
     -- Tutorial Override
     if area == G.shop_jokers and G.SETTINGS.tutorial_progress and G.SETTINGS.tutorial_progress.forced_shop and G.SETTINGS.tutorial_progress.forced_shop[#G.SETTINGS.tutorial_progress.forced_shop] then
         local t = G.SETTINGS.tutorial_progress.forced_shop
@@ -258,10 +267,10 @@ function create_card_for_shop(area)
 
     -- Poll a type for the shop
     local card_args = {
-        type = SMODS.poll_object_type({seed = 'cdt'..G.GAME.round_resets.ante}),
+        type = SMODS.WEIGHTS.poll_object_type({seed = 'cdt'..G.GAME.round_resets.ante}),
         area = area
     }
-    card_args.key = SMODS.poll_object({type = card_args.type, append = 'sho'})
+    card_args.key = SMODS.WEIGHTS.poll_object({type = card_args.type, append = 'sho'})
 
     local flags = SMODS.calculate_context({create_shop_card = true, set = card_args.type, key = card_args.key})
 
@@ -288,8 +297,8 @@ function create_card_for_shop(area)
     return card
 end
 
-function SMODS.poll_object_type(args)
-    print "Using SMODS.poll_object_type"
+function SMODS.WEIGHTS.poll_object_type(args)
+    print "Using SMODS.WEIGHTS.poll_object_type"
     args = args or {}
     
     -- If no types are given to select between, populate the list with all valid types
@@ -302,7 +311,7 @@ function SMODS.poll_object_type(args)
         end
     else
         -- Ensure types are in correct format
-        assert(type(args.types) == 'table',  "SMODS.poll_object_type called with invalid types table."..SMODS.log_crash_info(debug.getinfo(2)))
+        assert(type(args.types) == 'table',  "SMODS.WEIGHTS.poll_object_type called with invalid types table."..SMODS.log_crash_info(debug.getinfo(2)))
     end
 
     local total_rate = 0
@@ -325,7 +334,7 @@ function SMODS.poll_object_type(args)
 
     local ind = 1
     -- If first element is not target, find correct index
-    if poll_weight > weighted_table[1].mod_weight then ind = SMODS.select_by_weight(weighted_table, poll_weight, 1, #weighted_table) end
+    if poll_weight > weighted_table[1].mod_weight then ind = SMODS.WEIGHTS.select_by_weight(weighted_table, poll_weight, 1, #weighted_table) end
 
     return weighted_table[ind].type
 end
@@ -336,5 +345,5 @@ end
 --         return G.P_CENTERS['p_buffoon_normal_'..(math.random(1, 2))]
 --     end
 
---     return G.P_CENTERS[SMODS.poll_object({type = 'Booster', seed = 'sho'..G.GAME.round_resets.ante})]
+--     return G.P_CENTERS[SMODS.WEIGHTS.poll_object({type = 'Booster', seed = 'sho'..G.GAME.round_resets.ante})]
 -- end

@@ -22,19 +22,6 @@ end
 
 '''
 
-# Add early_return argument to get_new_boss
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-match_indent = true
-position = 'at'
-pattern = '''
-function get_new_boss()
-'''
-payload = '''
-function get_new_boss(early_return)
-'''
-
 # Adjust vanilla blinds max ante property
 [[patches]]
 [patches.pattern]
@@ -82,4 +69,30 @@ center = pseudorandom_element(_pool, pseudoseed(_pool_key..'_resample'..it))
 payload = '''
 print(_pool_key..'_resample'..it)
 print(_pool)
+'''
+
+# Bypass get_new_boss()
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function get_new_boss()
+'''
+payload = '''
+if SMODS.optional_features.object_weights then return SMODS.WEIGHTS.poll_object({type = 'Blind'}) end
+'''
+
+# Bypass create_card_for_shop()
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function create_card_for_shop(area)
+'''
+payload = '''
+if SMODS.optional_features.object_weights then return SMODS.WEIGHTS.create_shop_card(area) end
 '''

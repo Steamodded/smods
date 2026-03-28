@@ -2225,7 +2225,7 @@ function poll_edition(_key, _mod, _no_neg, _guaranteed, _options)
 		_options = { 'e_negative', 'e_polychrome', 'e_holo', 'e_foil' }
 	end
 
-	return SMODS.poll_object({type = 'Edition', seed = _key, guaranteed = _guaranteed, pool = _options, no_negative = _no_neg, mod = _mod})
+	return SMODS.WEIGHTS.poll_object({type = 'Edition', seed = _key, guaranteed = _guaranteed, pool = _options, no_negative = _no_neg, mod = _mod})
 
 	-- REMOVED FOR NEW FUNCTION SMODS.poll_object
 	
