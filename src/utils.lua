@@ -672,6 +672,26 @@ function SMODS.merge_lists(...)
     return ret
 end
 
+-- Flatten the given arrays of arrays into one, then
+-- add any duplicate values to a new table in order
+function SMODS.intersect_lists(lists)
+    local function find_intersects(l1, l2)
+        local seen = {}
+        local ret = {}
+        for _, v in ipairs(l1) do seen[v] = true end
+        for _, v in ipairs(l2) do if seen[v] then ret[#ret + 1] = v end end
+
+        return ret
+    end
+    
+    local output = {}
+    for i=1, #lists - 1 do
+        output = find_intersects(lists[i], lists[i+1])
+    end
+
+    return output
+end
+
 --#region Number formatting
 
 function round_number(num, precision)
@@ -697,6 +717,9 @@ function SMODS.poll_edition(args)
 end
 
 function SMODS.poll_seal(args)
+    -- BYPASS REST OF FUNCTION WHEN WEIGHTS BEING USED
+    if SMODS.optional_features.object_weights then args.type = 'Seal'; return SMODS.poll_object(args) end
+
     args = args or {}
     local key = args.key or 'stdseal'
     local mod = args.mod or 1
@@ -2415,7 +2438,17 @@ function SMODS.get_next_vouchers(vouchers)
     vouchers = vouchers or {spawn = {}}
     local _pool, _pool_key = get_current_pool('Voucher')
     for i=#vouchers+1, math.min(SMODS.size_of_pool(_pool), G.GAME.starting_params.vouchers_in_shop + (G.GAME.modifiers.extra_vouchers or 0)) do
-        local center = SMODS.WEIGHTS.poll_object({type = 'Voucher'})
+        local center
+        if SMODS.optional_features.object_weights then
+            center = SMODS.poll_object({type = 'Voucher'})
+        else
+            center = pseudorandom_element(_pool, pseudoseed(_pool_key))
+            local it = 1
+            while center == 'UNAVAILABLE' or vouchers.spawn[center] do
+                it = it + 1
+                center = pseudorandom_element(_pool, pseudoseed(_pool_key..'_resample'..it))
+            end
+        end
 
         vouchers[#vouchers+1] = center
         vouchers.spawn[center] = true

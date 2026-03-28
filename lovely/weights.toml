@@ -57,20 +57,6 @@ payload = '''
 if v.small or v.big then bosses_used[k] = 0 end
 '''
 
-# comment
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-match_indent = true
-position = 'before'
-pattern = '''
-center = pseudorandom_element(_pool, pseudoseed(_pool_key..'_resample'..it))
-'''
-payload = '''
-print(_pool_key..'_resample'..it)
-print(_pool)
-'''
-
 # Bypass get_new_boss()
 [[patches]]
 [patches.pattern]
@@ -81,7 +67,7 @@ pattern = '''
 function get_new_boss()
 '''
 payload = '''
-if SMODS.optional_features.object_weights then return SMODS.WEIGHTS.poll_object({type = 'Blind'}) end
+if SMODS.optional_features.object_weights then return SMODS.poll_object({type = 'Blind'}) end
 '''
 
 # Bypass create_card_for_shop()
@@ -94,5 +80,20 @@ pattern = '''
 function create_card_for_shop(area)
 '''
 payload = '''
-if SMODS.optional_features.object_weights then return SMODS.WEIGHTS.create_shop_card(area) end
+if SMODS.optional_features.object_weights then return SMODS.create_shop_card(area) end
+'''
+
+# Bypass create_card key selection
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if forced_key and not G.GAME.banned_keys[forced_key] then 
+'''
+payload = '''
+-- Use SMODS object weight system when enabled
+if not forced_key and SMODS.optional_features.object_weights then forced_key = SMODS.poll_object({type = _type, guaranteed = true}) end
+
 '''

@@ -2228,77 +2228,77 @@ function poll_edition(_key, _mod, _no_neg, _guaranteed, _options)
 		_options = { 'e_negative', 'e_polychrome', 'e_holo', 'e_foil' }
 	end
 
-	return SMODS.WEIGHTS.poll_object({type = 'Edition', seed = _key, guaranteed = _guaranteed, pool = _options, no_negative = _no_neg, mod = _mod})
+	-- BYPASS REST OF FUNCTION WHEN WEIGHTS BEING USED
+	if SMODS.optional_features.object_weights then return SMODS.poll_object({type = 'Edition', seed = _key, guaranteed = _guaranteed, pool = _options, no_negative = _no_neg, mod = _mod}) end
 
-	-- REMOVED FOR NEW FUNCTION SMODS.poll_object
 	
-	-- local _modifier = 1
-	-- local edition_poll = pseudorandom(pseudoseed(_key or 'edition_generic')) -- Generate the poll value
-	-- local available_editions = {}                                          -- Table containing a list of editions and their weights
+	local _modifier = 1
+	local edition_poll = pseudorandom(pseudoseed(_key or 'edition_generic')) -- Generate the poll value
+	local available_editions = {}                                          -- Table containing a list of editions and their weights
 
-	-- if not _options then
-	-- 	if _key == "wheel_of_fortune" or _key == "aura" then -- set base game edition polling
-	-- 		_options = { 'e_negative', 'e_polychrome', 'e_holo', 'e_foil' }
-	-- 	else
-	-- 		local unordered_options = get_current_pool("Edition", nil, nil, _key or 'edition_generic')
-	-- 		_options = {}
-	-- 		for _, edition in ipairs(unordered_options) do -- Flip the order of vanilla editions
-	-- 			if G.P_CENTERS[edition] and G.P_CENTERS[edition].vanilla then
-	-- 				table.insert(_options, 1, edition)
-	-- 			else
-	-- 				table.insert(_options, edition)
-	-- 			end
-	-- 		end
-	-- 	end
-	-- end
-    -- for _, v in ipairs(_options) do
-    --     local edition_option = {}
-    --     if type(v) == 'string' then
-    --         if v ~= 'UNAVAILABLE' then
-    --             assert(string.sub(v, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(v))
-    --             edition_option = { name = v, weight = G.P_CENTERS[v].weight }
-    --     		table.insert(available_editions, edition_option)
-    --         end
-    --     elseif type(v) == 'table' then
-    --         assert(string.sub(v.name, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(v.name))
-    --         edition_option = { name = v.name, weight = v.weight }
-    --     	table.insert(available_editions, edition_option)
-    --     end
-    -- end
+	if not _options then
+		if _key == "wheel_of_fortune" or _key == "aura" then -- set base game edition polling
+			_options = { 'e_negative', 'e_polychrome', 'e_holo', 'e_foil' }
+		else
+			local unordered_options = get_current_pool("Edition", nil, nil, _key or 'edition_generic')
+			_options = {}
+			for _, edition in ipairs(unordered_options) do -- Flip the order of vanilla editions
+				if G.P_CENTERS[edition] and G.P_CENTERS[edition].vanilla then
+					table.insert(_options, 1, edition)
+				else
+					table.insert(_options, edition)
+				end
+			end
+		end
+	end
+    for _, v in ipairs(_options) do
+        local edition_option = {}
+        if type(v) == 'string' then
+            if v ~= 'UNAVAILABLE' then
+                assert(string.sub(v, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(v))
+                edition_option = { name = v, weight = G.P_CENTERS[v].weight }
+        		table.insert(available_editions, edition_option)
+            end
+        elseif type(v) == 'table' then
+            assert(string.sub(v.name, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(v.name))
+            edition_option = { name = v.name, weight = v.weight }
+        	table.insert(available_editions, edition_option)
+        end
+    end
 
-	-- -- Calculate total weight of editions
-	-- local total_weight = 0
-	-- for _, v in ipairs(available_editions) do
-	-- 	total_weight = total_weight + (v.weight) -- total all the weights of the polled editions
-	-- end
-	-- -- sendDebugMessage("Edition weights: "..total_weight, "EditionAPI")
-	-- -- If not guaranteed, calculate the base card rate to maintain base 4% chance of editions
-	-- if not _guaranteed then
-	-- 	_modifier = _mod or 1
-	-- 	total_weight = total_weight + (total_weight / 4 * 96) -- Find total weight with base_card_rate as 96%
-	-- 	for _, v in ipairs(available_editions) do
-	-- 		v.weight = G.P_CENTERS[v.name]:get_weight()   -- Apply game modifiers where appropriate (defined in edition declaration)
-	-- 	end
-	-- end
-	-- -- sendDebugMessage("Total weight: "..total_weight, "EditionAPI")
-	-- -- sendDebugMessage("Editions: "..#available_editions, "EditionAPI")
-	-- -- sendDebugMessage("Poll: "..edition_poll, "EditionAPI")
+	-- Calculate total weight of editions
+	local total_weight = 0
+	for _, v in ipairs(available_editions) do
+		total_weight = total_weight + (v.weight) -- total all the weights of the polled editions
+	end
+	-- sendDebugMessage("Edition weights: "..total_weight, "EditionAPI")
+	-- If not guaranteed, calculate the base card rate to maintain base 4% chance of editions
+	if not _guaranteed then
+		_modifier = _mod or 1
+		total_weight = total_weight + (total_weight / 4 * 96) -- Find total weight with base_card_rate as 96%
+		for _, v in ipairs(available_editions) do
+			v.weight = G.P_CENTERS[v.name]:get_weight()   -- Apply game modifiers where appropriate (defined in edition declaration)
+		end
+	end
+	-- sendDebugMessage("Total weight: "..total_weight, "EditionAPI")
+	-- sendDebugMessage("Editions: "..#available_editions, "EditionAPI")
+	-- sendDebugMessage("Poll: "..edition_poll, "EditionAPI")
 
-	-- -- Calculate whether edition is selected
-	-- local weight_i = 0
-	-- for _, v in ipairs(available_editions) do
-	-- 	weight_i = weight_i + v.weight * _modifier
-	-- 	-- sendDebugMessage(v.name.." weight is "..v.weight*_modifier, "EditionAPI")
-	-- 	-- sendDebugMessage("Checking for "..v.name.." at "..(1 - (weight_i)/total_weight), "EditionAPI")
-	-- 	if edition_poll > 1 - (weight_i) / total_weight then
-	-- 		if not (v.name == 'e_negative' and _no_neg) then -- skip return if negative is selected and _no_neg is true
-	-- 			-- sendDebugMessage("Matched edition: "..v.name, "EditionAPI")
-	-- 			return v.name
-	-- 		end
-	-- 	end
-	-- end
+	-- Calculate whether edition is selected
+	local weight_i = 0
+	for _, v in ipairs(available_editions) do
+		weight_i = weight_i + v.weight * _modifier
+		-- sendDebugMessage(v.name.." weight is "..v.weight*_modifier, "EditionAPI")
+		-- sendDebugMessage("Checking for "..v.name.." at "..(1 - (weight_i)/total_weight), "EditionAPI")
+		if edition_poll > 1 - (weight_i) / total_weight then
+			if not (v.name == 'e_negative' and _no_neg) then -- skip return if negative is selected and _no_neg is true
+				-- sendDebugMessage("Matched edition: "..v.name, "EditionAPI")
+				return v.name
+			end
+		end
+	end
 
-	-- return nil
+	return nil
 end
 
 -- local cge = Card.get_edition
@@ -2447,6 +2447,9 @@ function get_pack(_key, _type)
         G.GAME.first_shop_buffoon = true
         return G.P_CENTERS['p_buffoon_normal_'..(math.random(1, 2))]
     end
+	if SMODS.optional_features.object_weights then
+		return G.P_CENTERS[SMODS.poll_object({type = 'Booster'})]
+	end
     local cume, it, center = 0, 0, nil
 	local temp_in_pool = {}
     for k, v in ipairs(G.P_CENTER_POOLS['Booster']) do
