@@ -485,21 +485,47 @@ function SMODS.create_mod_badges(obj, badges)
         for i, mod in ipairs(mods) do
             local mod_name = mod.display_name
             local size = 0.9
-            local font = G.LANG.font
             local max_text_width = 2 - 2*0.05 - 4*0.03*size - 2*0.03
-            local calced_text_width = 0
-            -- Math reproduced from DynaText:update_text
-            for _, c in utf8.chars(mod_name) do
-                local tx = font.FONT:getWidth(c)*(0.33*size)*G.TILESCALE*font.FONTSCALE + 2.7*1*G.TILESCALE*font.FONTSCALE
-                calced_text_width = calced_text_width + tx/(G.TILESIZE*G.TILESCALE)
-            end
             local scale_fac = 1
-                -- calced_text_width > max_text_width and max_text_width/calced_text_width
-                -- or 1
+            local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE},float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = 0.33*size*scale_fac})
+            local badge_scroll = SMODS.UIScrollBox({
+                content = badge_text,
+                container = {
+                    config = {
+                        can_collide = false,
+                    }
+                },
+                overflow = {
+                    node_config = {
+                        no_overflow = not mod.no_marquee and "h" or false,
+                        maxw = not mod.no_marquee and max_text_width or nil,
+                    },
+                    config = {
+                        can_collide = false,
+                    }
+                },
+                sync_mode = "offset",
+                scroll_move = function(self, dt)
+                    local dx = self:get_scroll_distance()
+                    if dx == 0 or mod.no_marquee then return end
+                    if not self.scroll_start_pause then
+                        self.scroll_start_pause = 1.5
+                    end
+                    if self.scroll_start_pause > 0 and self.scroll_offset.x >= 0 then
+                        self.scroll_start_pause = self.scroll_start_pause - G.real_dt
+                    else
+                        self.scroll_offset.x = (self.scroll_offset.x or 0) + G.real_dt / 1.5
+                        if self.scroll_offset.x > self.content_container.T.w then
+                            self.scroll_start_pause = 1.5
+                            self.scroll_offset.x = -self.T.w - 0.1
+                        end
+                    end
+                end,
+            })
             badges[#badges + 1] = {n=G.UIT.R, config={align = "cm"}, nodes={
                 {n=G.UIT.R, config={align = "cm", colour = mod.badge_colour or G.C.GREEN, r = 0.1, minw = 2, minh = 0.36, emboss = 0.05, padding = 0.03*size}, nodes={
                   {n=G.UIT.B, config={h=0.1,w=0.03}},
-                  {n=G.UIT.O, config={object = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE},float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = 0.33*size*scale_fac, marquee = calced_text_width > max_text_width and not mod.no_marquee, maxw = max_text_width})}},
+                  {n=G.UIT.O, config={object=badge_scroll}},
                   {n=G.UIT.B, config={h=0.1,w=0.03}},
                 }}
               }}
@@ -1245,6 +1271,16 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         })
         return true
     end
+    if (key == 'xscore' or key == 'h_xscore' or key == 'x_score' or key == 'h_x_score') and amount ~= 1 then
+        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+        SMODS.mod_score({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
+        return true
+    end
+    if (key == 'score' or key == 'h_score') and amount ~= 0 then
+        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+        SMODS.mod_score({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
+        return true
+    end
 
     if key == 'message' and not SMODS.no_resolve then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
@@ -1342,39 +1378,35 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     end
 
     local key_return_flags = {
-        'prevent_debuff',
-        'add_to_hand',
-        'remove_from_hand',
-        'stay_flipped',
-        'prevent_stay_flipped',
-        'prevent_trigger'
+        prevent_debuff = true,
+        add_to_hand = true,
+        remove_from_hand = true,
+        stay_flipped = true,
+        prevent_stay_flipped = true,
+        prevent_trigger = true,
     }
 
-    for _, flag in ipairs(key_return_flags) do
-        if key == flag then
-            return key
-        end
+    if key_return_flags[key] then
+        return key
     end
 
     local amount_return_flags = {
-        'remove',
-        'debuff_text',
-        'cards_to_draw',
-        'numerator',
-        'denominator',
-        'no_destroy',
-        'replace_scoring_name',
-        'replace_display_name',
-        'replace_poker_hands',
-        'modify',
-        'shop_create_flags',
-        'booster_create_flags'
+        remove = true,
+        debuff_text = true,
+        cards_to_draw = true,
+        numerator = true,
+        denominator = true,
+        no_destroy = true,
+        replace_scoring_name = true,
+        replace_display_name = true,
+        replace_poker_hands = true,
+        modify = true,
+        shop_create_flags = true,
+        booster_create_flags = true
     }
 
-    for _, flag in ipairs(amount_return_flags) do
-        if key == flag then
-            return { [key] = amount }
-        end
+    if amount_return_flags[key] then
+        return { [key] = amount }
     end
 
     if key == 'debuff' then
@@ -1466,6 +1498,8 @@ SMODS.scoring_parameter_keys = {
 }
 SMODS.other_calculation_keys = {
     'p_dollars', 'dollars', 'h_dollars',
+    'score', 'h_score',
+    'xscore', 'x_score', 'h_x_score', 'h_xscore',
     'swap', 'balance',
     'saved', 'effect', 'remove',
     'debuff', 'prevent_debuff', 'debuff_text',
@@ -3126,6 +3160,18 @@ function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
     if specific_vars and specific_vars.bonus_h_dollars then
         localize{type = 'other', key = 'card_extra_h_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_h_dollars)}}
     end
+    if specific_vars and specific_vars.perma_score then
+        localize{type = 'other', key = 'card_extra_score', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.perma_score)}}
+    end
+    if specific_vars and specific_vars.perma_h_score then
+        localize{type = 'other', key = 'card_extra_h_score', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.perma_h_score)}}
+    end
+    if specific_vars and specific_vars.perma_x_score then
+        localize{type = 'other', key = 'card_extra_x_score', nodes = desc_nodes, vars = {(specific_vars.perma_x_score)}}
+    end
+    if specific_vars and specific_vars.perma_h_x_score then
+        localize{type = 'other', key = 'card_extra_h_x_score', nodes = desc_nodes, vars = {(specific_vars.perma_h_x_score)}}
+    end
     if specific_vars and specific_vars.bonus_repetitions then
         localize{type = 'other', key = 'card_extra_repetitions', nodes = desc_nodes, vars = {specific_vars.bonus_repetitions, localize(specific_vars.bonus_repetitions > 1 and 'b_retrigger_plural' or 'b_retrigger_single')}}
     end
@@ -3714,4 +3760,48 @@ function UIElement:set_text_shader(shader, send, shadow)
             G.SHADERS[shader]:send("text_shadow", not not shadow)
         end
     })
+end
+
+-- function to modify score: normally accepts add and mult argument and additionally card argument
+SMODS.mod_score = function(score_mod)
+    score_mod = score_mod or {}
+    local score_fx = {}
+    local score_cal = score_mod.set or G.GAME.chips
+    local old = G.GAME.chips
+    G.SCORE_DISPLAY_QUEUE = G.SCORE_DISPLAY_QUEUE or {}
+    -- TARGET: higher priority score operation
+    if score_mod.mult then
+        local absoluted = math.abs(score_mod.mult)
+        score_cal = score_cal * score_mod.mult
+        table.insert(G.SCORE_DISPLAY_QUEUE, old)
+        score_fx[#score_fx+1] = {key = score_mod.mult < 0 and "a_xscore_minus" or "a_xscore", value = absoluted, sound = "xscore", message_key = "xscore_message"}
+    end
+    if score_mod.add and score_mod.add ~= 0 then
+        local absoluted = math.abs(score_mod.add)
+        score_cal = score_cal + score_mod.add
+        table.insert(G.SCORE_DISPLAY_QUEUE, old)
+        score_fx[#score_fx+1] = { key = "a_score", value = score_mod.add, sound = "gong", message_key = 'score_message'}
+    end
+    -- TARGET: lower priority score operation
+    G.GAME.chips = score_cal
+
+    if not (score_mod.effect and score_mod.effect.remove_default_message) and score_mod.card then
+        for _,v in ipairs(score_fx) do
+            if score_mod.from_edition then
+                card_eval_status_text(score_mod.card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = v.key, vars = {v.value}}, update_score = true, colour = G.C.EDITION, edition = true, sound = v.sound, volume = 0.5 })
+            elseif score_mod.effect and score_mod.effect[v.message_key] then
+                score_mod.effect[v.message_key].update_score = true
+                card_eval_status_text(score_mod.card, 'extra', v.value, percent, nil, score_mod.effect[v.message_key])
+            else
+                card_eval_status_text(score_mod.card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= v.key,vars={v.value}}, update_score = true, volume = 0.5, sound_override = v.sound, colour =  G.C.PURPLE})
+            end
+        end 
+        -- this check is in case some skip animation mods is there, may be removed in the future
+        if G.CARD_EVAL_TRIGGERED then
+            G.SCORE_DISPLAY_QUEUE = nil
+        end
+    elseif score_mod.effect then
+        score_mod.effect.update_score = true
+    end
+    delay(0.2)
 end

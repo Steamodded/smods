@@ -821,3 +821,14 @@ function SMODS.resolve_ui_shaders(shader, send) end
 --- @param element UIElement|DynaText
 --- @param input_args table?
 function SMODS.set_ui_element_shader(element, input_args) end
+
+---Modifies current scored chips
+---@param mod_score Score_Mod_Parameter Score modification parameter
+function SMODS.mod_score(mod_score) end
+
+---@class Score_Mod_Parameter
+---@field add? number Add this number to score
+---@field mult? number Multiply score by this number
+---@field card? Card Card responsible for score modification action, crucial for score display to work properly
+---@field effect? table Table of effects that were calculated
+---@field from_edition? boolean 
