@@ -50,7 +50,8 @@ payload = '''if self.config.text_effect and SMODS.DynaTextEffects[self.config.te
 end'''
 match_indent = true
 
-# Add shader & effect for DynaText (shadow)
+# Apply shaders and DynaTextEffects to DynaText (shadow)
+# DynaText:draw
 [[patches]]
 [patches.pattern]
 target = 'engine/text.lua'
@@ -91,7 +92,8 @@ love.graphics.translate(letter.dims.x*self.font.FONTSCALE/G.TILESIZE, 0)
 """
 match_indent = true
 
-# Add shader & effect for DynaText (text)
+# Apply shaders and DynaTextEffects to DynaText (text)
+# DynaText:draw
 [[patches]]
 [patches.pattern]
 target = 'engine/text.lua'

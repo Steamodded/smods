@@ -234,7 +234,7 @@ end
 """
 match_indent = true
 
-# Apply shader on element text (shadow)
+# Apply shaders on text elements (shadow)
 # UIElement:draw_self
 [[patches]]
 [patches.pattern]
@@ -267,7 +267,7 @@ end
 """
 match_indent = true
 
-# Apply shader on element text
+# Apply shaders on text elements
 # UIElement:draw_self
 [[patches]]
 [patches.pattern]
