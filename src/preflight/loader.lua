@@ -204,6 +204,9 @@ function loadMods(modsDirectory)
                 t[i] = x
             end
         end},
+        icon_path = {type = "string"},
+        icon_width = {type = "number"},
+        icon_fps = {type = "number"},
         main_file = { type = 'string', required = true },
         config_file = {type = 'string', default = 'config.lua' },
         __ = { check = function(mod)
