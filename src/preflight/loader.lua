@@ -818,6 +818,7 @@ local function initSteamodded()
     -- boot_print_stage("Injecting Items")
     SMODS.injectItems()
     convert_save_data()
+    SMODS.populate_attributes()
     SMODS.booted = true
 
 

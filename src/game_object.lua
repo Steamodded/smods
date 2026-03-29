@@ -390,6 +390,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.Attribute
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/attributes.lua'), ('=[SMODS _ "src/game_objects/attributes.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
     ----- INTERNAL API CODE GameObject._Loc_Pre
     -------------------------------------------------------------------------------------------------
 
@@ -1186,6 +1192,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 -- Changing "cards" and "pools" wouldn't be hard to do, just depends on preferred format
                 if ((self.pools and self.pools[k]) or (v.cards and v.cards[self.key])) then
                     v:inject_card(self)
+                end
+            end
+            if self.attributes then
+                for _, attribute in ipairs(self.attributes) do
+                    if SMODS.Attributes[attribute] then
+                        SMODS.Attributes[attribute].keys = SMODS.merge_lists({SMODS.Attributes[attribute].keys or {}, {self.key}})
+                    end
                 end
             end
         end,
