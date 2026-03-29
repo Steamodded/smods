@@ -679,7 +679,7 @@ function SMODS.intersect_lists(lists)
         local seen = {}
         local ret = {}
         for _, v in ipairs(l1) do seen[v] = (seen[v] or 0) + 1 end
-        for _, v in ipairs(l2) do if seen[v] and seen[v] > 0 then ret[#ret + 1] = v; seen[v] = seen[v] - 1; print(v, seen[v]) end end
+        for _, v in ipairs(l2) do if seen[v] and seen[v] > 0 then ret[#ret + 1] = v; seen[v] = seen[v] - 1 end end
 
         return ret
     end
