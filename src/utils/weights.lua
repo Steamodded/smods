@@ -4,10 +4,11 @@
 
 
 -- Returns a `key` of the polled object type
----@param args table|{type: string?, labels: table[string]?, pool: table[string]?, seed: string?, chance: number?, guaranteed: boolean?}
+---@param args table|{type: string?, attributes: table[string]?, pool: table[string]?, seed: string?, chance: number?, guaranteed: boolean?}
 function SMODS.poll_object(args)
+    assert(SMODS.optional_features.object_weights, "SMODS.poll_object called with object_weights optional feature disabled."..SMODS.log_crash_info(debug.getinfo(2)))
     assert(args, "SMODS.poll_object called with no args."..SMODS.log_crash_info(debug.getinfo(2)))
-    assert((args.type or (args.labels and type(args.labels) == 'table') or (args.pool and type(args.pool) == 'table')), "SMODS.poll_object called without a pool source." .. SMODS.log_crash_info(debug.getinfo(2)))
+    assert((args.type or (args.types and type(args.types) == 'table') or (args.attributes and type(args.attributes) == 'table') or (args.pool and type(args.pool) == 'table')), "SMODS.poll_object called without a pool source." .. SMODS.log_crash_info(debug.getinfo(2)))
 
     -- TODO: remove before merge
     local function table_as_string(t)
@@ -18,7 +19,7 @@ function SMODS.poll_object(args)
 
     -- Prepare pool
     local pool = args.pool or {}
-    local types = args.labels or {args.type}
+    local types = args.attributes or args.types or {args.type}
     if SMODS.debug_prints then print('Polling', table_as_string(types)) end
 
     -- Populate pool
@@ -81,12 +82,12 @@ function SMODS.poll_object(args)
             return
         end
 
-    if not SMODS.no_repoll[args.type] then
-        poll_key = pseudorandom(pseudoseed(args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')))
-        if args.print then print('Poll key string:', args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')) end
-        chance = 1
-    end
-    if args.print then print('Poll key: '..poll_key) end
+        if not SMODS.no_repoll[args.type] then
+            poll_key = pseudorandom(pseudoseed(args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')))
+            if args.print then print('Poll key string:', args.type_key or SMODS.get_poll_key(args.type, args.append or 'type')) end
+            chance = 1
+        end
+        if args.print then print('Poll key: '..poll_key) end
 
         -- Find weight
         local poll_weight = modded_weight - (poll_key - (1 - chance))/chance * modded_weight
@@ -98,10 +99,11 @@ function SMODS.poll_object(args)
             key = final_pool[1].key
         end
     end
-        -- Edition specific functionality
-        if args.no_negative and key == 'e_negative' then return 'e_polychrome' end
-        if SMODS.debug_prints then print("Result: "..key) end
-        return key
+
+    -- Edition specific functionality
+    if args.no_negative and key == 'e_negative' then return 'e_polychrome' end
+    if SMODS.debug_prints then print("Result: "..key) end
+    return key
 end
 
 -- Returns the `weight` and `modified_weight` or a given object
@@ -220,13 +222,26 @@ function SMODS.create_poll_pool(labels, args)
     local labels_used = {}
     local pool = {}
     local final_pool
+    local it = 0
     
+    local function join_lists(args)
+        local l1 = args[1] or {}
+        local l2 = args[2] or {}
+        for _, v in ipairs(l2) do
+            l1[#l1 + 1] = v
+        end
+        return l1
+    end
+
     for _, label in ipairs(labels) do
         labels_used[label] = true
         local temp_pool = {}
-        local join_func = args.intersect and SMODS.intersect_lists or SMODS.merge_lists
+        local join_func = args.intersect and SMODS.intersect_lists or join_lists
         for i=1, #(args.rarities or {true}) do
-            local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or get_current_pool(label, args.rarities and args.rarities[i])
+            local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or SMODS.Attributes[label] and SMODS.get_attribute_pool(label) or get_current_pool(label, args.rarities and args.rarities[i])
+            if SMODS.Attributes[label] then
+                _p = SMODS.cull_pool(_p, label, args)
+            end
             if label == 'Edition' then
                 local _options = {}
                 for _, edition in ipairs(_p) do
@@ -238,18 +253,22 @@ function SMODS.create_poll_pool(labels, args)
                 end
                 _p = _options
             end
-            temp_pool = SMODS.merge_lists({temp_pool, _p})
+            temp_pool = join_lists({temp_pool, _p})
         end
         for _, v in ipairs(temp_pool) do
-            if G[SMODS.game_table_from_type[label] or 'P_CENTERS'][v] then pool[v] = {key = v, type = label} end
+            pool[v] = {key = v, type = label}
         end
         final_pool = final_pool and join_func({final_pool, temp_pool}) or temp_pool
     end
 
     local ret_pool = {}
+    local pool_exists = false
     for i, k in ipairs(final_pool) do
+        if not pool_exists and k ~= 'UNAVAILABLE' then pool_exists = true end
         table.insert(ret_pool, pool[k])
     end
+
+    if not pool_exists then ret_pool = {{key = 'j_joker', type = 'Joker'}} end
 
     return ret_pool, labels_used
 end
@@ -359,14 +378,41 @@ function SMODS.poll_object_type(args)
     return weighted_table[ind].type
 end
 
--- function get_pack(_key, _type)
---     if not G.GAME.first_shop_buffoon and not G.GAME.banned_keys['p_buffoon_normal_1'] then
---         G.GAME.first_shop_buffoon = true
---         return G.P_CENTERS['p_buffoon_normal_'..(math.random(1, 2))]
---     end
+function SMODS.cull_pool(pool, type, args)
+    local final_pool = {}
+    for _, key in ipairs(pool) do
+        local add = nil
+        local v = G.P_CENTERS[key]
+        local in_pool, pool_opts = SMODS.add_to_pool(v, { source = args.append })
+        pool_opts = pool_opts or {}
+        if not (G.GAME.used_jokers[v.key] and not pool_opts.allow_duplicates and not SMODS.showman(v.key) and not args.allow_duplicates) and
+            (v.unlocked ~= false or v.rarity == 4) then
+            if v.enhancement_gate then
+                add = nil
+                for kk, vv in pairs(G.playing_cards) do
+                    if SMODS.has_enhancement(vv, v.enhancement_gate) then
+                        add = true
+                    end
+                end
+            else
+                add = true
+            end
+        end
 
---     return G.P_CENTERS[SMODS.poll_object({type = 'Booster', seed = 'sho'..G.GAME.round_resets.ante})]
--- end
+        if v.no_pool_flag and G.GAME.pool_flags[v.no_pool_flag] then add = nil end
+        if v.yes_pool_flag and not G.GAME.pool_flags[v.yes_pool_flag] then add = nil end
+        
+        add = in_pool and (add or pool_opts.override_base_checks)
+        
+        if add and not G.GAME.banned_keys[v.key] then 
+            final_pool[#final_pool + 1] = v.key
+        else
+            final_pool[#final_pool + 1] = 'UNAVAILABLE'
+        end
+    end
+    
+    return final_pool
+end
 
 local smods_get_voucher_key = get_next_voucher_key
 function get_next_voucher_key(_from_tag)
