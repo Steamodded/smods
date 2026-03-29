@@ -3722,7 +3722,7 @@ SMODS.mod_blind_size = function(blind_size_mod)
                 blind_size_mod.effect[v.message_key].update_blind_size = true
                 card_eval_status_text(blind_size_mod.card, 'extra', v.value, percent, nil, blind_size_mod.effect[v.message_key])
             else
-                card_eval_status_text(blind_size_mod.card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= v.key,vars={v.value}}, update_blind_size = true, volume = 0.5, sound_override = v.sound, colour = G.C.BLIND_SIZE}) -- or use G.C.UI.FILTER
+                card_eval_status_text(blind_size_mod.card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= v.key,vars={v.value}}, update_blind_size = true, volume = 0.5, sound_override = v.sound, colour = G.C.DYN_UI.DARK}) -- or use G.C.UI.FILTER
             end
         end 
         -- this check is in case some skip animation mods is there, may be removed in the future

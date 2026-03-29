@@ -184,42 +184,42 @@ return {
             },
             card_blind_size = {
                 text = {
-                    "{C:blind_size}#1#{} Blind Size",
+                    "{C:blind}#1#{} Blind Size",
                 },
             },
             card_h_blind_size = {
                 text = {
-                    "{C:blind_size}#1#{} Blind Size when held",
+                    "{C:blind}#1#{} Blind Size when held",
                 },
             },
             card_x_blind_size = {
                 text = {
-                    "{X:blind_size,C:white}X#1#{} Blind Size",
+                    "{X:blind,C:white}X#1#{} Blind Size",
                 },
             },
             card_h_x_blind_size = {
                 text = {
-                    "{X:blind_size,C:white}X#1#{} Blind Size when held",
+                    "{X:blind,C:white}X#1#{} Blind Size when held",
                 },
             },
             card_extra_blind_size = {
                 text = {
-                    "{C:blind_size}#1#{} Blind Size",
+                    "{C:blind}#1#{} Blind Size",
                 },
             },
             card_extra_h_blind_size = {
                 text = {
-                    "{C:blind_size}#1#{} Blind Size when held",
+                    "{C:blind}#1#{} Blind Size when held",
                 },
             },
             card_extra_x_blind_size = {
                 text = {
-                    "{X:blind_size,C:white}X#1#{} Blind Size",
+                    "{X:blind,C:white}X#1#{} Blind Size",
                 },
             },
             card_extra_h_x_blind_size = {
                 text = {
-                    "{X:blind_size,C:white}X#1#{} Blind Size when held",
+                    "{X:blind,C:white}X#1#{} Blind Size when held",
                 },
             },
             artist = {

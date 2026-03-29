@@ -62,7 +62,7 @@ match_indent = true
 target = 'globals.lua'
 pattern = """RENTAL = HEX('b18f43'),"""
 position = "after"
-payload = """BLIND_SIZE = HEX('a52a2a'),
+payload = """BLIND_SIZE = HEX('ad5353'),
 """
 overwrite = true
 match_indent = true
@@ -73,8 +73,7 @@ target = "functions/misc_functions.lua"
 pattern = """white = G.C.WHITE,"""
 position = "after"
 payload = """
-blind_size = G.C.BLIND_SIZE,
-maroon = G.C.BLIND_SIZE,
+blind = G.C.DYN_UI.DARK,
 """
 overwrite = true
 match_indent = true
