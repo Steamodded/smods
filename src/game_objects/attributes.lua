@@ -62,7 +62,7 @@ SMODS.Attribute({
         'j_fibonacci', 'j_abstract', 'j_gros_michel', 'j_even_steven', 'j_scholar', 'j_supernova',
         'j_ride_the_bus', 'j_green_joker', 'j_red_card', 'j_erosion', 'j_fortune_teller',
         'j_flash', 'j_popcorn', 'j_trousers', 'j_walkie_talkie', 'j_smiley',
-        'j_swashbuckler', 'j_onyx_agate', 'j_shoot_the_moon', 'j_bootstraps', 'c_eris'
+        'j_swashbuckler', 'j_onyx_agate', 'j_shoot_the_moon', 'j_bootstraps'
     }
 })
 
@@ -73,7 +73,7 @@ SMODS.Attribute({
         'j_banner', 'j_scary_face', 'j_odd_todd', 'j_scholar', 'j_runner',
         'j_ice_cream', 'j_blue_joker', 'j_hiker', 'j_square', 'j_stone',
         'j_bull', 'j_walkie_talkie', 'j_castle', 'j_arrowhead', 'j_wee',
-        'j_stuntman', 'c_eris'
+        'j_stuntman'
     }
 })
 
