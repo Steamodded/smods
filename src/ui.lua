@@ -1214,7 +1214,12 @@ function getModtagInfo(mod)
             specific_vars = {name}
         end
         if mod.disabled then
-            tag_pos = {x = 1, y = 0}
+            if mod.icon_path then
+                tag_pos = {x = 0, y = 0}
+                tag_atlas = mod.prefix and mod.prefix .. '_modicon' or 'modicon'
+            else
+                tag_pos = {x = 1, y = 0}
+            end
             tag_message = 'load_disabled'
         end
     end
@@ -1234,6 +1239,7 @@ function buildModtag(mod)
     tag_sprite:define_draw_steps({
         {shader = 'dissolve', shadow_height = 0.05},
         {shader = 'dissolve'},
+		mod.icon_path and mod.disabled and {shader = 'dissolve', shadow_height = 0, tilt_shadow = 1} or nil, --this is really gross, blame thunk
     })
     tag_sprite.float = true
     tag_sprite.states.hover.can = true
