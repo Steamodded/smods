@@ -4,6 +4,16 @@ dump_lua = true
 priority = -10
 
 [[patches]]
+[patches.regex]
+target = "functions/misc_functions.lua"
+pattern = "(?<indent>[\t ]*)local final_line = \\{\\}(\n.*)*\\s*if args\\.type == 'text' then return final_line end"
+position = "at"
+payload = """local final_line = SMODS.localize_box(lines, args)
+if args.type == 'text' then return final_line end"""
+line_prepend = "$indent"
+
+
+[[patches]]
 [patches.pattern]
 target = "functions/misc_functions.lua"
 pattern = """spacing = math.max(0, 0.32*(17 - #assembled_string)),"""
