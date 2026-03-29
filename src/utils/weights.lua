@@ -1,7 +1,4 @@
--- TODO: object labels SMODS class
--- TODO: populate vanilla object labels (chips, mult, xmult, food, space, generation, diamond, heart, spade, club)
--- TODO: object labels integrated into `get_current_pool`
-
+-- TODO: how do soul objects fit into this system?
 
 -- Returns a `key` of the polled object type
 ---@param args table|{type: string?, attributes: table[string]?, pool: table[string]?, seed: string?, chance: number?, guaranteed: boolean?}
