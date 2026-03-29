@@ -1,22 +1,3 @@
--- TODO: create smods attributes:
-    -- xmult
-    -- xchips
-    -- retriggers
-    -- scaling
-    -- generation
-    -- spades
-    -- clubs
-    -- hearts
-    -- diamonds
-    -- hand_type
-    -- rank
-    -- copying
-    -- generate
-    -- food
-    -- space
-    -- discard
-    -- economy
-
 SMODS.Attributes = {}
 SMODS.Attribute = SMODS.GameObject:extend {
     obj_table = SMODS.Attributes,
@@ -78,7 +59,7 @@ SMODS.Attribute({
         'j_joker', 'j_greedy_joker', 'j_lusty_joker', 'j_wrathful_joker', 'j_gluttenous_joker',
         'j_jolly', 'j_zany', 'j_crazy', 'j_mad', 'j_droll',
         'j_half', 'j_ceremonial', 'j_mystic_summit', 'j_misprint', 'j_raised_fist',
-        'j_fibonacci', 'j_abstract', 'j_gros_michel', 'j_even_steven', 'j_scholar',
+        'j_fibonacci', 'j_abstract', 'j_gros_michel', 'j_even_steven', 'j_scholar', 'j_supernova',
         'j_ride_the_bus', 'j_green_joker', 'j_red_card', 'j_erosion', 'j_fortune_teller',
         'j_flash', 'j_popcorn', 'j_trousers', 'j_walkie_talkie', 'j_smiley',
         'j_swashbuckler', 'j_onyx_agate', 'j_shoot_the_moon', 'j_bootstraps', 'c_eris'
@@ -93,5 +74,173 @@ SMODS.Attribute({
         'j_ice_cream', 'j_blue_joker', 'j_hiker', 'j_square', 'j_stone',
         'j_bull', 'j_walkie_talkie', 'j_castle', 'j_arrowhead', 'j_wee',
         'j_stuntman', 'c_eris'
+    }
+})
+
+SMODS.Attribute({
+    key = 'xmult',
+    keys = {
+        'j_stencil', 'j_loyalty_card', 'j_steel_joker', 'j_blackboard', 'j_constellation',
+        'j_cavendish', 'j_card_sharp', 'j_madness', 'j_vampire', 'j_hologram',
+        'j_baron', 'j_obelisk', 'j_photograph', 'j_lucky_cat', 'j_baseball',
+        'j_ancient', 'j_ramen', 'j_campfire', 'j_acrobat', 'j_throwback',
+        'j_bloodstone', 'j_glass', 'j_flower_pot', 'j_idol', 'j_seeing_double',
+        'j_hit_the_road', 'j_duo', 'j_trio', 'j_family', 'j_order', 'j_tribe',
+        'j_drivers_license', 'j_caino', 'j_triboulet', 'j_yorick'
+    }
+})
+
+SMODS.Attribute({
+    key = 'xchips',
+})
+
+SMODS.Attribute({
+    key = 'score',
+})
+
+SMODS.Attribute({
+    key = 'xscore',
+})
+
+SMODS.Attribute({
+    key = 'retrigger',
+    keys = {
+        'j_mime', 'j_dusk', 'j_hack', 'j_selzer', 'j_sock_and_buskin', 'j_hanging_chad'
+    }
+})
+
+SMODS.Attribute({
+    key = 'scaling',
+    keys = {
+        'j_ceremonial', 'j_steel', 'j_ride_the_bus', 'j_egg', 'j_runner',
+        'j_ice_cream', 'j_constellation', 'j_hiker', 'j_green_joker', 'j_red_card',
+        'j_madness', 'j_square', 'j_vampire', 'j_hologram', 'j_rocket',
+        'j_obelisk', 'j_gift', 'j_fortune_teller', 'j_stone', 'j_flash',
+        'j_popcorn', 'j_trousers', 'j_ramen', 'j_castle', 'j_campfire',
+        'j_throwback', 'j_glass', 'j_wee', 'j_hit_the_road', 'j_caino', 'j_yorick'
+    }
+})
+
+SMODS.Attribute({
+    key = 'generation',
+    keys = {
+        'j_marble', 'j_8_ball', 'j_dna', 'j_sixth_sense', 'j_superposition',
+        'j_seance', 'j_riff_raff', 'j_vagabond', 'j_hallucination', 'j_diet_cola',
+        'j_certificate', 'j_invisible', 'j_cartomancer', 'j_perkeo'
+    }
+})
+
+SMODS.Attribute({
+    key = 'suit',
+    keys = {
+        'j_greedy_joker', 'j_lusty_joker', 'j_wrathful_joker', 'j_gluttenous_joker',
+        'j_smeared', 'j_castle', 'j_ancient', 'j_seeing_double', 'j_blackboard', 'j_flower_pot',
+        'j_rough_gem', 'j_bloodstone', 'j_arrowhead', 'j_onyx_agate',
+    }
+})
+
+SMODS.Attribute({
+    key = 'diamonds',
+    keys = {
+        'j_greedy_joker', 'j_smeared', 'j_rough_gem'
+    }
+})
+
+SMODS.Attribute({
+    key = 'hearts',
+    keys = {
+        'j_lusty_joker', 'j_smeared', 'j_bloodstone'
+    }
+})
+
+SMODS.Attribute({
+    key = 'spades',
+    keys = {
+        'j_wrathful_joker', 'j_smeared', 'j_arrowhead', 'j_blackboard'
+    }
+})
+
+SMODS.Attribute({
+    key = 'clubs',
+    keys = {
+        'j_gluttenous_joker', 'j_smeared', 'j_onyx_agate', 'j_seeing_double', 'j_blackboard'
+    }
+})
+
+SMODS.Attribute({
+    key = 'hand_type',
+    keys = {
+        'j_jolly', 'j_zany', 'j_crazy', 'j_mad', 'j_droll',
+        'j_sly', 'j_wily', 'j_clever', 'j_devious', 'j_crafty',
+        'j_four_fingers', 'j_supernova', 'j_runner', 'j_superposition',
+        'j_todo_list', 'j_seance', 'j_shortcut', 'j_obelisk', 'j_trousers',
+        'j_duo', 'j_trio', 'j_family', 'j_order', 'j_tribe',
+    }
+})
+
+SMODS.Attribute({
+    key = 'rank',
+    keys = {
+        'j_8_ball', 'j_raised_fist', 'j_fibonacci', 'j_hack', 'j_even_steven',
+        'j_odd_todd', 'j_scholar', 'j_sixth_sense', 'j_superposition', 'j_cloud_9',
+        'j_mail', 'j_walkie_talkie', 'j_wee', 'j_idol', 'j_hit_the_road',
+        'j_shoot_the_moon', 'j_triboulet'
+    }
+})
+
+SMODS.Attribute({
+    key = 'face',
+    keys = {
+        'j_scary', 'j_paraeidolia', 'j_business', 'j_ride_the_bus',
+        'j_faceless', 'j_midas_mask', 'j_photograph', 'j_reserved_parking',
+        'j_smiley', 'j_sock_and_buskin', 'j_caino'
+    }
+})
+
+SMODS.Attribute({
+    key = 'copying',
+    keys = {
+        'j_blueprint', 'j_brainstorm',
+    }
+})
+
+SMODS.Attribute({
+    key = 'food',
+    keys = {
+        'j_gros_michel', 'j_cavendish', 'j_ice_cream', 'j_ramen', 'j_turtle_bean', 'j_popcorn', 'j_seltzer'
+    }
+})
+
+SMODS.Attribute({
+    key = 'space',
+    keys = {
+        'j_supernova', 'j_space', 'j_constellation', 'j_rocket', 'j_satellite', 'j_astronomer'
+    }
+})
+
+SMODS.Attribute({
+    key = 'discard',
+    keys = {
+        'j_banner', 'j_mystic_summit', 'j_delayed_grat', 'j_burglar', 'j_faceless',
+        'j_green_joker', 'j_mail', 'j_drunkard', 'j_trading', 'j_ramen', 'j_castle',
+        'j_merry_andy', 'j_hit_the_road', 'j_burnt', 'j_yorick'
+    }
+})
+
+SMODS.Attribute({
+    key = 'economy',
+    keys = {
+        'j_credit_card', 'j_chaos', 'j_delayed_grat', 'j_business', 'j_egg',
+        'j_faceless', 'j_todo_list', 'j_cloud_9', 'j_rocket', 'j_gift',
+        'j_reserved_parking', 'j_mail', 'j_to_the_moon', 'j_golden',
+        'j_trading', 'j_ticket', 'j_rough_gem', 'j_matador', 'j_satellite'
+    }
+})
+
+SMODS.Attribute({
+    key = 'chance',
+    keys = {
+        'j_8_ball', 'j_gros_michel', 'j_business', 'j_space', 'j_cavendish',
+        'j_hallucination', 'j_reserved_parking', 'j_bloodstone', 
     }
 })
