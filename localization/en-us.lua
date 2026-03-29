@@ -182,44 +182,44 @@ return {
                     "{X:purple,C:white}X#1#{} extra Score when held",
                 },
             },
-            card_blind_score = {
+            card_blind_size = {
                 text = {
-                    "{C:blind_mod}#1#{} Blind Score",
+                    "{C:blind_size}#1#{} Blind Size",
                 },
             },
-            card_h_blind_score = {
+            card_h_blind_size = {
                 text = {
-                    "{C:blind_mod}#1#{} Blind Score when held",
+                    "{C:blind_size}#1#{} Blind Size when held",
                 },
             },
-            card_x_blind_score = {
+            card_x_blind_size = {
                 text = {
-                    "{X:blind_mod,C:white}X#1#{} Blind Score",
+                    "{X:blind_size,C:white}X#1#{} Blind Size",
                 },
             },
-            card_h_x_blind_score = {
+            card_h_x_blind_size = {
                 text = {
-                    "{X:blind_mod,C:white}X#1#{} Blind Score when held",
+                    "{X:blind_size,C:white}X#1#{} Blind Size when held",
                 },
             },
-            card_extra_blind_score = {
+            card_extra_blind_size = {
                 text = {
-                    "{C:blind_mod}#1#{} extra Blind Score",
+                    "{C:blind_size}#1#{} Blind Size",
                 },
             },
-            card_extra_h_blind_score = {
+            card_extra_h_blind_size = {
                 text = {
-                    "{C:blind_mod}#1#{} extra Blind Score when held",
+                    "{C:blind_size}#1#{} Blind Size when held",
                 },
             },
-            card_extra_x_blind_score = {
+            card_extra_x_blind_size = {
                 text = {
-                    "{X:blind_mod,C:white}X#1#{} extra Blind Score",
+                    "{X:blind_size,C:white}X#1#{} Blind Size",
                 },
             },
-            card_extra_h_x_blind_score = {
+            card_extra_h_x_blind_size = {
                 text = {
-                    "{X:blind_mod,C:white}X#1#{} extra Blind Score when held",
+                    "{X:blind_size,C:white}X#1#{} Blind Size when held",
                 },
             },
             artist = {
@@ -383,9 +383,9 @@ return {
             a_score="#1# Score",
             a_xscore="X#1# Score",
             a_xscore_minus="-X#1# Score",
-            a_blind_score="#1# Blind Score",
-            a_xblind_score="X#1# Blind Score",
-            a_xblind_score_minus="-X#1# Blind Score",
+            a_blind_size="#1# Blind Size",
+            a_xblind_size="X#1# Blind Size",
+            a_xblind_size_minus="-X#1# Blind Size",
             smods_version_mismatch = {
                 "Your Steamodded version has changed",
                 "since this run was started!",

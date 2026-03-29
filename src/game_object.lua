@@ -618,7 +618,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.Sound{ key = 'xchips', path = 'xchips.ogg'}
     SMODS.Sound{ key = 'xscore', path = 'xscore.ogg'}
-    SMODS.Sound{ key = 'xblindscore', path = 'xblindscore.ogg'}
+    SMODS.Sound{ key = 'xblindsize', path = 'xblindsize.ogg'}
     -------------------------------------------------------------------------------------------------
     ------- API CODE GameObject.Gradient
     -------------------------------------------------------------------------------------------------
