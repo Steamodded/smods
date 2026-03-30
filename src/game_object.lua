@@ -43,8 +43,7 @@ function loadAPIs()
         -- condition == nil counts as true
         if condition ~= false and obj[key] and prefix then
             if string.sub(obj[key], 1, #prefix + 1) == prefix..'_' then
-                -- this happens within steamodded itself and I don't want to spam the logs with warnings, leaving this disabled for now
-                -- sendWarnMessage(("Attempted to prefix field %s=%s on object %s, already prefixed"):format(key, obj[key], obj.key), obj.set)
+                -- this isn't a perfect safeguard but it's all the scope of this function can allow
                 return
             end
             obj[key] = prefix .. '_' .. obj[key]
@@ -134,7 +133,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     function SMODS.GameObject:register()
-        if self:check_dependencies() then
+        if not self:check_duplicate_register() and self:check_dependencies() then
             -- start with this class and propagate up to all parent classes that can have objects
             self:__internal_register(self, {})
             local parent = self.super or {}
@@ -266,7 +265,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         for k, v in pairs(obj) do orig_o[k] = v end
         SMODS._save_d_u(orig_o)
         orig_o.taken_ownership = true
-        orig_o:register()
+        -- we don't want the warning here
+        if not orig_o.registered then orig_o:register() end
         return orig_o
     end
 
