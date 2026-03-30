@@ -499,7 +499,7 @@ function loadMods(modsDirectory)
     end
 
     local function check_dependencies(mod, seen)
-        if not (mod.can_load == nil) then return mod.can_load end
+        if mod.can_load  ~= nil then return mod.can_load end
         seen = seen or {}
         local can_load = true
         if seen[mod.id] then return true end
@@ -512,9 +512,9 @@ function loadMods(modsDirectory)
 
         if not mod.json then
             for _, v in ipairs(mod.conflicts or {}) do
-                -- block load even if the conflict is also blocked
                 if
                     SMODS.Mods[v.id] and
+                    check_dependencies(SMODS.Mods[v.id], seen) and
                     (not v.max_version or sUtil.V(SMODS.Mods[v.id].version) <= sUtil.V(v.max_version)) and
                     (not v.min_version or sUtil.V(SMODS.Mods[v.id].version) >= sUtil.V(v.min_version))
                 then
@@ -636,7 +636,7 @@ function loadMods(modsDirectory)
     end
 
     -- add duplicate prefixes as conflicts
-    used_prefixes = {}
+    local used_prefixes = {}
     for _, mod in pairs(SMODS.Mods) do
         if mod.prefix then
             used_prefixes[mod.prefix] = used_prefixes[mod.prefix] or {}
@@ -649,7 +649,12 @@ function loadMods(modsDirectory)
             mod.conflicts = mod.conflicts or {}
             mod.prefix_conflicts = {}
             for other, _ in pairs(t) do
-                if other ~= mod_id then
+                local other_mod = SMODS.Mods[other]
+                -- only add the conflict to the mod that loads later to ensure the first-loading mod gets to load
+                if 
+                    other ~= mod_id and 
+                    (mod.priority > other_mod.priority or (mod.priority == other_mod.priority and mod.id > other_mod.id))
+                then
                     mod.conflicts[#mod.conflicts+1] = { id = other }
                     mod.prefix_conflicts[other] = true
                 end

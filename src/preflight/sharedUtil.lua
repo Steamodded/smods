@@ -19,6 +19,12 @@ function M.hex(hex)
   return color
 end
 
+function M.index(t, x)
+    for k,v in pairs(t) do
+        if v==x then return k end
+    end
+end
+
 local v_mt
 v_mt = {
     __eq = function(a, b)
