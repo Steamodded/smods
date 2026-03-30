@@ -380,31 +380,32 @@ function SMODS.cull_pool(pool, type, args)
     for _, key in ipairs(pool) do
         local add = nil
         local v = G.P_CENTERS[key]
-        local in_pool, pool_opts = SMODS.add_to_pool(v, { source = args.append })
-        pool_opts = pool_opts or {}
-        if not (G.GAME.used_jokers[v.key] and not pool_opts.allow_duplicates and not SMODS.showman(v.key) and not args.allow_duplicates) and
-            (v.unlocked ~= false or v.rarity == 4) then
-            if v.enhancement_gate then
-                add = nil
-                for kk, vv in pairs(G.playing_cards) do
-                    if SMODS.has_enhancement(vv, v.enhancement_gate) then
-                        add = true
+        if v then
+            local in_pool, pool_opts = SMODS.add_to_pool(v, { source = args.append })
+            pool_opts = pool_opts or {}
+            if not (G.GAME.used_jokers[v.key] and not pool_opts.allow_duplicates and not SMODS.showman(v.key) and not args.allow_duplicates) and (v.unlocked ~= false or (v.rarity == 4 and args.allow_legendaries)) then
+                if v.enhancement_gate then
+                    add = nil
+                    for kk, vv in pairs(G.playing_cards) do
+                        if SMODS.has_enhancement(vv, v.enhancement_gate) then
+                            add = true
+                        end
                     end
+                else
+                    add = true
                 end
-            else
-                add = true
             end
-        end
 
-        if v.no_pool_flag and G.GAME.pool_flags[v.no_pool_flag] then add = nil end
-        if v.yes_pool_flag and not G.GAME.pool_flags[v.yes_pool_flag] then add = nil end
-        
-        add = in_pool and (add or pool_opts.override_base_checks)
-        
-        if add and not G.GAME.banned_keys[v.key] then 
-            final_pool[#final_pool + 1] = v.key
-        else
-            final_pool[#final_pool + 1] = 'UNAVAILABLE'
+            if v.no_pool_flag and G.GAME.pool_flags[v.no_pool_flag] then add = nil end
+            if v.yes_pool_flag and not G.GAME.pool_flags[v.yes_pool_flag] then add = nil end
+            
+            add = in_pool and (add or pool_opts.override_base_checks)
+            
+            if add and not G.GAME.banned_keys[v.key] then 
+                final_pool[#final_pool + 1] = v.key
+            else
+                final_pool[#final_pool + 1] = 'UNAVAILABLE'
+            end
         end
     end
     
