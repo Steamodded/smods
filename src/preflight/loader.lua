@@ -225,7 +225,6 @@ function loadMods(modsDirectory)
 
     }
 
-
     local used_prefixes = {}
     local lovely_directories = {}
 
@@ -332,15 +331,15 @@ function loadMods(modsDirectory)
                         mod.blacklisted = true
                     end
 
-                    if mod.prefix and used_prefixes[mod.prefix] then
-                        mod.can_load = false
-                        mod.load_issues = {
-                            prefix_conflict = used_prefixes[mod.prefix],
-                            dependencies = {},
-                            conflicts = {},
-                        }
-                        sendWarnMessage(('Duplicate Mod prefix %s used by %s, %s'):format(mod.prefix, mod.id, used_prefixes[mod.prefix]), 'Loader')
-                    end
+                    -- if mod.prefix and used_prefixes[mod.prefix] then
+                    --     mod.can_load = false
+                    --     mod.load_issues = {
+                    --         prefix_conflict = used_prefixes[mod.prefix],
+                    --         dependencies = {},
+                    --         conflicts = {},
+                    --     }
+                    --     sendWarnMessage(('Duplicate Mod prefix %s used by %s, %s'):format(mod.prefix, mod.id, used_prefixes[mod.prefix]), 'Loader')
+                    -- end
                     if not NFS.getInfo(mod.path..mod.main_file) then
                         mod.can_load = false
                         mod.load_issues = {
@@ -427,24 +426,24 @@ function loadMods(modsDirectory)
                     else
                         mod.prefix = mod.prefix or (mod.id or ''):lower():sub(1, 4)
                     end
-                    if mod.prefix and used_prefixes[mod.prefix] then
-                        mod.can_load = false
-                        mod.load_issues = { 
-                            prefix_conflict = used_prefixes[mod.prefix],
-                            dependencies = {},
-                            conflicts = {},
-                        }
-                        sendWarnMessage(('Duplicate Mod prefix %s used by %s, %s'):format(mod.prefix, mod.id, used_prefixes[mod.prefix]), 'Loader')
-                    end
+                    -- if mod.prefix and used_prefixes[mod.prefix] then
+                    --     mod.can_load = false
+                    --     mod.load_issues = { 
+                    --         prefix_conflict = used_prefixes[mod.prefix],
+                    --         dependencies = {},
+                    --         conflicts = {},
+                    --     }
+                    --     sendWarnMessage(('Duplicate Mod prefix %s used by %s, %s'):format(mod.prefix, mod.id, used_prefixes[mod.prefix]), 'Loader')
+                    -- end
 
                     if sane then
                         sendTraceMessage('Saving Mod Info: ' .. mod.id, 'Loader')
                         mod.path = directory .. '/'
                         mod.main_file = filename
                         mod.display_name = mod.display_name or mod.name
-                        if mod.prefix then
-                            used_prefixes[mod.prefix] = mod.id
-                        end
+                        -- if mod.prefix then
+                        --     used_prefixes[mod.prefix] = mod.id
+                        -- end
                         mod.optional_dependencies = {}
                         if mod.dump_loc then
                             SMODS.dump_loc = {
@@ -532,6 +531,18 @@ function loadMods(modsDirectory)
             dependencies = {},
             conflicts = {},
         }
+        if mod.prefix and #used_prefixes[mod.prefix] > 1 then
+            local loading_prefix_dupes = {}
+            local after_self
+            for _,v in ipairs(used_prefixes[mod.prefix]) do
+                if check_dependencies(SMODS.Mods[v], seen) then
+                    loading_prefix_dupes[v] = true
+                end
+            end
+            if next(loading_prefix_dupes) then
+                
+            end
+        end
         if not mod.json then
             for _, v in ipairs(mod.conflicts or {}) do
                 -- block load even if the conflict is also blocked
@@ -539,202 +550,210 @@ function loadMods(modsDirectory)
                     SMODS.Mods[v.id] and
                     (not v.max_version or sUtil.V(SMODS.Mods[v.id].version) <= sUtil.V(v.max_version)) and
                     (not v.min_version or sUtil.V(SMODS.Mods[v.id].version) >= sUtil.V(v.min_version))
-                    then
-                        can_load = false
-                        table.insert(load_issues.conflicts, v.id..(v.max_version and '<='..v.max_version or '')..(v.min_version and '>='..v.min_version or ''))
+                then
+                    can_load = false
+                    table.insert(load_issues.conflicts, v.id..(v.max_version and '<='..v.max_version or '')..(v.min_version and '>='..v.min_version or ''))
+                end
+            end
+            for _, v in ipairs(mod.dependencies or {}) do
+                -- recursively check dependencies of dependencies to make sure they are actually fulfilled
+                if
+                    not SMODS.Mods[v.id] or
+                    not check_dependencies(SMODS.Mods[v.id], seen) or
+                    (v.max_version and sUtil.V(SMODS.Mods[v.id].version) > sUtil.V(v.max_version)) or
+                    (v.min_version and sUtil.V(SMODS.Mods[v.id].version) < sUtil.V(v.min_version))
+                then
+                    can_load = false
+                    table.insert(load_issues.dependencies,
+                    v.id .. (v.min_version and '>=' .. v.min_version or '') .. (v.max_version and '<=' .. v.max_version or ''))
+                    if v.id == 'Steamodded' then
+                        load_issues.version_mismatch = ''..(v.min_version and '>='..v.min_version or '')..(v.max_version and '<='..v.max_version or '')
                     end
                 end
-                for _, v in ipairs(mod.dependencies or {}) do
-                    -- recursively check dependencies of dependencies to make sure they are actually fulfilled
-                    if
-                        not SMODS.Mods[v.id] or
-                        not check_dependencies(SMODS.Mods[v.id], seen) or
-                        (v.max_version and sUtil.V(SMODS.Mods[v.id].version) > sUtil.V(v.max_version)) or
-                        (v.min_version and sUtil.V(SMODS.Mods[v.id].version) < sUtil.V(v.min_version))
-                        then
-                            can_load = false
-                            table.insert(load_issues.dependencies,
-                            v.id .. (v.min_version and '>=' .. v.min_version or '') .. (v.max_version and '<=' .. v.max_version or ''))
-                            if v.id == 'Steamodded' then
-                                load_issues.version_mismatch = ''..(v.min_version and '>='..v.min_version or '')..(v.max_version and '<='..v.max_version or '')
+            end
+        else
+            for _, x in ipairs(mod.dependencies or {}) do
+                local fulfilled
+                for _, y in ipairs(x) do
+                    if fulfilled then break end
+                    local id = y.id
+                    if SMODS.Mods[id] and check_dependencies(SMODS.Mods[id], seen) then
+                        fulfilled = true
+                        local dep_ver = sUtil.V(SMODS.Mods[id].version)
+                        for _, v in ipairs(y) do
+                            if not v.op(dep_ver, v.ver) then
+                                fulfilled = false
                             end
                         end
-                    end
-                else
-                    for _, x in ipairs(mod.dependencies or {}) do
-                        local fulfilled
-                        for _, y in ipairs(x) do
-                            if fulfilled then break end
-                            local id = y.id
-                            if SMODS.Mods[id] and check_dependencies(SMODS.Mods[id], seen) then
+                        if fulfilled then y.fulfilled = true end
+                    else
+                        for _, provided in ipairs(SMODS.provided_mods[id] or {}) do
+                            if provided.mod ~= mod and check_dependencies(provided.mod, seen) then
                                 fulfilled = true
-                                local dep_ver = sUtil.V(SMODS.Mods[id].version)
+                                local dep_ver = sUtil.V(provided.version)
                                 for _, v in ipairs(y) do
                                     if not v.op(dep_ver, v.ver) then
                                         fulfilled = false
                                     end
                                 end
-                                if fulfilled then y.fulfilled = true end
-                            else
-                                for _, provided in ipairs(SMODS.provided_mods[id] or {}) do
-                                    if provided.mod ~= mod and check_dependencies(provided.mod, seen) then
-                                        fulfilled = true
-                                        local dep_ver = sUtil.V(provided.version)
-                                        for _, v in ipairs(y) do
-                                            if not v.op(dep_ver, v.ver) then
-                                                fulfilled = false
-                                            end
-                                        end
-                                        if fulfilled then y.fulfilled = true; y.provided = provided end
-                                    end
-                                end
+                                if fulfilled then y.fulfilled = true; y.provided = provided end
                             end
                         end
-                        if not fulfilled then
-                            can_load = false
-                            table.insert(load_issues.dependencies, x.str)
+                    end
+                end
+                if not fulfilled then
+                    can_load = false
+                    table.insert(load_issues.dependencies, x.str)
+                end
+            end
+            for _, y in ipairs(mod.conflicts or {}) do
+                local id = y.id
+                local conflict = false
+                if SMODS.Mods[id] and check_dependencies(SMODS.Mods[id], seen) then
+                    conflict = true
+                    local dep_ver = sUtil.V(SMODS.Mods[id].version)
+                    for _, v in ipairs(y) do
+                        if not v.op(dep_ver, v.ver) then
+                            conflict = false
+                            break
                         end
                     end
-                    for _, y in ipairs(mod.conflicts or {}) do
-                        local id = y.id
-                        local conflict = false
-                        if SMODS.Mods[id] and check_dependencies(SMODS.Mods[id], seen) then
+                else
+                    for _, provided in ipairs(SMODS.provided_mods[id] or {}) do
+                        if provided.mod ~= mod and check_dependencies(provided.mod, seen) then
                             conflict = true
-                            local dep_ver = sUtil.V(SMODS.Mods[id].version)
+                            local dep_ver = sUtil.V(provided.version)
                             for _, v in ipairs(y) do
                                 if not v.op(dep_ver, v.ver) then
                                     conflict = false
                                     break
                                 end
                             end
-                        else
-                            for _, provided in ipairs(SMODS.provided_mods[id] or {}) do
-                                if provided.mod ~= mod and check_dependencies(provided.mod, seen) then
-                                    conflict = true
-                                    local dep_ver = sUtil.V(provided.version)
-                                    for _, v in ipairs(y) do
-                                        if not v.op(dep_ver, v.ver) then
-                                            conflict = false
-                                            break
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                        if conflict then
-                            can_load = false
-                            table.insert(load_issues.conflicts, y.str)
                         end
                     end
                 end
-                if mod.disabled then
+                if conflict then
                     can_load = false
-                    load_issues.disabled = true
-                end
-                if not can_load then
-                    mod.load_issues = load_issues
-                    return false
-                end
-                for _, x in ipairs(mod.dependencies or {}) do
-                    for _, y in ipairs(x) do
-                        if y.fulfilled then
-                            if y.provided then
-                                y.provided.mod.can_load = true
-                            else
-                                SMODS.Mods[y.id].can_load = true
-                            end
-                        end
-                    end 
-                end
-                return true
-            end
-
-            -- check dependencies first (for object dependencies)
-            for _, mod in pairs(SMODS.Mods) do mod.can_load = check_dependencies(mod) end
-        end
-
-        local function load_mods()
-            boot_print_stage('Loading Mods')
-            -- load the mod files
-            -- sort by priority
-            local keyset = {}
-            for k, _ in pairs(SMODS.mod_priorities) do
-                keyset[#keyset + 1] = k
-            end
-            table.sort(keyset)
-
-            for _, priority in ipairs(keyset) do
-                table.sort(SMODS.mod_priorities[priority],
-                function(mod_a, mod_b)
-                    return mod_a.id < mod_b.id
-                end)
-                for _, mod in ipairs(SMODS.mod_priorities[priority]) do
-                    SMODS.mod_list[#SMODS.mod_list + 1] = mod -- keep mod list in prioritized load order
-                    if mod.can_load and not mod.lovely_only then
-                        SMODS.current_mod = mod
-                        if mod.outdated then
-                            SMODS.compat_0_9_8.with_compat(function()
-                                mod.config = {}
-                                assert(load(NFS.read(mod.path..mod.main_file), ('=[SMODS %s "%s"]'):format(mod.id, mod.main_file)))()
-                                for k, v in pairs(SMODS.compat_0_9_8.init_queue) do
-                                    v()
-                                    SMODS.compat_0_9_8.init_queue[k] = nil
-                                end
-                            end)
-                        else
-                            SMODS.load_mod_config(mod)
-                            assert(load(NFS.read(mod.path..mod.main_file), ('=[SMODS %s "%s"]'):format(mod.id, mod.main_file)))()
-                        end
-                        SMODS.current_mod = nil
-                    elseif not mod.lovely_only then
-                        sendTraceMessage(string.format("Mod %s was unable to load: %s%s%s%s", mod.id,
-                        mod.load_issues.outdated and
-                        'Outdated: Steamodded versions 0.9.8 and below are no longer supported!\n' or '',
-                        mod.load_issues.main_file_not_found and "The main file could not be found.\n" or '',
-                        next(mod.load_issues.dependencies) and
-                        ('Missing Dependencies: ' .. inspect(mod.load_issues.dependencies) .. '\n') or '',
-                        next(mod.load_issues.conflicts) and
-                        ('Unresolved Conflicts: ' .. inspect(mod.load_issues.conflicts) .. '\n') or ''
-                    ), 'Loader')
+                    table.insert(load_issues.conflicts, y.str)
                 end
             end
         end
-        SMODS.get_optional_features()
-        -- compat after loading mods
-        if SMODS.compat_0_9_8.load_done then
-            -- Invasive change to Card:generate_UIBox_ability_table()
-            local Card_generate_UIBox_ability_table_ref = Card.generate_UIBox_ability_table
-            function Card:generate_UIBox_ability_table(...)
-                SMODS.compat_0_9_8.generate_UIBox_ability_table_card = self
-                local ret = Card_generate_UIBox_ability_table_ref(self, ...)
-                SMODS.compat_0_9_8.generate_UIBox_ability_table_card = nil
-                return ret
+        if mod.disabled then
+            can_load = false
+            load_issues.disabled = true
+        end
+        if not can_load then
+            mod.load_issues = load_issues
+            return false
+        end
+        for _, x in ipairs(mod.dependencies or {}) do
+            for _, y in ipairs(x) do
+                if y.fulfilled then
+                    if y.provided then
+                        y.provided.mod.can_load = true
+                    else
+                        SMODS.Mods[y.id].can_load = true
+                    end
+                end
+            end 
+        end
+        return true
+    end
+
+    -- check dependencies first (for object dependencies)
+    for _, mod in pairs(SMODS.Mods) do
+        if mod.prefix then
+            used_prefixes[mod.prefix] = used_prefixes[mod.prefix] or {}
+            table.insert(used_prefixes[mod.prefix], mod.id)
+        end
+    end
+    for _, mod in pairs(SMODS.Mods) do
+        mod.can_load = check_dependencies(mod)
+    end
+end
+
+local function load_mods()
+    boot_print_stage('Loading Mods')
+    -- load the mod files
+    -- sort by priority
+    local keyset = {}
+    for k, _ in pairs(SMODS.mod_priorities) do
+        keyset[#keyset + 1] = k
+    end
+    table.sort(keyset)
+
+    for _, priority in ipairs(keyset) do
+        table.sort(SMODS.mod_priorities[priority],
+        function(mod_a, mod_b)
+            return mod_a.id < mod_b.id
+        end)
+        for _, mod in ipairs(SMODS.mod_priorities[priority]) do
+            SMODS.mod_list[#SMODS.mod_list + 1] = mod -- keep mod list in prioritized load order
+            if mod.can_load and not mod.lovely_only then
+                SMODS.current_mod = mod
+                if mod.outdated then
+                    SMODS.compat_0_9_8.with_compat(function()
+                        mod.config = {}
+                        assert(load(NFS.read(mod.path..mod.main_file), ('=[SMODS %s "%s"]'):format(mod.id, mod.main_file)))()
+                        for k, v in pairs(SMODS.compat_0_9_8.init_queue) do
+                            v()
+                            SMODS.compat_0_9_8.init_queue[k] = nil
+                        end
+                    end)
+                else
+                    SMODS.load_mod_config(mod)
+                    assert(load(NFS.read(mod.path..mod.main_file), ('=[SMODS %s "%s"]'):format(mod.id, mod.main_file)))()
+                end
+                SMODS.current_mod = nil
+            elseif not mod.lovely_only then
+                sendTraceMessage(string.format("Mod %s was unable to load: %s%s%s%s", mod.id,
+                mod.load_issues.outdated and
+                'Outdated: Steamodded versions 0.9.8 and below are no longer supported!\n' or '',
+                mod.load_issues.main_file_not_found and "The main file could not be found.\n" or '',
+                next(mod.load_issues.dependencies) and
+                ('Missing Dependencies: ' .. inspect(mod.load_issues.dependencies) .. '\n') or '',
+                next(mod.load_issues.conflicts) and
+                ('Unresolved Conflicts: ' .. inspect(mod.load_issues.conflicts) .. '\n') or ''
+            ), 'Loader')
             end
         end
     end
+    SMODS.get_optional_features()
+    -- compat after loading mods
+    if SMODS.compat_0_9_8.load_done then
+        -- Invasive change to Card:generate_UIBox_ability_table()
+        local Card_generate_UIBox_ability_table_ref = Card.generate_UIBox_ability_table
+        function Card:generate_UIBox_ability_table(...)
+            SMODS.compat_0_9_8.generate_UIBox_ability_table_card = self
+            local ret = Card_generate_UIBox_ability_table_ref(self, ...)
+            SMODS.compat_0_9_8.generate_UIBox_ability_table_card = nil
+            return ret
+        end
+    end
+end
 
-    function SMODS.injectItems()
-        -- Set .key for vanilla undiscovered, locked objects
-        for k, v in pairs(G) do
-            if type(k) == 'string' and (k:sub(-12, -1) == 'undiscovered' or k:sub(-6, -1) == 'locked') then
-                v.key = k
-            end
+function SMODS.injectItems()
+    -- Set .key for vanilla undiscovered, locked objects
+    for k, v in pairs(G) do
+        if type(k) == 'string' and (k:sub(-12, -1) == 'undiscovered' or k:sub(-6, -1) == 'locked') then
+            v.key = k
         end
-        SMODS.injectObjects(SMODS.GameObject)
-        if SMODS.dump_loc then
-            boot_print_stage('Dumping Localization')
-            SMODS.create_loc_dump()
-        end
-        boot_print_stage('Initializing Localization')
-        init_localization()
-        SMODS.SAVE_UNLOCKS()
-        table.sort(G.P_CENTER_POOLS["Back"], function (a, b) return (a.order - (a.unlocked and 100 or 0)) < (b.order - (b.unlocked and 100 or 0)) end)
-        for _, t in ipairs{
-            G.P_CENTERS,
-            G.P_BLINDS,
-            G.P_TAGS,
-            G.P_SEALS,
-        } do
+    end
+    SMODS.injectObjects(SMODS.GameObject)
+    if SMODS.dump_loc then
+        boot_print_stage('Dumping Localization')
+        SMODS.create_loc_dump()
+    end
+    boot_print_stage('Initializing Localization')
+    init_localization()
+    SMODS.SAVE_UNLOCKS()
+    table.sort(G.P_CENTER_POOLS["Back"], function (a, b) return (a.order - (a.unlocked and 100 or 0)) < (b.order - (b.unlocked and 100 or 0)) end)
+    for _, t in ipairs{
+        G.P_CENTERS,
+        G.P_BLINDS,
+        G.P_TAGS,
+        G.P_SEALS,
+    } do
         for k, v in pairs(t) do
             assert(v._discovered_unlocked_overwritten, ("Internal: discovery/unlocked of object \"%s\" failed to override."):format(v and v.key or "UNKNOWN"))
         end
