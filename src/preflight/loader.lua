@@ -114,7 +114,7 @@ function loadMods(modsDirectory)
                 return t
             end
         },
-        prefix        = { pattern = '%-%-%- PREFIX: (.-)\n' },
+        prefix        = { pattern = '%-%-%- PREFIX: (.-)\n', handle = function(x) return x and string.gsub(x, '%$', '') or nil end},
         version       = { pattern = '%-%-%- VERSION: (.-)\n', handle = function(x) return x and sUtil.V(x):is_valid() and x or '0.0.0' end },
         outdated      = { pattern = { 'SMODS%.INIT', 'SMODS%.Deck[:.]new' } },
         dump_loc      = { pattern = { '%-%-%- DUMP_LOCALIZATION\n'}}
@@ -135,7 +135,7 @@ function loadMods(modsDirectory)
         priority = { type = 'number', default = 0 },
         badge_colour = { type = 'string', check = function(mod, s) local success, hex = pcall(sUtil.hex, s); mod.badge_colour = success and hex or sUtil.hex('666665FF') end },
         badge_text_colour = { type = 'string', check = function(mod, s) local success, hex = pcall(sUtil.hex, s); mod.badge_text_colour = success and hex or sUtil.hex('FFFFFFFF') end},
-        prefix = { type = 'string', required = true },
+        prefix = { type = 'string', required = true, check = function(mod, s) if string.find(s, '%$') then error("Disallowed use of reserved prefix "..s) end end },
         version = { type = 'string', check = function(mod, x) return x and sUtil.V(x):is_valid() and x or '0.0.0' end },
         dump_loc = { type = 'boolean' },
         dependencies = { type = 'table', check = function(mod, t)
@@ -224,8 +224,6 @@ function loadMods(modsDirectory)
         end}
 
     }
-
-    local used_prefixes = {}
     local lovely_directories = {}
 
     -- Function to process each directory (including subdirectories) with depth tracking
@@ -331,15 +329,6 @@ function loadMods(modsDirectory)
                         mod.blacklisted = true
                     end
 
-                    -- if mod.prefix and used_prefixes[mod.prefix] then
-                    --     mod.can_load = false
-                    --     mod.load_issues = {
-                    --         prefix_conflict = used_prefixes[mod.prefix],
-                    --         dependencies = {},
-                    --         conflicts = {},
-                    --     }
-                    --     sendWarnMessage(('Duplicate Mod prefix %s used by %s, %s'):format(mod.prefix, mod.id, used_prefixes[mod.prefix]), 'Loader')
-                    -- end
                     if not NFS.getInfo(mod.path..mod.main_file) then
                         mod.can_load = false
                         mod.load_issues = {
@@ -426,24 +415,12 @@ function loadMods(modsDirectory)
                     else
                         mod.prefix = mod.prefix or (mod.id or ''):lower():sub(1, 4)
                     end
-                    -- if mod.prefix and used_prefixes[mod.prefix] then
-                    --     mod.can_load = false
-                    --     mod.load_issues = { 
-                    --         prefix_conflict = used_prefixes[mod.prefix],
-                    --         dependencies = {},
-                    --         conflicts = {},
-                    --     }
-                    --     sendWarnMessage(('Duplicate Mod prefix %s used by %s, %s'):format(mod.prefix, mod.id, used_prefixes[mod.prefix]), 'Loader')
-                    -- end
 
                     if sane then
                         sendTraceMessage('Saving Mod Info: ' .. mod.id, 'Loader')
                         mod.path = directory .. '/'
                         mod.main_file = filename
                         mod.display_name = mod.display_name or mod.name
-                        -- if mod.prefix then
-                        --     used_prefixes[mod.prefix] = mod.id
-                        -- end
                         mod.optional_dependencies = {}
                         if mod.dump_loc then
                             SMODS.dump_loc = {
@@ -530,19 +507,9 @@ function loadMods(modsDirectory)
         local load_issues = {
             dependencies = {},
             conflicts = {},
+            prefix_conflicts = {},
         }
-        if mod.prefix and #used_prefixes[mod.prefix] > 1 then
-            local loading_prefix_dupes = {}
-            local after_self
-            for _,v in ipairs(used_prefixes[mod.prefix]) do
-                if check_dependencies(SMODS.Mods[v], seen) then
-                    loading_prefix_dupes[v] = true
-                end
-            end
-            if next(loading_prefix_dupes) then
-                
-            end
-        end
+
         if not mod.json then
             for _, v in ipairs(mod.conflicts or {}) do
                 -- block load even if the conflict is also blocked
@@ -552,7 +519,11 @@ function loadMods(modsDirectory)
                     (not v.min_version or sUtil.V(SMODS.Mods[v.id].version) >= sUtil.V(v.min_version))
                 then
                     can_load = false
-                    table.insert(load_issues.conflicts, v.id..(v.max_version and '<='..v.max_version or '')..(v.min_version and '>='..v.min_version or ''))
+                    if (mod.prefix_conflicts or {})[v.id] then
+                        table.insert(load_issues.prefix_conflicts, v.id)
+                    else
+                        table.insert(load_issues.conflicts, v.id..(v.max_version and '<='..v.max_version or '')..(v.min_version and '>='..v.min_version or ''))
+                    end
                 end
             end
             for _, v in ipairs(mod.dependencies or {}) do
@@ -634,7 +605,11 @@ function loadMods(modsDirectory)
                 end
                 if conflict then
                     can_load = false
-                    table.insert(load_issues.conflicts, y.str)
+                    if (mod.prefix_conflicts or {})[y.id] then
+                        table.insert(load_issues.prefix_conflicts, y.id)
+                    else
+                        table.insert(load_issues.conflicts, y.str)
+                    end
                 end
             end
         end
@@ -660,15 +635,34 @@ function loadMods(modsDirectory)
         return true
     end
 
-    -- check dependencies first (for object dependencies)
+    -- add duplicate prefixes as conflicts
+    used_prefixes = {}
     for _, mod in pairs(SMODS.Mods) do
         if mod.prefix then
             used_prefixes[mod.prefix] = used_prefixes[mod.prefix] or {}
-            table.insert(used_prefixes[mod.prefix], mod.id)
+            used_prefixes[mod.prefix][mod.id] = true
         end
     end
+    for _, t in pairs(used_prefixes) do
+        for mod_id,_ in pairs(t) do
+            local mod = SMODS.Mods[mod_id]
+            mod.conflicts = mod.conflicts or {}
+            mod.prefix_conflicts = {}
+            for other, _ in pairs(t) do
+                if other ~= mod_id then
+                    mod.conflicts[#mod.conflicts+1] = { id = other }
+                    mod.prefix_conflicts[other] = true
+                end
+            end
+        end
+    end
+    local prefix_counter = 1
     for _, mod in pairs(SMODS.Mods) do
         mod.can_load = check_dependencies(mod)
+        if not mod.can_load and mod.load_issues.prefix_conflicts then
+            mod.prefix = '$pc'..prefix_counter
+            prefix_counter = prefix_counter + 1
+        end
     end
 end
 
