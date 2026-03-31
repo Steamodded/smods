@@ -1387,31 +1387,31 @@ local function createClickableModBox(modInfo, scale)
         })
     end
 
-    if modInfo.available_versions and not modInfo.disabled then
-        local options = {}
-        local init_value
-        for i,v in ipairs(modInfo.available_versions) do
-            options[#options+1] = tostring(i)
-            if v == modInfo then init_value = tostring(i) end
-        end
-        modInfo.init_version_option = init_value
-        modInfo.saved_version_option = init_value
-        table.insert(under_checkbox_nodes, SMODS.GUI.dropdown_select({
-            ref_table = modInfo,
-            ref_value = "selected_version_option",
-            init_value = init_value,
-            options = options,
-            display_choice_func = function(opt)
-                return modInfo.available_versions[tonumber(opt)].version
-            end,
-            scale = scale*0.8,
-            align = "cm",
-            option_align = "cm",
-            callback = "mod_version_select",
-            max_menu_h = 3,
-            close_on_select = true,
-        }))
-    end
+    -- if modInfo.available_versions and not modInfo.disabled then
+    --     local options = {}
+    --     local init_value
+    --     for i,v in ipairs(modInfo.available_versions) do
+    --         options[#options+1] = tostring(i)
+    --         if v == modInfo then init_value = tostring(i) end
+    --     end
+    --     modInfo.init_version_option = init_value
+    --     modInfo.saved_version_option = init_value
+    --     table.insert(under_checkbox_nodes, SMODS.GUI.dropdown_select({
+    --         ref_table = modInfo,
+    --         ref_value = "selected_version_option",
+    --         init_value = init_value,
+    --         options = options,
+    --         display_choice_func = function(opt)
+    --             return modInfo.available_versions[tonumber(opt)].version
+    --         end,
+    --         scale = scale*0.8,
+    --         align = "cm",
+    --         option_align = "cm",
+    --         callback = "mod_version_select",
+    --         max_menu_h = 3,
+    --         close_on_select = true,
+    --     }))
+    -- end
     if #sub_node_1 > 0 then
         table.insert(label_nodes, {
             n = G.UIT.R,
