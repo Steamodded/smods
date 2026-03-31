@@ -67,6 +67,17 @@ function loadMods(modsDirectory)
     SMODS.mod_priorities = {}
     SMODS.mod_list = {}
     SMODS.provided_mods = {}
+    local function insert_mod_for_checking(mod)
+        if SMODS.Mods[mod.id] and SMODS.Mods[mod.id][1] then
+            table.insert(SMODS.Mods[mod.id], mod)
+        elseif SMODS.Mods[mod.id] then
+            SMODS.Mods[mod.id] = { SMODS.Mods[mod.id], mod }
+        else
+            SMODS.Mods[mod.id] = mod
+            SMODS.mod_priorities[mod.priority] = SMODS.mod_priorities[mod.priority] or {}
+            table.insert(SMODS.mod_priorities[mod.priority], mod.id)
+        end
+    end
     -- for legacy header support
     local header_components = {
         name          = { pattern = '%-%-%- MOD_NAME: ([^\n]+)\n', required = true },
@@ -209,9 +220,9 @@ function loadMods(modsDirectory)
         icon_fps = {type = "number"},
         main_file = { type = 'string', required = true },
         config_file = {type = 'string', default = 'config.lua' },
-        __ = { check = function(mod)
-            if SMODS.Mods[mod.id] then error('dupe') end
-        end},
+        -- __ = { check = function(mod)
+        --     if SMODS.Mods[mod.id] then error('dupe') end
+        -- end},
         provides = { type = 'table', check = function(mod, t)
             t = t or {}
             for _,v in pairs(t) do
@@ -346,9 +357,7 @@ function loadMods(modsDirectory)
                             path = mod.path,
                         }
                     end
-                    SMODS.Mods[mod.id] = mod
-                    SMODS.mod_priorities[mod.priority] = SMODS.mod_priorities[mod.priority] or {}
-                    table.insert(SMODS.mod_priorities[mod.priority], mod)
+                    insert_mod_for_checking(mod)
                 end
             elseif filename:lower():match("%.lua$") then -- Check for legacy headers
                 if depth == 1 then
@@ -408,10 +417,10 @@ function loadMods(modsDirectory)
                         mod.disabled = true
                         mod.blacklisted = true
                     end
-                    if SMODS.Mods[mod.id] then
-                        sane = false
-                        sendWarnMessage("Duplicate Mod ID: " .. mod.id, 'Loader')
-                    end
+                    -- if SMODS.Mods[mod.id] then
+                    --     sane = false
+                    --     sendWarnMessage("Duplicate Mod ID: " .. mod.id, 'Loader')
+                    -- end
 
                     if mod.outdated then
                         mod.prefix_config = { key = { mod = false }, atlas = false }
@@ -430,9 +439,7 @@ function loadMods(modsDirectory)
                                 path = mod.path,
                             }
                         end
-                        SMODS.Mods[mod.id] = mod
-                        SMODS.mod_priorities[mod.priority] = SMODS.mod_priorities[mod.priority] or {}
-                        table.insert(SMODS.mod_priorities[mod.priority], mod)
+                        insert_mod_for_checking(mod)
                     end
                 end
             end
@@ -495,9 +502,34 @@ function loadMods(modsDirectory)
                 mod.can_load = false
                 mod.blacklisted = true
             end
-            SMODS.mod_priorities[mod.priority] = SMODS.mod_priorities[mod.priority] or {}
-            table.insert(SMODS.mod_priorities[mod.priority], mod)
-            SMODS.Mods[mod.id] = mod
+            insert_mod_for_checking(mod)
+        end
+    end
+
+    for k, mods in pairs(SMODS.Mods) do
+        if mods[1] then
+            -- we found more than one mod with this ID
+            -- identify the highest enabled version
+            local enabled_mods = {}
+            for _,mod in ipairs(mods) do
+                if not mod.disabled then
+                    enabled_mods[#enabled_mods+1] = mod
+                end
+            end
+            table.sort(enabled_mods, function(mod_a, mod_b) return sUtil.V(mod_a.version) > sUtil.V(mod_b.version) end)
+            table.sort(mods, function(mod_a, mod_b) return sUtil.V(mod_a.version) > sUtil.V(mod_b.version) end)
+            SMODS.Mods[k] = enabled_mods[1] or mods[1]
+            SMODS.Mods[k].available_versions = mods
+            for i,mod in ipairs(enabled_mods) do
+                if i>1 then
+                    addToBlacklist(mod.blacklist_name)
+                    mod.disabled = true
+                    mod.blacklisted = true
+
+                    -- this warrants a reload
+                    if mod.lovely then SMODS.modified_blacklist = true end
+                end
+            end
         end
     end
 
@@ -687,9 +719,10 @@ local function load_mods()
     for _, priority in ipairs(keyset) do
         table.sort(SMODS.mod_priorities[priority],
         function(mod_a, mod_b)
-            return mod_a.id < mod_b.id
+            return SMODS.Mods[mod_a].id < SMODS.Mods[mod_b].id
         end)
-        for _, mod in ipairs(SMODS.mod_priorities[priority]) do
+        for _, mod_id in ipairs(SMODS.mod_priorities[priority]) do
+            local mod = SMODS.Mods[mod_id]
             SMODS.mod_list[#SMODS.mod_list + 1] = mod -- keep mod list in prioritized load order
             SMODS.current_mod = mod
             if mod.icon_path then
@@ -720,7 +753,7 @@ local function load_mods()
                     SMODS.load_mod_config(mod)
                     assert(load(NFS.read(mod.path..mod.main_file), ('=[SMODS %s "%s"]'):format(mod.id, mod.main_file)))()
                 end
-            elseif not mod.lovely_only then
+            elseif not mod.lovely_only and not mod.disabled then
                 sendTraceMessage(string.format("Mod %s was unable to load: %s%s%s%s", mod.id,
                 mod.load_issues.outdated and
                 'Outdated: Steamodded versions 0.9.8 and below are no longer supported!\n' or '',

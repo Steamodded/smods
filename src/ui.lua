@@ -1386,6 +1386,32 @@ local function createClickableModBox(modInfo, scale)
             }
         })
     end
+
+    if modInfo.available_versions and not modInfo.disabled then
+        local options = {}
+        local init_value
+        for i,v in ipairs(modInfo.available_versions) do
+            options[#options+1] = tostring(i)
+            if v == modInfo then init_value = tostring(i) end
+        end
+        modInfo.init_version_option = init_value
+        modInfo.saved_version_option = init_value
+        table.insert(under_checkbox_nodes, SMODS.GUI.dropdown_select({
+            ref_table = modInfo,
+            ref_value = "selected_version_option",
+            init_value = init_value,
+            options = options,
+            display_choice_func = function(opt)
+                return modInfo.available_versions[tonumber(opt)].version
+            end,
+            scale = scale*0.8,
+            align = "cm",
+            option_align = "cm",
+            callback = "mod_version_select",
+            max_menu_h = 3,
+            close_on_select = true,
+        }))
+    end
     if #sub_node_1 > 0 then
         table.insert(label_nodes, {
             n = G.UIT.R,
@@ -1537,6 +1563,34 @@ function G.FUNCS.mods_buttons_page(options)
     if not options or not options.cycle_config then
         return
     end
+end
+
+function G.FUNCS.mod_version_select(options)
+    -- options.config.value
+    -- options.config.args_table.ref_table
+    -- print(options.config)
+    local i = options.config.value
+    local modInfo = options.config.args_table.ref_table
+    local saved = modInfo.saved_version_option
+    local selected = modInfo.selected_version_option
+    local init = modInfo.init_version_option
+    if saved == selected then return end
+    local prev_mod = modInfo.available_versions[tonumber(saved)]
+    require"SMODS.preflight.loader".addToBlacklist(prev_mod.blacklist_name)
+    prev_mod.blacklisted = true
+    local new_mod = modInfo.available_versions[tonumber(selected)]
+    if new_mod.lovelyIgnored then
+        NFS.remove(SMODS.MODS_DIR.. "/" .. new_mod.blacklist_name ..'/.lovelyignore')
+        new_mod.lovelyIgnored = false
+    end
+    if modInfo.blacklisted then
+        require"SMODS.preflight.loader".removeFromBlacklist(new_mod.blacklist_name)
+        new_mod.blacklisted = false
+    end
+    local toChange = 0
+    if saved == init then toChange = 1 end
+    if selected == init then toChange = -1 end
+    SMODS.full_restart = SMODS.full_restart + toChange
 end
 
 function SMODS.load_mod_config(mod)
