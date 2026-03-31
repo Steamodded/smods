@@ -115,6 +115,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -- Checked on __call but not take_ownership. For take_ownership, the key must exist
     function SMODS.GameObject:check_duplicate_key()
         if self.obj_table[self.key] or (self.get_obj and self:get_obj(self.key)) then
+            if self.set == 'Attribute' then
+                SMODS.Attributes[self.key].keys = SMODS.merge_lists({SMODS.Attributes[self.key].keys, self.keys})
+                return true
+            end
             sendWarnMessage(('Object %s has the same key as an existing object, not registering.'):format(self.key), self.set)
             sendWarnMessage('If you want to modify an existing object, use take_ownership()', self.set)
             return true
