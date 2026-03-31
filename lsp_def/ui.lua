@@ -29,6 +29,8 @@ G.UIT = {
 ---@field shader string Key for the shader being used on this element.
 ---@field send table? Allows sending custom arguments to the shader. Works like the `_send` argument of `Sprite:draw_shader()`.
 
+---@alias UIShaderDeclaration UINode.shader_config|string|(UINode.shader_config|string)[] Formats that can be used for defining UI and DynaText shaders
+
 ---@class UINode.config: table
 ---@field align? string String *MUST* be two or less letters, 1st indicating vertical alignment and 2nd horizontal.
 ---@field h? number Fixed height.
@@ -61,7 +63,7 @@ G.UIT = {
 ---@field object? Node Object to render.
 ---@field role? "Major"|"Minor"|"Glued" Sets object's role type.
 ---@field no_overflow? boolean | "v" | "h" | "vh" | "hv" Renders node as overflow container: constrain it's size, truncate drawing and prevent colliding child nodes which go outside of parent's boundaries. `v` for preventing vertical overflow, `h` for horizontal, `vh` or `hv` for both directions.
----@field shader? UINode.shader_config|string|(UINode.shader_config|string)[] Defines what shaders are used to draw this UI box. If a string, uses that string as the key and sends default arguments.
+---@field shader? UIShaderDeclaration Defines what shaders are used to draw this UI box. If a string, uses that string as the key and sends default arguments.
 
 
 --- Internal class for annotating UIBox/UIElement tables before being turned into objects.
@@ -386,6 +388,7 @@ function G.FUNCS.scrollbar(e) end
 ---@field id? string Assigns the given id to the config table of the root of the button UIBox if set.
 ---@field option_align? string Aligns the text of the dropdown options. Works just like aligning regular UI nodes. Default is "cl".
 ---@field close_on_select? boolean If true, the dropdown menu will automatically close when an option is selected or unselected.
+---@field display_choice_func? fun(option: string): string? If defined, changes the displayed text for a choice to the returned value of this function. `option` is 
 
 ---Returns a button that creates a dropdown selection menu when clicked on.
 ---@param args DropdownSelectArgs

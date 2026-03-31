@@ -68,6 +68,66 @@ return {
                     '{C:chips}#1#{} Jetons'
                 },
             },
+            card_h_score = {
+                text = {
+                    "{C:purple}#1#{} Score when held",
+                },
+            },
+            card_h_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} Score supplémentaire si vous {C:attention}l'avez{} en main",
+                },
+            },
+            card_extra_h_score = {
+                text = {
+                    "{C:purple}#1#{} Score supplémentaire si vous {C:attention}l'avez{} en main",
+                },
+            },
+            card_extra_h_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} Score supplémentaire si vous {C:attention}l'avez{} en main",
+                },
+            },
+            card_blind_size = {
+                text = {
+                    "{C:blind}#1#{} Taille de Blinde",
+                },
+            },
+            card_h_blind_size = {
+                text = {
+                    "{C:blind}#1#{} Taille de Blinde si vous {C:attention}l'avez{} en main",
+                },
+            },
+            card_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} Taille de Blinde",
+                },
+            },
+            card_h_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} Taille de Blinde si vous {C:attention}l'avez{} en main",
+                },
+            },
+            card_extra_blind_size = {
+                text = {
+                    "{C:blind}#1#{} Taille de Blinde",
+                },
+            },
+            card_extra_h_blind_size = {
+                text = {
+                    "{C:blind}#1#{} Taille de Blinde si vous {C:attention}l'avez{} en main",
+                },
+            },
+            card_extra_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} Taille de Blinde",
+                },
+            },
+            card_extra_h_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} Taille de Blinde si vous {C:attention}l'avez{} en main",
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {
@@ -106,16 +166,16 @@ return {
             b_unknown = 'Inconnu',
             b_lovely_mod = '(Mod Lovely) ',
             b_by = 'Par: ',
-			b_config = "Config",
-			b_additions = 'Ajouts',
-      		b_stickers = 'Autocollants',
-			b_achievements = "Succès",
-      		b_applies_stakes_1 = 'Applique ',
-			b_applies_stakes_2 = '',
-			b_graphics_mipmap_level = "Niveau Mipmap",
-			b_browse = 'Parcourir',
-			b_search_prompt = 'Chercher des mods',
-			b_search_button = 'Recherche',
+            b_config = "Config",
+            b_additions = 'Ajouts',
+            b_stickers = 'Autocollants',
+            b_achievements = "Succès",
+            b_applies_stakes_1 = 'Applique ',
+            b_applies_stakes_2 = '',
+            b_graphics_mipmap_level = "Niveau Mipmap",
+            b_browse = 'Parcourir',
+            b_search_prompt = 'Chercher des mods',
+            b_search_button = 'Recherche',
             b_seeded_unlocks = 'Progression si Seed custom',
             b_seeded_unlocks_info = 'Permet la progression et les découvertes pour les parties Seedées.',
             ml_achievement_settings = {
@@ -126,12 +186,15 @@ return {
             b_deckskins_lc = 'Couleurs Faible Contraste',
             b_deckskins_hc = 'Couleurs Haut Contraste',
             b_deckskins_def = 'Couleurs par défaut',
-		},
-		v_dictionary = {
-			c_types = '#1# Types',
-			cashout_hidden = '...et #1# de plus',
+        },
+        v_dictionary = {
+            c_types = '#1# Types',
+            cashout_hidden = '...et #1# de plus',
             a_xchips = "X#1# Jetons",
             a_xchips_minus = "-X#1# Jetons",
-		},
-	}
+            a_blind_size="#1# Taille de Blinde",
+            a_xblind_size="X#1# Taille de Blinde",
+            a_xblind_size_minus="-X#1# Taille de Blinde",
+        },
+    }
 }

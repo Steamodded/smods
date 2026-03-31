@@ -1,0 +1,79 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Blind Score Modification!
+
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = """        if extra.edition then """
+position = "before"
+payload = """
+if extra.sound_override then
+    sound = extra.sound_override
+end
+if extra.update_blind_size then
+    G.CARD_EVAL_TRIGGERED = nil
+    update_blind_size = true
+end
+"""
+overwrite = true
+match_indent = true
+
+
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = """    local trigger = 'before'"""
+position = "before"
+payload = """
+local update_blind_size = nil
+"""
+overwrite = true
+match_indent = true
+
+
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = """play_sound(sound, 0.8+percent*0.2, volume)"""
+position = "before"
+payload = """
+if update_blind_size then
+    G.BLIND_SIZE_DISPLAY_QUEUE = G.BLIND_SIZE_DISPLAY_QUEUE or {}
+    local new_blind_chips_text = number_format(math.floor(G.BLIND_SIZE_DISPLAY_QUEUE[1]))
+    G.GAME.blind.chips = (math.floor(G.BLIND_SIZE_DISPLAY_QUEUE[1]))
+    G.GAME.blind.chip_text = new_blind_chips_text
+    table.remove(G.BLIND_SIZE_DISPLAY_QUEUE, 1)
+    G.HUD_blind:get_UIE_by_ID('HUD_blind_count'):juice_up(0.3, 0.3)
+end
+"""
+overwrite = true
+match_indent = true
+
+
+[[patches]]
+[patches.pattern]
+target = 'globals.lua'
+pattern = """RENTAL = HEX('b18f43'),"""
+position = "after"
+payload = """BLIND_SIZE = HEX('ad5353'),
+"""
+overwrite = true
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = """white = G.C.WHITE,"""
+position = "after"
+payload = """
+blind = G.C.DYN_UI.DARK,
+"""
+overwrite = true
+match_indent = true

@@ -141,40 +141,6 @@ payload = """if not SMODS.has_no_suit(scoring_hand[i]) then
     G.GAME.cards_played[scoring_hand[i].base.value].suits[scoring_hand[i].base.suit] = true
 end"""
 
-# Add the delayed property to sprites that are delayed
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'at'
-pattern = '''
-if delay_sprites then 
-    G.E_MANAGER:add_event(Event({
-        func = function()
-            if not self.REMOVED then
-                self:set_sprites(center)
-            end
-            return true
-        end
-    })) 
-'''
-payload = '''
-if delay_sprites == 'quantum' or delay_sprites == 'manual' then
-elseif delay_sprites then 
-    self.ability.delayed = true
-    G.E_MANAGER:add_event(Event({
-        func = function()
-            if not self.REMOVED then
-                self:set_sprites(center)
-                self.ability.delayed = false
-            end
-            return true
-        end
-    })) 
-'''
-
-
-
 # Card:generate_UIBox_ability_table()
 # replaces two consecutive lines
 [[patches]]

@@ -205,94 +205,103 @@ end
 """
 match_indent = true
 
-## UIBox shaders
-# UIElement:draw_pixellated_rect()
+# Cover drawing into function
+# UIElemennt:draw_self
 [[patches]]
 [patches.pattern]
-target = "engine/ui.lua"
-pattern = '''love.graphics.polygon((_type == 'line' or _type == 'line_emboss') and 'line' or "fill", self.pixellated_rect[_type].vertices)'''
+target = 'engine/ui.lua'
+pattern = """if self.config.colour[4] > 0.01 then"""
+position = "before"
+payload = """
+local function _draw(self, shader, send)
+if self.UIT ~= G.UIT.T then
+    self:set_element_shader(shader, send, false)
+end
+"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """--Draw the 'chosen triangle'
+    if self.config.chosen then """
+position = "before"
+payload = """
+if self.UIT ~= G.UIT.T then
+    self:set_element_shader()
+end
+end
+
+local element_shader = self.config.shader or nil
+local element_shaders = SMODS.resolve_ui_shaders(self.states.visible and self.UIT ~= G.UIT.T and element_shader or nil, nil)
+for _, v in ipairs(element_shaders) do
+    _draw(self, v.shader, v.send)
+end
+"""
+match_indent = true
+
+# Apply shaders on text elements (shadow)
+# UIElement:draw_self
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """
+love.graphics.draw(
+    self.config.text_drawable,
+    (self.config.lang.font.TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    (self.config.lang.font.TEXT_OFFSET.y + (self.config.vert and self.ARGS.text_parallax.sx or self.ARGS.text_parallax.sy))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    0,
+    (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+)"""
 position = "at"
-payload = '''
-    local function _draw()
-        -- don't duplicate the line
-        love.graphics.polygon((_type == 'line' or _type == 'line_emboss') and 'line' or "fill", self.pixellated_rect[_type].vertices)
-    end
+payload = """
+local text_shader = self.config.shader or nil
+local text_shaders = SMODS.resolve_ui_shaders(self.states.visible and text_shader or nil, nil)
+for _, v in ipairs(text_shaders) do
+    self:set_text_shader(v.shader, v.send, true)
+    love.graphics.draw(
+        self.config.text_drawable,
+        (self.config.lang.font.TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        (self.config.lang.font.TEXT_OFFSET.y + (self.config.vert and self.ARGS.text_parallax.sx or self.ARGS.text_parallax.sy))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        0,
+        (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+    )
+    self:set_text_shader()
+end
+"""
+match_indent = true
 
-    local function _draw_layer(shader, send)
-        local args = {
-            G.TIMERS.REAL/28,
-            G.TIMERS.REAL
-        }
-        
-        if shader == "none" or shader == "dissolve" then
-            _draw()
-            return
-        elseif send then
-            for _, v in ipairs(send) do
-                local val = v.val or (v.func and v.func(self)) or v.ref_table[v.ref_value]
-                -- TARGET: Convert v.val to a number if your mod adds an alternate number data type (ala Talisman)
-
-                G.SHADERS[shader]:send(v.name, val)
-            end
-        elseif shader == "vortex" then
-            G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
-        else
-            local key = SMODS.Shaders[shader].original_key
-            local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
-
-            G.SHADERS[shader]:send(key, args)
-            G.SHADERS[shader]:send("uie_details", {self.VT.x * tile_scale, self.VT.y * tile_scale, self.VT.w * tile_scale, self.VT.h * tile_scale})
-            G.SHADERS[shader]:send("uie_scale", self.VT.scale)
-            G.SHADERS[shader]:send("uie_rot", self.VT.r)
-        end
-
-        local p_shader = SMODS.Shader.obj_table[shader or 'dissolve']
-        if p_shader and type(p_shader.send_vars) == "function" then
-            local sh = G.SHADERS[shader or 'dissolve']
-            local send_vars = p_shader.send_vars(self)
-        
-            if type(send_vars) == "table" then
-                for key, value in pairs(send_vars) do
-                    sh:send(key, value)
-                end
-            end
-        end
-
-        love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
-        _draw()
-        love.graphics.setShader()
-
-        love.graphics.setShader(G.SHADERS[shader], G.SHADERS[shader])
-        _draw()
-        love.graphics.setShader()
-    end
-
-    if self.config.shader then
-        -- simple single shader
-        if type(self.config.shader) == "string" then
-            _draw_layer(self.config.shader)
-
-        -- more complex shader calls
-        elseif type(self.config.shader) == "table" then
-            -- one shader pass with a custom send
-            if self.config.shader.shader then
-                _draw_layer(self.config.shader.shader, self.config.shader.send)
-
-            -- list of shaders
-            elseif #shader > 0 then
-                for _, v in ipairs(self.config.shader) do
-                    if type(v) == "string" then
-                        _draw_layer(v.shader)
-                    elseif type(v) == "table" then
-                        _draw_layer(v.shader, v.send)
-                    end
-                end
-            end
-        end
-
-    -- no shader
-    else
-        _draw()
-    end
-'''
+# Apply shaders on text elements
+# UIElement:draw_self
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """
+love.graphics.draw(
+    self.config.text_drawable,
+    self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    self.config.lang.font.TEXT_OFFSET.y*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    0,
+    (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+)"""
+position = "at"
+payload = """
+local text_shader = self.config.shader or nil
+local text_shaders = SMODS.resolve_ui_shaders(self.states.visible and text_shader or nil, nil)
+for _, v in ipairs(text_shaders) do
+    self:set_text_shader(v.shader, v.send, false)
+    love.graphics.draw(
+        self.config.text_drawable,
+        self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        self.config.lang.font.TEXT_OFFSET.y*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        0,
+        (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+    )
+    self:set_text_shader()
+end
+"""
 match_indent = true

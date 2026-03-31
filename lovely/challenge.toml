@@ -104,3 +104,16 @@ payload = '''
 if _de.seal then _g = _de.seal end
 '''
 match_indent = true
+
+## Game:start_run - restore G.GAME.challenge_tab on reload
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = 'self.GAME.stake = args.stake or self.GAME.stake or 1'
+position = 'after'
+match_indent = true
+payload = '''
+if saveTable and self.GAME.challenge then
+    self.GAME.challenge_tab = G.CHALLENGES[get_challenge_int_from_id(self.GAME.challenge) or ''] or { name = 'ERROR' }
+end
+'''

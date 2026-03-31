@@ -125,6 +125,15 @@ if context.cardarea == G.play and context.main_scoring then
         ret.playing_card.x_score = x_score
     end
     -- TARGET: main scoring on played cards
+	local blind_size = card:get_bonus_blind_size()
+    if blind_size ~= 0 then
+        ret.playing_card.blind_size = blind_size
+    end
+    local x_blind_size = card:get_bonus_x_blind_size()
+    if x_blind_size ~= 1 then
+        ret.playing_card.x_blind_size = x_blind_size
+    end
+    -- TARGET: main scoring on played cards
 end
 if context.end_of_round and context.cardarea == G.hand and context.playing_card_end_of_round then
     local end_of_round = card:get_end_of_round_effect(context)
@@ -180,11 +189,19 @@ if context.cardarea == G.hand and context.main_scoring then
 
     local h_score = card:get_bonus_h_score()
     if h_score ~= 0 then
-        ret.playing_card.score = h_score
+        ret.playing_card.h_score = h_score
     end
     local h_x_score = card:get_bonus_h_x_score()
     if h_x_score ~= 1 then
         ret.playing_card.h_x_score = h_x_score
+    end
+	local h_blind_size = card:get_bonus_h_blind_size()
+    if h_blind_size ~= 0 then
+        ret.playing_card.blind_size = h_blind_size
+    end
+    local h_x_blind_size = card:get_bonus_h_x_blind_size()
+    if h_x_blind_size ~= 1 then
+        ret.playing_card.x_blind_size = h_x_blind_size
     end
 
     -- TARGET: main scoring on held cards
@@ -794,7 +811,7 @@ SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, 
 
 -- TARGET: effects after hand evaluation'''
 
-# calc_dollar_bonus call through consumeables
+# calc_dollar_bonus call through other objects
 [[patches]]
 [patches.pattern]
 target = 'functions/state_events.lua'
@@ -813,14 +830,46 @@ match_indent = true
 payload = '''
 local i = 0
 for _, area in ipairs(SMODS.get_card_areas('jokers')) do
-        for _, _card in ipairs(area.cards) do
-        local ret = _card:calculate_dollar_bonus()
+    for _, _card in ipairs(area.cards) do
+        local ret, ret_opts = _card:calculate_dollar_bonus()
+        ret_opts = ret_opts or {}
 
         -- TARGET: calc_dollar_bonus per card
         if ret then
-            i = i+1
-            add_round_eval_row({dollars = ret, bonus = true, name='joker'..i, pitch = pitch, card = _card})
-            pitch = pitch + 0.06
+            if not ret_opts.no_eval_row then
+                i = i+1
+                add_round_eval_row({dollars = ret, bonus = true, name='joker'..i, pitch = pitch, card = _card, loc_opts = ret_opts})
+                pitch = pitch + 0.06
+            end
+            dollars = dollars + ret
+        end
+    end
+end
+i = 0
+for _, target in ipairs(SMODS.get_card_areas('individual', 'calc_dollar_bonus')) do
+    if type(target.object.calc_dollar_bonus) == 'function' then
+        local ret, ret_opts = target.object:calc_dollar_bonus()
+        ret_opts = ret_opts or {}
+        local name
+        
+        -- TARGET: calc_dollar_bonus per individual object
+        if ret then
+            if not ret_opts.no_eval_row then
+                if ret_opts.text then
+                    name = text
+                elseif (ret_opts.set or target.set) and (ret_opts.key or target.key) then
+                    if ret_opts.set == "Challenge" or (not ret_opts.set and target.set == "Challenge") then
+                        name = localize(ret_opts.key or target.key, 'challenge_names')
+                    elseif (ret_opts.set == "Mod" or (not ret_opts.set and target.set == "Mod")) and not (G.localization.descriptions.Mod or {})[ret_opts.key or target.key] then
+                        name = (SMODS.Mods[ret_opts.key or target.key] or {}).name
+                    else
+                        name = localize{type = 'name_text', set = ret_opts.set or target.set, key = ret_opts.key or target.key}
+                    end
+                end
+                i = i+1
+                add_round_eval_row({dollars = ret, bonus = true, name='custom_individual'..i, pitch = pitch, text_colour = ret_opts.text_colour or G.C.FILTER, text = name or 'ERROR', text_scale = ret_opts.scale or 0.6})
+                pitch = pitch + 0.06
+            end
             dollars = dollars + ret
         end
     end
@@ -850,9 +899,22 @@ pattern = '''
 elseif string.find(config.name, 'joker') then
 '''
 payload = '''
-elseif config.name == 'custom' then
-    if config.number then table.insert(left_text, {n=G.UIT.T, config={text = config.number, scale = 0.8*scale, colour = config.number_colour or G.C.FILTER, shadow = true, juice = true}}) end
-    table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = {" "..config.text}, colours = {config.text_colour or G.C.UI.TEXT_LIGHT}, shadow = true, pop_in = 0, scale = 0.4*scale, silent = true})}})
+elseif string.find(config.name, 'custom') then
+    if config.number then table.insert(left_text, {n=G.UIT.T, config={text = config.number, scale = config.number_scale or 0.8*scale, colour = config.number_colour or G.C.FILTER, shadow = true, juice = true}}) end
+    table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = {""..config.text}, colours = {config.text_colour or G.C.UI.TEXT_LIGHT}, shadow = true, pop_in = 0, scale = config.text_scale or 0.4*scale, silent = true})}})
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = localize{type = 'name_text', set = config.card.config.center.set, key = config.card.config.center.key}, colours = {G.C.FILTER}, shadow = true, pop_in = 0, scale = 0.6*scale, silent = true})}})
+'''
+payload = '''
+local loc_opts = config.loc_opts or {}
+table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = loc_opts.text or localize{type = 'name_text', set = loc_opts.set or config.card.config.center.set, key = loc_opts.key or config.card.config.center.key}, colours = {loc_opts.text_colour or G.C.FILTER}, shadow = true, pop_in = 0, scale = (loc_opts.scale or 0.6)*scale, silent = true})}})
 '''
 
 
@@ -1121,7 +1183,15 @@ pattern = '''
 draw_card(G.deck,G.hand, i*100/hand_space,'up', true)
 '''
 payload = '''
+if cards_to_draw[i].ability.extra_slots_used then SMODS.cards_to_draw = SMODS.cards_to_draw + cards_to_draw[i].ability.extra_slots_used end
 draw_card(G.deck,G.hand, i*100/hand_space,'up', true, cards_to_draw[i])
+G.E_MANAGER:add_event(Event({
+    trigger = 'immediate',
+    func = function()                
+        SMODS.cards_to_draw = SMODS.cards_to_draw - cards_to_draw[i].ability.extra_slots_used
+        return true
+    end
+}))
 '''
 
 

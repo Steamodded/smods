@@ -811,7 +811,18 @@ function SMODS.get_card_type_text_colour(type, center, card) end
 ---@return table?
 function SMODS.get_badge_text_colour(key) end
 
----Check if `challenge` is unlocked.
+--- Gets a list of shaders to apply to a UI element.
+--- @param shader UIShaderDeclaration
+--- @param send table?
+--- @return UINode.shader_config[]
+function SMODS.resolve_ui_shaders(shader, send) end
+
+--- Sets the shader for a UI element. If no arguments provided, resets the current shader.
+--- @param element UIElement|DynaText
+--- @param input_args table?
+function SMODS.set_ui_element_shader(element, input_args) end
+
+---Modifies current scored chips
 ---@param mod_score Score_Mod_Parameter Score modification parameter
 function SMODS.mod_score(mod_score) end
 
@@ -819,5 +830,16 @@ function SMODS.mod_score(mod_score) end
 ---@field add? number Add this number to score
 ---@field mult? number Multiply score by this number
 ---@field card? Card Card responsible for score modification action, crucial for score display to work properly
+---@field effect? table Table of effects that were calculated
+---@field from_edition? boolean 
+
+---Modifies current blind size
+---@param mod_blind_size Blind_Size_Mod_Parameter Blindcore modification parameter
+function SMODS.mod_blind_size(mod_blind_size) end
+
+---@class Blind_Size_Mod_Parameter
+---@field add? number Add this number to blind size
+---@field mult? number Multiply blind size by this number
+---@field card? Card Card responsible for blind size modification action, crucial for blind size display to work properly
 ---@field effect? table Table of effects that were calculated
 ---@field from_edition? boolean 

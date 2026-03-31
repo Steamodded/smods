@@ -909,3 +909,12 @@ payload = '''
 localize{type = 'other', key = 'card_chips'..(specific_vars.nominal_chips < 0 and '_minus' or ''), nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
 '''
 match_indent = true
+
+# Fix Consumable unlock text saying "Joker unlocked" instead of specific consumable type
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''{n=G.UIT.O, config={object = DynaText({string = {card_center.set == 'Voucher' and localize('k_voucher') or localize('k_joker')}, colours = {G.C.BLUE},shadow = true, rotate = true, bump = true, pop_in = 0.3, pop_in_rate = 2, scale = 1.2})}}'''
+position = "at"
+payload = '''{n=G.UIT.O, config={object = DynaText({string = { SMODS.create_unlock_text(card_center) }, colours = { G.C.BLUE }, shadow = true, rotate = true, bump = true, pop_in = 0.3, pop_in_rate = 2, scale = 1.2})}}'''
+match_indent = true

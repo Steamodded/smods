@@ -168,11 +168,3 @@ else
     G.GAME.blind.children.animatedSprite:juice_up(0.05, 0.02)
 end
 '''
-
-# remove statically added 1 from The Wheel's collection description
-[[patches]]
-[patches.regex]
-target = 'functions/UI_definitions.lua'
-pattern = '''\(k ==1 and blind\.name == 'The Wheel' and '1' or ''\)\.\.'''
-position = 'at'
-payload = ''

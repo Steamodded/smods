@@ -43,8 +43,7 @@ function loadAPIs()
         -- condition == nil counts as true
         if condition ~= false and obj[key] and prefix then
             if string.sub(obj[key], 1, #prefix + 1) == prefix..'_' then
-                -- this happens within steamodded itself and I don't want to spam the logs with warnings, leaving this disabled for now
-                -- sendWarnMessage(("Attempted to prefix field %s=%s on object %s, already prefixed"):format(key, obj[key], obj.key), obj.set)
+                -- this isn't a perfect safeguard but it's all the scope of this function can allow
                 return
             end
             obj[key] = prefix .. '_' .. obj[key]
@@ -134,7 +133,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     end
 
     function SMODS.GameObject:register()
-        if self:check_dependencies() then
+        if not self:check_duplicate_register() and self:check_dependencies() then
             -- start with this class and propagate up to all parent classes that can have objects
             self:__internal_register(self, {})
             local parent = self.super or {}
@@ -266,7 +265,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         for k, v in pairs(obj) do orig_o[k] = v end
         SMODS._save_d_u(orig_o)
         orig_o.taken_ownership = true
-        orig_o:register()
+        -- we don't want the warning here
+        if not orig_o.registered then orig_o:register() end
         return orig_o
     end
 
@@ -618,7 +618,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.Sound{ key = 'xchips', path = 'xchips.ogg'}
     SMODS.Sound{ key = 'xscore', path = 'xscore.ogg'}
-
+    SMODS.Sound{ key = 'xblindsize', path = 'xblindsize.ogg'}
     -------------------------------------------------------------------------------------------------
     ------- API CODE GameObject.Gradient
     -------------------------------------------------------------------------------------------------
@@ -687,9 +687,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         inject = function(self)
             G.P_STAKES[self.key] = self
-            self.count = #G.P_CENTER_POOLS[self.set] + 1
-            self.order = self.count
-                SMODS.insert_pool(G.P_CENTER_POOLS.Stake, self)
+            self.count = self.count or #G.P_CENTER_POOLS[self.set] + 1
+            self.order = self.order or self.count
+            SMODS.insert_pool(G.P_CENTER_POOLS.Stake, self)
             if not self.injected then
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
@@ -703,8 +703,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if self.above_stake and G.P_STAKES[self.above_stake] then
                 self.order = G.P_STAKES[self.above_stake].order + 1
             end
-            for _, v in pairs(G.P_STAKES) do
-                if v.order >= self.order then
+            for i, v in pairs(G.P_STAKES) do
+                if i ~= self.key and v.order >= self.order then
                     v.order = v.order + 1
                 end
             end
@@ -2927,6 +2927,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         restrictions = { banned_cards = {}, banned_tags = {}, banned_other = {} },
         unlocked = function(self) return true end,
         calculate = function (self, context) end,
+        calc_dollar_bonus = function (self) end,
         class_prefix = 'c',
         process_loc_text = function(self)
             SMODS.process_loc_text(G.localization.misc.challenge_names, self.key, self.loc_txt, 'name')
@@ -2937,6 +2938,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 return
             end
             self.id = self.key
+            if not self.deck.type then self.deck.type = SMODS.Challenge.deck.type end
             -- only needs to be called once
             SMODS.insert_pool(G.CHALLENGES, self)
             SMODS.Challenge.super.register(self)
