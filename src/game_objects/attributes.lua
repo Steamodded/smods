@@ -112,10 +112,10 @@ SMODS.Attribute({
 SMODS.Attribute({
     key = 'scaling',
     keys = {
-        'j_ceremonial', 'j_steel', 'j_ride_the_bus', 'j_egg', 'j_runner',
+        'j_ceremonial', 'j_selzer', 'j_ride_the_bus', 'j_egg', 'j_runner',
         'j_ice_cream', 'j_constellation', 'j_hiker', 'j_green_joker', 'j_red_card',
-        'j_madness', 'j_square', 'j_vampire', 'j_hologram', 'j_rocket',
-        'j_obelisk', 'j_gift', 'j_fortune_teller', 'j_stone', 'j_flash',
+        'j_madness', 'j_square', 'j_vampire', 'j_hologram', 'j_rocket', 'j_turtle_bean',
+        'j_obelisk', 'j_gift', 'j_flash', 'j_lucky_cat',
         'j_popcorn', 'j_trousers', 'j_ramen', 'j_castle', 'j_campfire',
         'j_throwback', 'j_glass', 'j_wee', 'j_hit_the_road', 'j_caino', 'j_yorick'
     }
@@ -134,7 +134,7 @@ SMODS.Attribute({
     key = 'suit',
     keys = {
         'j_greedy_joker', 'j_lusty_joker', 'j_wrathful_joker', 'j_gluttenous_joker',
-        'j_smeared', 'j_castle', 'j_ancient', 'j_seeing_double', 'j_blackboard', 'j_flower_pot',
+        'j_smeared', 'j_castle', 'j_ancient', 'j_seeing_double', 'j_blackboard', 'j_flower_pot', 'j_idol',
         'j_rough_gem', 'j_bloodstone', 'j_arrowhead', 'j_onyx_agate',
     }
 })
@@ -175,6 +175,7 @@ SMODS.Attribute({
         'j_four_fingers', 'j_supernova', 'j_runner', 'j_superposition',
         'j_todo_list', 'j_seance', 'j_shortcut', 'j_obelisk', 'j_trousers',
         'j_duo', 'j_trio', 'j_family', 'j_order', 'j_tribe',
+        'j_burnt', 'j_card_sharp', 'j_space'
     }
 })
 
@@ -282,7 +283,7 @@ SMODS.Attribute({
 SMODS.Attribute({
     key = 'face',
     keys = {
-        'j_scary', 'j_pareidolia', 'j_business', 'j_ride_the_bus',
+        'j_scary_face', 'j_pareidolia', 'j_business', 'j_ride_the_bus',
         'j_faceless', 'j_midas_mask', 'j_photograph', 'j_reserved_parking',
         'j_smiley', 'j_sock_and_buskin', 'j_caino'
     }
@@ -298,7 +299,8 @@ SMODS.Attribute({
 SMODS.Attribute({
     key = 'food',
     keys = {
-        'j_gros_michel', 'j_cavendish', 'j_ice_cream', 'j_ramen', 'j_turtle_bean', 'j_popcorn', 'j_seltzer'
+        'j_gros_michel', 'j_cavendish', 'j_ice_cream', 'j_ramen', 'j_turtle_bean', 'j_popcorn', 'j_selzer',
+        'j_egg', 'j_diet_cola'
     }
 })
 
@@ -362,4 +364,69 @@ SMODS.Attribute({
     keys = {
         'j_sixth_sense', 'j_seance'
     }
+})
+
+SMODS.Attribute({
+    key = 'joker',
+    keys = { "j_abstract", "j_riff_raff", "j_swashbuckler" }
+})
+
+SMODS.Attribute({
+    key = 'joker_slot',
+    keys = { "j_abstract", "j_stencil" }
+})
+
+SMODS.Attribute({
+    key = 'destroy_card',
+    keys = { "j_ceremonial", "j_madness", "j_trading", "j_mr_bones" }
+})
+
+SMODS.Attribute({
+    key = 'hands',
+    keys = { "j_loyalty_card", "j_burglar", "j_troubadour", "j_green_joker", "j_square", "j_dusk", "j_acrobat", "j_flower_pot", "j_dna", "j_vagabond", "j_obelisk" }
+})
+
+SMODS.Attribute({
+    key = 'reset',
+    keys = { "j_obelisk", "j_campfire", "j_hit_the_road", "j_ride_the_bus" }
+})
+
+SMODS.Attribute({
+    key = 'enhancements',
+    keys = { "j_ticket", "j_marble", "j_steel_joker", "j_vampire", "j_midas_mask", "j_stone", "j_lucky_cat", "j_glass", "j_drivers_license" }
+})
+
+SMODS.Attribute({
+    key = 'modify_card',
+    keys = { "j_pareidolia", "j_hiker", "j_vampire", "j_midas_mask" }
+})
+
+SMODS.Attribute({
+    key = 'prevents_death',
+    keys = { "j_mr_bones" }
+})
+
+SMODS.Attribute({
+    key = 'seals',
+    keys = { "j_certificate" }
+})
+
+SMODS.Attribute({
+    key = 'hand_size',
+    keys = { "j_juggler", "j_turtle_bean", "j_troubadour", "j_merry_andy", "j_stuntman" }
+})
+
+SMODS.Attribute({
+    key = 'reroll',
+    keys = { "j_chaos", "j_flash" }
+})
+
+SMODS.Attribute({
+    key = 'sell_value',
+    keys = { "j_egg", "j_swashbuckler", "j_ceremonial", "j_gift" }
+})
+
+SMODS.Attribute({
+    key = 'full_deck',
+    keys = { "j_steel_joker", "j_cloud_9", "j_erosion", "j_stone", "j_drivers_license" }
 })
