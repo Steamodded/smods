@@ -2449,7 +2449,16 @@ function get_pack(_key, _type)
 
 	-- Use SMODS object weight system when enabled
 	if SMODS.optional_features.object_weights then
-		return G.P_CENTERS[SMODS.poll_object({type = 'Booster'})]
+		return G.P_CENTERS[SMODS.poll_object({type = 'Booster',
+			filter = _type and function(pool)
+				local out = {}
+				for _, v in ipairs(pool) do 
+					if G.P_CENTERS[v.key].kind == _type then
+						out[#out + 1] = v
+					end
+				end
+				return out
+			end})]
 	end
     local cume, it, center = 0, 0, nil
 	local temp_in_pool = {}
