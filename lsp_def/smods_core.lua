@@ -31,6 +31,7 @@ SMODS.path = ""
 ---@field config? table Config values for this mod.
 ---@field can_load? boolean `true` if the mod is able to load.
 ---@field calculate? fun(self: Mod|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
+---@field calc_dollar_bonus? fun(self: Mod|table): nil|number, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string} Calculates reward money. 
 ---@field config_tab? fun(): table Creates this mod's config tab UI.
 ---@field extra_tabs? fun(): table[] Creates additional tabs within this mod's menu.
 ---@field custom_collection_tabs? fun(): table[] Creates additional buttons displayed inside the "Other" tab in collections.

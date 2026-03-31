@@ -19,6 +19,7 @@
 ---@field calculate? fun(self: SMODS.Back|table, back: Back|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
 ---@field apply? fun(self: SMODS.Back|table, back: Back|table) Applied modifiers at the start of a run.
 ---@field quip_filter? fun(quip: SMODS.JimboQuip|table, quip_type: string): boolean?, table? Allows configuring a quip is allowed to appear. 
+---@field calc_dollar_bonus? fun(self: SMODS.Back|table, back: Back|table): nil|number, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string} Calculates reward money. 
 ---@overload fun(self: SMODS.Back): SMODS.Back
 SMODS.Back = setmetatable({}, {
     __call = function(self)

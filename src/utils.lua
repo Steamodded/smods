@@ -2203,20 +2203,22 @@ function SMODS.blueprint_effect(copier, copied_card, context)
     end
 end
 
-function SMODS.get_mods_scoring_targets()
+function SMODS.get_mods_scoring_targets(_context)
     local ret = {}
     for _, mod in ipairs(SMODS.mod_list) do
-        if mod.can_load and mod.calculate and type(mod.calculate) == "function" then
+        local func = _context == 'calc_dollar_bonus' and 'calc_dollar_bonus' or 'calculate'
+        if mod.can_load and type(mod[func]) == "function" then
             table.insert(ret, mod)
         end
     end
     return ret
 end
 
-function SMODS.get_stake_scoring_targets()
+function SMODS.get_stake_scoring_targets(_context)
     local ret = {}
     for _, stake in ipairs(G.GAME.applied_stakes or {}) do
-        if G.P_CENTER_POOLS.Stake[stake].calculate and type(G.P_CENTER_POOLS.Stake[stake].calculate) == "function" then
+        local func = _context == 'calc_dollar_bonus' and 'calc_dollar_bonus' or 'calculate'
+        if type(G.P_CENTER_POOLS.Stake[stake][func]) == "function" then
             table.insert(ret, G.P_CENTER_POOLS.Stake[stake])
         end
     end
@@ -2240,18 +2242,18 @@ function SMODS.get_card_areas(_type, _context)
     end
     if _type == 'individual' then
         local t = {
-            { object = G.GAME.selected_back, scored_card = G.deck and G.deck.cards[1] or G.deck },
+            { object = G.GAME.selected_back, scored_card = G.deck and G.deck.cards[1] or G.deck, set = 'Back', key = G.GAME.selected_back.effect.center.key },
         }
 
         if G.GAME.blind and G.GAME.blind.children and G.GAME.blind.children.animatedSprite then
-            t[#t + 1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite }
+            t[#t + 1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite, set = "Blind", key = G.GAME.blind.config.blind.key}
         end
-        if G.GAME.challenge then t[#t + 1] = { object = SMODS.Challenges[G.GAME.challenge], scored_card = G.deck and G.deck.cards[1] or G.deck } end
-        for _, stake in ipairs(SMODS.get_stake_scoring_targets()) do
-            t[#t + 1] = { object = stake, scored_card = G.deck and G.deck.cards[1] or G.deck }
+        if G.GAME.challenge then t[#t + 1] = { object = SMODS.Challenges[G.GAME.challenge], scored_card = G.deck and G.deck.cards[1] or G.deck, set = "Challenge", key = SMODS.Challenges[G.GAME.challenge].id } end
+        for _, stake in ipairs(SMODS.get_stake_scoring_targets(_context)) do
+            t[#t + 1] = { object = stake, scored_card = G.deck and G.deck.cards[1] or G.deck, set = "Stake", key = stake.key }
         end
-        for _, mod in ipairs(SMODS.get_mods_scoring_targets()) do
-            t[#t + 1] = { object = mod, scored_card = G.deck and G.deck.cards[1] or G.deck }
+        for _, mod in ipairs(SMODS.get_mods_scoring_targets(_context)) do
+            t[#t + 1] = { object = mod, scored_card = G.deck and G.deck.cards[1] or G.deck, set = "Mod", key = mod.id }
         end
         -- TARGET: add your own individual scoring targets
         return t
@@ -2266,6 +2268,19 @@ function Blind:calculate(context)
     local obj = self.config.blind
     if type(obj.calculate) == 'function' then
         return obj:calculate(self, context)
+    end
+end
+
+function Back:calc_dollar_bonus()
+    local obj = self.effect.center
+    if type(obj.calc_dollar_bonus) == 'function' then
+        return obj:calc_dollar_bonus(self)
+    end
+end
+function Blind:calc_dollar_bonus()
+    local obj = self.config.blind
+    if type(obj.calc_dollar_bonus) == 'function' then
+        return obj:calc_dollar_bonus(self)
     end
 end
 
@@ -2583,13 +2598,59 @@ end
 function SMODS.localize_box(lines, args)
     local final_line = {}
     for _, part in ipairs(lines) do
+        if part.control.element then
+            local elem = args.vars.elements[tonumber(part.control.element)]
+            if elem.is and elem:is(Node) then
+                elem = { n=G.UIT.O, config = { object = elem }}
+            end
+            final_line[#final_line+1] = elem
+        end
         local assembled_string = ''
         for _, subpart in ipairs(part.strings) do
             assembled_string = assembled_string..(type(subpart) == 'string' and subpart or format_ui_value(args.vars[tonumber(subpart[1])]) or 'ERROR')
         end
-        local desc_scale = (SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)] or G.LANG.font).DESCSCALE
+
+        local thunk = {
+            bg_col = part.control.B and args.vars.colours[tonumber(part.control.B)] or part.control.X and loc_colour(part.control.X) or nil,
+            text_col = part.control.V and args.vars.colours[tonumber(part.control.V)] or part.control.C and loc_colour(part.control.C),
+            underline = part.control.u and loc_colour(part.control.u),
+            font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
+            scale_mod = part.control.s and tonumber(part.control.s) or args.scale  or 1
+        }
+        local desc_scale = (thunk.font or G.LANG.font).DESCSCALE
         if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
-        if part.control.E then
+        
+        if args.type == 'name' then
+            local final_name_assembled_string = ''
+            for _, part in ipairs(lines) do
+              local assembled_string_part = ''
+              for _, subpart in ipairs(part.strings) do
+                  assembled_string_part = assembled_string_part..(type(subpart) == 'string' and subpart or format_ui_value(format_ui_value(args.vars[tonumber(subpart[1])])) or 'ERROR')
+              end
+              final_name_assembled_string = final_name_assembled_string..assembled_string_part
+          end
+          final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
+          final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
+          button = part.control.button,
+          underline = thunk.underline,
+            object = DynaText({string = {assembled_string},
+              colours = {thunk.text_col or args.text_colour or G.C.UI.TEXT_LIGHT},
+              bump = not args.no_bump,
+              text_effect = SMODS.DynaTextEffects[part.control.E] and part.control.E,
+              silent = not args.no_silent,
+              pop_in = (not args.no_pop_in and (args.pop_in or 0)) or nil,
+              pop_in_rate = (not args.no_pop_in and (args.pop_in_rate or 4)) or nil,
+              maxw = args.maxw or 5,
+              shadow = not args.no_shadow,
+              y_offset = args.y_offset or -0.6,
+              spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
+              font = thunk.font,
+              button = part.control.button,
+              underline = part.control.u and loc_colour(part.control.u),
+              scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*thunk.scale_mod*(args.fixed_scale or 1)
+            })
+          }}
+        elseif part.control.E then
             local _float, _silent, _pop_in, _bump, _spacing = nil, true, nil, nil, nil
             local text_effects
             if part.control.E == '1' then
@@ -2599,38 +2660,42 @@ function SMODS.localize_box(lines, args)
             elseif SMODS.DynaTextEffects[part.control.E] then
                 text_effects = part.control.E
             end
-            final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = part.control.B and args.vars.colours[tonumber(part.control.B)] or part.control.X and loc_colour(part.control.X) or nil, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
+            final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
             final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
-                underline = part.control.u and loc_colour(part.control.u),
-                object = DynaText({string = {assembled_string}, colours = {part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil)},
+                button = part.control.button,
+                underline = thunk.underline,
+                object = DynaText({string = {assembled_string}, colours = {thunk.text_col or loc_colour()},
                     float = _float,
                     silent = _silent,
                     pop_in = _pop_in,
                     bump = _bump,
                     text_effect = text_effects,
                     spacing = _spacing,
-                    font = SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
-                    scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale})
+                    font = thunk.font,
+                    scale = 0.32*thunk.scale_mod*desc_scale})
                 }
             }
         elseif part.control.X or part.control.B then
             final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = part.control.B and args.vars.colours[tonumber(part.control.B)] or loc_colour(part.control.X), r = 0.05, padding = 0.03, res = 0.15}, nodes={
                 {n=G.UIT.T, config={
-                text = assembled_string,
-                colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or loc_colour(part.control.C or nil),
-                font = SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
-                underline = part.control.u and loc_colour(part.control.u),
-                scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale}},
-            }}
+                    button = part.control.button,
+                    text = assembled_string,
+                    colour = thunk.text_col or loc_colour(),
+                    font = thunk.font,
+                    underline = thunk.underline,
+                    scale = 0.32*thunk.scale_mod*desc_scale}},
+                }}
         else
             final_line[#final_line+1] = {n=G.UIT.T, config={
-            detailed_tooltip = part.control.T and (G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T]) or nil,
-            text = assembled_string,
-            shadow = args.shadow,
-            colour = part.control.V and args.vars.colours[tonumber(part.control.V)] or not part.control.C and args.text_colour or loc_colour(part.control.C or nil, args.default_col),
-            font = SMODS.Fonts[part.control.f] or (tonumber(part.control.f) and G.FONTS[tonumber(part.control.f)]),
-            underline = part.control.u and loc_colour(part.control.u),
-            scale = 0.32*(part.control.s and tonumber(part.control.s) or args.scale  or 1)*desc_scale},}
+                button = part.control.button,
+                detailed_tooltip = part.control.T and (G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T]) or nil,
+                text = assembled_string,
+                shadow = args.shadow,
+                colour = thunk.text_col or args.text_colour or loc_colour(nil, args.default_col),
+                font = thunk.font,
+                underline = thunk.underline,
+                scale = 0.32*thunk.scale_mod*desc_scale
+            }}
         end
     end
     return final_line
@@ -2891,6 +2956,7 @@ end
 local game_start_run = Game.start_run
 function Game:start_run(args)
     game_start_run(self, args)
+    G.SCORE_DISPLAY_QUEUE = nil
     G.E_MANAGER:add_event(Event({
         trigger = 'immediate',
         func = function()
