@@ -2453,7 +2453,7 @@ function get_pack(_key, _type)
 			filter = _type and function(pool)
 				local out = {}
 				for _, v in ipairs(pool) do 
-					if G.P_CENTERS[v.key].kind == _type then
+					if G.P_CENTERS[v.key] and G.P_CENTERS[v.key].kind == _type then
 						out[#out + 1] = v
 					end
 				end
