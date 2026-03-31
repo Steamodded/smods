@@ -391,7 +391,6 @@ function SMODS.create_shop_card(area)
 end
 
 function SMODS.poll_object_type(args)
-    if SMODS.debug_prints then print "Using SMODS.poll_object_type" end
     args = args or {}
     
     -- If no types are given to select between, populate the list with all valid types
