@@ -269,7 +269,7 @@ end
 function SMODS.create_poll_pool(labels, args)
     local labels_used = {}
     local pool = {}
-    local final_pool
+    local final_pool = {}
     local it = 0
     
     local function join_lists(args)
@@ -279,6 +279,13 @@ function SMODS.create_poll_pool(labels, args)
             l1[#l1 + 1] = v
         end
         return l1
+    end
+
+    local function pool_exists(pool)
+        for _, v in ipairs(pool) do
+            if v ~= 'UNAVAILABLE' then return true end
+        end
+        return false
     end
     
     for _, label in ipairs(labels) do
@@ -306,7 +313,8 @@ function SMODS.create_poll_pool(labels, args)
         for _, v in ipairs(temp_pool) do
             pool[v] = {key = v, type = label}
         end
-        final_pool = final_pool and join_func({final_pool, temp_pool}) or temp_pool
+        local temp = pool_exists(final_pool) and final_pool and join_func({final_pool, temp_pool}) or temp_pool
+        final_pool = (args.closest_match and not pool_exists(temp)) and final_pool or temp
     end
     
     if args.attributes and not args.rarity and args.rarity ~= false then
