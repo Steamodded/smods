@@ -730,8 +730,8 @@ local function load_mods()
                 next(mod.load_issues.conflicts) and
                 ('Unresolved Conflicts: ' .. inspect(mod.load_issues.conflicts) .. '\n') or ''
                 ), 'Loader')
-                SMODS.current_mod = nil
             end
+            SMODS.current_mod = nil
         end
     end
     SMODS.get_optional_features()
