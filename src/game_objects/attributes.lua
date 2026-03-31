@@ -335,3 +335,10 @@ SMODS.Attribute({
         'j_hallucination', 'j_reserved_parking', 'j_bloodstone', 
     }
 })
+
+SMODS.Attribute({
+    key = 'mod_chance',
+    keys = {
+        'j_oops'
+    }
+})
