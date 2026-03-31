@@ -2227,7 +2227,7 @@ function poll_edition(_key, _mod, _no_neg, _guaranteed, _options)
 		_options = { 'e_negative', 'e_polychrome', 'e_holo', 'e_foil' }
 	end
 
-	-- BYPASS REST OF FUNCTION WHEN WEIGHTS BEING USED
+	-- Use SMODS object weight system when enabled
 	if SMODS.optional_features.object_weights then return SMODS.poll_object({type = 'Edition', seed = _key, guaranteed = _guaranteed, pool = _options, no_negative = _no_neg, mod = _mod}) end
 
 	
@@ -2446,6 +2446,8 @@ function get_pack(_key, _type)
         G.GAME.first_shop_buffoon = true
         return G.P_CENTERS['p_buffoon_normal_'..(math.random(1, 2))]
     end
+
+	-- Use SMODS object weight system when enabled
 	if SMODS.optional_features.object_weights then
 		return G.P_CENTERS[SMODS.poll_object({type = 'Booster'})]
 	end

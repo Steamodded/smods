@@ -372,6 +372,7 @@ function SMODS.find_card(key, count_debuffed)
 end
 
 function SMODS.create_card(t)
+    -- Support SMODS.Attributes
     if not t.key and t.attributes then
         t.key = SMODS.poll_object(t)
     end
@@ -720,7 +721,7 @@ function SMODS.poll_edition(args)
 end
 
 function SMODS.poll_seal(args)
-    -- BYPASS REST OF FUNCTION WHEN WEIGHTS BEING USED
+    -- Use SMODS object weight system when enabled
     if SMODS.optional_features.object_weights then args.type = 'Seal'; return SMODS.poll_object(args) end
 
     args = args or {}
@@ -738,7 +739,7 @@ function SMODS.poll_seal(args)
             local seal_option = {}
             if type(v) == 'string' then
                 assert(G.P_SEALS[v], ("Could not find seal \"%s\"."):format(v))
-                seal_option = { key = v, weight = G.P_SEALS[v].weight or 10 } -- default weight set to 5 to replicate base game weighting
+                seal_option = { key = v, weight = G.P_SEALS[v].weight or 10 } -- default weight set to 10 to respect SMODS weight system
             elseif type(v) == 'table' then
                 assert(G.P_SEALS[v.key], ("Could not find seal \"%s\"."):format(v.key))
                 seal_option = { key = v.key, weight = v.weight }
@@ -2442,6 +2443,8 @@ function SMODS.get_next_vouchers(vouchers)
     local _pool, _pool_key = get_current_pool('Voucher')
     for i=#vouchers+1, math.min(SMODS.size_of_pool(_pool), G.GAME.starting_params.vouchers_in_shop + (G.GAME.modifiers.extra_vouchers or 0)) do
         local center
+
+        -- Use SMODS object weight system when enabled
         if SMODS.optional_features.object_weights then
             center = SMODS.poll_object({type = 'Voucher'})
         else

@@ -3,21 +3,12 @@
 -- Returns a `key` of the polled object type
 ---@param args table|{type: string?, attributes: table[string]?, pool: table[string]?, seed: string?, chance: number?, guaranteed: boolean?}
 function SMODS.poll_object(args)
-    assert(SMODS.optional_features.object_weights, "SMODS.poll_object called with object_weights optional feature disabled."..SMODS.log_crash_info(debug.getinfo(2)))
     assert(args, "SMODS.poll_object called with no args."..SMODS.log_crash_info(debug.getinfo(2)))
     assert((args.type or (args.types and type(args.types) == 'table') or (args.attributes and type(args.attributes) == 'table') or (args.pool and type(args.pool) == 'table')), "SMODS.poll_object called without a pool source." .. SMODS.log_crash_info(debug.getinfo(2)))
-
-    -- TODO: remove before merge
-    local function table_as_string(t)
-        local str = ''
-        for _, v in ipairs(t) do str = str .. v .. ', ' end
-        return str
-    end
 
     -- Prepare pool
     local pool = args.pool or {}
     local types = args.attributes or args.types or {args.type}
-    if SMODS.debug_prints then print('Polling', table_as_string(types)) end
 
     -- Populate pool
     local types_used = {}
@@ -62,8 +53,9 @@ function SMODS.poll_object(args)
     local chance = args.guaranteed and 1 or ((args.chance or SMODS.base_rate_percentage[args.type] or 1) * (args.mod or 1) * (modded_weight/total_weight))
     -- Adjust chance based on modified weightings
     -- chance = chance * (modded_weight/total_weight)
-    local key = 'UNAVAILABLE'
-    while key == 'UNAVAILABLE' do
+    local output_key = 'UNAVAILABLE'
+
+    while output_key == 'UNAVAILABLE' do
         local poll_key = pseudorandom(pseudoseed(args.seed or SMODS.get_poll_key(args.type)))
         
         if args.print then print('Total Weight: '..total_weight) end
@@ -75,7 +67,6 @@ function SMODS.poll_object(args)
 
         if poll_key < (1 - chance) then
             if args.print then print('Poll failed') end
-            if SMODS.debug_prints then print("Result: none") end
             return
         end
 
@@ -91,16 +82,17 @@ function SMODS.poll_object(args)
         if args.print then print('Looking for item: '..poll_weight) end
 
         if poll_weight > final_pool[1].mod_weight then
-            key = final_pool[SMODS.select_by_weight(final_pool, poll_weight, 1, #final_pool)].key
+            output_key = final_pool[SMODS.select_by_weight(final_pool, poll_weight, 1, #final_pool)].key
         else 
-            key = final_pool[1].key
+            output_key = final_pool[1].key
         end
     end
 
     -- Edition specific functionality
-    if args.no_negative and key == 'e_negative' then return 'e_polychrome' end
-    if SMODS.debug_prints then print("Result: "..key) end
-    return key
+    if args.no_negative and output_key == 'e_negative' then return 'e_polychrome' end
+
+
+    return output_key
 end
 
 -- Returns the `weight` and `modified_weight` or a given object
@@ -219,6 +211,7 @@ local function SMODS_WEIGHTS_poll_rarity(pool, args)
     local available_rarities = copy_table(SMODS.ObjectTypes[args.type or 'Joker'].rarities) -- Table containing a list of rarities and their rates
     local vanilla_rarities = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
     local final_rarities = {}
+    
 	-- Check to see if any rarities are empty and should be disabled
     for _, v in ipairs(available_rarities) do
         local missing = true

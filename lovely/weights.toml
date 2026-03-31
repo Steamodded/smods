@@ -3,25 +3,51 @@ version = "1.0.0"
 dump_lua = true
 priority = -10
 
+# Bypass get_new_boss()
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function get_new_boss()
+'''
+payload = '''
+-- Use SMODS object weight system when enabled
+if SMODS.optional_features.object_weights then return SMODS.poll_object({type = 'Blind'}) end
+'''
 
-# Escape get_new_boss early for SMODS.poll_object
+# Bypass create_card_for_shop()
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function create_card_for_shop(area)
+'''
+payload = '''
+-- Use SMODS object weight system when enabled
+if SMODS.optional_features.object_weights then return SMODS.create_shop_card(area) end
+'''
+
+# Bypass create_card key selection
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
 match_indent = true
 position = 'before'
 pattern = '''
-local _, boss = pseudorandom_element(eligible_bosses, pseudoseed('boss'))
+if forced_key and not G.GAME.banned_keys[forced_key] then 
 '''
 payload = '''
-if early_return then 
-    local boss_keys = {}
-    for k, _ in pairs(eligible_bosses) do table.insert(boss_keys, k) end
-    return boss_keys
-end
+-- Use SMODS object weight system when enabled
+if not forced_key and SMODS.optional_features.object_weights then forced_key = SMODS.poll_object({type = _type, guaranteed = true}) end
 
 '''
 
+# These patches add functionality for polling blinds, but are a precursor for full support of modded small and big blinds
+# TODO: move to blind related toml
 # Adjust vanilla blinds max ante property
 [[patches]]
 [patches.pattern]
@@ -55,45 +81,4 @@ if v.boss then bosses_used[k] = 0 end
 '''
 payload = '''
 if v.small or v.big then bosses_used[k] = 0 end
-'''
-
-# Bypass get_new_boss()
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-function get_new_boss()
-'''
-payload = '''
-if SMODS.optional_features.object_weights then return SMODS.poll_object({type = 'Blind'}) end
-'''
-
-# Bypass create_card_for_shop()
-[[patches]]
-[patches.pattern]
-target = 'functions/UI_definitions.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-function create_card_for_shop(area)
-'''
-payload = '''
-if SMODS.optional_features.object_weights then return SMODS.create_shop_card(area) end
-'''
-
-# Bypass create_card key selection
-[[patches]]
-[patches.pattern]
-target = 'functions/common_events.lua'
-match_indent = true
-position = 'before'
-pattern = '''
-if forced_key and not G.GAME.banned_keys[forced_key] then 
-'''
-payload = '''
--- Use SMODS object weight system when enabled
-if not forced_key and SMODS.optional_features.object_weights then forced_key = SMODS.poll_object({type = _type, guaranteed = true}) end
-
 '''
