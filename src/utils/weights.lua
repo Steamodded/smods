@@ -214,6 +214,57 @@ function SMODS.create_blind_pool(blind_type, skip_cull)
     return output
 end
 
+local function SMODS_WEIGHTS_poll_rarity(pool, args)
+    local rarity_poll = pseudorandom(pseudoseed((args.seed or 'smods_cull_rarity')..'_cull' )) -- Generate the poll value
+    local available_rarities = copy_table(SMODS.ObjectTypes[args.type or 'Joker'].rarities) -- Table containing a list of rarities and their rates
+    local vanilla_rarities = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
+    local final_rarities = {}
+	-- Check to see if any rarities are empty and should be disabled
+    for _, v in ipairs(available_rarities) do
+        local missing = true
+        local i = 1
+        while missing and i <= #pool do
+            if G.P_CENTERS[pool[i]] and G.P_CENTERS[pool[i]].rarity == (vanilla_rarities[v.key] or v.key) then
+                missing = false
+            end
+            i = i+1
+        end
+        if not missing then
+            final_rarities[#final_rarities + 1] = v
+        end
+    end
+
+    -- Calculate total rates of rarities
+    local total_weight = 0
+    for _, v in ipairs(final_rarities) do
+        v.mod = G.GAME[tostring(v.key):lower().."_mod"] or 1
+        -- Should this fully override the v.weight calcs?
+        if SMODS.Rarities[v.key] and SMODS.Rarities[v.key].get_weight and type(SMODS.Rarities[v.key].get_weight) == "function" then
+            v.weight = SMODS.Rarities[v.key]:get_weight(v.weight, SMODS.ObjectTypes[args.type or 'Joker'])
+        end
+        v.weight = v.weight*v.mod
+        total_weight = total_weight + v.weight
+    end
+    -- recalculate rarities to account for v.mod
+    for _, v in ipairs(final_rarities) do
+        v.weight = v.weight / total_weight
+    end
+
+    -- Calculate selected rarity
+    local weight_i = 0
+    for _, v in ipairs(final_rarities) do
+        weight_i = weight_i + v.weight
+        if rarity_poll < weight_i then
+            if vanilla_rarities[v.key] then
+                return vanilla_rarities[v.key]
+            else
+                return v.key
+            end
+        end
+    end
+    return nil
+end
+
 -- Create a table of {key = string, type = label} items to be polled
 function SMODS.create_poll_pool(labels, args)
     local labels_used = {}
@@ -229,7 +280,7 @@ function SMODS.create_poll_pool(labels, args)
         end
         return l1
     end
-
+    
     for _, label in ipairs(labels) do
         labels_used[label] = true
         local temp_pool = {}
@@ -256,6 +307,11 @@ function SMODS.create_poll_pool(labels, args)
             pool[v] = {key = v, type = label}
         end
         final_pool = final_pool and join_func({final_pool, temp_pool}) or temp_pool
+    end
+    
+    if args.attributes and not args.rarity and args.rarity ~= false then
+        args.rarity = SMODS_WEIGHTS_poll_rarity(final_pool, args)
+        final_pool = SMODS.cull_pool(final_pool, args)
     end
 
     local ret_pool = {}
@@ -375,57 +431,6 @@ function SMODS.poll_object_type(args)
     return weighted_table[ind].type
 end
 
-local function SMODS_WEIGHTS_poll_rarity(pool, args)
-    local rarity_poll = pseudorandom(pseudoseed((args.seed or 'smods_cull_rarity')..'_cull' )) -- Generate the poll value
-    local available_rarities = copy_table(SMODS.ObjectTypes[args.type or 'Joker'].rarities) -- Table containing a list of rarities and their rates
-    local vanilla_rarities = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
-
-	-- Check to see if any rarities are empty and should be disabled
-    for _, v in ipairs(available_rarities) do
-        local missing = true
-        local i = 1
-        while missing and i <= #pool do
-            if G.P_CENTERS[pool[i]] and G.P_CENTERS[pool[i]].rarity == (vanilla_rarities[v.key] or v.key) then
-                missing = false
-            end
-            i = i+1
-        end
-        if missing then
-            SMODS.remove_pool(available_rarities, v.key)
-        end
-    end
-
-    -- Calculate total rates of rarities
-    local total_weight = 0
-    for _, v in ipairs(available_rarities) do
-        v.mod = G.GAME[tostring(v.key):lower().."_mod"] or 1
-        -- Should this fully override the v.weight calcs?
-        if SMODS.Rarities[v.key] and SMODS.Rarities[v.key].get_weight and type(SMODS.Rarities[v.key].get_weight) == "function" then
-            v.weight = SMODS.Rarities[v.key]:get_weight(v.weight, SMODS.ObjectTypes[args.type or 'Joker'])
-        end
-        v.weight = v.weight*v.mod
-        total_weight = total_weight + v.weight
-    end
-    -- recalculate rarities to account for v.mod
-    for _, v in ipairs(available_rarities) do
-        v.weight = v.weight / total_weight
-    end
-
-    -- Calculate selected rarity
-    local weight_i = 0
-    for _, v in ipairs(available_rarities) do
-        weight_i = weight_i + v.weight
-        if rarity_poll < weight_i then
-            if vanilla_rarities[v.key] then
-                return vanilla_rarities[v.key]
-            else
-                return v.key
-            end
-        end
-    end
-    return nil
-end
-
 function SMODS.cull_pool(pool, args)
     local final_pool = {}
     
@@ -463,14 +468,6 @@ function SMODS.cull_pool(pool, args)
         end
     end
 
-    if not _rarity and args.rarity ~= false then
-        _rarity = SMODS_WEIGHTS_poll_rarity(final_pool, args)
-        for _, k in ipairs(final_pool) do
-            if G.P_CENTERS[k] and G.P_CENTERS[k].rarity ~= _rarity then
-                final_pool[_] = 'UNAVAILABLE'
-            end
-        end
-    end
         
     return final_pool
 end
