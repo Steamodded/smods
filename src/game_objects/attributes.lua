@@ -282,7 +282,7 @@ SMODS.Attribute({
 SMODS.Attribute({
     key = 'face',
     keys = {
-        'j_scary', 'j_paraeidolia', 'j_business', 'j_ride_the_bus',
+        'j_scary', 'j_pareidolia', 'j_business', 'j_ride_the_bus',
         'j_faceless', 'j_midas_mask', 'j_photograph', 'j_reserved_parking',
         'j_smiley', 'j_sock_and_buskin', 'j_caino'
     }
@@ -340,5 +340,26 @@ SMODS.Attribute({
     key = 'mod_chance',
     keys = {
         'j_oops'
+    }
+})
+
+SMODS.Attribute({
+    key = 'tarot',
+    keys = {
+        'j_8_ball', 'j_superposition', 'j_vagabond', 'j_hallucination', 'j_fortune_teller', 'j_cartomancer'
+    }
+})
+
+SMODS.Attribute({
+    key = 'planet',
+    keys = {
+        'j_astronomer', 'j_constellation', 'j_satellite'
+    }
+})
+
+SMODS.Attribute({
+    key = 'spectral',
+    keys = {
+        'j_sixth_sense', 'j_seance'
     }
 })
