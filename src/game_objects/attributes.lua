@@ -183,8 +183,99 @@ SMODS.Attribute({
     keys = {
         'j_8_ball', 'j_raised_fist', 'j_fibonacci', 'j_hack', 'j_even_steven',
         'j_odd_todd', 'j_scholar', 'j_sixth_sense', 'j_superposition', 'j_cloud_9',
-        'j_mail', 'j_walkie_talkie', 'j_wee', 'j_idol', 'j_hit_the_road',
+        'j_mail', 'j_walkie_talkie', 'j_wee', 'j_idol', 'j_hit_the_road', 'j_baron',
         'j_shoot_the_moon', 'j_triboulet'
+    }
+})
+
+SMODS.Attribute({
+    key = 'ace',
+    keys = {
+        'j_fibonacci', 'j_odd_todd', 'j_scholar', 'j_superposition'
+    }
+})
+
+SMODS.Attribute({
+    key = 'two',
+    keys = {
+        'j_fibonacci', 'j_hack', 'j_even_steven', 'j_wee'
+    }
+})
+
+SMODS.Attribute({
+    key = 'three',
+    keys = {
+        'j_fibonacci', 'j_hack', 'j_odd_todd'
+    }
+})
+
+SMODS.Attribute({
+    key = 'four',
+    keys = {
+        'j_hack', 'j_even_steven', 'j_walkie_talkie'
+    }
+})
+
+SMODS.Attribute({
+    key = 'five',
+    keys = {
+        'j_fibonacci', 'j_hack', 'j_odd_todd'
+    }
+})
+
+SMODS.Attribute({
+    key = 'six',
+    keys = {
+        'j_even_steven', 'j_sixth_sense'
+    }
+})
+
+SMODS.Attribute({
+    key = 'seven',
+    keys = {
+        'j_odd_todd'
+    }
+})
+
+SMODS.Attribute({
+    key = 'eight',
+    keys = {
+        'j_8_ball', 'j_even_steven'
+    }
+})
+
+SMODS.Attribute({
+    key = 'nine',
+    keys = {
+        'j_odd_todd', 'j_cloud_9'
+    }
+})
+
+SMODS.Attribute({
+    key = 'ten',
+    keys = {
+        'j_even_steven', 'j_walkie_talkie'
+    }
+})
+
+SMODS.Attribute({
+    key = 'jack',
+    keys = {
+        'j_hit_the_road'
+    }
+})
+
+SMODS.Attribute({
+    key = 'queen',
+    keys = {
+        'j_shoot_the_moon', 'j_triboulet'
+    }
+})
+
+SMODS.Attribute({
+    key = 'king',
+    keys = {
+        'j_baron', 'j_triboulet'
     }
 })
 
