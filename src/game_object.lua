@@ -703,8 +703,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if self.above_stake and G.P_STAKES[self.above_stake] then
                 self.order = G.P_STAKES[self.above_stake].order + 1
             end
-            for _, v in pairs(G.P_STAKES) do
-                if v.order >= self.order then
+            for i, v in pairs(G.P_STAKES) do
+                if i ~= self.key and v.order >= self.order then
                     v.order = v.order + 1
                 end
             end
