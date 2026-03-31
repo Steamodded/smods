@@ -850,7 +850,7 @@ for _, target in ipairs(SMODS.get_card_areas('individual', 'calc_dollar_bonus'))
                     end
                 end
                 i = i+1
-                add_round_eval_row({dollars = ret, bonus = true, name='custom_individual'..i, pitch = pitch, text_colour = ret_opts.text_colour or G.C.FILTER, text = name or 'ERROR', scale = ret_opts.scale or 0.6})
+                add_round_eval_row({dollars = ret, bonus = true, name='custom_individual'..i, pitch = pitch, text_colour = ret_opts.text_colour or G.C.FILTER, text = name or 'ERROR', text_scale = ret_opts.scale or 0.6})
                 pitch = pitch + 0.06
             end
             dollars = dollars + ret
