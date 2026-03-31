@@ -811,7 +811,7 @@ function SMODS.get_card_type_text_colour(type, center, card) end
 ---@return table?
 function SMODS.get_badge_text_colour(key) end
 
----Check if `challenge` is unlocked.
+---Modifies current scored chips
 ---@param mod_score Score_Mod_Parameter Score modification parameter
 function SMODS.mod_score(mod_score) end
 

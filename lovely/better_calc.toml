@@ -180,7 +180,7 @@ if context.cardarea == G.hand and context.main_scoring then
 
     local h_score = card:get_bonus_h_score()
     if h_score ~= 0 then
-        ret.playing_card.score = h_score
+        ret.playing_card.h_score = h_score
     end
     local h_x_score = card:get_bonus_h_x_score()
     if h_x_score ~= 1 then

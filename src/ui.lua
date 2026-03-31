@@ -1203,18 +1203,22 @@ function getModtagInfo(mod)
             tag_message = 'load_failure_m'
             specific_vars = {mod.main_file}
         end
-        if mod.load_issues.prefix_conflict then
+        if next(mod.load_issues.prefix_conflicts or {}) then
             tag_message = 'load_failure_p'
-            local name = mod.load_issues.prefix_conflict
-            for _, m in ipairs(SMODS.mod_list) do
-                if m.id == mod.load_issues.prefix_conflict then
-                    name = m.name or name
-                end
+            local conflict_str = ''
+            for _,id in ipairs(mod.load_issues.prefix_conflicts) do
+                conflict_str = conflict_str..SMODS.Mods[id].name..', '
             end
-            specific_vars = {name}
+            conflict_str = conflict_str:sub(1,-3)
+            specific_vars = {conflict_str}
         end
         if mod.disabled then
-            tag_pos = {x = 1, y = 0}
+            if mod.icon_path then
+                tag_pos = {x = 0, y = 0}
+                tag_atlas = mod.prefix and mod.prefix .. '_modicon' or 'modicon'
+            else
+                tag_pos = {x = 1, y = 0}
+            end
             tag_message = 'load_disabled'
         end
     end
@@ -1234,6 +1238,7 @@ function buildModtag(mod)
     tag_sprite:define_draw_steps({
         {shader = 'dissolve', shadow_height = 0.05},
         {shader = 'dissolve'},
+		mod.icon_path and mod.disabled and {shader = 'dissolve', shadow_height = 0, tilt_shadow = 1} or nil, --this is really gross, blame thunk
     })
     tag_sprite.float = true
     tag_sprite.states.hover.can = true

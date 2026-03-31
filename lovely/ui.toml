@@ -465,3 +465,28 @@ if not v.no_ui then
   game_rules[#game_rules+1] = {n=G.UIT.R, config={align = "cl"}, nodes= localize{type = 'text', key = 'ch_c_'..v.id, vars = {v.value}}}
 end
 '''
+
+# Allow tilt_shadow in define_draw_steps
+[[patches]]
+[patches.pattern]
+target = "engine/sprite.lua"
+match_indent = true
+position = "at"
+pattern = '''
+self:draw_shader(v.shader, v.shadow_height, v.send, v.no_tilt, v.other_obj, v.ms, v.mr, v.mx, v.my, not not v.send)
+'''
+payload = '''
+self:draw_shader(v.shader, v.shadow_height, v.send, v.no_tilt, v.other_obj, v.ms, v.mr, v.mx, v.my, not not v.send, v.tilt_shadow)
+'''
+
+[[patches]]
+[patches.pattern]
+target = "engine/sprite.lua"
+match_indent = true
+position = "after"
+pattern = '''
+self.draw_steps[#self.draw_steps+1] = {
+'''
+payload = '''
+  tilt_shadow = v.tilt_shadow,
+'''

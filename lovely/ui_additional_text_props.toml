@@ -4,41 +4,25 @@ dump_lua = true
 priority = -10
 
 [[patches]]
-[patches.pattern]
+[patches.regex]
 target = "functions/misc_functions.lua"
-pattern = """spacing = math.max(0, 0.32*(17 - #assembled_string)),"""
-position = "after"
-payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
-match_indent = true
+pattern = "local final_line = \\{\\}(\n.*)*\\s*if args\\.type == 'name' or args\\.type == 'text' then return final_line end\n\\s*args\\.nodes\\[#args\\.nodes\\+1\\] = final_line\n(?<indent>[\t ]*)end"
+position = "at"
+payload = """local final_line = SMODS.localize_box(lines, args)
+    if args.type == 'text' then return final_line end
+    if not args.nodes and args.type == 'name' then args.nodes = {} end
+    args.nodes[#args.nodes+1] = final_line
+end
+if args.type == 'name' then
+    local final_name = {}
 
-[[patches]]
-[patches.pattern]
-target = "functions/misc_functions.lua"
-pattern = """spacing = _spacing,"""
-position = "after"
-payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
-match_indent = true
+    for _, line in ipairs(args.nodes or {}) do
+        final_name[#final_name+1] = {n=G.UIT.R, config={align = "m"}, nodes=line}
+    end
 
-[[patches]]
-[patches.pattern]
-target = "functions/misc_functions.lua"
-pattern = """text = assembled_string,"""
-position = "after"
-payload = """font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],"""
-match_indent = true
-
-# descsacle
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-match_indent = true
-position = 'at'
-pattern = '''
-local desc_scale = G.LANG.font.DESCSCALE
-'''
-payload = '''
-local desc_scale = (SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)] or G.LANG.font).DESCSCALE
-'''
+    return final_name
+end"""
+line_prepend = "$indent"
 
 
 [[patches]]
@@ -79,48 +63,6 @@ position = "at"
 payload = '''(node.config.font or node.config.lang.font)'''
 line_prepend = "$indent"
 
-# Fix name scale when using formatting
-[[patches]]
-[patches.pattern]
-target = "functions/misc_functions.lua"
-pattern = '''
-local final_line = {}
-'''
-position = 'after'
-match_indent = true
-payload = '''
-local final_name_assembled_string = ''
-if args.type == 'name' and loc_target.name_parsed then
-    for _, part in ipairs(lines) do
-        local assembled_string_part = ''
-        for _, subpart in ipairs(part.strings) do
-            assembled_string_part = assembled_string_part..(type(subpart) == 'string' and subpart or format_ui_value(args.vars[tonumber(subpart[1])]) or 'ERROR')
-        end
-        final_name_assembled_string = final_name_assembled_string..assembled_string_part
-    end
-end
-'''
-
-[[patches]]
-[patches.pattern]
-target = "functions/misc_functions.lua"
-pattern = '''
-spacing = math.max(0, 0.32*(17 - #assembled_string)),
-'''
-position = 'at'
-match_indent = true
-payload = '''
-spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
-'''
-
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-position = 'at'
-match_indent = true
-pattern = 'scale =  (0.55 - 0.004*#assembled_string)*(part.control.s and tonumber(part.control.s) or 1)'
-payload = 'scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*(part.control.s and tonumber(part.control.s) or 1)*(args.fixed_scale or 1)'
-
 # Add support for multi line name
 [[patches]]
 [patches.pattern]
@@ -157,32 +99,6 @@ if pcall(function()
         ret_string = name_text
     end
 end) then
-'''
-
-[[patches]]
-[patches.pattern]
-target = "functions/misc_functions.lua"
-pattern = '''
-    if args.type == 'name' or args.type == 'text' then return final_line end
-    args.nodes[#args.nodes+1] = final_line
-end
-'''
-position = 'at'
-match_indent = true
-payload = '''
-    if args.type == 'text' then return final_line end
-    if not args.nodes and args.type == 'name' then args.nodes = {} end
-    args.nodes[#args.nodes+1] = final_line
-end
-if args.type == 'name' then
-    local final_name = {}
-
-    for _, line in ipairs(args.nodes or {}) do
-        final_name[#final_name+1] = {n=G.UIT.R, config={align = "m"}, nodes=line}
-    end
-
-    return final_name
-end
 '''
 
 # Marquee text in DynaText
@@ -335,54 +251,6 @@ if self.config.underline and self.config.underline[4] > 0.01 then
     self:draw_pixellated_under('line', parallax_dist)
     love.graphics.pop()
 end
-'''
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
-'''
-payload = '''
-underline = part.control.u and loc_colour(part.control.u),
-'''
-# DynaText compat
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
-'''
-payload = '''
-underline = part.control.u and loc_colour(part.control.u),
-'''
-
-# Add button support for text formatting
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
-'''
-payload = '''
-button = part.control.button,
-'''
-
-[[patches]]
-[patches.pattern]
-target = 'functions/misc_functions.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
-'''
-payload = '''
-button = part.control.button,
 '''
 
 # Add text_colour support for card_eval_status_text extra tables

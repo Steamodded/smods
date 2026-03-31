@@ -140,6 +140,46 @@ return {
                     "carta {C:attention}#1#{} #2#",
                 },
             },
+            card_score = {
+                text = {
+                    "{C:purple}#1#{} de puntuación",
+                },
+            },
+            card_h_score = {
+                text = {
+                    "{C:purple}#1#{} de puntuación mientras esté en tu mano",
+                },
+            },
+            card_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} puntuación",
+                },
+            },
+            card_h_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} puntuación mientras esté en tu mano",
+                },
+            },
+            card_extra_score = {
+                text = {
+                    "{C:purple}#1#{} de puntuación extra",
+                },
+            },
+            card_extra_h_score = {
+                text = {
+                    "{C:purple}#1#{} de puntuación extra mientras esté en tu mano",
+                },
+            },
+            card_extra_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} puntuación extra",
+                },
+            },
+            card_extra_h_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} puntuación extra mientras esté en tu mano",
+                },
+            },
             artist = {
                 text = {
                     "{C:inactive}Artista",
@@ -163,10 +203,28 @@ return {
                     '{C:dark_edition}#1#{} ranuras del área'
                 }
             },
+            generic_card_limit_pc = {
+                name = "Tamaño de mano",
+                text = {
+                    '{C:dark_edition}#1#{} de tamaño de mano'
+                }
+            },
+            generic_card_limit_pc_plural = {
+                name = "Tamaño de mano",
+                text = {
+                    '{C:dark_edition}#1#{} de tamaño de mano'
+                }
+            },
             generic_extra_slots = {
                 name = "Ranuras Usadas",
                 text = {
                     'Ocupa {C:dark_edition}#1#{} ranuras'
+                }
+            },
+            generic_extra_slots_pc = {
+                name = "Espacio en mano",
+                text = {
+                    'Ocupa {C:dark_edition}#1#{} de espacio en mano'
                 }
             },
             card_chips_minus = {
@@ -280,6 +338,9 @@ return {
             cashout_hidden = '...y #1# más',
             a_xchips = "X#1# fichas",
             a_xchips_minus = "-X#1# fichas",
+            a_score = "#1# de puntuación",
+            a_xscore = "X#1# puntuación",
+            a_xscore_minus = "-X#1# puntuación",
             smods_version_mismatch = {
                 "¡Tu versión de Steamodded ha cambiado",
                 "desde que has comenzado esta partida!",
