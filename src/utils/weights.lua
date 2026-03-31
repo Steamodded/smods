@@ -50,7 +50,7 @@ function SMODS.poll_object(args)
         if args.print then print(string.format("Key: %s, Weight: %s, Position: %s", weight_table.key, weight_table.weight, weight_table.mod_weight)) end
     end
     
-    local chance = args.guaranteed and 1 or ((args.chance or SMODS.base_rate_percentage[args.type] or 1) * (args.mod or 1) * (modded_weight/total_weight))
+    local chance = (args.guaranteed or not (args.chance or SMODS.base_rate_percentage[args.type])) and 1 or ((args.chance or SMODS.base_rate_percentage[args.type] or 1) * (args.mod or 1) * (modded_weight/total_weight))
     -- Adjust chance based on modified weightings
     -- chance = chance * (modded_weight/total_weight)
     local output_key = 'UNAVAILABLE'
