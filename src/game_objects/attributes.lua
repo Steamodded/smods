@@ -241,7 +241,7 @@ SMODS.Attribute({
 SMODS.Attribute({
     key = 'eight',
     keys = {
-        'j_8_ball', 'j_even_steven'
+        'j_8_ball', 'j_even_steven', 'j_fibonacci'
     }
 })
 
@@ -438,4 +438,11 @@ SMODS.Attribute({
 SMODS.Attribute({
     key = 'full_deck',
     keys = { "j_steel_joker", "j_cloud_9", "j_erosion", "j_stone", "j_drivers_license" }
+})
+
+SMODS.Attribute({
+    key = 'on_sell',
+    keys = {
+        'j_luchador', 'j_diet_cola', 'j_invisible'
+    }
 })
