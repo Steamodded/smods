@@ -136,6 +136,38 @@ return {
                     "{C:dark_edition}+#1#{} à la taille de la main"
                 },
             },
+        },
+        Enhanced = {
+            m_gold={
+                name="Carte Or",
+                text={
+                    "{C:money}#1#{} si cette",
+                    "carte est en main",
+                    "à la fin de la manche",
+                },
+            },
+            m_stone={
+                name="Carte Pierre",
+                text={
+                    "{C:chips}#1#{} Jetons",
+                    "sans valeur ni couleur",
+                },
+            },
+            m_mult={
+                name="Carte Multi.",
+                text={
+                    "Multi. {C:mult}#1#{}",
+                },
+            },
+            m_lucky={
+                name="Carte Chance",
+                text={
+                    "{C:green}#1# chance(s) sur #3#{}",
+                    "d'obtenir {C:mult}+#2#{} au Multi.",
+                    "{C:green}#6# chance(s) sur #5#{}",
+                    "de gagner {C:money}#4# $",
+                },
+            },
         }
     },
     misc = {

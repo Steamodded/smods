@@ -2592,6 +2592,7 @@ function SMODS.localize_box(lines, args)
             bg_col = part.control.B and args.vars.colours[tonumber(part.control.B)] or part.control.X and loc_colour(part.control.X) or nil,
             text_col = part.control.V and args.vars.colours[tonumber(part.control.V)] or part.control.C and loc_colour(part.control.C),
             underline = part.control.u and loc_colour(part.control.u),
+            strikethrough = part.control.st and loc_colour(part.control.st),
             font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
             scale_mod = part.control.s and tonumber(part.control.s) or args.scale  or 1
         }
@@ -2611,6 +2612,7 @@ function SMODS.localize_box(lines, args)
           final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
           button = part.control.button,
           underline = thunk.underline,
+          strikethrough = thunk.strikethrough,
             object = DynaText({string = {assembled_string},
               colours = {thunk.text_col or args.text_colour or G.C.UI.TEXT_LIGHT},
               bump = not args.no_bump,
@@ -2624,6 +2626,7 @@ function SMODS.localize_box(lines, args)
               spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
               font = thunk.font,
               button = part.control.button,
+              strikethrough = part.control.st and loc_colour(part.control.st),
               underline = part.control.u and loc_colour(part.control.u),
               scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*thunk.scale_mod*(args.fixed_scale or 1)
             })
@@ -2642,6 +2645,7 @@ function SMODS.localize_box(lines, args)
             final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
                 button = part.control.button,
                 underline = thunk.underline,
+                strikethrough = thunk.strikethrough,
                 object = DynaText({string = {assembled_string}, colours = {thunk.text_col or loc_colour()},
                     float = _float,
                     silent = _silent,
@@ -2661,6 +2665,7 @@ function SMODS.localize_box(lines, args)
                     colour = thunk.text_col or loc_colour(),
                     font = thunk.font,
                     underline = thunk.underline,
+                    strikethrough = thunk.strikethrough,
                     scale = 0.32*thunk.scale_mod*desc_scale}},
                 }}
         else
@@ -2672,6 +2677,7 @@ function SMODS.localize_box(lines, args)
                 colour = thunk.text_col or args.text_colour or loc_colour(nil, args.default_col),
                 font = thunk.font,
                 underline = thunk.underline,
+                strikethrough = thunk.strikethrough,
                 scale = 0.32*thunk.scale_mod*desc_scale
             }}
         end
@@ -3351,6 +3357,74 @@ function UIElement:draw_pixellated_under(_type, _parallax, _emboss, _progress)
         end
     end
     love.graphics.polygon("fill", self.pixellated_rect.fill.vertices)
+end
+
+function UIElement:draw_pixellated_strikethough(_type, _parallax, _emboss, _progress)
+	if
+		not self.pixellated_rect
+		or #self.pixellated_rect[_type].vertices < 1
+		or _parallax ~= self.pixellated_rect.parallax
+		or self.pixellated_rect.w ~= self.VT.w
+		or self.pixellated_rect.h ~= self.VT.h
+		or self.pixellated_rect.sw ~= self.shadow_parrallax.x
+		or self.pixellated_rect.sh ~= self.shadow_parrallax.y
+		or self.pixellated_rect.progress ~= (_progress or 1)
+	then
+		self.pixellated_rect = {
+			w = self.VT.w,
+			h = self.VT.h,
+			sw = self.shadow_parrallax.x,
+			sh = self.shadow_parrallax.y,
+			progress = (_progress or 1),
+			fill = { vertices = {} },
+			shadow = { vertices = {} },
+			line = { vertices = {} },
+			emboss = { vertices = {} },
+			line_emboss = { vertices = {} },
+			parallax = _parallax,
+		}
+		local ext_up = self.config.ext_up and self.config.ext_up * G.TILESIZE or 0
+		local totw, toth = self.VT.w * G.TILESIZE, (self.VT.h + math.abs(ext_up) / G.TILESIZE) * G.TILESIZE
+
+		local vertices = {
+			totw,
+			toth / 2 + ext_up,
+			0,
+			toth / 2 + ext_up,
+			0,
+			toth / 2 + ext_up + 1,
+			totw,
+			toth / 2 + ext_up + 1,
+		}
+		for k, v in ipairs(vertices) do
+			if k % 2 == 1 and v > totw * self.pixellated_rect.progress then
+				v = totw * self.pixellated_rect.progress
+			end
+			self.pixellated_rect.fill.vertices[k] = v
+			if k > 4 then
+				self.pixellated_rect.line.vertices[k - 4] = v
+				if _emboss then
+					self.pixellated_rect.line_emboss.vertices[k - 4] = v
+						+ (
+							k % 2 == 0 and -_emboss * self.shadow_parrallax.y
+							or -0.7 * _emboss * self.shadow_parrallax.x
+						)
+				end
+			end
+			if k % 2 == 0 then
+				self.pixellated_rect.shadow.vertices[k] = v - self.shadow_parrallax.y * _parallax
+				if _emboss then
+					self.pixellated_rect.emboss.vertices[k] = v + _emboss * G.TILESIZE
+				end
+			else
+				self.pixellated_rect.shadow.vertices[k] = v - self.shadow_parrallax.x * _parallax
+				if _emboss then
+					self.pixellated_rect.emboss.vertices[k] = v
+				end
+			end
+		end
+	end
+	love.graphics.polygon("fill", self.pixellated_rect.fill.vertices)
 end
 
 function SMODS.card_select_area(card, pack)
