@@ -378,7 +378,16 @@ SMODS.Attribute({
 
 SMODS.Attribute({
     key = 'destroy_card',
-    keys = { "j_ceremonial", "j_madness", "j_trading", "j_mr_bones" }
+    keys = { "j_ceremonial", "j_madness", "j_trading" }
+})
+
+SMODS.Attribute({
+    key = 'passive',
+    keys = {
+        'j_four_fingers', 'j_credit_card', 'j_chaos', 'j_pareidolia', 'j_splash', 
+        'j_shortcut', 'j_to_the_moon', 'j_juggler', 'j_drunkard', 'j_troubadour',
+        'j_smeared', 'j_ring_master', 'j_oops', 'j_astronomer'
+    }
 })
 
 SMODS.Attribute({
