@@ -4,6 +4,9 @@ function boot_print_stage(str)
 end
 local st = love.timer.getTime()
 
+-- april fools joke
+if math.random() < 0.0000001 then error("haha april fools") end
+
 SMODS = {}
 MODDED_VERSION = require'SMODS.version'
 RELEASE_VERSION = require'SMODS.release'
