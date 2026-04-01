@@ -1,9 +1,0 @@
-{
-    "name": "Steamodded",
-    "version_number": "1.0.0",
-    "website_url": "https://github.com/Steamodded/smods",
-    "description": "A Balatro Modding Framework",
-    "dependencies": [
-        "Thunderstore-lovely-0.7.1"
-    ]
-}

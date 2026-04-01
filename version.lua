@@ -1,1 +1,0 @@
-return "1.0.0~BETA-1531zb-STEAMODDED"
