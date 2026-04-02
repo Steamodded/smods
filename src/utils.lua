@@ -3756,11 +3756,10 @@ function SMODS.log_crash_info(info, defined)
     end
 end
 
-
 -- Used for SMODS.ScreenShader, just to save lines re-creating canvases when relevant
--- mitigate High-DPI density issue rendersize on mobile devices
+-- mitigate canvas rendersize issue on any system that utilize high-dpi option.
 function SMODS.create_canvas()
-    local w, h = love.graphics.getPixelWidth(), love.graphics.getPixelHeight()
+    local w, h = G.CANVAS:getDimensions()
     local canvas = love.graphics.newCanvas(w, h, { type = '2d', readable = true })
     canvas:setFilter('linear', 'linear')
     return canvas
