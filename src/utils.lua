@@ -1450,6 +1450,22 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return { [key] = amount, debuff_source = scored_card }
     end
 
+    if scored_card and scored_card.config and scored_card.config.tag then
+        if key == 'yep' then
+            if type(effect) == "table" then
+                scored_card.config.tag:yep(effect.message or '+', effect.color, effect.func)
+            else
+                scored_card.config.tag:yep('+')
+            end
+
+            return true
+        end
+
+        if key == 'nope' then
+            scored_card.config.tag:nope()
+            return true
+        end
+    end
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1552,6 +1568,7 @@ SMODS.other_calculation_keys = {
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
     'shop_create_flags',
+    'yep', 'nope',
     'extra',
 }
 SMODS.silent_calculation = {
@@ -1562,6 +1579,7 @@ SMODS.silent_calculation = {
     cards_to_draw = true,
     func = true, extra = true,
     numerator = true, denominator = true,
+    yep = true, nope = true,
     no_destroy = true
 }
 
@@ -2257,6 +2275,9 @@ function SMODS.get_card_areas(_type, _context)
             { object = G.GAME.selected_back, scored_card = G.deck and G.deck.cards[1] or G.deck, set = 'Back', key = G.GAME.selected_back.effect.center.key },
         }
 
+        for _, tag in ipairs(G.GAME.tags) do
+            t[#t + 1] = { object = tag, scored_card = tag.tag_sprite }
+        end
         if G.GAME.blind and G.GAME.blind.children and G.GAME.blind.children.animatedSprite then
             t[#t + 1] = { object = G.GAME.blind, scored_card = G.GAME.blind.children.animatedSprite, set = "Blind", key = G.GAME.blind.config.blind.key}
         end
@@ -2280,6 +2301,15 @@ function Blind:calculate(context)
     local obj = self.config.blind
     if type(obj.calculate) == 'function' then
         return obj:calculate(self, context)
+    end
+end
+function Tag:calculate(context)
+    if not context.no_tags and not self.triggered then
+        local obj = SMODS.Tags[self.key]
+
+        if obj and obj.calculate and type(obj.calculate) == 'function' then
+            return obj:calculate(self, context)
+        end
     end
 end
 
