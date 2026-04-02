@@ -1,0 +1,98 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Bypass get_new_boss()
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function get_new_boss()
+'''
+payload = '''
+-- Use SMODS object weight system when enabled
+if SMODS.optional_features.object_weights then return SMODS.poll_object({type = 'Blind'}) end
+'''
+
+# Bypass create_card_for_shop()
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function create_card_for_shop(area)
+'''
+payload = '''
+-- Use SMODS object weight system when enabled
+if SMODS.optional_features.object_weights then return SMODS.create_shop_card(area) end
+'''
+
+# Bypass create_card key selection
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if forced_key and not G.GAME.banned_keys[forced_key] then 
+'''
+payload = '''
+-- Use SMODS object weight system when enabled
+if not forced_key and SMODS.optional_features.object_weights then forced_key = SMODS.poll_object({type = _type, guaranteed = true}) end
+
+'''
+
+# Bypass get_next_tag_key()
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if G.FORCE_TAG then return G.FORCE_TAG end
+'''
+payload = '''
+if SMODS.optional_features.object_weights then return SMODS.poll_object({type = 'Tag'}) end
+'''
+
+
+# These patches add functionality for polling blinds, but are a precursor for full support of modded small and big blinds
+# TODO: move to blind related toml
+# Adjust vanilla blinds max ante property
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+self.b_undiscovered = {name = 'Undiscovered', debuff_text = 'Defeat this blind to discover', pos = {x=0,y=30}}
+'''
+payload = '''
+for key, blind in pairs(self.P_BLINDS) do
+    if blind.boss and blind.boss.max then
+        blind.boss.max = nil
+        if blind.boss.showdown then
+            blind.boss.min = nil
+        end
+    end
+    if key == 'bl_small' then blind.small = {min = 1} end
+    if key == 'bl_big' then blind.big = {min = 1} end
+end
+'''
+
+# Add custom small/big blinds to `G.GAME.bosses_used`
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if v.boss then bosses_used[k] = 0 end
+'''
+payload = '''
+if v.small or v.big then bosses_used[k] = 0 end
+'''

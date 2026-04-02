@@ -115,6 +115,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     -- Checked on __call but not take_ownership. For take_ownership, the key must exist
     function SMODS.GameObject:check_duplicate_key()
         if self.obj_table[self.key] or (self.get_obj and self:get_obj(self.key)) then
+            if self.set == 'Attribute' then
+                SMODS.Attributes[self.key].keys = SMODS.merge_lists({SMODS.Attributes[self.key].keys, self.keys})
+                return true
+            end
             sendWarnMessage(('Object %s has the same key as an existing object, not registering.'):format(self.key), self.set)
             sendWarnMessage('If you want to modify an existing object, use take_ownership()', self.set)
             return true
@@ -388,6 +392,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if self.key == (G.SETTINGS.real_language or G.SETTINGS.language) then G.LANG = self end
         end,
     }
+
+    -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.Attribute
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/attributes.lua'), ('=[SMODS _ "src/game_objects/attributes.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- INTERNAL API CODE GameObject._Loc_Pre
@@ -1186,6 +1196,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 -- Changing "cards" and "pools" wouldn't be hard to do, just depends on preferred format
                 if ((self.pools and self.pools[k]) or (v.cards and v.cards[self.key])) then
                     v:inject_card(self)
+                end
+            end
+            if self.attributes then
+                for _, attribute in ipairs(self.attributes) do
+                    if SMODS.Attributes[attribute] then
+                        SMODS.Attributes[attribute].keys = SMODS.merge_lists({SMODS.Attributes[attribute].keys or {}, {self.key}})
+                    end
                 end
             end
         end,

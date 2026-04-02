@@ -450,6 +450,53 @@ function loadMods(modsDirectory)
     boot_print_stage('Processing Mod Files')
     -- Start processing with the initial directory at depth 1
     processDirectory(modsDirectory, 1)
+
+    -- i don't think it's even possible for a zip and a non-zip to share a blacklist name, but i'm still adding it just in case
+    local function load_type_order(mod)
+        return (mod.load_type == 'zip' and 2 or 0) + (mod.json and -1 or 0)
+    end
+    for k, mods in pairs(SMODS.Mods) do
+        if mods[1] then
+            -- we found more than one mod with this ID
+            -- cull duplicates with the same blacklist name
+            -- (such duplicates would always get disabled otherwise)
+            local blacklist_dict = {}
+            for _,mod in ipairs(mods) do
+                blacklist_dict[mod.blacklist_name] = blacklist_dict[mod.blacklist_name] or {}
+                table.insert(blacklist_dict[mod.blacklist_name], mod)
+            end
+            mods = {}
+            -- prefer directories and json files
+            for _,v in pairs(blacklist_dict) do
+                if #v > 1 then
+                    table.sort(v, function(a,b) return load_type_order(a) < load_type_order(b) end)
+                end
+                table.insert(mods, v[1])
+            end
+            -- identify the highest enabled version
+            local enabled_mods = {}
+            for _,mod in ipairs(mods) do
+                if not mod.disabled then
+                    enabled_mods[#enabled_mods+1] = mod
+                end
+            end
+            table.sort(enabled_mods, function(mod_a, mod_b) return sUtil.V(mod_a.version) > sUtil.V(mod_b.version) end)
+            table.sort(mods, function(mod_a, mod_b) return sUtil.V(mod_a.version) > sUtil.V(mod_b.version) end)
+            SMODS.Mods[k] = enabled_mods[1] or mods[1]
+            SMODS.Mods[k].available_versions = mods
+            for i,mod in ipairs(enabled_mods) do
+                if i>1 then
+                    addToBlacklist(mod.blacklist_name)
+                    mod.disabled = true
+                    mod.blacklisted = true
+
+                    -- this warrants a reload
+                    if mod.lovely then SMODS.modified_blacklist = true end
+                end
+            end
+        end
+    end
+    
     for _, flags in ipairs(lovely_directories) do
         local hasSMOD = false
         for _, mod in pairs(SMODS.Mods) do
@@ -506,32 +553,6 @@ function loadMods(modsDirectory)
         end
     end
 
-    for k, mods in pairs(SMODS.Mods) do
-        if mods[1] then
-            -- we found more than one mod with this ID
-            -- identify the highest enabled version
-            local enabled_mods = {}
-            for _,mod in ipairs(mods) do
-                if not mod.disabled then
-                    enabled_mods[#enabled_mods+1] = mod
-                end
-            end
-            table.sort(enabled_mods, function(mod_a, mod_b) return sUtil.V(mod_a.version) > sUtil.V(mod_b.version) end)
-            table.sort(mods, function(mod_a, mod_b) return sUtil.V(mod_a.version) > sUtil.V(mod_b.version) end)
-            SMODS.Mods[k] = enabled_mods[1] or mods[1]
-            SMODS.Mods[k].available_versions = mods
-            for i,mod in ipairs(enabled_mods) do
-                if i>1 then
-                    addToBlacklist(mod.blacklist_name)
-                    mod.disabled = true
-                    mod.blacklisted = true
-
-                    -- this warrants a reload
-                    if mod.lovely then SMODS.modified_blacklist = true end
-                end
-            end
-        end
-    end
 
     local function check_dependencies(mod, seen)
         if mod.can_load  ~= nil then return mod.can_load end
@@ -886,6 +907,7 @@ local function initSteamodded()
     -- boot_print_stage("Injecting Items")
     SMODS.injectItems()
     convert_save_data()
+    SMODS.populate_attributes()
     SMODS.booted = true
 
 
