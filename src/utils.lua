@@ -3986,12 +3986,12 @@ SMODS.mod_score = function(score_mod)
     if not (score_mod.effect and score_mod.effect.remove_default_message) and score_mod.card then
         for _,v in ipairs(score_fx) do
             if score_mod.from_edition then
-                card_eval_status_text(score_mod.card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = v.key, vars = {v.value}}, update_score = true, colour = G.C.EDITION, edition = true, sound = v.sound, volume = 0.5 })
+                card_eval_status_text(score_mod.card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = v.key, vars = {v.value}}, update_score = true, colour = G.C.EDITION, edition = true, sound = score_mod.effect.sound or v.sound, volume = score_mod.effect.volume or 0.5, pitch = score_mod.effect.pitch })
             elseif score_mod.effect and score_mod.effect[v.message_key] then
                 score_mod.effect[v.message_key].update_score = true
                 card_eval_status_text(score_mod.card, 'extra', v.value, percent, nil, score_mod.effect[v.message_key])
             else
-                card_eval_status_text(score_mod.card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= v.key,vars={v.value}}, update_score = true, volume = 0.5, sound_override = v.sound, colour =  G.C.PURPLE})
+                card_eval_status_text(score_mod.card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= v.key,vars={v.value}}, update_score = true, volume = score_mod.effect.volume or 0.5, pitch = score_mod.effect.pitch, sound_override = score_mod.effect.sound or v.sound, colour =  G.C.PURPLE})
             end
         end 
         -- this check is in case some skip animation mods is there, may be removed in the future
@@ -4029,12 +4029,12 @@ SMODS.mod_blind_size = function(blind_size_mod)
     if not (blind_size_mod.effect and blind_size_mod.effect.remove_default_message) and blind_size_mod.card then
         for _,v in ipairs(blind_size_fx) do
             if blind_size_mod.from_edition then
-                card_eval_status_text(blind_size_mod.card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = v.key, vars = {v.value}}, update_blind_size = true, colour = G.C.EDITION, edition = true, sound = v.sound, volume = 0.5 })
+                card_eval_status_text(blind_size_mod.card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = v.key, vars = {v.value}}, update_blind_size = true, colour = G.C.EDITION, edition = true, sound = blind_size_mod.effect.sound or v.sound, volume = blind_size_mod.effect.volume or 0.5, pitch = blind_size_mod.effect.pitch })
             elseif blind_size_mod.effect and blind_size_mod.effect[v.message_key] then
                 blind_size_mod.effect[v.message_key].update_blind_size = true
                 card_eval_status_text(blind_size_mod.card, 'extra', v.value, percent, nil, blind_size_mod.effect[v.message_key])
             else
-                card_eval_status_text(blind_size_mod.card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= v.key,vars={v.value}}, update_blind_size = true, volume = 0.5, sound_override = v.sound, colour = G.C.DYN_UI.DARK}) -- or use G.C.UI.FILTER
+                card_eval_status_text(blind_size_mod.card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= v.key,vars={v.value}}, update_blind_size = true, volume = blind_size_mod.effect.volume or 0.5, pitch = blind_size_mod.effect.pitch, sound_override = blind_size_mod.effect.sound or v.sound, colour = G.C.DYN_UI.DARK}) -- or use G.C.UI.FILTER
             end
         end 
         -- this check is in case some skip animation mods is there, may be removed in the future

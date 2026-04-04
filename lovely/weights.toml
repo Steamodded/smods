@@ -42,7 +42,7 @@ if forced_key and not G.GAME.banned_keys[forced_key] then
 '''
 payload = '''
 -- Use SMODS object weight system when enabled
-if not forced_key and SMODS.optional_features.object_weights then forced_key = SMODS.poll_object({type = _type, guaranteed = true, rarities = legendary and {'Legendary'} or nil }) end
+if not forced_key and SMODS.optional_features.object_weights then forced_key = SMODS.poll_object({type = _type, guaranteed = true, rarities = legendary and {'Legendary'} or _rarity and {_rarity} or nil}) end
 
 '''
 

@@ -47,10 +47,20 @@ function SMODS.populate_attributes()
     for _, attribute in pairs(SMODS.Attributes) do
         for _, key in ipairs(attribute.keys) do
             if G.P_CENTERS[key] then
-                G.P_CENTERS[key].attributes = SMODS.merge_lists({G.P_CENTERS[key].attributes or {}, {attribute.key}})
+                G.P_CENTERS[key].attributes = G.P_CENTERS[key].attributes or {}
+                G.P_CENTERS[key].attributes[attribute.key] = true
             end
         end
     end
+end
+
+function Card:has_attribute(attribute)
+    if not SMODS.Attributes[attribute] then return false end
+    if self.config.center.attributes[attribute] then return true end
+    for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
+        if self.config.center.attributes[att] then return true end
+    end
+    return false
 end
 
 SMODS.Attribute({
@@ -103,6 +113,22 @@ SMODS.Attribute({
 })
 
 SMODS.Attribute({
+    key = 'blindsize'
+})
+
+SMODS.Attribute({
+    key = 'xblindsize'
+})
+
+SMODS.Attribute({
+    key = 'balance'
+})
+
+SMODS.Attribute({
+    key = 'swap'
+})
+
+SMODS.Attribute({
     key = 'retrigger',
     keys = {
         'j_mime', 'j_dusk', 'j_hack', 'j_selzer', 'j_sock_and_buskin', 'j_hanging_chad'
@@ -113,9 +139,9 @@ SMODS.Attribute({
     key = 'scaling',
     keys = {
         'j_ceremonial', 'j_selzer', 'j_ride_the_bus', 'j_egg', 'j_runner',
-        'j_ice_cream', 'j_constellation', 'j_hiker', 'j_green_joker', 'j_red_card',
+        'j_ice_cream', 'j_constellation', 'j_green_joker', 'j_red_card',
         'j_madness', 'j_square', 'j_vampire', 'j_hologram', 'j_rocket', 'j_turtle_bean',
-        'j_obelisk', 'j_gift', 'j_flash', 'j_lucky_cat',
+        'j_obelisk', 'j_flash', 'j_lucky_cat',
         'j_popcorn', 'j_trousers', 'j_ramen', 'j_castle', 'j_campfire',
         'j_throwback', 'j_glass', 'j_wee', 'j_hit_the_road', 'j_caino', 'j_yorick'
     }
@@ -368,12 +394,12 @@ SMODS.Attribute({
 
 SMODS.Attribute({
     key = 'joker',
-    keys = { "j_abstract", "j_riff_raff", "j_swashbuckler" }
+    keys = { "j_abstract", "j_riff_raff", "j_swashbuckler", 'j_invisible' }
 })
 
 SMODS.Attribute({
     key = 'joker_slot',
-    keys = { "j_abstract", "j_stencil" }
+    keys = { "j_stencil" }
 })
 
 SMODS.Attribute({
@@ -392,7 +418,7 @@ SMODS.Attribute({
 
 SMODS.Attribute({
     key = 'hands',
-    keys = { "j_loyalty_card", "j_burglar", "j_troubadour", "j_green_joker", "j_square", "j_dusk", "j_acrobat", "j_flower_pot", "j_dna", "j_vagabond", "j_obelisk" }
+    keys = { "j_loyalty_card", "j_burglar", "j_troubadour", "j_dusk", "j_acrobat", "j_dna", "j_vagabond" }
 })
 
 SMODS.Attribute({
@@ -421,6 +447,20 @@ SMODS.Attribute({
 })
 
 SMODS.Attribute({
+    key = 'editions'
+})
+
+SMODS.Attribute({
+    key = 'tag',
+    keys = { 'j_diet_cola' }
+})
+
+SMODS.Attribute({
+    key = 'skip',
+    keys = { 'j_throwback' }
+})
+
+SMODS.Attribute({
     key = 'hand_size',
     keys = { "j_juggler", "j_turtle_bean", "j_troubadour", "j_merry_andy", "j_stuntman" }
 })
@@ -444,5 +484,19 @@ SMODS.Attribute({
     key = 'on_sell',
     keys = {
         'j_luchador', 'j_diet_cola', 'j_invisible'
+    }
+})
+
+SMODS.Attribute({
+    key = 'boss_blind',
+    keys = {
+        'j_rocket', 'j_luchador', 'j_campfire', 'j_matador', 'j_chicot'
+    }
+})
+
+SMODS.Attribute({
+    key = 'perma_bonus',
+    keys = {
+        'j_hiker'
     }
 })
