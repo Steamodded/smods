@@ -55,7 +55,7 @@ function SMODS.populate_attributes()
 end
 
 function Card:has_attribute(attribute)
-    if not SMODS.Attributes[attribute] then return false end
+    if not SMODS.Attributes[attribute] or not self.config.center.attributes then return false end
     if self.config.center.attributes[attribute] then return true end
     for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
         if self.config.center.attributes[att] then return true end

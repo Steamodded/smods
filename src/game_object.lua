@@ -3372,7 +3372,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         inject = function(self)
             self.full_path = (self.mod and self.mod.path or SMODS.path) ..
                 'assets/shaders/' .. self.path
-            local file = NFS.read(self.full_path)
+            local file = assert(NFS.read(self.full_path),
+                ('Failed to collect file data for Shader %s'):format(self.key))
             local lovely_success, lovely = pcall(require, "lovely")
             if lovely_success and lovely.apply_patches then
                 file = assert(lovely.apply_patches("=[SMODS " .. self.mod.id .. ' "' .. self.path .. '"]', file))

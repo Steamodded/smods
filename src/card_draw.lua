@@ -397,6 +397,7 @@ SMODS.DrawStep {
                     )
                 end
                 love.graphics.pop()
+                SMODS.reload_stencil_stack()
                 sprite.role.draw_major = self
                 sprite:draw_shader('dissolve', nil, nil, nil, self.children.center)
             end

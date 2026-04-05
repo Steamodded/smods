@@ -27,7 +27,7 @@ function SMODS.poll_object(args)
     for _, key in ipairs(pool) do
         local weight_table = {}
         
-        local w, m_w = SMODS.get_weight_of_object(G[SMODS.game_table_from_type[key.type] or 'P_CENTERS'][key.key or key], key.weight)
+        local w, m_w = SMODS.get_weight_of_object(G[SMODS.game_table_from_type[key.type] or 'P_CENTERS'][key.key or key], key.weight, args)
         weight_table = {key = key.key or key, weight = m_w}
         
         total_weight = total_weight + w
@@ -97,10 +97,10 @@ end
 
 -- Returns the `weight` and `modified_weight` or a given object
 ---@param args table|{key: string, no_mod: boolean?} 
-function SMODS.get_weight_of_object(obj, opt_weight)
+function SMODS.get_weight_of_object(obj, opt_weight, args)
     if not obj then return 10, 10 end
     local w = opt_weight or obj.weight or 10
-    local m = not opt_weight and obj.get_weight and obj:get_weight(w) or w
+    local m = not opt_weight and obj.get_weight and obj:get_weight(w, args) or w
 
     return w, m
 end
@@ -286,7 +286,7 @@ function SMODS.create_poll_pool(labels, args)
         local temp_pool = {}
         local join_func = (args.attributes and not args.union) and SMODS.intersect_lists or join_lists
         for i=1, #(args.rarities or {true}) do
-            local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or SMODS.Attributes[label] and SMODS.get_attribute_pool(label) or get_current_pool(label, args.rarities and args.rarities[i])
+            local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or SMODS.Attributes[label] and SMODS.get_attribute_pool(label) or get_current_pool(label, args.rarities and args.rarities[i], nil, args.append)
             if SMODS.Attributes[label] then
                 _p = SMODS.cull_pool(_p, args)
             end
@@ -458,7 +458,7 @@ function SMODS.cull_pool(pool, args)
             if v.no_pool_flag and G.GAME.pool_flags[v.no_pool_flag] then add = nil end
             if v.yes_pool_flag and not G.GAME.pool_flags[v.yes_pool_flag] then add = nil end
             
-            add = in_pool and (add or pool_opts.override_base_checks)
+            add = in_pool and (add or ((not _rarity or _rarity == v.rarity) and pool_opts.override_base_checks))
             
             if add and not G.GAME.banned_keys[v.key] then 
                 final_pool[#final_pool + 1] = v.key

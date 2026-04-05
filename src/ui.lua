@@ -9,13 +9,16 @@ function SMODS.push_to_stencil_stack(stencil_fn)
     local old_level = #SMODS.stencil_stack
 	local new_level = old_level + 1
 
-    love.graphics.setStencilTest("equal", old_level)
+    if old_level == 0 then
+        SMODS.reset_stencil_stack()
+    end
+
+    SMODS.stencil_stack[new_level] = stencil_fn
+
 	love.graphics.stencil(function()
 		stencil_fn(false)
 	end, "increment", 1, true)
 	love.graphics.setStencilTest("equal", new_level)
-
-	SMODS.stencil_stack[new_level] = stencil_fn
 end
 function SMODS.pop_from_stencil_stack()
     local old_level = #SMODS.stencil_stack
@@ -26,13 +29,16 @@ function SMODS.pop_from_stencil_stack()
 		return
 	end
 
-    love.graphics.setStencilTest("equal", old_level)
-	love.graphics.stencil(function()
-		stencil_fn(true)
-	end, "decrement", 1, true)
-	love.graphics.setStencilTest("equal", new_level)
+    SMODS.stencil_stack[old_level] = nil
 
-	SMODS.stencil_stack[old_level] = nil
+    if new_level == 0 then
+        SMODS.reset_stencil_stack()
+    else
+        love.graphics.stencil(function()
+            stencil_fn(true)
+        end, "decrement", 1, true)
+        love.graphics.setStencilTest("equal", new_level)
+    end
 end
 function SMODS.reset_stencil_stack()
     EMPTY(SMODS.stencil_stack)

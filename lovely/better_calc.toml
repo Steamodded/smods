@@ -121,7 +121,7 @@ if context.cardarea == G.play and context.main_scoring then
         ret.playing_card.score = score
     end
     local x_score = card:get_bonus_x_score()
-    if x_score ~= 1 then
+    if x_score > 0 then
         ret.playing_card.x_score = x_score
     end
     -- TARGET: main scoring on played cards
@@ -130,7 +130,7 @@ if context.cardarea == G.play and context.main_scoring then
         ret.playing_card.blind_size = blind_size
     end
     local x_blind_size = card:get_bonus_x_blind_size()
-    if x_blind_size ~= 1 then
+    if x_blind_size > 0 then
         ret.playing_card.x_blind_size = x_blind_size
     end
     -- TARGET: main scoring on played cards
@@ -192,7 +192,7 @@ if context.cardarea == G.hand and context.main_scoring then
         ret.playing_card.h_score = h_score
     end
     local h_x_score = card:get_bonus_h_x_score()
-    if h_x_score ~= 1 then
+    if h_x_score > 0 then
         ret.playing_card.h_x_score = h_x_score
     end
 	local h_blind_size = card:get_bonus_h_blind_size()
@@ -200,7 +200,7 @@ if context.cardarea == G.hand and context.main_scoring then
         ret.playing_card.blind_size = h_blind_size
     end
     local h_x_blind_size = card:get_bonus_h_x_blind_size()
-    if h_x_blind_size ~= 1 then
+    if h_x_blind_size > 0 then
         ret.playing_card.x_blind_size = h_x_blind_size
     end
 

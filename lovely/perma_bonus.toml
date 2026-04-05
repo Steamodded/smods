@@ -99,18 +99,17 @@ bonus_h_x_mult = self.ability.perma_h_x_mult ~= 0 and (self.ability.perma_h_x_mu
 bonus_p_dollars = self.ability.perma_p_dollars ~= 0 and self.ability.perma_p_dollars or nil,
 bonus_h_dollars = self.ability.perma_h_dollars ~= 0 and self.ability.perma_h_dollars or nil,
 total_h_dollars = total_h_dollars ~= 0 and total_h_dollars or nil,
-perma_score = self.ability.perma_score ~= 0 and (self.ability.perma_score) or nil,
-perma_h_score = self.ability.perma_h_score ~= 0 and (self.ability.perma_h_score) or nil,
-perma_x_score = self.ability.perma_x_score ~= 1 and (self.ability.perma_x_score) or nil,
-perma_h_x_score = self.ability.perma_h_x_score ~= 1 and (self.ability.perma_h_x_score) or nil,
-perma_blind_size = self.ability.perma_blind_size ~= 0 and (self.ability.perma_blind_size) or nil,
-perma_h_blind_size = self.ability.perma_h_blind_size ~= 0 and (self.ability.perma_h_blind_size) or nil,
-perma_x_blind_size = self.ability.perma_x_blind_size ~= 1 and (self.ability.perma_x_blind_size) or nil,
-perma_h_x_blind_size = self.ability.perma_h_x_blind_size ~= 1 and (self.ability.perma_h_x_blind_size) or nil,
+bonus_score = self.ability.perma_score ~= 0 and (self.ability.perma_score) or nil,
+bonus_h_score = self.ability.perma_h_score ~= 0 and (self.ability.perma_h_score) or nil,
+bonus_x_score = self.ability.perma_x_score ~= 0 and (self.ability.perma_x_score + 1) or nil,
+bonus_h_x_score = self.ability.perma_h_x_score ~= 0 and (self.ability.perma_h_x_score + 1) or nil,
+bonus_blind_size = self.ability.perma_blind_size ~= 0 and (self.ability.perma_blind_size) or nil,
+bonus_h_blind_size = self.ability.perma_h_blind_size ~= 0 and (self.ability.perma_h_blind_size) or nil,
+bonus_x_blind_size = self.ability.perma_x_blind_size ~= 0 and (self.ability.perma_x_blind_size + 1) or nil,
+bonus_h_x_blind_size = self.ability.perma_h_x_blind_size ~= 0 and (self.ability.perma_h_x_blind_size + 1) or nil,
 bonus_chips = bonus_chips ~= 0 and bonus_chips or nil,
 bonus_repetitions = self.ability.perma_repetitions ~= 0 and self.ability.perma_repetitions or nil,'''
 match_indent = true
-overwrite = false
 
 # set_ability: set defaults for temporary bonuses
 # Also add conformance with SMODS documentation.
@@ -150,15 +149,14 @@ card_limit = self.ability and self.ability.card_limit or 0,
 extra_slots_used = self.ability and self.ability.extra_slots_used or 0,
 perma_score = self.ability and self.ability.perma_score or 0,
 perma_h_score = self.ability and self.ability.perma_h_score or 0,
-perma_x_score = self.ability and self.ability.perma_x_score or 1,
-perma_h_x_score = self.ability and self.ability.perma_h_x_score or 1,
+perma_x_score = self.ability and self.ability.perma_x_score or 0,
+perma_h_x_score = self.ability and self.ability.perma_h_x_score or 0,
 perma_blind_size = self.ability and self.ability.perma_blind_size or 0,
 perma_h_blind_size = self.ability and self.ability.perma_h_blind_size or 0,
-perma_x_blind_size = self.ability and self.ability.perma_x_blind_size or 1,
-perma_h_x_blind_size = self.ability and self.ability.perma_h_x_blind_size or 1,
+perma_x_blind_size = self.ability and self.ability.perma_x_blind_size or 0,
+perma_h_x_blind_size = self.ability and self.ability.perma_h_x_blind_size or 0,
 '''
 match_indent = true
-overwrite = false
 
 # Card:get_chip_bonus
 [[patches]]
@@ -282,8 +280,8 @@ function Card:get_bonus_score()
 end
 
 function Card:get_bonus_x_score()
-    if self.debuff then return 1 end
-    local ret = (self.ability.perma_x_score or 1)
+    if self.debuff then return 0 end
+    local ret = SMODS.multiplicative_stacking(1, self.ability.perma_x_score or 0)
     -- TARGET: get_bonus_x_score
     return ret
 end
@@ -296,8 +294,8 @@ function Card:get_bonus_h_score()
 end
 
 function Card:get_bonus_h_x_score()
-    if self.debuff then return 1 end
-    local ret = (self.ability.perma_h_x_score or 1)
+    if self.debuff then return 0 end
+    local ret = SMODS.multiplicative_stacking(1, self.ability.perma_h_x_score or 0)
     -- TARGET: get_bonus_h_x_score
     return ret
 end
@@ -310,7 +308,7 @@ end
 
 function Card:get_bonus_x_blind_size()
     if self.debuff then return 1 end
-    local ret = (self.ability.perma_x_blind_size or 1)
+    local ret = SMODS.multiplicative_stacking(1, self.ability.perma_x_blind_size or 0)
     -- TARGET: get_bonus_x_blind_size
     return ret
 end
@@ -324,7 +322,7 @@ end
 
 function Card:get_bonus_h_x_blind_size()
     if self.debuff then return 1 end
-    local ret = (self.ability.perma_h_x_blind_size or 1)
+    local ret = SMODS.multiplicative_stacking(1, self.ability.perma_h_x_blind_size or 0)
     -- TARGET: get_bonus_h_x_blind_size
     return ret
 end
