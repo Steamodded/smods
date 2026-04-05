@@ -433,13 +433,11 @@ payload = '''
     end'''
 
 [[patches]]
-[patches.pattern]
+[patches.regex]
 target = 'functions/common_events.lua'
-pattern = "local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, front, center,"
-match_indent = true
+pattern = "local front ="
 position = 'at'
-payload = '''
-local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, SMODS.set_create_card_front or front, center,'''
+payload = "local front = SMODS.set_create_card_front or"
 
 [[patches]]
 [patches.pattern]
