@@ -3416,7 +3416,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.ScreenShader {
         key = "CRT",
         shader = "CRT",
+        should_apply = function(self)
+            if love.system.getOS() == "Android" or "iOS" and #SMODS.ScreenShader.obj_buffer > 1 then
+                return false
+            end
+            return true
+        end,
         send_vars = function(self)
+            if love.system.getOS() == "Android" or "iOS" and #SMODS.ScreenShader.obj_buffer > 1 then
+                return {}
+            end
             local crt = G.SETTINGS.GRAPHICS.crt * 0.3
             return {
                 ['distortion_fac'] = {1.0 + 0.07*crt/100, 1.0 + 0.1*crt/100},
