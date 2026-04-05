@@ -1746,7 +1746,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         create_card = function(self, card, i)
             local _edition = poll_edition('standard_edition'..G.GAME.round_resets.ante, 2, true)
             local _seal = SMODS.poll_seal({mod = 10})
-            return {set = (pseudorandom(pseudoseed('stdset'..G.GAME.round_resets.ante)) > 0.6) and "Enhanced" or "Base", edition = _edition, seal = _seal, area = G.pack_cards, skip_materialize = true, soulable = true, key_append = "sta"}
+            return {set = (pseudorandom(pseudoseed('stdset'..G.GAME.round_resets.ante)) > 0.6) and "Enhanced" or "Base", edition = _edition, seal = _seal, area = G.pack_cards, skip_materialize = true, soulable = true, key_append = "sta", front = false}
         end,
         loc_vars = pack_loc_vars,
     })
