@@ -372,6 +372,14 @@ function SMODS.find_card(key, count_debuffed)
 end
 
 function SMODS.create_card(t)
+    -- move setting enhancement into card creation
+    if t.enhancement then
+        if t.key then
+            sendWarnMessage(("SMODS.create_card called with incompatible arguments key = '%s', enhancement = '%s'! Ignoring key, using enhancement."):format(t.key, t.enhancement), 'Util')
+        end
+        t.key = t.enhancement
+        t.set = 'Enhanced'
+    end
     -- Support SMODS.Attributes
     if not t.key and t.attributes then
         t.key = SMODS.poll_object(t)
@@ -382,14 +390,19 @@ function SMODS.create_card(t)
     if not t.area and not t.key and t.set and (SMODS.ConsumableTypes[t.set] or t.set == 'Consumeables') then
         t.area = G.consumeables
     end
-    if not t.key and t.set == 'Playing Card' or t.set == 'Base' or t.set == 'Enhanced' or (not t.set and (t.front or t.rank or t.suit)) then
-        t.set = t.set == 'Playing Card' and (t.enhancement and 'Base' or (pseudorandom('front' .. (t.key_append or '') .. G.GAME.round_resets.ante) > (t.enhanced_poll or 0.6) and 'Enhanced' or 'Base')) or t.set or 'Base'
+    if t.set == 'Playing Card' or t.set == 'Base' or t.set == 'Enhanced' or (not t.set and (t.front or t.rank or t.suit)) then
+        t.set = (not t.set or t.set == 'Playing Card') and (t.key and 'Enhanced' or (pseudorandom('sccset' .. (t.key_append or '') .. G.GAME.round_resets.ante) > (t.enhanced_poll or 0.6) and 'Enhanced' or 'Base')) or t.set or 'Base'
         t.area = t.area or G.hand
-        if not t.front and (t.suit or t.rank) then
-            t.suit = t.suit and (SMODS.Suits["".. t.suit] or {}).card_key or t.suit or
-            pseudorandom_element(SMODS.Suits, pseudoseed('front' .. (t.key_append or '') .. G.GAME.round_resets.ante)).card_key
-            t.rank = t.rank and (SMODS.Ranks["".. t.rank] or {}).card_key or t.rank or
-            pseudorandom_element(SMODS.Ranks, pseudoseed('front' .. (t.key_append or '') .. G.GAME.round_resets.ante)).card_key
+        if t.front == nil then
+            local r_suit, r_rank
+            if not t.suit or not t.rank then
+                -- link rng to prevent desync
+                r_suit = pseudorandom_element(SMODS.Suits, pseudoseed('sccsuit' .. (t.key_append or '') .. G.GAME.round_resets.ante)).card_key
+                r_rank = pseudorandom_element(SMODS.Ranks, pseudoseed('sccrank' .. (t.key_append or '') .. G.GAME.round_resets.ante)).card_key
+            end
+            t.suit = t.suit and (SMODS.Suits["".. t.suit] or {}).card_key or t.suit or r_suit
+            t.rank = t.rank and (SMODS.Ranks["".. t.rank] or {}).card_key or t.rank or r_rank
+            
         end
         t.front = t.front or (t.suit and t.rank and (t.suit .. "_" .. t.rank)) or nil
     end
@@ -408,7 +421,6 @@ function SMODS.create_card(t)
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
     if t.edition then _card:set_edition(t.edition) end
-    if t.enhancement then _card:set_ability(G.P_CENTERS[t.enhancement]) end
     if t.seal then _card:set_seal(t.seal); _card.ability.delay_seal = false end
     if t.stickers then
         for i, v in ipairs(t.stickers) do
@@ -436,7 +448,7 @@ function SMODS.debuff_card(card, debuff, source)
     debuff = debuff or nil
     source = source and tostring(source) or nil
     if debuff == 'reset' then
-        sendWarnMessage("SMODS.debuff_card(card, 'reset', source) is deprecated")
+        sendWarnMessage("SMODS.debuff_card(card, 'reset', source) is deprecated", "Util")
         card.ability.debuff_sources = {};
         return
     end
@@ -1569,7 +1581,7 @@ SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
     repeat
         eval.repetitions = eval.repetitions or 0
         if eval.repetitions <= 0 then
-            sendWarnMessage('Found effect table with no assigned repetitions during repetition check')
+            sendWarnMessage('Found effect table with no assigned repetitions during repetition check', 'Util')
         end
         local effect = {}
         for k,v in pairs(eval) do
