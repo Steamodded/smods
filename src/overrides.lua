@@ -1861,7 +1861,7 @@ function Card:set_sprites(_center, _front)
 
         if _center.soul_pos then
 			if self.children.floating_sprite then self.children.floating_sprite:remove() end
-			local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
+            local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_soul_atlas' or 'lc_soul_atlas'] or _center.soul_atlas or _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
             self.children.floating_sprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.config.center.soul_pos)
             self.children.floating_sprite.role.draw_major = self
             self.children.floating_sprite.states.hover.can = false
