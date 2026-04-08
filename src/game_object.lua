@@ -74,7 +74,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         local atlas_cfg = obj.prefix_config.atlas
         if atlas_cfg ~= false then
             if type(atlas_cfg) ~= 'table' then atlas_cfg = {} end
-            for _, v in ipairs({ 'atlas', 'hc_atlas', 'lc_atlas', 'hc_ui_atlas', 'lc_ui_atlas', 'sticker_atlas' }) do
+            for _, v in ipairs({ 'atlas', 'hc_atlas', 'lc_atlas', 'hc_ui_atlas', 'lc_ui_atlas', 'soul_atlas', 'hc_soul_atlas', 'lc_soul_atlas', 'sticker_atlas' }) do
                 if rawget(obj, v) then SMODS.modify_key(obj, mod and mod.prefix, atlas_cfg, v) end
             end
         end
