@@ -2559,7 +2559,8 @@ function SMODS.signed(val)
 end
 
 function SMODS.signed_dollars(val)
-    return val and (val > 0 and '$'..val or '-$'..-val) or '0'
+    local sign = (val or 0) < 0 and '-' or ''
+    return val and sign..'$'..math.abs(val) or '0'
 end
 
 function SMODS.multiplicative_stacking(base, perma)
@@ -4023,7 +4024,7 @@ SMODS.mod_blind_size = function(blind_size_mod)
     local blind_size_cal = blind_size_mod.set or G.GAME.blind.chips
     local old = G.GAME.blind.chips
     G.BLIND_SIZE_DISPLAY_QUEUE = G.BLIND_SIZE_DISPLAY_QUEUE or {}
-    -- TARGET: higher priority score operation
+    -- TARGET: higher priority blind_size operation
     if blind_size_mod.mult then
         local absoluted = math.abs(blind_size_mod.mult)
         blind_size_cal = blind_size_cal * blind_size_mod.mult

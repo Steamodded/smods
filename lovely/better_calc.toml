@@ -123,7 +123,7 @@ if context.cardarea == G.play and context.main_scoring then
     if x_score > 0 then
         ret.playing_card.x_score = x_score
     end
-    -- TARGET: main scoring on played cards
+
 	local blind_size = card:get_bonus_blind_size()
     if blind_size ~= 0 then
         ret.playing_card.blind_size = blind_size
@@ -132,6 +132,7 @@ if context.cardarea == G.play and context.main_scoring then
     if x_blind_size > 0 then
         ret.playing_card.x_blind_size = x_blind_size
     end
+    
     -- TARGET: main scoring on played cards
 end
 if context.end_of_round and context.cardarea == G.hand and context.playing_card_end_of_round then
