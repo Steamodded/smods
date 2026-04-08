@@ -106,6 +106,17 @@ function UIElement:draw_children(...)
 	if stenciled then SMODS.pop_from_stencil_stack() end
 end
 
+local old_collides_with_point = Node.collides_with_point
+function Node:collides_with_point(point)
+    if self.collide_check_timer == G.TIMERS.REAL and self.collide_check_point == point then
+		return self.collide_check_result or false
+	end
+    self.collide_check_timer = G.TIMERS.REAL
+    self.collide_check_point = point
+    local r = old_collides_with_point(self, point)
+    self.collide_check_result = r
+    return r
+end
 
 -- collision check
 function Node:inside_overflow_boundaries(point)

@@ -213,7 +213,7 @@ target = 'engine/ui.lua'
 pattern = """if self.config.colour[4] > 0.01 then"""
 position = "before"
 payload = """
-local function _draw(self, shader, send)
+self.ARGS.cached_draw = self.ARGS.cached_draw or function(self, shader, send, button_active, parallax_dist, button_being_pressed)
 if self.UIT ~= G.UIT.T then
     self:set_element_shader(shader, send, false)
 end
@@ -232,10 +232,13 @@ if self.UIT ~= G.UIT.T then
 end
 end
 
-local element_shader = self.config.shader or nil
-local element_shaders = SMODS.resolve_ui_shaders(self.states.visible and self.UIT ~= G.UIT.T and element_shader or nil, nil)
+local element_shaders = SMODS.resolve_ui_shaders(self, self.states.visible and self.UIT ~= G.UIT.T and self.config.shader, nil)
 for _, v in ipairs(element_shaders) do
-    _draw(self, v.shader, v.send)
+    if v then
+        self.ARGS.cached_draw(self, v.shader, v.send, button_active, parallax_dist, button_being_pressed)
+    else
+        self.ARGS.cached_draw(self, nil, nil, button_active, parallax_dist, button_being_pressed)
+    end
 end
 """
 match_indent = true
@@ -256,10 +259,9 @@ love.graphics.draw(
 )"""
 position = "at"
 payload = """
-local text_shader = self.config.shader or nil
-local text_shaders = SMODS.resolve_ui_shaders(self.states.visible and text_shader or nil, nil)
+local text_shaders = SMODS.resolve_ui_shaders(self, self.states.visible and self.config.shader, nil)
 for _, v in ipairs(text_shaders) do
-    self:set_text_shader(v.shader, v.send, true)
+    if v then self:set_text_shader(v.shader, v.send, true) end
     love.graphics.draw(
         self.config.text_drawable,
         (self.config.lang.font.TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
@@ -268,7 +270,7 @@ for _, v in ipairs(text_shaders) do
         (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
         (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
     )
-    self:set_text_shader()
+    if v then self:set_text_shader() end
 end
 """
 match_indent = true
@@ -289,10 +291,9 @@ love.graphics.draw(
 )"""
 position = "at"
 payload = """
-local text_shader = self.config.shader or nil
-local text_shaders = SMODS.resolve_ui_shaders(self.states.visible and text_shader or nil, nil)
+local text_shaders = SMODS.resolve_ui_shaders(self, self.states.visible and self.config.shader, nil)
 for _, v in ipairs(text_shaders) do
-    self:set_text_shader(v.shader, v.send, false)
+    if v then self:set_text_shader(v.shader, v.send, false) end
     love.graphics.draw(
         self.config.text_drawable,
         self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
@@ -301,7 +302,7 @@ for _, v in ipairs(text_shaders) do
         (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
         (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
     )
-    self:set_text_shader()
+    if v then self:set_text_shader() end
 end
 """
 match_indent = true
