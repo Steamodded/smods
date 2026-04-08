@@ -92,8 +92,17 @@ function CardArea:change_size(delta)
 '''
 payload = '''
     -- SMODS BYPASS ORIGINAL FUNCTION
-    if true then
+    do
         self.config.card_limits.mod = (self.config.card_limits.mod or 0) + delta
+        self:handle_card_limit()
+        if self == G.hand then
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    check_for_unlock({type = 'min_hand_size'})
+                    return true
+                end
+            }))
+        end
         return
     end
 '''
@@ -338,7 +347,7 @@ payload = '''
 target = "functions/common_events.lua"
 pattern = "if args.type == 'min_hand_size' and G.hand and G.hand.config.card_limit <= card.unlock_condition.extra then"
 position = "at"
-payload = "if args.type == 'min_hand_size' and G.hand and G.hand.config.true_card_limit <= card.unlock_condition.extra then"
+payload = "if args.type == 'min_hand_size' and G.hand and G.hand.config.card_limits.total_slots <= card.unlock_condition.extra then"
 match_indent = true
 
 # Challenge UI tooltip support
