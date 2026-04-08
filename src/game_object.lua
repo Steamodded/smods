@@ -1206,6 +1206,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     end
                 end
             end
+            if self.soul_atlas and not self.soul_pos then
+                self.soul_pos = { x = 0, y = 0 }
+            end
         end,
         delete = function(self)
             G.P_CENTERS[self.key] = nil
