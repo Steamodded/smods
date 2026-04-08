@@ -338,7 +338,7 @@ payload = '''
 target = "functions/common_events.lua"
 pattern = "if args.type == 'min_hand_size' and G.hand and G.hand.config.card_limit <= card.unlock_condition.extra then"
 position = "at"
-payload = "if args.type == 'min_hand_size' and G.hand and G.hand.config.true_card_limit <= card.unlock_condition.extra then"
+payload = "if args.type == 'min_hand_size' and G.hand and G.hand.config.card_limits.total_slots <= card.unlock_condition.extra then"
 match_indent = true
 
 # Challenge UI tooltip support
