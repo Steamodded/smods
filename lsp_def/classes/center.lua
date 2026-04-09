@@ -9,7 +9,7 @@
 ---@field soul_pos? table|{x: integer, y: integer, draw?: fun(card: Card|table, scale_mod?: number, rotate_mod?: number)} Position of the "soul" sprite. Separate front layer sprite that hovers over the card. 
 ---@field unlocked? boolean Sets the unlock state of the center. 
 ---@field discovered? boolean Sets the discovery state of the center. 
----@field no_collection? boolean Sets whether the card shows up in the collections menu. 
+---@field no_collection? boolean|fun():boolean Sets whether the card shows up in the collections menu. 
 ---@field loc_txt? table|{name: string|string[], text: string[]|string[][]} Contains strings used for displaying text related to this object. 
 ---@field pools? string[] Array of keys to ObjectTypes this center will be added to.
 ---@field cost? number Sell cost of this center. 
