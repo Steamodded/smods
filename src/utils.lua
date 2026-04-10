@@ -3773,7 +3773,7 @@ end
 
 -- Used for SMODS.ScreenShader, just to save lines re-creating canvases when relevant
 function SMODS.create_canvas()
-    local w, h = love.graphics.getPixelWidth(), love.graphics.getPixelHeight()
+    local w, h = G.CANVAS:getDimensions()
     local canvas = love.graphics.newCanvas(w, h, { type = '2d', readable = true })
     canvas:setFilter('linear', 'linear')
     return canvas

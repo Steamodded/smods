@@ -26,3 +26,12 @@ pattern = '''self.config = config'''
 position = "after"
 payload = '''self.shaders = config.shaders'''
 match_indent = true
+
+# delegate CRT shader to SMODS.ScreenShader
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = 'if (not G.recording_mode or G.video_control )and true then'
+position = 'at'
+payload = 'if false then'
+match_indent = true

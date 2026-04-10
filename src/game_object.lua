@@ -3427,7 +3427,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ['feather_fac'] = 0.01,
                 ['bloom_fac'] = G.SETTINGS.GRAPHICS.bloom - 1,
                 ['time'] = 400 + G.TIMERS.REAL,
-                ['noise_fac'] = 0.001*crt/100,
+                -- ['noise_fac'] = 0.001*crt/100, -- removed for mobile compat
                 ['crt_intensity'] = 0.16*crt/100,
                 ['glitch_intensity'] = 0,
                 ['scanlines'] = G.CANVAS:getPixelHeight()*0.75/G.CANV_SCALE,
@@ -3437,6 +3437,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             }
         end,
         order = 0, -- not necessary, but explicitly set in this example for clarity
+        should_apply = function(self) return not G.recording_mode or G.video_control end,
     }
 
     -------------------------------------------------------------------------------------------------
