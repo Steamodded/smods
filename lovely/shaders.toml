@@ -29,9 +29,8 @@ match_indent = true
 
 # delegate CRT shader to SMODS.ScreenShader
 [[patches]]
-[patches.pattern]
+[patches.regex]
 target = "game.lua"
-pattern = 'if (not G.recording_mode or G.video_control )and true then'
+pattern = 'G.SETTINGS.GRAPHICS.crt =(.*\n)*\s*G.SETTINGS.GRAPHICS.crt =.*'
 position = 'at'
-payload = 'if false then'
-match_indent = true
+payload = ''

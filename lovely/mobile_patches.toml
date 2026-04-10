@@ -78,7 +78,6 @@ payload = """
 match_indent = true
 times = 1
 
-# Remove noise factor from CRT shader
 
 [[patches]]
 [patches.pattern]
@@ -88,6 +87,8 @@ position = "at"
 payload = "mediump vec4 effect( mediump vec4 colour, Image texture, mediump vec2 texture_coords, mediump vec2 screen_coords )"
 match_indent = true
 times = 1
+
+# Remove noise factor from CRT shader
 
 [[patches]]
 [patches.pattern]
