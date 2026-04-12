@@ -3298,12 +3298,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 localize { type = 'other', key = 'card_chips', nodes = desc_nodes, vars = { specific_vars.nominal_chips } }
             end
             SMODS.Enhancement.super.generate_ui(self, info_queue, card, desc_nodes, specific_vars, full_UI_table)
-            if specific_vars and specific_vars.bonus_chips then
+            --[[if specific_vars and specific_vars.bonus_chips then
                 local remaining_bonus_chips = specific_vars.bonus_chips - (self.config.bonus or 0)
                 if remaining_bonus_chips ~= 0 then
                     localize { type = 'other', key = 'card_extra_chips', nodes = desc_nodes, vars = { SMODS.signed(remaining_bonus_chips) } }
                 end
-            end
+            end]]
             SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
         end,
         -- other methods:
@@ -3988,7 +3988,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     }
 
     -------------------------------------------------------------------------------------------------
-    ----- API CODE GameObject.Perma_Bonus
+    ----- API CODE GameObject.PermaBonus
     -------------------------------------------------------------------------------------------------
 
     assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/perma_bonuses.lua'), ('=[SMODS _ "src/game_objects/perma_bonuses.lua"]')))()

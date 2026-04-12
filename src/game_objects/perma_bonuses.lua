@@ -11,7 +11,9 @@ SMODS.PermaBonus = SMODS.GameObject:extend{
     signed_value = false,
     signed_dollars = false,
     should_apply = function(self, card, calculation)
-        if calculation == self.apply_to then return true end
+        for _,v in ipairs(self.apply_to) do
+            if calculation == v then return true end
+        end
     end,
     get_ui_value = function(self, card)
         return card.ability[self.key] and card.ability[self.key] ~= 0 and (card.ability[self.key] + (self.ui_mod or 0)) or nil
@@ -27,7 +29,9 @@ SMODS.PermaBonus = SMODS.GameObject:extend{
     end,
     inject = function(self)
         self.loc_key = self.loc_key or self.key
-        self.vars_key = self.vars_key or self.key
+        self.vars_keys = self.vars_keys or self.key
+        if type(self.vars_keys) ~= 'table' then self.vars_keys = {default = self.vars_keys} end
+        if type(self.apply_to) ~= 'table' then self.apply_to = {self.apply_to} end
     end,
     process_loc_text = function(self)
         SMODS.process_loc_text(G.localization.descriptions.Other, self.loc_key, self.loc_txt)
@@ -58,14 +62,20 @@ function SMODS.get_perma_bonus_ui_vars(card)
     local ret = {}
     for _,v in pairs(SMODS.PermaBonuses) do
         local bonus = v:get_ui_value(card)
-        ret[v.vars_key] = ((ret[v.vars_key] or 0) + (bonus or 0) ~= 0 and (ret[v.vars_key] or 0) + (bonus or 0)) or nil
+        if type(bonus) == 'table' then
+            for vars_key,bonus_val in pairs(bonus) do
+                ret[vars_key] = ((ret[vars_key] or 0) + (bonus_val or 0) ~= 0 and (ret[vars_key] or 0) + (bonus_val or 0)) or nil
+            end
+        else
+            ret[v.vars_key] = ((ret[v.vars_key] or 0) + (bonus or 0) ~= 0 and (ret[v.vars_key] or 0) + (bonus or 0)) or nil
+        end
     end
     return ret
 end
 
 function SMODS.upgrade_perma_bonus(args)
     if type(args.keys) == 'string' then args.keys = {args.keys} end
-    if type(args.keys) ~= 'table' or type(args.card) ~= 'table' then return end
+    if type(args.keys) ~= 'table' then return end
     args.amount = args.amount or 1
     for _,key in ipairs(args.keys) do
         if SMODS.PermaBonuses[key] then

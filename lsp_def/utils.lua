@@ -847,5 +847,5 @@ function SMODS.mod_blind_size(mod_blind_size) end
 
 ---Upgrades the given perma bonuses on the given card by `amount`
 ---Alternatively, provide a custom `func` to override the default upgrade behaviour
----@param args table|{keys: string|table, card: Card|table, amount?: number, from?: Card|table, func?: fun(card: Card|table, amount: number, from: Card|table, perma_bonus: SMODS.Perma_Bonus)}
+---@param args table|{keys: string|table, card: Card|table, amount?: number, from?: Card|table, func?: fun(card: Card|table, amount: number, from: Card|table, perma_bonus: SMODS.PermaBonus)}
 function SMODS.upgrade_perma_bonus(args) end
