@@ -29,8 +29,7 @@ SMODS.PermaBonus = SMODS.GameObject:extend{
     end,
     inject = function(self)
         self.loc_key = self.loc_key or self.key
-        self.vars_keys = self.vars_keys or self.key
-        if type(self.vars_keys) ~= 'table' then self.vars_keys = {default = self.vars_keys} end
+        self.vars_key = self.vars_key or self.key
         if type(self.apply_to) ~= 'table' then self.apply_to = {self.apply_to} end
     end,
     process_loc_text = function(self)
