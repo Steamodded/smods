@@ -36,11 +36,13 @@ SMODS.Perma_Bonus = SMODS.GameObject:extend{
 
 function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
     if not specific_vars then return end
+    local used_keys = {}
     for _,_key in pairs(SMODS.Perma_Bonus.obj_buffer) do
         local PB = SMODS.Perma_Bonuses[_key]
         --perma_bonus text is handled by vanilla
-        if _key ~= 'perma_bonus' and specific_vars[PB.vars_key] then
+        if _key ~= 'perma_bonus' and specific_vars[PB.vars_key] and not used_keys[PB.vars_key] then
             PB:localize(specific_vars[PB.vars_key], desc_nodes)
+            used_keys[PB.vars_key] = true
         end
     end
 end
