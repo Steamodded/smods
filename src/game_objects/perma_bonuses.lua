@@ -1,7 +1,7 @@
-SMODS.Perma_Bonuses = {}
-SMODS.Perma_Bonus = SMODS.GameObject:extend{
-    set = "Perma_Bonus",
-    obj_table = SMODS.Perma_Bonuses,
+SMODS.PermaBonuses = {}
+SMODS.PermaBonus = SMODS.GameObject:extend{
+    set = "PermaBonus",
+    obj_table = SMODS.PermaBonuses,
     obj_buffer = {},
     required_params = {
         'key',
@@ -37,8 +37,8 @@ SMODS.Perma_Bonus = SMODS.GameObject:extend{
 function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
     if not specific_vars then return end
     local used_keys = {}
-    for _,_key in pairs(SMODS.Perma_Bonus.obj_buffer) do
-        local PB = SMODS.Perma_Bonuses[_key]
+    for _,_key in pairs(SMODS.PermaBonus.obj_buffer) do
+        local PB = SMODS.PermaBonuses[_key]
         --perma_bonus text is handled by vanilla
         if _key ~= 'perma_bonus' and specific_vars[PB.vars_key] and not used_keys[PB.vars_key] then
             PB:localize(specific_vars[PB.vars_key], desc_nodes)
@@ -48,7 +48,7 @@ function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
 end
 
 function SMODS.set_perma_bonus(card, new_ability)
-    for _,_key in ipairs(SMODS.Perma_Bonus.obj_buffer) do
+    for _,_key in ipairs(SMODS.PermaBonus.obj_buffer) do
         new_ability[_key] = card.ability and card.ability[_key] or 0
     end
 end
@@ -56,7 +56,7 @@ end
 function SMODS.get_perma_bonus_ui_vars(card)
     if not card.ability then return {} end
     local ret = {}
-    for _,v in pairs(SMODS.Perma_Bonuses) do
+    for _,v in pairs(SMODS.PermaBonuses) do
         local bonus = v:get_ui_value(card)
         ret[v.vars_key] = ((ret[v.vars_key] or 0) + (bonus or 0) ~= 0 and (ret[v.vars_key] or 0) + (bonus or 0)) or nil
     end
@@ -68,11 +68,11 @@ function SMODS.upgrade_perma_bonus(args)
     if type(args.keys) ~= 'table' or type(args.card) ~= 'table' then return end
     args.amount = args.amount or 1
     for _,key in ipairs(args.keys) do
-        if SMODS.Perma_Bonuses[key] then
+        if SMODS.PermaBonuses[key] then
             if args.func then
-                args.func(args.card, args.amount, args.from or {}, SMODS.Perma_Bonuses[key])
+                args.func(args.card, args.amount, args.from or {}, SMODS.PermaBonuses[key])
             else
-                SMODS.Perma_Bonuses[key]:upgrade(args.card, args.amount, args.from or {})
+                SMODS.PermaBonuses[key]:upgrade(args.card, args.amount, args.from or {})
             end
         end
     end
@@ -80,7 +80,7 @@ end
 
 function Card:get_perma_bonus(calculation)
     local ret = (not calculation and {}) or 0
-    for k,v in pairs(SMODS.Perma_Bonuses) do
+    for k,v in pairs(SMODS.PermaBonuses) do
         if not calculation then
             ret[k] = self.ability[k]
         elseif v:should_apply(self, calculation) then
@@ -90,7 +90,7 @@ function Card:get_perma_bonus(calculation)
     return ret
 end
 
-SMODS.Perma_Bonus({
+SMODS.PermaBonus({
     key = 'perma_bonus',
     apply_to = 'chips',
     vars_key = 'bonus_chips',
@@ -126,10 +126,10 @@ for _,pb in ipairs({
     {key = 'perma_x_blind_size', apply_to = 'x_blind_size', vars_key = 'bonus_x_blind_size', loc_key = 'card_extra_x_blind_size', ui_mod = 1},
     {key = 'perma_h_x_blind_size', apply_to = 'h_x_blind_size', vars_key = 'bonus_h_x_blind_size', loc_key = 'card_extra_h_x_blind_size', ui_mod = 1},
 }) do
-    SMODS.Perma_Bonus(pb)
+    SMODS.PermaBonus(pb)
 end
 
-SMODS.Perma_Bonus({
+SMODS.PermaBonus({
     key = 'perma_repetitions',
     apply_to = 'repetitions',
     vars_key = 'bonus_repetitions',
