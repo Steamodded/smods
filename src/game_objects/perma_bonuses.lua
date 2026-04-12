@@ -63,7 +63,7 @@ end
 
 function SMODS.upgrade_perma_bonus(args)
     if type(args.keys) == 'string' then args.keys = {args.keys} end
-    if type(args.keys) ~= 'table' then return end
+    if type(args.keys) ~= 'table' or type(args.card) ~= 'table' then return end
     args.amount = args.amount or 1
     for _,key in ipairs(args.keys) do
         if SMODS.Perma_Bonuses[key] then
