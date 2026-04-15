@@ -26,7 +26,7 @@
 ---@field loc_key? string The key of the object in G.localization.descriptions.Other, defaults to the object's key. 
 ---@field vars_key? string How the value of the bonus is stored in the specific_vars table for playing card ui, defaults to the object's key. 
 ---@field signed_value? boolean If this is `true`, the value in the ui box will be signed with `SMODS.signed`. 
----@field signed_dollars? boolean Same as signed_value except the value is signed using `SMODS.signed_dollars`, has priority over signed_value by deafult. 
+---@field signed_dollars? boolean Same as signed_value except the value is signed using `SMODS.signed_dollars`, has priority over signed_value by default. 
 ---@field localize? fun(self: SMODS.PermaBonus|table, value: number, desc_nodes: table) Defines what to show in the playing card description, not recommended to change unless you know what you're doing. 
 ---@overload fun(self: SMODS.PermaBonus): SMODS.PermaBonus
 SMODS.PermaBonus = setmetatable({}, {

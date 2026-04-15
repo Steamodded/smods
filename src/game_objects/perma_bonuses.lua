@@ -10,11 +10,6 @@ SMODS.PermaBonus = SMODS.GameObject:extend{
     prefix_config = { key = false },
     signed_value = false,
     signed_dollars = false,
-    should_apply = function(self, card, calculation)
-        for _,v in ipairs(self.apply_to) do
-            if calculation == v then return true end
-        end
-    end,
     get_ui_value = function(self, card)
         return card.ability[self.key] and card.ability[self.key] ~= 0 and (card.ability[self.key] + (self.ui_mod or 0)) or nil
     end,
@@ -34,7 +29,7 @@ SMODS.PermaBonus = SMODS.GameObject:extend{
     end,
     process_loc_text = function(self)
         SMODS.process_loc_text(G.localization.descriptions.Other, self.loc_key, self.loc_txt)
-    end,
+    end
 }
 
 function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
@@ -87,17 +82,54 @@ function SMODS.upgrade_perma_bonus(args)
     end
 end
 
-function Card:get_perma_bonus(calculation)
-    local ret = (not calculation and {}) or 0
-    for k,v in pairs(SMODS.PermaBonuses) do
-        if not calculation then
-            ret[k] = self.ability[k]
-        elseif v:should_apply(self, calculation) then
-            ret = ret + (self.ability[k] or 0)
+function SMODS.stack_perma_bonus(apply_to, bonus_table, scoring_table)
+    if bonus_table.multiplicative then
+        return SMODS.multiplicative_stacking(scoring_table[apply_to], bonus_table[apply_to])
+    end
+    local ret = (scoring_table[apply_to] or 0) + (bonus_table[apply_to] or 0)
+end
+
+function SMODS.calculate_perma_bonuses(card, context, _type)
+    local ret = {}
+    local bonuses = card:get_perma_bonus()
+    for k,_ in pairs(bonuses) do
+        local obj = SMODS.PermaBonuses[k] or {}
+        if obj.calculate and type(obj.calculate) == 'function' then
+            local bonus = obj:calculate(card, context)
+            if type(bonus) ~= 'table' then bonus = nil end
+            if bonus and not _type then --Check for a calculate return
+                for _,key in ipairs(obj.apply_to) do
+                    if bonus[key] and bonus[key] ~= 0 then
+                        if ret[key] then
+                            ret[key][key] = SMODS.stack_perma_bonus(key, bonus, ret[key])
+                            SMODS.merge_defaults(ret[key], bonus)
+                        else
+                            ret[key] = bonus
+                        end
+                    end
+                end
+            elseif bonus and bonus[_type] and bonus[_type] ~= 0 then
+                if ret[_type] then
+                    ret[_type][_type] = SMODS.stack_perma_bonus(_type, bonus, ret[_type])
+                    SMODS.merge_defaults(ret[_type], bonus)
+                else
+                    ret[_type] = bonus
+                end
+            end
         end
     end
     return ret
 end
+
+function Card:get_perma_bonus()
+    local ret = {}
+    for _,k in ipairs(SMODS.PermaBonus.obj_buffer) do
+        ret[k] = self.ability[k] and self.ability[k] ~= 0 and self.ability[k] or nil
+    end
+    return ret
+end
+
+SMODS.default_perma_bonus_keys = {perma_bonus = true}
 
 SMODS.PermaBonus({
     key = 'perma_bonus',
@@ -109,7 +141,7 @@ SMODS.PermaBonus({
         if not (card.ability and card.ability.bonus) then return end
         local bonus_chips = card.ability.bonus + (card.ability[self.key] or 0)
         return bonus_chips ~= 0 and bonus_chips or nil
-    end
+    end,
 })
 for _,pb in ipairs({
     {key = 'perma_x_chips', apply_to = 'x_chips', vars_key = 'bonus_x_chips', loc_key = 'card_extra_x_chips', ui_mod = 1},
@@ -135,6 +167,34 @@ for _,pb in ipairs({
     {key = 'perma_x_blind_size', apply_to = 'x_blind_size', vars_key = 'bonus_x_blind_size', loc_key = 'card_extra_x_blind_size', ui_mod = 1},
     {key = 'perma_h_x_blind_size', apply_to = 'h_x_blind_size', vars_key = 'bonus_h_x_blind_size', loc_key = 'card_extra_h_x_blind_size', ui_mod = 1},
 }) do
+    local multiplicative = not not string.find(pb.key, '_x_')
+    if not string.find(pb.key, '_h_') then
+        pb.calculate = function(self, card, context)
+            if context.main_scoring and context.cardarea == G.play then
+                return {
+                    [self.apply_to[1]] = card.ability[self.key],
+                    multiplicative = multiplicative
+                }
+            end
+        end
+    elseif pb.key == 'perma_h_dollars' then
+        pb.calculate = function(self, card, context)
+            if context.end_of_round and context.cardarea == G.hand and context.playing_card_end_of_round then
+                return {
+                    h_dollars = card.ability[self.key]
+                }
+            end
+        end
+    else
+        pb.calculate = function(self, card, context)
+            if context.main_scoring and context.cardarea == G.hand then
+                return {
+                    [self.apply_to[1]] = card.ability[self.key],
+                    multiplicative = multiplicative
+                }
+            end
+        end
+    end
     SMODS.PermaBonus(pb)
 end
 
@@ -145,5 +205,14 @@ SMODS.PermaBonus({
     loc_key = 'card_extra_repetitions',
     localize = function(self, value, desc_nodes)
         localize{type = 'other', key = self.loc_key, nodes = desc_nodes, vars = {value, localize(value > 1 and 'b_retrigger_plural' or 'b_retrigger_single')}}
+    end,
+    calculate = function(self, card, context)
+        if context.repetition_only and card.ability[self.key] > 0 then
+            return {
+                card = card,
+                repetitions = card.ability[self.key],
+                message = localize('k_again_ex')
+            }
+        end
     end
 })

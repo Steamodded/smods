@@ -1473,7 +1473,6 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'debuff' then
         return { [key] = amount, debuff_source = scored_card }
     end
-
 end
 
 -- Used to calculate a table of effects generated in evaluate_play

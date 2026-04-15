@@ -55,32 +55,32 @@ target = "functions/common_events.lua"
 pattern = '''
 if context.cardarea == G.play then
     local chips = card:get_chip_bonus()
-    if chips > 0 then
+    if chips > 0 then 
         ret.chips = chips
     end
 
     local mult = card:get_chip_mult()
-    if mult > 0 then
+    if mult > 0 then 
         ret.mult = mult
     end
 
     local x_mult = card:get_chip_x_mult(context)
-    if x_mult > 0 then
+    if x_mult > 0 then 
         ret.x_mult = x_mult
     end
 
     local p_dollars = card:get_p_dollars()
-    if p_dollars > 0 then
+    if p_dollars > 0 then 
         ret.p_dollars = p_dollars
     end
 
     local jokers = card:calculate_joker(context)
-    if jokers then
+    if jokers then 
         ret.jokers = jokers
     end
 
     local edition = card:get_edition(context)
-    if edition then
+    if edition then 
         ret.edition = edition
     end
 end
@@ -90,12 +90,12 @@ position = "at"
 payload = """
 if context.cardarea == G.play and context.main_scoring then
     ret.playing_card = {}
-    local chips = card:get_chip_bonus()
+    local chips = card:get_chip_bonus(context)
     if chips ~= 0 then
         ret.playing_card.chips = chips
     end
 
-    local mult = card:get_chip_mult()
+    local mult = card:get_chip_mult(context)
     if mult ~= 0 then
         ret.playing_card.mult = mult
     end
@@ -105,30 +105,30 @@ if context.cardarea == G.play and context.main_scoring then
         ret.playing_card.x_mult = x_mult
     end
 
-    local p_dollars = card:get_p_dollars()
+    local p_dollars = card:get_p_dollars(context)
     if p_dollars ~= 0 then
         ret.playing_card.p_dollars = p_dollars
     end
 
-    local x_chips = card:get_chip_x_bonus()
+    local x_chips = card:get_chip_x_bonus(context)
     if x_chips > 0 then
         ret.playing_card.x_chips = x_chips
     end
 
-    local score = card:get_bonus_score()
+    local score = card:get_bonus_score(context)
     if score ~= 0 then
         ret.playing_card.score = score
     end
-    local x_score = card:get_bonus_x_score()
+    local x_score = card:get_bonus_x_score(context)
     if x_score > 0 then
         ret.playing_card.x_score = x_score
     end
 
-	local blind_size = card:get_bonus_blind_size()
+	local blind_size = card:get_bonus_blind_size(context)
     if blind_size ~= 0 then
         ret.playing_card.blind_size = blind_size
     end
-    local x_blind_size = card:get_bonus_x_blind_size()
+    local x_blind_size = card:get_bonus_x_blind_size(context)
     if x_blind_size > 0 then
         ret.playing_card.x_blind_size = x_blind_size
     end
@@ -167,39 +167,39 @@ position = "at"
 payload = """
 if context.cardarea == G.hand and context.main_scoring then
     ret.playing_card = {}
-    local h_mult = card:get_chip_h_mult()
+    local h_mult = card:get_chip_h_mult(context)
     if h_mult ~= 0 then
         ret.playing_card.h_mult = h_mult
     end
 
-    local h_x_mult = card:get_chip_h_x_mult()
+    local h_x_mult = card:get_chip_h_x_mult(context)
     if h_x_mult > 0 then
         ret.playing_card.x_mult = h_x_mult
     end
 
-    local h_chips = card:get_chip_h_bonus()
+    local h_chips = card:get_chip_h_bonus(context)
     if h_chips ~= 0 then
         ret.playing_card.h_chips = h_chips
     end
 
-    local h_x_chips = card:get_chip_h_x_bonus()
+    local h_x_chips = card:get_chip_h_x_bonus(context)
     if h_x_chips > 0 then
         ret.playing_card.x_chips = h_x_chips
     end
 
-    local h_score = card:get_bonus_h_score()
+    local h_score = card:get_bonus_h_score(context)
     if h_score ~= 0 then
         ret.playing_card.h_score = h_score
     end
-    local h_x_score = card:get_bonus_h_x_score()
+    local h_x_score = card:get_bonus_h_x_score(context)
     if h_x_score > 0 then
         ret.playing_card.h_x_score = h_x_score
     end
-	local h_blind_size = card:get_bonus_h_blind_size()
+	local h_blind_size = card:get_bonus_h_blind_size(context)
     if h_blind_size ~= 0 then
         ret.playing_card.blind_size = h_blind_size
     end
-    local h_x_blind_size = card:get_bonus_h_x_blind_size()
+    local h_x_blind_size = card:get_bonus_h_x_blind_size(context)
     if h_x_blind_size > 0 then
         ret.playing_card.x_blind_size = h_x_blind_size
     end
@@ -251,9 +251,10 @@ if card.ability.repetitions and card.ability.repetitions > 0 then
     ret.seals = ret.seals or { card = card, message = localize('k_again_ex') }
     ret.seals.repetitions = (ret.seals.repetitions and ret.seals.repetitions + card.ability.repetitions) or card.ability.repetitions
 end
-if card:get_perma_bonus('repetitions') > 0 then
-    ret.seals = ret.seals or { card = card, message = localize('k_again_ex') }
-    ret.seals.repetitions = (ret.seals.repetitions and ret.seals.repetitions + card:get_perma_bonus('repetitions')) or card:get_perma_bonus('repetitions')
+local perma_repetitions = SMODS.calculate_perma_bonuses(card, context, 'repetitions')
+if perma_repetitions.repetitions and perma_repetitions.repetitions > 0 then
+    ret.seals = ret.seals or { card = perma_repetitions.card or card, message = perma_repetitions.message or localize('k_again_ex') }
+    ret.seals.repetitions = (ret.seals.repetitions and ret.seals.repetitions + perma_repetitions.repetitions) or perma_repetitions.repetitions
 end
 """
 [[patches]]
@@ -290,6 +291,16 @@ for _,k in ipairs(SMODS.Sticker.obj_buffer) do
     end
 end
 
+if not card.ability.extra_enhancement and next(card:get_perma_bonus()) then
+    local bonuses = SMODS.calculate_perma_bonuses(card, context)
+    if bonuses then for k,v in pairs(bonuses) do
+            if not SMODS.default_perma_bonus_keys[k] then
+                ret.playing_card = ret.playing_card or {}
+                local val = SMODS.stack_perma_bonus(k,v,ret.playing_card)
+                ret.playing_card[k] = val
+            end
+    end end
+end
 -- TARGET: evaluate your own general effects
 """
 [[patches]]
