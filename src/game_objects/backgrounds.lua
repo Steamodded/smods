@@ -171,8 +171,6 @@ SMODS.Background {
     key = "splash",
     shader = "splash",
     select_background = function(self)
-        --if G.STAGE ~= G.STAGES.RUN then return -minfloat end
-        if G.bwomp then return 0 end
     end
 }
 
@@ -180,6 +178,5 @@ SMODS.Background {
     key = "background",
     shader = "background",
     select_background = function(self)
-        --if G.STAGE == G.STAGES.RUN then return -minfloat end
     end
 }
