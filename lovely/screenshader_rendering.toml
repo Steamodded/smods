@@ -69,5 +69,8 @@ position = "after"
 payload = '''
 G.SHADER_CANVAS_A = SMODS.create_canvas()
 G.SHADER_CANVAS_B = SMODS.create_canvas()
+-- easier to just stick this here
+SMODS.BG_CANVAS_1.canvas = SMODS.create_canvas()
+SMODS.BG_CANVAS_2.canvas = SMODS.create_canvas()
 '''
 match_indent = true

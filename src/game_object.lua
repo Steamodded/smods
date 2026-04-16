@@ -400,6 +400,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/attributes.lua'), ('=[SMODS _ "src/game_objects/attributes.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject.Background
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/backgrounds.lua'), ('=[SMODS _ "src/game_objects/backgrounds.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
     ----- INTERNAL API CODE GameObject._Loc_Pre
     -------------------------------------------------------------------------------------------------
 

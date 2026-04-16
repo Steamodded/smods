@@ -1,0 +1,126 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -1
+
+# Add canvasses for background drawing
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = '''
+G.CANVAS = love.graphics.newCanvas(w*G.CANV_SCALE, h*G.CANV_SCALE, {type = '2d', readable = true})
+G.CANVAS:setFilter('linear', 'linear')
+'''
+position = "after"
+payload = '''
+
+'''
+match_indent = true
+
+# Handle the vanilla background shaders
+# Sprite:draw
+[[patches]]
+[patches.pattern]
+target = "engine/sprite.lua"
+pattern = '''
+elseif _shader == 'vortex' then 
+        G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
+'''
+position = "after"
+payload = '''
+elseif _shader == 'background' then
+    G.SHADERS['splash']:send('time', G.TIMERS.REAL_SHADER)
+    G.SHADERS['splash']:send('spin_time', G.TIMERS.BACKGROUND)
+    G.SHADERS['splash']:send('colour_1', G.C.BACKGROUND.C)
+    G.SHADERS['splash']:send('colour_2', G.C.BACKGROUND.L)
+    G.SHADERS['splash']:send('colour_3', G.C.BACKGROUND.D)
+    G.SHADERS['splash']:send('contrast', G.C.BACKGROUND.contrast)
+    G.SHADERS['splash']:send('spin_amount', G.ARGS.spin and G.ARGS.spin.amount or 0)
+elseif shader == 'splash' then
+    G.SHADERS['splash']:send('time', G.TIMERS.REAL)
+    G.SHADERS['splash']:send('vort_speed', 0.4)
+    G.SHADERS['splash']:send('colour_1', G.C.BLUE)
+    G.SHADERS['splash']:send('colour_2', G.C.WHITE)
+    G.SHADERS['splash']:send('mid_flash', SMODS.splash_flash)
+    G.SHADERS['splash']:send('vort_offset', (2*90.15315131*os.time())%100000)
+'''
+match_indent = true
+
+# Make splash_args global
+# Game:main_menu, Game:demo_cta
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+local splash_args = {mid_flash = change_context == 'splash' and 1.6 or 0.}
+    ease_value(splash_args, 'mid_flash', -(change_context == 'splash' and 1.6 or 0), nil, nil, nil, 4)
+'''
+position = "after"
+payload = '''
+SMODS.splash_flash = change_context == 'splash' and 1.6 or 0
+ease_value(SMODS, 'splash_flash', -(change_context == 'splash' and 1.6 or 0), nil, nil, nil, 4)
+'''
+match_indent = true
+
+# Draw custom bgs
+# Game:draw
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+if G.SPLASH_BACK then
+        if G.debug_background_toggle then
+            love.graphics.clear({0,1,0,1})
+        else
+            love.graphics.push()
+            G.SPLASH_BACK:translate_container()
+            G.SPLASH_BACK:draw()
+            love.graphics.pop()
+        end
+    end
+'''
+position = "after"
+payload = '''
+if SMODS.PRIMARY_BG_CANVAS then
+    if G.debug_background_toggle then
+        love.graphics.clear({0,1,0,1})
+    else
+        love.graphics.push()
+        SMODS.draw_background()
+        love.graphics.pop()
+    end
+end
+
+'''
+match_indent = true
+
+# Create SMODS bg stuff
+# Game:main_menu, Game:demo_cta, Game:sandbox
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''if G.SPLASH_BACK then G.SPLASH_BACK:remove(); G.SPLASH_BACK = nil end'''
+position = "after"
+payload = '''
+SMODS.create_bg_canvasses()
+'''
+match_indent = true
+
+# Game:start_run
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+G.SPLASH_BACK:set_alignment({
+        major = G.play,
+        type = 'cm',
+        bond = 'Strong',
+        offset = {x=0,y=0}
+    })
+'''
+position = "after"
+payload = '''
+SMODS.create_bg_canvasses()
+'''
+match_indent = true
+
