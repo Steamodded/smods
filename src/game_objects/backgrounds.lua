@@ -33,7 +33,7 @@ SMODS.BackgroundDrawStep {
     end,
 }
 
-
+-- DO NOT CREATE NEW INSTANCES OF THIS
 SMODS.BackgroundCanvas = Moveable:extend()
 
 function SMODS.BackgroundCanvas:init(X, Y, W, H, prototype, alpha)
