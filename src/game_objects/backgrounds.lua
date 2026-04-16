@@ -57,7 +57,7 @@ function SMODS.BackgroundCanvas:draw()
     if self.alpha == 0 then return end
     local fading = self.alpha ~= 1
     if fading then love.graphics.setCanvas(self.canvas) end
-    for _, k in ipairs(SMODS.DrawStep.obj_buffer) do
+    for _, k in ipairs(SMODS.BackgroundDrawStep.obj_buffer) do
         SMODS.BackgroundDrawSteps[k].func(self)
     end
     if fading then
@@ -104,7 +104,7 @@ end
 
 function SMODS.BackgroundCanvas:update()
     local obj = self.prototype
-    if obj.update and type(obj.update) == 'function' then
+    if obj and obj.update and type(obj.update) == 'function' then
         obj:update(self)
     end
 end

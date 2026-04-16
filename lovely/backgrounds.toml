@@ -3,20 +3,6 @@ version = "1.0.0"
 dump_lua = true
 priority = -1
 
-# Add canvasses for background drawing
-[[patches]]
-[patches.pattern]
-target = "main.lua"
-pattern = '''
-G.CANVAS = love.graphics.newCanvas(w*G.CANV_SCALE, h*G.CANV_SCALE, {type = '2d', readable = true})
-G.CANVAS:setFilter('linear', 'linear')
-'''
-position = "after"
-payload = '''
-
-'''
-match_indent = true
-
 # Handle the vanilla background shaders
 # Sprite:draw
 [[patches]]

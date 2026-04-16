@@ -69,7 +69,17 @@ position = "after"
 payload = '''
 G.SHADER_CANVAS_A = SMODS.create_canvas()
 G.SHADER_CANVAS_B = SMODS.create_canvas()
+
 -- easier to just stick this here
+if not SMODS.BG_CANVAS_1 then
+    SMODS.BG_CANVAS_1 = SMODS.BackgroundCanvas(-30, -13, w, h, SMODS.Background:get_current_background())
+end
+if not SMODS.BG_CANVAS_2 then
+    SMODS.BG_CANVAS_2 = SMODS.BackgroundCanvas(-30, -13, w, h, nil, 0)
+end
+
+SMODS.PRIMARY_BG_CANVAS = SMODS.PRIMARY_BG_CANVAS or SMODS.BG_CANVAS_1
+
 SMODS.BG_CANVAS_1.canvas = SMODS.create_canvas()
 SMODS.BG_CANVAS_2.canvas = SMODS.create_canvas()
 '''
