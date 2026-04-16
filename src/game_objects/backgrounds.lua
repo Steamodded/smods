@@ -63,7 +63,9 @@ function SMODS.BackgroundCanvas:draw()
     end
     if fading then
         love.graphics.setCanvas(G.CANVAS)
+        love.graphics.setColor(1,1,1,self.alpha)
         love.graphics.draw(self.canvas, 0, 0)
+        love.graphics.setColor(1,1,1,1)
     end
 end
 
@@ -159,11 +161,9 @@ SMODS.Background = SMODS.GameObject:extend {
                 end
             end
         end
-        return bg or (G.STAGE == G.STAGES.RUN and SMODS.Backgrounds["background"] or SMODS.Backgrounds["splash"])
+        return SMODS.Backgrounds[bg or (G.STAGE == G.STAGES.RUN and "background" or "splash")]
     end
 }
-
-local minfloat = -1.78e308
 
 SMODS.splash_mid_flash = 0
 SMODS.splash_vort_offset = 0
@@ -172,7 +172,7 @@ SMODS.Background {
     shader = "splash",
     select_background = function(self)
         --if G.STAGE ~= G.STAGES.RUN then return -minfloat end
-        if bwomp then return 0 end
+        if G.bwomp then return 0 end
     end
 }
 

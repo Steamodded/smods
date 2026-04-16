@@ -25,6 +25,7 @@ function SMODS.switch_background(bg)
 
     -- fade out old canvas
     old_canvas:ease_alpha(0, 2)
+    new_canvas.alpha = 1
 end
 
 function SMODS.draw_background()
