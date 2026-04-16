@@ -9,7 +9,7 @@ SMODS.BackgroundDrawStep = SMODS.GameObject:extend {
         'func',
     },
     -- func = function(bg) end,
-    set = "Background Draw Step",
+    set = "Background Draw Steps",
     register = function(self)
         if self.registered then
             sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
@@ -38,13 +38,14 @@ SMODS.BackgroundCanvas = Moveable:extend()
 
 function SMODS.BackgroundCanvas:init(X, Y, W, H, prototype, alpha)
     Moveable.init(self, X, Y, W, H)
+    prototype = prototype or SMODS.Backgrounds.splash
 
     self.states.collide.can = false
     self.states.hover.can = false
     self.states.drag.can = false
     self.states.click.can = false
 
-    self.alpha = alpha
+    self.alpha = alpha or 1
     self.canvas = SMODS.create_canvas()
     self.children = {}
 
@@ -54,14 +55,14 @@ function SMODS.BackgroundCanvas:init(X, Y, W, H, prototype, alpha)
 end
 
 function SMODS.BackgroundCanvas:draw()
-    if self.alpha == 0 then return end
+    if self.alpha <= 0 then return end
     local fading = self.alpha ~= 1
     if fading then love.graphics.setCanvas(self.canvas) end
     for _, k in ipairs(SMODS.BackgroundDrawStep.obj_buffer) do
         SMODS.BackgroundDrawSteps[k].func(self)
     end
     if fading then
-        love.graphics.setCanvas()
+        love.graphics.setCanvas(G.CANVAS)
         love.graphics.draw(self.canvas, 0, 0)
     end
 end
@@ -70,8 +71,8 @@ function SMODS.BackgroundCanvas:set_sprites()
     self.children = self.children or {}
     local obj = self.prototype
 
-    local atlas = obj.atlas or 'ui_1'
-    local pos = obj.pos or {x = obj.atlas and 2 or 0, y = 0}
+    local atlas = obj.atlas_key or 'ui_1'
+    local pos = obj.pos or {x = obj.atlas_key and 2 or 0, y = 0}
     self.children.base = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
     self.children.base:set_alignment({
         major = self,
@@ -88,6 +89,7 @@ end
 function SMODS.BackgroundCanvas:set_active_bg(prototype)
     self.prototype = prototype
     self.shader = prototype.shader
+    print(prototype.shader)
 
     if prototype.set_active and type(prototype.set_active) == "function" then
         prototype:set_active(self)
@@ -124,10 +126,11 @@ end
 SMODS.Backgrounds = {}
 SMODS.Background = SMODS.GameObject:extend {
     obj_table = SMODS.Backgrounds,
-    set = 'Background',
     obj_buffer = {},
+    set = "Background",
     required_params = {
         'key',
+        'select_background'
     },
     send_vars = nil, -- same as Shader.send_vars
     select_background = nil, -- should this bg be used, works like SMODS.Sounds:select_music_track
@@ -144,7 +147,7 @@ SMODS.Background = SMODS.GameObject:extend {
         end
     end,
     get_current_background = function(self)
-        local track
+        local bg
         local maxp = -math.huge
         for _, v in ipairs(self.obj_buffer) do
             local s = self.obj_table[v]
@@ -152,21 +155,24 @@ SMODS.Background = SMODS.GameObject:extend {
                 local res = s:select_background()
                 if res then
                     if type(res) ~= 'number' then res = 0 end
-                    if res > maxp then track, maxp = v, res end
+                    if res > maxp then bg, maxp = v, res end
                 end
             end
         end
-        return track
+        return bg or (G.STAGE == G.STAGES.RUN and SMODS.Backgrounds["background"] or SMODS.Backgrounds["splash"])
     end
 }
 
-SMODS.splash_flash = 0
+local minfloat = -1.78e308
+
+SMODS.splash_mid_flash = 0
+SMODS.splash_vort_offset = 0
 SMODS.Background {
     key = "splash",
     shader = "splash",
     select_background = function(self)
-        if not G.STAGES.RUN then return -math.huge end
-        if bwomp then return true end
+        --if G.STAGE ~= G.STAGES.RUN then return -minfloat end
+        if bwomp then return 0 end
     end
 }
 
@@ -174,6 +180,6 @@ SMODS.Background {
     key = "background",
     shader = "background",
     select_background = function(self)
-        if G.STAGES.RUN then return -math.huge end
+        --if G.STAGE == G.STAGES.RUN then return -minfloat end
     end
 }

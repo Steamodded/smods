@@ -11,7 +11,7 @@ end
 
 SMODS.PRIMARY_BG_CANVAS = SMODS.BG_CANVAS_1
 
-function SMODS.switch_background(key)
+function SMODS.switch_background(bg)
     local w, h = G.CANVAS:getDimensions()
     SMODS.BG_CANVAS_1 = SMODS.BG_CANVAS_1 or SMODS.BackgroundCanvas(-30, -13, w, h)
     SMODS.BG_CANVAS_2 = SMODS.BG_CANVAS_2 or SMODS.BackgroundCanvas(-30, -13, w, h)
@@ -21,7 +21,7 @@ function SMODS.switch_background(key)
 
     -- set new canvas
     SMODS.PRIMARY_BG_CANVAS = new_canvas
-    new_canvas:set_active_bg(SMODS.Backgrounds[key])
+    new_canvas:set_active_bg(bg)
 
     -- fade out old canvas
     old_canvas:ease_alpha(0, 2)
