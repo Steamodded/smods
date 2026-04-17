@@ -90,15 +90,19 @@ function SMODS.BackgroundCanvas:set_sprites()
     end
 end
 
+function SMODS.BackgroundCanvas:clean_up_children()
+    for _, v in pairs(self.children) do v:remove(); v = nil end
+end
+
 function SMODS.BackgroundCanvas:set_active_bg(prototype)
     self.prototype = prototype
     self.shader = prototype.shader
-    for _, v in pairs(self.children) do v:remove(); v = nil end
+    self:clean_up_children()
     self:set_sprites()
 end
 
 function SMODS.BackgroundCanvas:remove()
-    for _, v in pairs(self.children) do v:remove(); v = nil end
+    self:clean_up_children()
     Moveable.remove(self)
 end
 
