@@ -98,11 +98,7 @@ target = 'game.lua'
 pattern = '''modulate_sound(dt)'''
 position = "after"
 payload = '''
-local cur_bg = SMODS.Background:get_current_background()
-if SMODS.PRIMARY_BG_CANVAS and SMODS.PRIMARY_BG_CANVAS.prototype and SMODS.PRIMARY_BG_CANVAS.prototype.key ~= cur_bg.key then
-    SMODS.switch_background(cur_bg)
-end
-
+SMODS.update_background()
 '''
 match_indent = true
 
@@ -135,4 +131,3 @@ payload = '''
 SMODS.create_bg_canvasses()
 '''
 match_indent = true
-

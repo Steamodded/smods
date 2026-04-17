@@ -113,15 +113,30 @@ function SMODS.BackgroundCanvas:update()
     end
 end
 
-function SMODS.BackgroundCanvas:ease_alpha(target, delay)
+function SMODS.BackgroundCanvas:ease_alpha(target, delay, ease_type)
     if target == self.alpha then return end
     target = math.min(1, math.max(target, 0))
+    delay = delay or 2
+    SMODS.is_bg_fading = true
     G.E_MANAGER:add_event(Event({
         trigger = "ease",
         ref_table = self,
         ref_value = "alpha",
         ease_to = target,
-        delay = delay or 2,
+        delay = delay,
+        type = ease_type,
+        blocking = false,
+        blockable = false,
+    }))
+    G.E_MANAGER:add_event(Event({
+        func = function()
+            SMODS.is_bg_fading = false
+            return true
+        end,
+        trigger = "after",
+        delay = delay,
+        blocking = false,
+        blockable = false,
     }))
 end
 
@@ -136,9 +151,11 @@ SMODS.Background = SMODS.GameObject:extend {
     },
     send_vars = nil, -- same as Shader.send_vars
     select_background = nil, -- should this bg be used, works like SMODS.Sounds:select_music_track
-
     set_sprites = nil, -- sets sprites
     update = nil, -- runs on update
+
+    fade_time = nil, -- how much time it takes for this bg to fade in
+    fade_ease = nil, -- which easing curve this bg uses when fading in
 
     inject = function(self)
         -- assert(self.shader or self.path, "Background " .. self.key .. " not given shader key or path")
@@ -146,6 +163,8 @@ SMODS.Background = SMODS.GameObject:extend {
             SMODS.Shader.inject(self)
             self.shader = self.key
         end
+
+        self.fade_time = self.fade_time or 2
     end,
     get_current_background = function(self)
         local bg
