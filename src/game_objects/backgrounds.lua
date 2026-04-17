@@ -57,7 +57,9 @@ end
 function SMODS.BackgroundCanvas:draw()
     if self.alpha <= 0 then return end
     local fading = self.alpha ~= 1
-    if fading then love.graphics.setCanvas(self.canvas) end
+    if fading then
+        love.graphics.setCanvas(self.canvas)
+    end
     for _, k in ipairs(SMODS.BackgroundDrawStep.obj_buffer) do
         SMODS.BackgroundDrawSteps[k].func(self)
     end
@@ -91,12 +93,6 @@ end
 function SMODS.BackgroundCanvas:set_active_bg(prototype)
     self.prototype = prototype
     self.shader = prototype.shader
-    print(prototype.shader)
-
-    if prototype.set_active and type(prototype.set_active) == "function" then
-        prototype:set_active(self)
-    end
-
     for _, v in pairs(self.children) do v:remove(); v = nil end
     self:set_sprites()
 end
@@ -138,7 +134,6 @@ SMODS.Background = SMODS.GameObject:extend {
     select_background = nil, -- should this bg be used, works like SMODS.Sounds:select_music_track
 
     set_sprites = nil, -- sets sprites
-    set_active = nil, -- runs when bg becomes active
     update = nil, -- runs on update
 
     inject = function(self)
