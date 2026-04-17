@@ -94,6 +94,7 @@ end
 
 if SMODS.PRIMARY_BG_CANVAS then
     if G.debug_background_toggle then
+        love.graphics.clear({0,1,0,1})
     else
         SMODS.draw_background()
     end
