@@ -25,10 +25,10 @@ function SMODS.update_background()
     -- queue bg fades
     local cur_bg = SMODS.Background:get_current_background()
     if
-        SMODS.PRIMARY_BG_CANVAS and SMODS.PRIMARY_BG_CANVAS.prototype and SMODS.PRIMARY_BG_CANVAS.prototype.key ~= cur_bg.key
-        and SMODS.background_queue[#SMODS.background_queue] ~= cur_bg.key
+        SMODS.PRIMARY_BG_CANVAS and SMODS.PRIMARY_BG_CANVAS.prototype and SMODS.PRIMARY_BG_CANVAS.prototype.key ~= cur_bg
+        and SMODS.background_queue[#SMODS.background_queue] ~= cur_bg
     then
-        SMODS.background_queue[#SMODS.background_queue+1] = cur_bg.key
+        SMODS.background_queue[#SMODS.background_queue+1] = cur_bg
     end
 
     -- handle fade queue

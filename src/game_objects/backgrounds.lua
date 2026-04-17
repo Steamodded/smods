@@ -147,7 +147,6 @@ SMODS.Background = SMODS.GameObject:extend {
     set = "Background",
     required_params = {
         'key',
-        'select_background'
     },
     send_vars = nil, -- same as Shader.send_vars
     select_background = nil, -- should this bg be used, works like SMODS.Sounds:select_music_track
@@ -171,7 +170,7 @@ SMODS.Background = SMODS.GameObject:extend {
         local maxp = -math.huge
         for _, v in ipairs(self.obj_buffer) do
             local s = self.obj_table[v]
-            if type(s.select_background) == 'function' then
+            if s.select_background and type(s.select_background) == 'function' then
                 local res = s:select_background()
                 if res then
                     if type(res) ~= 'number' then res = 0 end
@@ -179,7 +178,7 @@ SMODS.Background = SMODS.GameObject:extend {
                 end
             end
         end
-        return SMODS.Backgrounds[bg or (G.STAGE == G.STAGES.RUN and "background" or "splash")]
+        return bg or (G.STAGE == G.STAGES.RUN and "background" or "splash")
     end
 }
 
@@ -187,14 +186,10 @@ SMODS.splash_mid_flash = 0
 SMODS.splash_vort_offset = 0
 SMODS.Background {
     key = "splash",
-    shader = "splash",
-    select_background = function(self)
-    end
+    shader = "splash"
 }
 
 SMODS.Background {
     key = "background",
-    shader = "background",
-    select_background = function(self)
-    end
+    shader = "background"
 }
