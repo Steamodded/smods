@@ -60,7 +60,6 @@ SMODS.vort_offset = ((2*90.15315131*os.time())%100000)
 '''
 match_indent = true
 
-
 # Draw custom bgs
 # Game:draw
 [[patches]]
@@ -78,8 +77,21 @@ if G.SPLASH_BACK then
         end
     end
 '''
-position = "after"
+position = "at"
 payload = '''
+--[[
+if G.SPLASH_BACK then
+    if G.debug_background_toggle then
+        love.graphics.clear({0,1,0,1})
+    else
+        love.graphics.push()
+        G.SPLASH_BACK:translate_container()
+        G.SPLASH_BACK:draw()
+        love.graphics.pop()
+    end
+end
+]]
+
 if SMODS.PRIMARY_BG_CANVAS then
     if G.debug_background_toggle then
     else
