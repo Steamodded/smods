@@ -844,3 +844,21 @@ function SMODS.mod_blind_size(mod_blind_size) end
 ---@field card? Card Card responsible for blind size modification action, crucial for blind size display to work properly
 ---@field effect? table Table of effects that were calculated
 ---@field from_edition? boolean 
+
+---@class SMODS.BackgroundCanvas: Moveable
+---@overload fun(...: any): SMODS.BackgroundCanvas|table
+SMODS.BackgroundCanvas = {}
+function SMODS.BackgroundCanvas:__call(...) return self end
+
+--- Creates SMODS.BG_CANVAS_1 and SMODS.BG_CANVAS_2, and removes previous instances of both.
+function SMODS.create_bg_canvasses() end
+
+--- Draws the background.
+function SMODS.draw_background() end
+
+--- Updates the current background, and handles the background fade queue. Gets run every frame.
+function SMODS.update_background() end
+
+--- Begins fading the background to a new background.
+--- @param bg string Key for an SMODS.Background object.
+function SMODS.switch_background(bg) end
