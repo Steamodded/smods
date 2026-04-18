@@ -38,7 +38,7 @@ SMODS.BackgroundCanvas = Moveable:extend()
 
 function SMODS.BackgroundCanvas:init(X, Y, W, H, prototype, alpha)
     Moveable.init(self, X, Y, W, H)
-    prototype = prototype or SMODS.Backgrounds.splash
+    prototype = (type(prototype) == "string" and SMODS.Backgrounds[prototype] or prototype) or SMODS.Backgrounds.splash
 
     self.states.collide.can = false
     self.states.hover.can = false

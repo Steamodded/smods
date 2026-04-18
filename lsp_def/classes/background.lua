@@ -6,6 +6,8 @@
 ---@field key string Unique string to reference this object.
 ---@field shader? string Key of the shader to apply to the background, shader must already exist to use this.
 ---@field path? string Name of the shader file to use if `shader` is not provided.
+---@field atlas? string Key to the atlas used for the background sprite.
+---@field pos? table|{x: integer, y: integer} Position of the background's sprite. 
 ---@field fade_time? number Time it takes for this background to fade in.
 ---@field fade_ease? string Easing curve used when this background fades in. Must be in SMODS.ease_types
 ---@field extend? fun(self: SMODS.Background|table, o: SMODS.Background|table): table Primary method of creating a class. 
