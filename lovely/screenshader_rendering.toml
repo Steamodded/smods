@@ -38,7 +38,7 @@ for index, key in ipairs(SMODS.ScreenShader.obj_buffer) do
         end
 		
 		love.graphics.setCanvas(current_canvas)
-                shader:draw(shader_object, last_canvas)
+        shader:draw(shader_object, last_canvas)
 
         last_canvas = current_canvas
 	end
