@@ -2456,8 +2456,7 @@ G.FUNCS.can_select_from_booster = function(e)
     local card = e.config.ref_table
     local area = booster_obj and card:selectable_from_pack(booster_obj)
     local edition_card_limit = card.ability.card_limit - card.ability.extra_slots_used
-    local card_slots_extra = card.ability.extra_slots_used
-    if area and #G[area].cards + card_slots_extra < G[area].config.card_limit + edition_card_limit then
+    if area and #G[area].cards < G[area].config.card_limit + edition_card_limit then
         e.config.colour = G.C.GREEN
         e.config.button = 'use_card'
     else
