@@ -190,6 +190,18 @@ if was_added_to_deck and not self.debuff then
 end
 '''
 
+# The above introduces visual issues with The Pillar and effects that call set_ability during a hand
+# Removes early setting of ability.played_this_ante, replaced at end of scoring
+
+# G.FUNCS.play_cards_from_highlighted
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = 'G.hand.highlighted[i].ability.played_this_ante = true'
+position = 'at'
+match_indent = true
+payload = '-- removed by SMODS'
+
 
 ## set_ability() transfers over old fields
 # special cases:
