@@ -414,6 +414,7 @@ function SMODS.create_card(t)
     SMODS.create_card_allow_duplicates = t.allow_duplicates
     SMODS.create_card_scale = t.scale
     local _card = create_card(t.set, t.area, t.legendary, t.rarity, t.skip_materialize, t.soulable, t.key, t.key_append)
+    SMODS.create_card_scale = nil
     SMODS.bypass_create_card_edition = nil
     SMODS.bypass_create_card_discover = nil
     SMODS.bypass_create_card_discovery_center = nil
