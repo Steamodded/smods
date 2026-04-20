@@ -809,6 +809,16 @@ payload = '''
 -- context.after calculations
 SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, after = true})
 
+-- set `ability.played_this_ante` on played cards
+for _,v in ipairs(G.play.cards) do
+    G.E_MANAGER:add_event(Event({
+        func = function()
+            v.ability.played_this_ante = true
+            return true
+        end,
+    }))
+end
+
 -- TARGET: effects after hand evaluation'''
 
 # calc_dollar_bonus call through other objects
@@ -1160,8 +1170,7 @@ G.E_MANAGER:add_event(Event({
     end
 }))
 G.E_MANAGER:add_event(Event({
-    trigger = 'before',
-    delay = 0.4,
+    trigger = 'immediate',
     func = function()
         if #SMODS.drawn_cards > 0 then
             SMODS.calculate_context({first_hand_drawn = not G.GAME.current_round.any_hand_drawn and G.GAME.facing_blind,
@@ -1751,14 +1760,10 @@ G.E_MANAGER:add_event(Event({
             front = pseudorandom_element(G.P_CARDS, pseudoseed('marb_fr')),
             center = G.P_CENTERS.m_stone}, G.play, nil, nil, {G.C.SECONDARY_SET.Enhanced})
         SMODS.calculate_effect({message = localize('k_plus_stone'), colour = G.C.SECONDARY_SET.Enhanced}, context.blueprint_card or self)
-        G.E_MANAGER:add_event(Event({
-        func = function()
-            draw_card(G.play,G.deck, 90,'up', nil)
-            return true
-        end}))
         playing_card_joker_effects({card})
         return true
     end}))
+draw_card(G.play,G.deck, 90,'up', nil)
 '''
 # DNA
 [[patches]]

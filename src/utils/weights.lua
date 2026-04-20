@@ -5,7 +5,9 @@
 function SMODS.poll_object(args)
     assert(args, "SMODS.poll_object called with no args."..SMODS.log_crash_info(debug.getinfo(2)))
     assert((args.type or (args.types and type(args.types) == 'table') or (args.attributes and type(args.attributes) == 'table') or (args.pool and type(args.pool) == 'table')), "SMODS.poll_object called without a pool source." .. SMODS.log_crash_info(debug.getinfo(2)))
-
+    if args.type == 'Base' then return 'INTERNAL_PLAYING_CARD' end
+    if not args.seed and args.key then args.seed = args.key end
+    
     -- Prepare pool
     local pool = args.pool or {}
     local types = args.attributes or args.types or {args.type}
@@ -286,7 +288,9 @@ function SMODS.create_poll_pool(labels, args)
         local temp_pool = {}
         local join_func = (args.attributes and not args.union) and SMODS.intersect_lists or join_lists
         for i=1, #(args.rarities or {true}) do
+            if label == "Booster" then SMODS.poll_object_allow_duplicates = true end
             local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or SMODS.Attributes[label] and SMODS.get_attribute_pool(label) or get_current_pool(label, args.rarities and args.rarities[i], nil, args.append)
+            SMODS.poll_object_allow_duplicates = nil
             if SMODS.Attributes[label] then
                 _p = SMODS.cull_pool(_p, args)
             end
@@ -364,6 +368,7 @@ function SMODS.create_shop_card(area)
         area = area
     }
     card_args.key = SMODS.poll_object({type = card_args.type, append = 'sho'})
+    if card_args.key == 'INTERNAL_PLAYING_CARD' then card_args.key = nil; card_args.set = 'Base' end
 
     local flags = SMODS.calculate_context({create_shop_card = true, set = card_args.type, key = card_args.key})
 

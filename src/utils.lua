@@ -380,6 +380,7 @@ function SMODS.create_card(t)
     end
     -- Support SMODS.Attributes
     if not t.key and t.attributes then
+        t.append = t.key_append
         t.key = SMODS.poll_object(t)
     end
     if not t.area and t.key and G.P_CENTERS[t.key] then
@@ -732,7 +733,7 @@ end
 
 function SMODS.poll_seal(args)
     -- Use SMODS object weight system when enabled
-    if SMODS.optional_features.object_weights then args.type = 'Seal'; return SMODS.poll_object(args) end
+    if SMODS.optional_features.object_weights then args.type = 'Seal'; args.pool = args.options or nil; return SMODS.poll_object(args) end
 
     args = args or {}
     local key = args.key or 'stdseal'
@@ -910,6 +911,7 @@ function SMODS.poll_rarity(_pool_key, _rand_key)
 end
 
 function SMODS.poll_enhancement(args)
+    if SMODS.optional_features.object_weights then args.type = 'Enhanced'; args.pool = args.options or nil; return SMODS.poll_object(args) end
     args = args or {}
     local key = args.key or 'std_enhance'
     local mod = args.mod or 1
@@ -1630,6 +1632,7 @@ SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
         elseif _type == 'individual_retrigger' then
             effect.retrigger_card = effect_card.object
             effect.message_card = effect.message_card or effect_card.scored_card
+            effect.retrigger_flag = true
         elseif not _type then
             effect.card = effect.card or effect_card
         end
@@ -2525,7 +2528,7 @@ end
 G.FUNCS.can_select_from_booster = function(e)
     local card = e.config.ref_table
     local area = booster_obj and card:selectable_from_pack(booster_obj)
-    local edition_card_limit = card.ability.card_limit
+    local edition_card_limit = card.ability.card_limit - card.ability.extra_slots_used
     if area and #G[area].cards < G[area].config.card_limit + edition_card_limit then
         e.config.colour = G.C.GREEN
         e.config.button = 'use_card'
@@ -2567,7 +2570,7 @@ function SMODS.get_next_vouchers(vouchers)
 
         -- Use SMODS object weight system when enabled
         if SMODS.optional_features.object_weights then
-            center = SMODS.poll_object({type = 'Voucher'})
+            center = SMODS.poll_object({type = 'Voucher', seed = _pool_key})
         else
             center = pseudorandom_element(_pool, pseudoseed(_pool_key))
             local it = 1
@@ -2637,12 +2640,12 @@ function SMODS.change_free_rerolls(mod)
 end
 
 function SMODS.signed(val)
-    return val and (val > 0 and '+'..val or ''..val) or '0'
+    return val and (val >= 0 and '+'..val or ''..val) or '+0'
 end
 
 function SMODS.signed_dollars(val)
     local sign = (val or 0) < 0 and '-' or ''
-    return val and sign..'$'..math.abs(val) or '0'
+    return val and sign..'$'..math.abs(val) or '$0'
 end
 
 function SMODS.multiplicative_stacking(base, perma)
@@ -2948,7 +2951,8 @@ function SMODS.draw_cards(hand_space)
 end
 
 function SMODS.showman(card_key)
-    if SMODS.create_card_allow_duplicates or next(SMODS.find_card('j_ring_master')) then
+    if SMODS.create_card_allow_duplicates or SMODS.poll_object_allow_duplicates
+        or next(SMODS.find_card('j_ring_master')) then
         return true
     end
     return false
@@ -3991,12 +3995,17 @@ function SMODS.upgrade_poker_hands(args)
                 G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.9, func = function()
                     play_sound('tarot1')
                     if args.from then args.from:juice_up(0.8, 0.5) end
-                    G.TAROT_INTERRUPT_PULSE = nil
                     return true end }))
                 update_hand_text({sound = 'button', volume = 0.7, pitch = 0.9, delay = 0}, {level=G.GAME.hands[hand].level})
             end
         end
         if not instant then delay(1.3) end
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                G.TAROT_INTERRUPT_PULSE = nil
+                return true
+            end
+        }))
         SMODS.calculate_context(context)
     end
 
@@ -4290,7 +4299,7 @@ SMODS.mod_score = function(score_mod)
     if score_mod.add and score_mod.add ~= 0 then
         score_cal = score_cal + score_mod.add
         table.insert(G.SCORE_DISPLAY_QUEUE, old)
-        score_fx[#score_fx+1] = { key = "a_score", value = score_mod.add, sound = "gong", message_key = 'score_message'}
+        score_fx[#score_fx+1] = { key = "a_score", value = SMODS.signed(score_mod.add), sound = "gong", message_key = 'score_message'}
     end
     -- TARGET: lower priority score operation
     G.GAME.chips = score_cal
@@ -4327,13 +4336,13 @@ SMODS.mod_blind_size = function(blind_size_mod)
     if blind_size_mod.mult then
         local absoluted = math.abs(blind_size_mod.mult)
         blind_size_cal = blind_size_cal * blind_size_mod.mult
-        table.insert(G.BLIND_SIZE_DISPLAY_QUEUE, blind_size_cal)
+        table.insert(G.BLIND_SIZE_DISPLAY_QUEUE, old)
         blind_size_fx[#blind_size_fx+1] = {key = blind_size_mod.mult < 0 and "a_xblind_size_minus" or "a_xblind_size", value = absoluted, sound = "xblindsize", message_key = "xblind_size_message"}
     end
     if blind_size_mod.add and blind_size_mod.add ~= 0 then
         blind_size_cal = blind_size_cal + blind_size_mod.add
-        table.insert(G.BLIND_SIZE_DISPLAY_QUEUE, blind_size_cal)
-        blind_size_fx[#blind_size_fx+1] = { key = "a_blind_size", value = blind_size_mod.add, sound = "timpani", message_key = 'blind_size_message'}
+        table.insert(G.BLIND_SIZE_DISPLAY_QUEUE, old)
+        blind_size_fx[#blind_size_fx+1] = { key = "a_blind_size", value = SMODS.signed(blind_size_mod.add), sound = "timpani", message_key = 'blind_size_message'}
     end
     -- TARGET: lower priority blind_size operation
     G.GAME.blind.chips = blind_size_cal
