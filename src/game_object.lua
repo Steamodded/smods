@@ -1870,7 +1870,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     function SMODS.get_new_blind(blind_types)
         -- Use SMODS object weight system when enabled
-        if SMODS.optional_features.object_weights then return SMODS.poll_object({type = 'Blind', blind_types = blind_types}) end
+        if SMODS.optional_features.object_weights then 
+            local ret = SMODS.poll_object({type = 'Blind', blind_types = blind_types}) 
+            G.GAME.bosses_used[ret] = G.GAME.bosses_used[ret] + 1
+            return ret
+        end
         if not blind_types or (blind_types.Boss or blind_types.Showdown) then
             G.GAME.perscribed_bosses = G.GAME.perscribed_bosses or {}
             if G.GAME.perscribed_bosses and G.GAME.perscribed_bosses[G.GAME.round_resets.ante] then
