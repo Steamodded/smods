@@ -117,3 +117,16 @@ if saveTable and self.GAME.challenge then
     self.GAME.challenge_tab = G.CHALLENGES[get_challenge_int_from_id(self.GAME.challenge) or ''] or { name = 'ERROR' }
 end
 '''
+
+# Challenge Custom Deck Support
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+name_to_check == 'Challenge Deck' and UIBox_button({button = 'deck_view_challenge', label = {localize(challenge.id, 'challenge_names')},  minw = 2.2, minh = 1, scale = 0.6, id = challenge})
+'''
+payload = '''
+challenge.id and UIBox_button({button = 'deck_view_challenge', label = {localize(challenge.id, 'challenge_names')},  minw = 2.2, minh = 1, scale = 0.6, id = challenge})
+'''

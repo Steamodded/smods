@@ -42,7 +42,7 @@ pattern = '''
 if G.FORCE_TAG then return G.FORCE_TAG end
 '''
 payload = '''
-if SMODS.optional_features.object_weights then return SMODS.poll_object({type = 'Tag'}) end
+if SMODS.optional_features.object_weights then return SMODS.poll_object({type = 'Tag', append = append}) end
 '''
 
 
