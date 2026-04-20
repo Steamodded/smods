@@ -41,29 +41,6 @@ match_indent = true
 [patches.pattern]
 target = 'card.lua'
 match_indent = true
-position = 'after'
-pattern = '''
-if delay_sprites then 
-'''
-payload = '''
- if delay_sprites ~= 'quantum' then
-'''
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'before'
-pattern = '''
-else
-    self:set_sprites(center)
-'''
-payload = '''
-end
-'''
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
 position = 'at'
 pattern = '''
 self:set_sprites(center)

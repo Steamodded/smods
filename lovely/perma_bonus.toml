@@ -41,7 +41,6 @@ pattern = "elseif _c.set == 'Enhanced' then"
 position = "before"
 payload = '''SMODS.localize_perma_bonuses(specific_vars, desc_nodes)'''
 match_indent = true
-overwrite = false
 
 # generate_card_ui(): signed(extra_chips)
 [[patches]]
@@ -69,7 +68,6 @@ pattern = "elseif _c.set == 'Booster' then"
 position = "before"
 payload = '''SMODS.localize_perma_bonuses(specific_vars, desc_nodes)'''
 match_indent = true
-overwrite = false
 
 # generate_UIBox_ability_table(): prime locals for easier boolean magic
 [[patches]]
@@ -80,7 +78,6 @@ position = "before"
 payload = '''local bonus_chips = self.ability.bonus + (self.ability.perma_bonus or 0)
 local total_h_dollars = self:get_h_dollars()'''
 match_indent = true
-overwrite = false
 
 # generate_UIBox_ability_table(): prime specific_vars for playing cards
 [[patches]]
@@ -126,7 +123,6 @@ h_x_chips = center.config.h_x_chips or 1,
 repetitions = center.config.repetitions or 0,
 '''
 match_indent = true
-overwrite = false
 
 # set_ability: set defaults for permanent bonuses
 [[patches]]

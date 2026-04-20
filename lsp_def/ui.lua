@@ -388,7 +388,7 @@ function G.FUNCS.scrollbar(e) end
 ---@field id? string Assigns the given id to the config table of the root of the button UIBox if set.
 ---@field option_align? string Aligns the text of the dropdown options. Works just like aligning regular UI nodes. Default is "cl".
 ---@field close_on_select? boolean If true, the dropdown menu will automatically close when an option is selected or unselected.
----@field display_choice_func? fun(option: string): string? If defined, changes the displayed text for a choice to the returned value of this function. `option` is 
+---@field display_choice_func? fun(option: string): string? If defined, changes the displayed text for a choice to the returned value of this function. `option` is the current option selected from the `options` table.
 
 ---Returns a button that creates a dropdown selection menu when clicked on.
 ---@param args DropdownSelectArgs

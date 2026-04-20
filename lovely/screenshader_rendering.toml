@@ -38,8 +38,7 @@ for index, key in ipairs(SMODS.ScreenShader.obj_buffer) do
         end
 		
 		love.graphics.setCanvas(current_canvas)
-		love.graphics.setShader(shader_object)
-		love.graphics.draw(last_canvas, 0, 0)
+        shader:draw(shader_object, last_canvas)
 
         last_canvas = current_canvas
 	end
@@ -49,6 +48,7 @@ end
 love.graphics.setCanvas()
 love.graphics.setShader()
 if last_canvas then
+    love.graphics.clear{0,0,0,1}
     love.graphics.draw(last_canvas, 0, 0)
     -- Draw everything we just did to the main canvas (what the player actually sees)
 end
