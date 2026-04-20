@@ -260,12 +260,12 @@ pattern = '''
 for _, v in ipairs(info_queue) do
 '''
 payload = '''
-if card and card.ability and (card.ability.extra_slots_used or 0) ~= 0 then
+if not hide_desc and card and card.ability and (card.ability.extra_slots_used or 0) ~= 0 then
     local str = 'generic_extra_slots'
     if card.ability.set == 'Default' or card.ability.set == 'Enhanced' then str = str .. '_pc' end
     info_queue[#info_queue + 1] = {set = 'Other', key = str, vars = {card.ability.extra_slots_used + 1}}
 end
-if card and card.ability and (card.ability.card_limit or 0) ~= 0 then
+if not hide_desc and card and card.ability and (card.ability.card_limit or 0) ~= 0 then
     if not (card.edition and card.edition.card_limit == card.ability.card_limit) then
         local amount = card.ability.card_limit - (card.edition and card.edition.card_limit or 0)
         local str = 'generic_card_limit'
@@ -338,7 +338,7 @@ payload = '''
 target = "functions/common_events.lua"
 pattern = "if args.type == 'min_hand_size' and G.hand and G.hand.config.card_limit <= card.unlock_condition.extra then"
 position = "at"
-payload = "if args.type == 'min_hand_size' and G.hand and G.hand.config.true_card_limit <= card.unlock_condition.extra then"
+payload = "if args.type == 'min_hand_size' and G.hand and G.hand.config.card_limits.total_slots <= card.unlock_condition.extra then"
 match_indent = true
 
 # Challenge UI tooltip support

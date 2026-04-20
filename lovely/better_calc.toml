@@ -13,12 +13,11 @@ pattern = '''(?<indent>[\t ]*)(?<handtext>if modded then update_hand_text\(\{sou
 position = 'at'
 line_prepend = '$indent'
 payload = '''$handtext
-delay(0.3)
 SMODS.calculate_context({initial_scoring_step = true, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands})
 for _, v in ipairs(SMODS.get_card_areas('playing_cards')) do
     SMODS.calculate_main_scoring({cardarea = v, full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands}, v == G.play and scoring_hand or nil)
-    delay(0.3)
 end
+delay(0.3)
 $delimiter'''
 ## eval_card()
 # handle debuffed playing cards
@@ -121,18 +120,19 @@ if context.cardarea == G.play and context.main_scoring then
         ret.playing_card.score = score
     end
     local x_score = card:get_bonus_x_score()
-    if x_score ~= 1 then
+    if x_score > 0 then
         ret.playing_card.x_score = x_score
     end
-    -- TARGET: main scoring on played cards
+
 	local blind_size = card:get_bonus_blind_size()
     if blind_size ~= 0 then
         ret.playing_card.blind_size = blind_size
     end
     local x_blind_size = card:get_bonus_x_blind_size()
-    if x_blind_size ~= 1 then
+    if x_blind_size > 0 then
         ret.playing_card.x_blind_size = x_blind_size
     end
+    
     -- TARGET: main scoring on played cards
 end
 if context.end_of_round and context.cardarea == G.hand and context.playing_card_end_of_round then
@@ -192,7 +192,7 @@ if context.cardarea == G.hand and context.main_scoring then
         ret.playing_card.h_score = h_score
     end
     local h_x_score = card:get_bonus_h_x_score()
-    if h_x_score ~= 1 then
+    if h_x_score > 0 then
         ret.playing_card.h_x_score = h_x_score
     end
 	local h_blind_size = card:get_bonus_h_blind_size()
@@ -200,7 +200,7 @@ if context.cardarea == G.hand and context.main_scoring then
         ret.playing_card.blind_size = h_blind_size
     end
     local h_x_blind_size = card:get_bonus_h_x_blind_size()
-    if h_x_blind_size ~= 1 then
+    if h_x_blind_size > 0 then
         ret.playing_card.x_blind_size = h_x_blind_size
     end
 
@@ -809,6 +809,16 @@ payload = '''
 -- context.after calculations
 SMODS.calculate_context({full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, after = true})
 
+-- set `ability.played_this_ante` on played cards
+for _,v in ipairs(G.play.cards) do
+    G.E_MANAGER:add_event(Event({
+        func = function()
+            v.ability.played_this_ante = true
+            return true
+        end,
+    }))
+end
+
 -- TARGET: effects after hand evaluation'''
 
 # calc_dollar_bonus call through other objects
@@ -1160,8 +1170,7 @@ G.E_MANAGER:add_event(Event({
     end
 }))
 G.E_MANAGER:add_event(Event({
-    trigger = 'before',
-    delay = 0.4,
+    trigger = 'immediate',
     func = function()
         if #SMODS.drawn_cards > 0 then
             SMODS.calculate_context({first_hand_drawn = not G.GAME.current_round.any_hand_drawn and G.GAME.facing_blind,
@@ -1751,14 +1760,10 @@ G.E_MANAGER:add_event(Event({
             front = pseudorandom_element(G.P_CARDS, pseudoseed('marb_fr')),
             center = G.P_CENTERS.m_stone}, G.play, nil, nil, {G.C.SECONDARY_SET.Enhanced})
         SMODS.calculate_effect({message = localize('k_plus_stone'), colour = G.C.SECONDARY_SET.Enhanced}, context.blueprint_card or self)
-        G.E_MANAGER:add_event(Event({
-        func = function()
-            draw_card(G.play,G.deck, 90,'up', nil)
-            return true
-        end}))
         playing_card_joker_effects({card})
         return true
     end}))
+draw_card(G.play,G.deck, 90,'up', nil)
 '''
 # DNA
 [[patches]]

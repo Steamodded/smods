@@ -1,0 +1,99 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Internal config options for mobile
+[[patches]]
+[patches.pattern]
+target = "globals.lua"
+pattern = "if love.system.getOS() == 'OS X' then"
+position = "before"
+payload = '''
+if love.system.getOS() == 'Android' or love.system.getOS() == 'iOS' then
+	self.F_SAVE_TIMER = 5
+	self.F_DISCORD = true
+	self.F_NO_ACHIEVEMENTS = true
+	self.F_CRASH_REPORTS = false
+	self.F_SOUND_THREAD = true
+	self.F_VIDEO_SETTINGS = false
+	self.F_ENGLISH_ONLY = false
+	self.F_QUIT_BUTTON = false
+    self.F_MOBILE_UI = true
+end
+'''
+match_indent = true
+times = 1
+
+# highdpi mode
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "highdpi = (love.system.getOS() == 'OS X')"
+position = "at"
+payload = "highdpi = (love.system.getOS() == 'OS X' or love.system.getOS() == 'Android' or love.system.getOS() == 'iOS')"
+match_indent = true
+times = 1
+
+# landscape orientation
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "resizable = true,"
+position = "at"
+payload = "resizable = not (love.system.getOS() == 'Android' or love.system.getOS() == 'iOS'),"
+match_indent = true
+times = 1
+
+[[patches]]
+[patches.pattern]
+target = "main.lua"
+pattern = "local os = love.system.getOS()"
+position = "after"
+payload = "if os == 'Android' or os == 'iOS' then love.window.updateMode(2, 1) end"
+match_indent = true
+times = 1
+
+# make the on-screen keyboard work on touch controls
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "if G.CONTROLLER.text_input_hook == e and G.CONTROLLER.HID.controller then"
+position = "at"
+payload = 'if G.CONTROLLER.text_input_hook == e and (G.CONTROLLER.HID.controller or G.CONTROLLER.HID.touch) then'
+match_indent = true
+times = 1
+
+# fix flame shader
+[[patches]]
+[patches.pattern]
+target = 'flame.fs'
+pattern = "#endif"
+position = "after"
+payload = """
+#ifdef GL_ES
+    precision MY_HIGHP_OR_MEDIUMP float;
+#endif
+"""
+match_indent = true
+times = 1
+
+
+[[patches]]
+[patches.pattern]
+target = 'flame.fs'
+pattern = 'vec4 effect*'
+position = "at"
+payload = "mediump vec4 effect( mediump vec4 colour, Image texture, mediump vec2 texture_coords, mediump vec2 screen_coords )"
+match_indent = true
+times = 1
+
+# Remove noise factor from CRT shader
+
+[[patches]]
+[patches.pattern]
+target = 'CRT.fs'
+pattern = '*noise_fac*'
+position = "at"
+payload = ""
+match_indent = true

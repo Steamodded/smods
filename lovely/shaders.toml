@@ -26,3 +26,11 @@ pattern = '''self.config = config'''
 position = "after"
 payload = '''self.shaders = config.shaders'''
 match_indent = true
+
+# delegate CRT shader to SMODS.ScreenShader
+[[patches]]
+[patches.regex]
+target = "game.lua"
+pattern = 'G.SETTINGS.GRAPHICS.crt =(.*\n)*\s*G.SETTINGS.GRAPHICS.crt =.*'
+position = 'at'
+payload = ''

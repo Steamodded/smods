@@ -166,7 +166,6 @@ pattern = "self.config.center = center"
 position = 'at'
 match_indent = true
 payload = '''
-if delay_sprites == 'quantum' then self.from_quantum = true end
 local was_added_to_deck = false
 if self.added_to_deck and old_center and not self.debuff then
     self:remove_from_deck()
@@ -189,7 +188,19 @@ payload = '''
 if was_added_to_deck and not self.debuff then
     self:add_to_deck()
 end
-self.from_quantum = nil'''
+'''
+
+# The above introduces visual issues with The Pillar and effects that call set_ability during a hand
+# Removes early setting of ability.played_this_ante, replaced at end of scoring
+
+# G.FUNCS.play_cards_from_highlighted
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = 'G.hand.highlighted[i].ability.played_this_ante = true'
+position = 'at'
+match_indent = true
+payload = '-- removed by SMODS'
 
 
 ## set_ability() transfers over old fields
@@ -221,14 +232,7 @@ self.ability.extra_slots_used = self.ability.extra_slots_used + (center.config.e
 
 
 -- reset keys do not persist on ability change
-local reset_keys = {'name', 'effect', 'set', 'extra', 'played_this_ante', 'perma_debuff'}
-for _, mod in ipairs(SMODS.mod_list) do
-    if mod.set_ability_reset_keys then
-        local keys = mod.set_ability_reset_keys()
-        for _, v in pairs(keys) do table.insert(reset_keys, v) end
-    end
-end
-for _, k in ipairs(reset_keys) do
+for _, k in ipairs(SMODS.get_ability_reset_keys(self) or {}) do
     self.ability[k] = new_ability[k]
 end
 '''
