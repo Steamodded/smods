@@ -1021,7 +1021,7 @@ function Card:calculate_enhancement(context)
 end
 
 function SMODS.get_enhancements(card, extra_only)
-    if not SMODS.optional_features.quantum_enhancements or not G.hand then
+    if not SMODS.optional_features.quantum_fields.enhancement or not G.hand then
         return not extra_only and card.ability.set == 'Enhanced' and { [card.config.center.key] = true } or {}
     end
     if not SMODS.enh_cache:read(card, extra_only) then
@@ -1090,7 +1090,7 @@ function SMODS.get_ability_reset_keys(card)
 end
 
 function SMODS.calculate_quantum_enhancements(card, effects, context)
-    if not SMODS.optional_features.quantum_enhancements then return end
+    if not SMODS.optional_features.quantum_fields.enhancement then return end
     if context.extra_enhancement or context.check_enhancement or SMODS.extra_enhancement_calc_in_progress then return end
     context.extra_enhancement = true
     SMODS.extra_enhancement_calc_in_progress = true
@@ -2443,6 +2443,7 @@ local function insert(t, res)
 end
 SMODS.optional_features = {
     cardareas = {},
+    quantum_fields = {},
 }
 SMODS.get_optional_features = function()
     for _,mod in ipairs(SMODS.mod_list) do
@@ -4092,3 +4093,4 @@ end
 function SMODS.create_unlock_text(center)
 	return localize('k_'..string.lower(center and center.set or 'unknown'))
 end
+

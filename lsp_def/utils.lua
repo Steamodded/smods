@@ -143,7 +143,7 @@ function SMODS.merge_lists(...) end
 ---@field discard? boolean Enables "Discard Calculation". Discarded cards are included in calculation.
 
 ---@type SMODS.optional_features
-SMODS.optional_features = { cardareas = {} }
+SMODS.optional_features = { cardareas = {}, quantum_fields = {} }
 
 --- Inserts all SMODS features enabled by loaded mods into `SMODS.optional_features`.
 function SMODS.get_optional_features() end
