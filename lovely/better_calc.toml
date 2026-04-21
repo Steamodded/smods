@@ -319,7 +319,7 @@ local areas = SMODS.get_card_areas('jokers')
 local area_set = {}
 local c_types_no_retrigger = {
     [SMODS.CONTEXT_TYPES.PROBABILITY] = true, 
-    [SMODS.CONTEXT_TYPES.CHECK_ENHANCEMENT] = true
+    [SMODS.CONTEXT_TYPES.enhancement] = true
 }
 for _,v in ipairs(areas) do area_set[v] = true end
 if card.area and area_set[card.area] then

@@ -1942,7 +1942,6 @@ SMODS.current_evaluated_object = nil
 
 -- Enum, used for/with the below SMODS.get_context_type()
 SMODS.CONTEXT_TYPES = {
-    CHECK_ENHANCEMENT = "enhancement",
     PROBABILITY = "probability",
     POST_TRIGGER = "post_trigger"
 }
@@ -1956,8 +1955,12 @@ SMODS.CONTEXT_TYPES = {
 -- if yes, don't evaluate the object.
 function SMODS.get_context_type(context)
     if context.mod_probability or context.fix_probability then return SMODS.CONTEXT_TYPES.PROBABILITY end
-    if context.check_enhancement then return SMODS.CONTEXT_TYPES.CHECK_ENHANCEMENT end
     if context.post_trigger then return SMODS.CONTEXT_TYPES.POST_TRIGGER end
+    for key, q_field in pairs(SMODS.QuantumCardFields) do
+        if context[q_field.context_flag] then
+            return SMODS.CONTEXT_TYPES[key]
+        end
+    end
 end
 
 

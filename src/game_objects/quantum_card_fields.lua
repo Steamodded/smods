@@ -7,7 +7,8 @@ local function _general_quantum_getter(key, card, args)
     end
 
     local flags = args.flags or {}
-    local context = {["get_" + key + "s"] = true, card = self, [key + "s"] = default_values, no_mod = false}
+    local context_flag = SMODS.QuantumCardFields[key].context_flag
+    local context = {[context_flag] = true, card = self, [key + "s"] = default_values, no_mod = false}
     for key, flag in pairs(flags) do
         context[key] = flag
     end
@@ -167,6 +168,8 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
             target_objects.is_funcs = target_objects.is_funcs or {Card}
             _quantum_field_inject_is_funcs({key = self.key, func_prefix = inject_args.is_func_prefix or "is"}, target_objects.is_funcs)
         end
+        self.context_flag = self.context_flag or "get_" + self.key + "s"
+        SMODS.CONTEXT_TYPES[self.key] = self.context_flag
     end,
     post_inject_class = function(self)
         
@@ -186,6 +189,7 @@ SMODS.QuantumCardField{
 SMODS.QuantumCardField{
     key = "enhancement",
     g_obj_table = G.P_CENTERS,
+    context_flag = "check_enhancement",
     inject_args = {
         is_func_prefix = "has"
     },
