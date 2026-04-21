@@ -751,11 +751,11 @@ function SMODS.get_previous_context() end
 function SMODS.update_context_flags(context, flags) end
 
 ---@param context CalcContext|table The context checked
----@return string|false
---- Either returns a getter context identifier string
+---@return string|nil
+--- Either returns a context identifier string (from SMODS.CONTEXT_TYPES enum)
 --- (e.g. "enhancement" for context.check_enhancement)
---- or false if the [context] isn't a getter context.
-function SMODS.is_getter_context(context) end
+--- or nil if the [context] isn't a defined context.
+function SMODS.get_context_type(context) end
 
 ---@param eval_object SMODS.GameObject|table The object that will be evaluated next if this returns false
 ---@return boolean

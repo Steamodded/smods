@@ -1940,6 +1940,12 @@ end
 
 SMODS.current_evaluated_object = nil
 
+-- Enum, used for/with the below SMODS.get_context_type()
+SMODS.CONTEXT_TYPES = {
+    CHECK_ENHANCEMENT = "enhancement",
+    PROBABILITY = "probability",
+    POST_TRIGGER = "post_trigger"
+}
 -- Used to avoid looping getter context calls. Example;
 -- Joker A: Doubles lucky card probabilities
 -- Joker B: 1 in 3 chance that a card counts as a lucky card
@@ -1948,22 +1954,22 @@ SMODS.current_evaluated_object = nil
 -- A loop is caused (ignore the fact that Joker B would be the trigger_obj and not a playing card) (I'd write a Quantum Ranks example, If I had any!!)
 -- To avoid this; Check before evaluating any object, whether the current getter context type (if it's a getter context) has previously caused said object to create a getter context,
 -- if yes, don't evaluate the object.
-function SMODS.is_getter_context(context)
-    if context.mod_probability or context.fix_probability then return "probability" end
-    if context.check_enhancement then return "enhancement" end
-    return false
+function SMODS.get_context_type(context)
+    if context.mod_probability or context.fix_probability then return SMODS.CONTEXT_TYPES.PROBABILITY end
+    if context.check_enhancement then return SMODS.CONTEXT_TYPES.CHECK_ENHANCEMENT end
+    if context.post_trigger then return SMODS.CONTEXT_TYPES.POST_TRIGGER end
 end
 
 
 function SMODS.check_looping_context(eval_object)
     if #SMODS.context_stack < 2 then return false end
-    local getter_type = SMODS.is_getter_context(SMODS.context_stack[#SMODS.context_stack].context)
+    local getter_type = SMODS.get_context_type(SMODS.context_stack[#SMODS.context_stack].context)
     if not getter_type then return end
     for i, t in ipairs(SMODS.context_stack) do
-        local other_type = SMODS.is_getter_context(t.context)
-        local next_context = SMODS.context_stack[i+1]
-        -- If the current kind of getter context has caused the eval_object to incite a getter context before, dont evaluate the object again
-        if other_type == getter_type and next_context and SMODS.is_getter_context(next_context.context) and next_context.caller == eval_object then
+        local other_type = SMODS.get_context_type(t.context)
+        local next_context_t = SMODS.context_stack[i+1]
+        -- If the current kind of context has caused the eval_object to incite another context before, dont evaluate the object again
+        if other_type == getter_type and next_context_t and SMODS.get_context_type(next_context_t.context) and next_context_t.caller == eval_object then
             return true
         end
     end
