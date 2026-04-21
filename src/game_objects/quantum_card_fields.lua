@@ -1,10 +1,28 @@
 -- General helpers
 
 local function _general_quantum_getter(key, card, args)
+    local default_values = SMODS.QuantumCardFields[key]:base_getter(card, args) or {}
     if not SMODS.optional_features.quantum_fields[key] then 
-        return SMODS.QuantumCardFields[key].base_getter(card, args)
+        return default_values
     end
-    
+
+    local flags = args.flags or {}
+    local context = {["get_" + key + "s"] = true, card = self, [key + "s"] = default_values, no_mod = false}
+    for key, flag in pairs(flags) do
+        context[key] = flag
+    end
+
+    local eval = SMODS.calculate_context(context) or {}
+
+    local ret = {}
+    for k, v in pairs(eval[key + "s"]) do
+        if v then
+            local key = type(k) == "table" and k.key or k
+            ret[key] = true
+        end
+    end
+
+    return ret
 end
 
 
@@ -153,12 +171,16 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
     post_inject_class = function(self)
         
     end,
-    base_getter = function (card, args) end
+    base_value_ref = nil, -- e.g. 'base.value' for Rank, 'config.center.key' for Enhancement
+    base_getter = function (self, card, _args) 
+        return (self.has_no(card, _args) and {}) or {[table_get_subfield(card, self.base_value_ref)] = true}
+    end
 }
 
 SMODS.QuantumCardField{
     key = "rank",
     g_obj_table = SMODS.Ranks,
+    base_value_ref = "base.value"
 }
 
 SMODS.QuantumCardField{
@@ -170,7 +192,8 @@ SMODS.QuantumCardField{
     target_objects = {
         getter = {Card, SMODS},
         is_funcs = {Card, SMODS}
-    }
+    },
+    base_value_ref = "config.center.key"
 }
 
 SMODS.QuantumCardField{
@@ -178,17 +201,20 @@ SMODS.QuantumCardField{
     g_obj_table = G.P_SEALS,
     inject_args = {
         is_func_prefix = "has"
-    }
+    },
+    base_value_ref = "seal"
 }
 
 SMODS.QuantumCardField{
     key = "edition",
     g_obj_table = G.P_CENTERS,
+    base_value_ref = "edition.key"
 }
 
 SMODS.QuantumCardField{
     key = "suit",
     g_obj_table = SMODS.Suits,
+    base_value_ref = "base.suit"
 }
 
 SMODS.QuantumCardField{
