@@ -7,23 +7,25 @@ local function _general_quantum_getter(key, card, args)
     
 end
 
+
 -- Todo : Check whether Stone + Wild enhancements need to be taken ownership of to set .any_suit / .no_rank, etc.
 local function _general_quantum_has_no_func(key, card, _args)
     local other_fields_values = {}
     for other_key, obj in pairs(SMODS.QuantumCardFields) do
         if other_key ~= key then
-            other_fields_values[#other_fields_values+1] = obj.getter(card)
+            other_fields_values[other_key] = obj.getter(card)
         end
     end
     local has_no = false
     local check_field_no = "no_" + key
     local check_field_any = "any_" + key
-    for _, other_values in ipairs(other_fields_values) do
+    for other_key, other_values in pairs(other_fields_values) do
+        local other_field_obj_table = SMODS.QuantumCardFields[other_key].g_obj_table
         for k, v in pairs(other_values) do
-            if v and G.P_CENTERS[k] and G.P_CENTERS[k][check_field_no] then
+            if v and other_field_obj_table[k] and other_field_obj_table[k][check_field_no] then
                 has_no = true
             end
-            if v and G.P_CENTERS[k] and G.P_CENTERS[k][check_field_any] then
+            if v and other_field_obj_table[k] and other_field_obj_table[k][check_field_any] then
                 return false -- 'any' overrules 'no' -> like Wild overruling Stone
             end
         end
@@ -35,13 +37,14 @@ local function _general_quantum_has_any_func(key, card, _args)
     local other_fields_values = {}
     for other_key, obj in pairs(SMODS.QuantumCardFields) do
         if other_key ~= key then
-            other_fields_values[#other_fields_values+1] = obj.getter(card)
+            other_fields_values[other_key] = obj.getter(card)
         end
     end
     local check_field = "any_" + key
-    for _, other_values in ipairs(other_fields_values) do
+    for other_key, other_values in pairs(other_fields_values) do
+        local other_field_obj_table = SMODS.QuantumCardFields[other_key].g_obj_table
         for k, v in pairs(other_values) do
-            if v and G.P_CENTERS[k] and G.P_CENTERS[k][check_field] then
+            if v and other_field_obj_table[k] and other_field_obj_table[k][check_field] then
                 return true
             end
         end
@@ -50,12 +53,23 @@ local function _general_quantum_has_any_func(key, card, _args)
 end
 
 local function _general_quantum_singular_is_func(key, card, value, _args)
-    return SMODS.QuantumCardFields[key].plural_is(card, {[value] = true}, _args)
+    return SMODS.QuantumCardFields[key].plural_is(card, {[value] = true}, (_args or {}).all, _args)
 end
 
-local function _general_quantum_plural_is_func(key, card, values_map, all)
-    local field_values = SMODS.QuantumCardFields[key].getter(card)
-    
+local function _general_quantum_plural_is_func(key, card, values_map, all, ...)
+    local field_values = SMODS.QuantumCardFields[key].getter(card, ...)
+
+    local is_wild = SMODS.QuantumCardFields[key].has_any(card, ...)
+
+    for k, _ in pairs(field_values) do
+        if values_map[k] then
+            if not all then return true end
+        else
+            if all and not is_wild then return false
+            elseif all then is_wild = false end
+        end
+    end
+    return all
 end
 
 -- Inject helpers
@@ -117,6 +131,7 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
     obj_buffer = {},
     required_params = {
         'key',
+        'g_obj_table'
     },
     process_loc_text = function() end,
     inject = function(self)
@@ -143,10 +158,12 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
 
 SMODS.QuantumCardField{
     key = "rank",
+    g_obj_table = SMODS.Ranks,
 }
 
 SMODS.QuantumCardField{
     key = "enhancement",
+    g_obj_table = G.P_CENTERS,
     inject_args = {
         is_func_prefix = "has"
     },
@@ -158,6 +175,7 @@ SMODS.QuantumCardField{
 
 SMODS.QuantumCardField{
     key = "seal",
+    g_obj_table = G.P_SEALS,
     inject_args = {
         is_func_prefix = "has"
     }
@@ -165,8 +183,16 @@ SMODS.QuantumCardField{
 
 SMODS.QuantumCardField{
     key = "edition",
+    g_obj_table = G.P_CENTERS,
 }
 
 SMODS.QuantumCardField{
     key = "suit",
+    g_obj_table = SMODS.Suits,
 }
+
+SMODS.QuantumCardField{
+    key = "sticker",
+    g_obj_table = SMODS.Stickers,
+}
+
