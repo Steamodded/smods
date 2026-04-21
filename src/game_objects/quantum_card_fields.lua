@@ -5,31 +5,37 @@ local function _general_quantum_getter(key, card, args)
     
 end
 
-local function _general_quantum_singular_is_func(key, card, args)
-    if not SMODS.optional_features.quantum_fields[key] then return end
+local function _general_quantum_has_no_func(key, card, _args)
     
 end
 
-local function _general_quantum_plural_is_func(key, card, args)
-    if not SMODS.optional_features.quantum_fields[key] then return end
+local function _general_quantum_has_any_func(key, card, _args)
     
+end
+
+local function _general_quantum_singular_is_func(key, card, value, _args)
+    local field_values = card["get_" + key + "s"](card)
+end
+
+local function _general_quantum_plural_is_func(key, card, values, all)
+    local field_values = card["get_" + key + "s"](card)
 end
 
 
 local function _quantum_field_inject_getter(args) 
-    local getter_func = function (self, _args)
-        return _general_quantum_getter(args.key, self, _args)
+    local getter_func = function (self, ...)
+        return _general_quantum_getter(args.key, self, ...)
     end
     local func_field = "get_" + args.key + "s"
     Card[func_field] = args.override_getter or getter_func
 end
 
 local function _quantum_field_inject_has_funcs(args) 
-    local has_no_func = function (card)
-        return 
+    local has_no_func = function (card, ...)
+        return _general_quantum_has_no_func(args.key, card, ...)
     end
-    local has_any_func = function (card)
-        return 
+    local has_any_func = function (card, ...)
+        return _general_quantum_has_any_func(args.key, card, ...)
     end
     local has_no_func_field = "has_no_" + args.key
     local has_any_func_field = "has_any_" + args.key
@@ -38,11 +44,11 @@ local function _quantum_field_inject_has_funcs(args)
 end
 
 local function _quantum_field_inject_is_funcs(args) 
-    local singular_is_func = function (self, _args)
-        return _general_quantum_singular_is_func(args.key, self, _args)
+    local singular_is_func = function (self, value, ...)
+        return _general_quantum_singular_is_func(args.key, self, value, ...)
     end
-    local plural_is_func = function (self, _args)
-        return _general_quantum_plural_is_func(args.key, self, _args)
+    local plural_is_func = function (self, values, ...)
+        return _general_quantum_plural_is_func(args.key, self, values, ...)
     end
     local singular_func_field = args.func_prefix + "_" + args.key
     local plural_func_field = args.func_prefix + "_" + args.key + "s"
