@@ -713,7 +713,7 @@ function get_straight(hand, min_length, skip, wrap)
 				wild_reps[#wild_reps+1] = card_rep
 				wild_rank_count = wild_rank_count + 1
 			else
-				local pcard_ranks = SMODS.get_straight_ranks(pcard:get_ranks({eval_getting_ranks = {type = "straight"}}), true)
+				local pcard_ranks = SMODS.get_straight_ranks(pcard:get_ranks({eval_getting_ranks = {type = "straight"}}, true), true)
 
 				if next(pcard_ranks) then
 					local card_rep = CardRep.new(pcard, pcard_ranks)
@@ -3023,7 +3023,7 @@ function Card:is_face(from_boss)
 			return true
 		end
 
-		for rank, _ in pairs(self:get_ranks({is_face_getting_ranks = true})) do
+		for rank, _ in pairs(self:get_ranks({is_face_getting_ranks = true}, true)) do
 			if rank.face then return true end
 		end
 	end

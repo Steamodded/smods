@@ -1487,8 +1487,8 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         modify = true,
         shop_create_flags = true,
         booster_create_flags = true,
-        ranks_changed = true,
-        ranks_fixed = true,
+        ranks = true,
+        fixed = true,
     }
 
     if amount_return_flags[key] then
@@ -1596,7 +1596,7 @@ SMODS.other_calculation_keys = {
     'message',
     'level_up', 'func',
     'numerator', 'denominator',
-    'ranks_changed', 'ranks_fixed',
+    'ranks', 'fixed',
     'modify',
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
@@ -1955,54 +1955,27 @@ function SMODS.update_context_flags(context, flags)
     if flags.denominator then context.denominator = flags.denominator end
     if flags.cards_to_draw then context.amount = flags.cards_to_draw end
     if flags.saved then context.game_over = false end
-    if flags.ranks_fixed or flags.ranks_changed then
+    if flags.ranks then
         local no_mod_changed = false
         if flags.no_mod ~= nil then
             context.no_mod = flags.no_mod
             no_mod_changed = true
         end
         if not context.no_mod or no_mod_changed then
-            if flags.ranks_fixed then
-                context.ranks = get_rank_objects(flags.ranks_fixed)
-                flags.ranks = context.ranks
-            end
-            if flags.ranks_changed then
-                for r, t in pairs(get_rank_objects(flags.ranks_changed)) do
-                    context.ranks[r] = t
+            if flags.fixed then
+                context.ranks = flags.ranks
+            else
+                for r, v in pairs(flags.ranks) do
+                    context.ranks[r] = v
                 end
-                flags.ranks = context.ranks
             end
-        elseif context.no_mod then
-            flags.ranks = context.ranks
         end
+        flags.ranks = nil
     end
     if flags.modify then
         -- insert general modified value updating here
         if context.modify_ante then context.modify_ante = flags.modify end
         if context.drawing_cards then context.amount = flags.modify end
-    end
-end
-
-
--- Helper function to get a rank map that only uses 'SMODS.Rank's as keys (instead of Rank.id or Rank.value)
-get_rank_objects = function(rank_map)
-    local ret = {}
-    for r, t in pairs(rank_map) do
-        local rank = get_rank_object(r)
-        if rank then
-            ret[rank] = t
-        end
-    end
-    return ret
-end
-
-get_rank_object = function(rank)
-    if type(rank) == "string" then
-        return SMODS.Ranks[rank]
-    elseif type(rank) == "table" and rank.key then
-        return SMODS.Ranks[rank.key]
-    elseif type(rank) == "number" then
-        return SMODS.get_rank_from_id(rank)
     end
 end
 
@@ -3108,7 +3081,7 @@ function SMODS.get_rank_tally(cards, flags)
                 pcard_ranks[v] = true
             end
         else
-            pcard_ranks = pcard:get_ranks(flags)
+            pcard_ranks = pcard:get_ranks(flags, true)
         end
         for rank, t in pairs(pcard_ranks) do
             if t then
@@ -3133,7 +3106,7 @@ function Card:is_rank(rank, bypass_debuff, flags) -- Accepts SMODS.Rank, a rank 
 
     if SMODS.has_any_rank(self) then return true end
 
-    for r, _ in pairs(self:get_ranks(flags)) do
+    for r, _ in pairs(self:get_ranks(flags, true)) do
         if r == rank or r.key == rank or r.id == rank then
             return true
         end
@@ -3143,9 +3116,16 @@ end
 
 function Card:is_ranks(ranks, bypass_debuff, flags, all)
     if not self.playing_card or not ranks then return false end
+    local rank_dict
     if type(ranks) ~= "table" then
-        ranks = {ranks}
+        rank_dict = {[ranks] = true}
+    elseif ranks[1] and type(ranks[1]) ~= "boolean" then
+        for i, r in ipairs(ranks) do
+            rank_dict[r] = true
+        end
     end
+
+    if not next(rank_dict) then return false end
 
     if (not bypass_debuff and self.debuff) or not SMODS.optional_features.quantum_ranks then
         if not self.vampired and SMODS.has_no_rank(self) then
@@ -3162,14 +3142,7 @@ function Card:is_ranks(ranks, bypass_debuff, flags, all)
     local is_wild = SMODS.has_any_rank(self)
     if is_wild and (not all or table_length(ranks) < 2) then return true end
 
-    local rank_dict = {}
-    for rank, _ in pairs(ranks) do
-        rank_dict[rank] = true
-    end
-
-    if not next(rank_dict) then return false end
-
-    for r, _ in pairs(self:get_ranks(flags)) do
+    for r, _ in pairs(self:get_ranks(flags, true)) do
         if rank_dict[r] or rank_dict[r.key] or rank_dict[r.id] then
             if not all then return true end
         else
@@ -3180,9 +3153,10 @@ function Card:is_ranks(ranks, bypass_debuff, flags, all)
     return all
 end
 
-function Card:get_ranks(flags) -- Returns a map of "SMODS.Rank"s, sanitized to ONLY be "SMODS.Rank"s -> Rank keys or rank ids are converted to SMODS.Rank 
+-- Returns a map of "SMODS.Rank" keys / 'SMODS.Rank's if as_objects is true
+function Card:get_ranks(flags, as_objects) 
     if not self.playing_card then return {} end
-    local default_ranks = (SMODS.has_no_rank(self) and {}) or {[SMODS.Ranks[self.base.value]] = true}
+    local default_ranks = (SMODS.has_no_rank(self) and {}) or {[not as_objects and self.base.value or SMODS.Ranks[self.base.value]] = true}
     if not SMODS.optional_features.quantum_ranks then return default_ranks end
 
     flags = flags or {}
@@ -3195,15 +3169,13 @@ function Card:get_ranks(flags) -- Returns a map of "SMODS.Rank"s, sanitized to O
 
     if not eval.ranks then return default_ranks end
 
-    -- Convert returned ranks to SMODS.Rank (deduplication is implicit because a map is returned)
     local ret = {}
-    local objectified_ranks = get_rank_objects(eval.ranks) or {}
-    for rank, t in pairs(objectified_ranks) do
-        if rank and t then
-            ret[rank] = true
+    for rank, v in pairs(eval.ranks) do
+        if rank and v then
+            local key = as_objects and SMODS.Ranks[rank] or rank
+            ret[key] = true
         end
     end
-
     return ret
 end
 
@@ -3212,7 +3184,7 @@ function Card:is_parity(parity)
     if SMODS.has_any_rank(self, {is_parity_getting_ranks = {parity = parity}}) then
         return true
     end
-    for rank, _ in pairs(self:get_ranks({is_parity_getting_ranks = {parity = parity}})) do
+    for rank, _ in pairs(self:get_ranks({is_parity_getting_ranks = {parity = parity}}, true)) do
         if rank.parity == parity then
             return true
         end
@@ -3221,7 +3193,7 @@ function Card:is_parity(parity)
 end
 
 function Card:is_royal()
-    for rank, _ in pairs(self:get_ranks({is_royal_getting_ranks = true})) do
+    for rank, _ in pairs(self:get_ranks({is_royal_getting_ranks = true}, true)) do
         if rank.is_royal then
             return true
         end
@@ -3875,6 +3847,7 @@ function SMODS.get_keys(t)
     for k, _ in pairs(t) do
         ret[#ret + 1] = k
     end
+    table.sort(ret, function (a, b) return a < b end)
     return ret
 end
 
