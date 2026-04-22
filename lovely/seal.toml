@@ -48,12 +48,14 @@ payload = '''
 
 local obj = G.P_SEALS[self.seal] or {}
 if obj.calculate and type(obj.calculate) == 'function' then
+    SMODS.set_context_evaluee(obj)
 	local o = obj:calculate(self, context)
 	if o then
         if not o.card then o.card = self end
         return o
     end
-end'''
+end
+SMODS.set_context_evaluee(self)'''
 
 # Card:update()
 [[patches]]

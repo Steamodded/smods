@@ -1,5 +1,6 @@
 -- General helpers
 
+-- Todo : Make it so that QuantumCardFields are not calculated in getter contexts, as in; a quantum seal cannot give a quantum enhancement.
 local function _general_quantum_getter(key, card, args)
     local default_values = SMODS.QuantumCardFields[key]:base_getter(card, args) or {}
     if not SMODS.optional_features.quantum_fields[key] then 
@@ -22,7 +23,6 @@ local function _general_quantum_getter(key, card, args)
             ret[key] = true
         end
     end
-
     return ret
 end
 
@@ -174,7 +174,7 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
     post_inject_class = function(self)
         
     end,
-    base_value_ref = nil, -- e.g. 'base.value' for Rank, 'config.center.key' for Enhancement
+    base_value_ref = nil, -- e.g. 'base.value' for Rank, 'config.center.key' for Enhancement, ...
     base_getter = function (self, card, _args) 
         return (self.has_no(card, _args) and {}) or {[table_get_subfield(card, self.base_value_ref)] = true}
     end
@@ -215,11 +215,11 @@ SMODS.QuantumCardField{
     base_value_ref = "edition.key"
 }
 
-SMODS.QuantumCardField{
-    key = "suit",
-    g_obj_table = SMODS.Suits,
-    base_value_ref = "base.suit"
-}
+-- SMODS.QuantumCardField{
+--     key = "suit",
+--     g_obj_table = SMODS.Suits,
+--     base_value_ref = "base.suit"
+-- }
 
 SMODS.QuantumCardField{
     key = "sticker",
