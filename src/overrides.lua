@@ -1022,11 +1022,15 @@ function get_quantum_pairing(parts, base)
 	end
 
 	if next(valid_pairs) then
+		local card_map = {}
 		local merged_cards = {}
 		for pair, _ in pairs(valid_pairs[1]) do
 			for _, pcard in ipairs(pair) do
-				merged_cards[#merged_cards+1] = pcard
+				card_map[pcard] = true
 			end
+		end
+		for pcard, _ in pairs(card_map) do
+			merged_cards[#merged_cards+1] = pcard
 		end
 		return { merged_cards }
 	end

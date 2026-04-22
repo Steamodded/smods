@@ -1137,20 +1137,19 @@ function SMODS.has_any_suit(card)
 end
 function SMODS.has_no_rank(card)
     local is_stone = false
-    local is_wild = false
     for k, _ in pairs(SMODS.get_enhancements(card)) do
         if k == 'm_stone' or G.P_CENTERS[k].no_rank then is_stone = not card.vampired end
-        if G.P_CENTERS[k].any_rank then is_wild = true end
+        if G.P_CENTERS[k].any_rank then return false end
     end
     if (G.P_CENTERS[(card.edition or {}).key] or {}).no_rank then is_stone = true end
-    if (G.P_CENTERS[(card.edition or {}).key] or {}).any_rank then is_wild = true end
+    if (G.P_CENTERS[(card.edition or {}).key] or {}).any_rank then return false end
     if (G.P_SEALS[card.seal or {}] or {}).no_rank then is_stone = true end
-    if (G.P_SEALS[card.seal or {}] or {}).any_rank then is_wild = true end
+    if (G.P_SEALS[card.seal or {}] or {}).any_rank then return false end
     for k, v in pairs(SMODS.Stickers) do
         if v.no_rank and card.ability[k] then is_stone = true end
-        if v.any_rank and card.ability[k] then is_wild = true end
+        if v.any_rank and card.ability[k] then return false end
     end
-    return is_stone and not is_wild
+    return is_stone
 end
 -- Hook this to add other Wild Rank effects. [flags] param is the same as Card:get_ranks()'s
 function SMODS.has_any_rank(card, flags)
@@ -3215,11 +3214,11 @@ function SMODS.lowest_and_highest_rank(cards)
     local rank_tally, rank_to_cards = SMODS.get_rank_tally(cards)
     local lowest
     local highest
-    for rank, tally in pairs(rank_tally) do
+    for rank, _ in pairs(rank_tally) do
         if not lowest or rank.sort_nominal < lowest.sort_nominal then
             lowest = {rank = rank, sort_nominal = rank.sort_nominal}
         end
-        if not highest or rank.sort_nominal < highest.sort_nominal then
+        if not highest or rank.sort_nominal > highest.sort_nominal then
             highest = {rank = rank, sort_nominal = rank.sort_nominal}
         end
     end
