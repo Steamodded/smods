@@ -20,7 +20,6 @@ if extra.update_blind_size then
     update_blind_size = true
 end
 """
-overwrite = true
 match_indent = true
 
 
@@ -33,7 +32,6 @@ position = "before"
 payload = """
 local update_blind_size = nil
 """
-overwrite = true
 match_indent = true
 
 
@@ -46,14 +44,10 @@ position = "before"
 payload = """
 if update_blind_size then
     G.BLIND_SIZE_DISPLAY_QUEUE = G.BLIND_SIZE_DISPLAY_QUEUE or {}
-    local new_blind_chips_text = number_format(math.floor(G.BLIND_SIZE_DISPLAY_QUEUE[1]))
-    G.GAME.blind.chips = (math.floor(G.BLIND_SIZE_DISPLAY_QUEUE[1]))
-    G.GAME.blind.chip_text = new_blind_chips_text
     table.remove(G.BLIND_SIZE_DISPLAY_QUEUE, 1)
     G.HUD_blind:get_UIE_by_ID('HUD_blind_count'):juice_up(0.3, 0.3)
 end
 """
-overwrite = true
 match_indent = true
 
 
@@ -64,7 +58,6 @@ pattern = """RENTAL = HEX('b18f43'),"""
 position = "after"
 payload = """BLIND_SIZE = HEX('ad5353'),
 """
-overwrite = true
 match_indent = true
 
 [[patches]]
@@ -75,5 +68,4 @@ position = "after"
 payload = """
 blind = G.C.DYN_UI.DARK,
 """
-overwrite = true
 match_indent = true

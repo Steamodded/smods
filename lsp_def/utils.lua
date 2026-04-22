@@ -432,11 +432,14 @@ function SMODS.find_card(key, count_debuffed) end
 ---@field enhancement? Enhancements|string Apply this enhancement.
 ---@field seal? Seals|string Apply this seal.
 ---@field stickers? Stickers[]|string[] Apply all stickers in this array.
+---@field force_stickers? Stickers[]|string[] Forces the application of all stickers in this array that are also in stickers.
 ---@field allow_duplicates? boolean Allows duplicated cards to be created, even without Showman.
 ---@field rank? Ranks|string|integer Rank of the playing card.
 ---@field suit? Suits|string Suit of the playing card.
----@field front? string Front of the playing card. Ignores rank and suit.
+---@field front? string|false Front of the playing card. Ignores rank and suit.
 ---@field enhanced_poll? number Chance to pick 'Base' over 'Enhanced' with set 'Playing Card'.
+---@field silent? true|{edition?:true, seal?:true} Applies edition and/or seal silently
+---@field attributes? string[] Creates a card with these attributes. All other arguments will be passed to SMODS.poll_object
 
 ---@param t CreateCard|table
 ---@return Card|table

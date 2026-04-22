@@ -1814,7 +1814,7 @@ function Card:set_sprites(_center, _front)
 				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Voucher", G.v_locked.pos)
 			elseif self.config.center.consumeable and self.config.center.demo then
 				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Tarot", G.c_locked.pos)
-			elseif not self.params.bypass_discovery_center and (_center.set == 'Edition' or _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' or _center.set == 'Booster') and not _center.discovered then
+			elseif not self.params.bypass_discovery_center and (_center.consumeable or SMODS.UndiscoveredCompat[_center.set]) and not _center.discovered then
 				local atlas = SMODS.get_atlas(
 					(_center.undiscovered and
 						(_center.undiscovered[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
@@ -2065,6 +2065,8 @@ end
 -- silent = boolean value
 function Card:set_edition(edition, immediate, silent, delay)
 	SMODS.enh_cache:write(self, nil)
+
+	silent = silent or SMODS.create_card_silent_edition
 
 	if self.edition then
 		self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
@@ -2449,15 +2451,20 @@ function get_pack(_key, _type)
 
 	-- Use SMODS object weight system when enabled
 	if SMODS.optional_features.object_weights then
-		return G.P_CENTERS[SMODS.poll_object({type = 'Booster',
-			filter = _type and function(pool)
-				local out = {}
-				for _, v in ipairs(pool) do 
-					if G.P_CENTERS[v.key] and G.P_CENTERS[v.key].kind == _type then
-						out[#out + 1] = v
-					end
+		return G.P_CENTERS[SMODS.poll_object({type = 'Booster', seed = (_key or 'pack_generic')..G.GAME.round_resets.ante,
+            filter = _type and function(pool)
+				local all_unavailable = true
+                for _, v in ipairs(pool) do
+                    if not G.P_CENTERS[v.key] or G.P_CENTERS[v.key].kind ~= _type then
+                        v.key = "UNAVAILABLE"
+                    else
+                        all_unavailable = false
+                    end
+                end
+				if all_unavailable then
+					pool[#pool+1] = {key = 'p_buffoon_normal_1', type = "Booster"}
 				end
-				return out
+				return pool
 			end})]
 	end
     local cume, it, center = 0, 0, nil
@@ -2864,4 +2871,15 @@ G.FUNCS.change_viewed_back = function(...)
 		card.original_T = copy_table(card.T)
 	end
 	return g_funcs_change_viewed_back_ref(...)
+end
+
+-- let's misuse this for blind size queue
+G.FUNCS.blind_chip_UI_scale = function(e)
+	if not (G.GAME.blind or {}).chips then return end
+	local blind_chips = G.GAME.blind.chips
+	if G.BLIND_SIZE_DISPLAY_QUEUE and G.BLIND_SIZE_DISPLAY_QUEUE[1] then
+		blind_chips = math.floor(G.BLIND_SIZE_DISPLAY_QUEUE[1])
+	end
+	G.GAME.blind.chip_text = number_format(blind_chips)
+    e.config.scale = scale_number(blind_chips, 0.7, 100000)
 end
