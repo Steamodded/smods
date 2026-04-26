@@ -1969,7 +1969,7 @@ end
 SMODS.CONTEXT_TYPES = {
     PROBABILITY = "probability",
     POST_TRIGGER = "post_trigger",
-    COMPLETE_QUANTUM = "complete_quantum"
+    QUANTUM_GETTER = "quantum_getter"
 }
 -- Used to avoid looping getter context calls. Example;
 -- Joker A: Doubles lucky card probabilities
@@ -1982,7 +1982,7 @@ SMODS.CONTEXT_TYPES = {
 function SMODS.get_context_type(context)
     if context.mod_probability or context.fix_probability then return SMODS.CONTEXT_TYPES.PROBABILITY end
     if context.post_trigger then return SMODS.CONTEXT_TYPES.POST_TRIGGER end
-    if context.complete_quantum_eval then return SMODS.CONTEXT_TYPES.COMPLETE_QUANTUM end
+    if context._quantum_getter then return SMODS.CONTEXT_TYPES.QUANTUM_GETTER end
     for key, q_field in pairs(SMODS.QuantumCardFields) do
         if context[q_field.context_flag] then
             return SMODS.CONTEXT_TYPES[key]
