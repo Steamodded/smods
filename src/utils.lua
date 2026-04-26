@@ -1014,7 +1014,7 @@ function Card:calculate_enhancement(context)
     if self.ability.set ~= 'Enhanced' then return nil end
     local center = self.config.center
     if center.calculate and type(center.calculate) == 'function' then
-        SMODS.set_context_evaluee(center) -- Todo : Make sure this doesn't unintentionally skip other card's enhancements 
+        SMODS.set_context_evaluee(center)
         local o = center:calculate(self, context)
         if o then
             if not o.card then o.card = self end
@@ -1295,6 +1295,23 @@ SMODS.smart_level_up_hand = function(card, hand, instant, amount, statustext)
     level_up_hand(card, hand, instant, (type(amount) == 'number' or type(amount) == 'table') and amount or 1, statustext)
 end
 
+
+SMODS.amount_return_flags = {
+    remove = true,
+    debuff_text = true,
+    cards_to_draw = true,
+    numerator = true,
+    denominator = true,
+    no_destroy = true,
+    replace_scoring_name = true,
+    replace_display_name = true,
+    replace_poker_hands = true,
+    no_mod = true, fixed = true,
+    modify = true,
+    shop_create_flags = true,
+    booster_create_flags = true
+}
+
 -- This function handles the calculation of each effect returned to evaluate play.
 -- Can easily be hooked to add more calculation effects ala Talisman
 SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, from_edition)
@@ -1457,22 +1474,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return key
     end
 
-    local amount_return_flags = {
-        remove = true,
-        debuff_text = true,
-        cards_to_draw = true,
-        numerator = true,
-        denominator = true,
-        no_destroy = true,
-        replace_scoring_name = true,
-        replace_display_name = true,
-        replace_poker_hands = true,
-        modify = true,
-        shop_create_flags = true,
-        booster_create_flags = true
-    }
-
-    if amount_return_flags[key] then
+    if SMODS.amount_return_flags[key] then
         return { [key] = amount }
     end
 
@@ -1630,14 +1632,6 @@ SMODS.calculate_repetitions = function(card, context, reps)
     local eval = eval_card(card, context)
     for _, value in pairs(eval) do
         SMODS.insert_repetitions(reps, value, card)
-    end
-    -- Quantum enhancement support :cat_owl:
-    local quantum_eval = {}
-    SMODS.calculate_quantum_enhancements(card, quantum_eval, context)
-    for _, eval in ipairs(quantum_eval) do
-        for _, value in pairs(eval) do
-            SMODS.insert_repetitions(reps, value, card)
-        end
     end
     context.repetition_only = nil
     --From jokers
@@ -1873,11 +1867,9 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 if return_table then
                     SMODS.set_context_evaluee(card)
                     return_table[#return_table+1] = eval_card(card, context)
-                    SMODS.calculate_quantum_enhancements(card, return_table, context)
                 else
                     SMODS.set_context_evaluee(card)
                     local effects = {eval_card(card, context)}
-                    SMODS.calculate_quantum_enhancements(card, effects, context)
                     local f = SMODS.trigger_effects(effects, card)
                     for k,v in pairs(f) do flags[k] = v end
                     SMODS.update_context_flags(context, flags)
@@ -1942,12 +1934,33 @@ function SMODS.update_context_flags(context, flags)
         if context.modify_ante then context.modify_ante = flags.modify end
         if context.drawing_cards then context.amount = flags.modify end
     end
+    for key, q_field in pairs(SMODS.QuantumCardFields) do
+        local flag_key = key + "s"
+        if flags[flag_key] then
+            local no_mod_changed = false
+            if flags.no_mod ~= nil then
+                context.no_mod = flags.no_mod
+                no_mod_changed = true
+            end
+            if not context.no_mod or no_mod_changed then
+                if flags.fixed then
+                    context[flag_key] = flags[flag_key]
+                else
+                    for r, v in pairs(flags[flag_key]) do
+                        context[flag_key][r] = v
+                    end
+                end
+            end
+            flags[flag_key] = nil
+        end
+    end
 end
 
 -- Enum, used for/with the below SMODS.get_context_type()
 SMODS.CONTEXT_TYPES = {
     PROBABILITY = "probability",
-    POST_TRIGGER = "post_trigger"
+    POST_TRIGGER = "post_trigger",
+    COMPLETE_QUANTUM = "complete_quantum"
 }
 -- Used to avoid looping getter context calls. Example;
 -- Joker A: Doubles lucky card probabilities
@@ -1960,6 +1973,7 @@ SMODS.CONTEXT_TYPES = {
 function SMODS.get_context_type(context)
     if context.mod_probability or context.fix_probability then return SMODS.CONTEXT_TYPES.PROBABILITY end
     if context.post_trigger then return SMODS.CONTEXT_TYPES.POST_TRIGGER end
+    if context.complete_quantum_eval then return SMODS.CONTEXT_TYPES.COMPLETE_QUANTUM end
     for key, q_field in pairs(SMODS.QuantumCardFields) do
         if context[q_field.context_flag] then
             return SMODS.CONTEXT_TYPES[key]
@@ -2080,7 +2094,6 @@ function SMODS.score_card(card, context)
 
         context.main_scoring = true
         local effects = { eval_card(card, context) }
-        SMODS.calculate_quantum_enhancements(card, effects, context)
         context.main_scoring = nil
         context.individual = true
         context.other_card = card
@@ -2152,7 +2165,6 @@ function SMODS.calculate_end_of_round_effects(context)
             context.playing_card_end_of_round = true
             --calculate the hand effects
             local effects = {eval_card(card, context)}
-            SMODS.calculate_quantum_enhancements(card, effects, context)
 
             context.playing_card_end_of_round = nil
             context.individual = true

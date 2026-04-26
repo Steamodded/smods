@@ -14,20 +14,6 @@ match_indent = true
 position = "at"
 payload = '''if SMODS.has_no_rank(self) and not self.vampired then'''
 
-# Card:get_chip_bonus()
-[[patches]]
-[patches.regex]
-target = "card.lua"
-pattern = '''
-(?<indent>[\t ]*)if self\.ability\.effect == 'Stone Card' then
-[\t ]*    return self\.ability\.bonus \+ \(self\.ability\.perma_bonus or 0\)
-[\t ]*end'''
-position = "at"
-payload = '''if self.ability.effect == 'Stone Card' or self.config.center.replace_base_card then
-    return self.ability.bonus + (self.ability.perma_bonus or 0)
-end'''
-line_prepend = '$indent'
-
 # Card:calculate_joker()
 # Raised Fist
 [[patches]]
