@@ -73,23 +73,24 @@ local function _general_quantum_getter(card, args)
     return ret
 end
 
-local function _general_quantum_singular_is_func(key, card, value, _args)
-    return SMODS.QuantumCardFields[key].plural_is(card, {[value] = true}, (_args or {}).all, _args)
+local function _general_quantum_singular_is_func(key, card, value, args)
+    return SMODS.QuantumCardFields[key].plural_is(card, {[value] = true}, args)
 end
 
-local function _general_quantum_plural_is_func(key, card, values_map, all, ...)
+local function _general_quantum_plural_is_func(key, card, values_map, args, ...)
+    if card.debuff and not args.bypass_debuff then return false end
     local field_values = SMODS.QuantumCardFields[key].getter(card, ...)
     local is_wild = SMODS.QuantumCardFields[key].has_any(card, ...)
 
     for k, _ in pairs(field_values) do
         if values_map[k] then
-            if not all then return true end
+            if not args.all then return true end
         else
-            if all and not is_wild then return false
-            elseif all then is_wild = false end
+            if args.all and not is_wild then return false
+            elseif args.all then is_wild = false end
         end
     end
-    return all
+    return args.all
 end
 
 local function _general_quantum_calculate(key, card, context, effects, ...)
