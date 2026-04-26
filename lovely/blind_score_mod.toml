@@ -20,7 +20,6 @@ if extra.update_blind_size then
     update_blind_size = true
 end
 """
-overwrite = true
 match_indent = true
 
 
@@ -33,7 +32,6 @@ position = "before"
 payload = """
 local update_blind_size = nil
 """
-overwrite = true
 match_indent = true
 
 
@@ -50,7 +48,6 @@ if update_blind_size then
     G.HUD_blind:get_UIE_by_ID('HUD_blind_count'):juice_up(0.3, 0.3)
 end
 """
-overwrite = true
 match_indent = true
 
 
@@ -61,7 +58,6 @@ pattern = """RENTAL = HEX('b18f43'),"""
 position = "after"
 payload = """BLIND_SIZE = HEX('ad5353'),
 """
-overwrite = true
 match_indent = true
 
 [[patches]]
@@ -72,5 +68,4 @@ position = "after"
 payload = """
 blind = G.C.DYN_UI.DARK,
 """
-overwrite = true
 match_indent = true
