@@ -2066,6 +2066,8 @@ end
 function Card:set_edition(edition, immediate, silent, delay)
 	SMODS.enh_cache:write(self, nil)
 
+	silent = silent or SMODS.create_card_silent_edition
+
 	if self.edition then
 		self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
 		self.ability.extra_slots_used = self.ability.extra_slots_used - (self.edition.extra_slots_used or 0)
