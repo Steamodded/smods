@@ -437,15 +437,7 @@ end
 
 function SMODS.add_card(t)
     local card = SMODS.create_card(t)
-    if t.set == "Base" or t.set == "Enhanced" then
-        G.playing_card = (G.playing_card and G.playing_card + 1) or 1
-        card.playing_card = G.playing_card
-        table.insert(G.playing_cards, card)
-    end
-    card:add_to_deck()
-    local area = t.area or G.jokers
-    area:emplace(card)
-    return card
+    return SMODS.add_to_deck(card, t)
 end
 
 function SMODS.debuff_card(card, debuff, source)
@@ -4094,4 +4086,40 @@ end
 -- Simple unlock text function, created to give mod authors an option to hook rather than patch for their use cases.
 function SMODS.create_unlock_text(center)
 	return localize('k_'..string.lower(center and center.set or 'unknown'))
+end
+
+function SMODS.copy_card(card, args)
+    args = args or {}
+    local playing_card
+    if args.playing_card ~= false then
+        playing_card = args.playing_card or card.playing_card and G.playing_card or nil
+    end
+    local copy = copy_card(card, args.new_card, args.card_scale, playing_card, args.strip_edition)
+
+    if args.new_card or args.no_add then return copy end
+
+    return SMODS.add_to_deck(copy, {area = args.area or card.area, playing_card = playing_card})
+end
+
+function SMODS.add_to_deck(card, args)
+    args = args or {}
+    local is_playing_card = card.playing_card or args.playing_card or args.set == "Base" or args.set == "Enhanced"
+    if is_playing_card then
+        if not card.playing_card and not args.playing_card then
+            G.playing_card = (G.playing_card and G.playing_card + 1) or 1
+        end
+        card.playing_card = args.playing_card or card.playing_card or G.playing_card
+        args.area = args.area or G.hand
+    end
+    if not args.area and SMODS.ConsumableTypes[card.ability.set] then
+        args.area = G.consumeables
+    end
+    card:add_to_deck()
+    if is_playing_card then
+        G.deck.config.card_limit = G.deck.config.card_limit + 1
+        table.insert(G.playing_cards, card)
+    end
+    local area = args.area or G.jokers
+    area:emplace(card)
+    return card
 end

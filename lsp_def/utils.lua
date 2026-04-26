@@ -846,4 +846,25 @@ function SMODS.mod_blind_size(mod_blind_size) end
 ---@field mult? number Multiply blind size by this number
 ---@field card? Card Card responsible for blind size modification action, crucial for blind size display to work properly
 ---@field effect? table Table of effects that were calculated
----@field from_edition? boolean 
+---@field from_edition? boolean
+
+---@class CopyCardArgs
+---@field new_card Card|table? Copies the card into `new_card` instead of creating a new card (like the Death tarot)
+---@field card_scale number? Multiplier for the copy's scale
+---@field playing_card integer|false? Sets the card's playing card value. If `false`, the value is not set. If no value is specified, it sets it to the next G.playing_card (only if `card` is a playing card)
+---@field strip_edition boolean? Strips the edition from the copy
+---@field no_add boolean? Skips adding the card to deck
+---@field area CardArea|table? Adds the card to this area instead of the inferred one
+
+---Copies a card
+---@param card Card|table? Card to copy
+---@param args CopyCardArgs
+---@return Card|table
+function SMODS.copy_card(card, args) end
+
+---Performs common operations for when a card would be added to the deck
+---Such as calling `add_to_deck`, emplacing, adding a playing card to `G.playing_cards`, etc.
+---@param card Card|table Card to add
+---@param args {set: string?, area: CardArea|table?, playing_card: integer?}?
+---@return Card|table
+function SMODS.add_to_deck(card, args) end
