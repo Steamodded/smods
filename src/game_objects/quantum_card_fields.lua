@@ -22,6 +22,11 @@ local function _general_quantum_has_func(card, args)
         context[key] = flag
     end
     SMODS.calculate_context(context) -- Card._qfield_cache.has is updated directly
+    for key, q_field in pairs(SMODS.QuantumCardFields) do
+        if card._qfield_cache.has[key].no and not card._qfield_cache.has[key].any then
+            card._qfield_cache.get[key + "s"] = {}
+        end
+    end
     return card._qfield_cache.has
 end
 
@@ -45,7 +50,6 @@ local function _general_quantum_getter(card, args)
     end    
     SMODS.calculate_context(context) -- Card._qfield_cache.get is updated directly
     local eval = card._qfield_cache.get
-
     local ret = {}
     for key, q_field in pairs(SMODS.QuantumCardFields) do 
         ret[key + "s"] = {} 

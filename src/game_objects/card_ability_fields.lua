@@ -61,9 +61,6 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
     end
 }
 
-
--- Todo : make these use card._qfield_cache.abilities
-
 SMODS.CardAbilityField{
     key = "repetitions",
     calc_key = "repetitions",
