@@ -4103,7 +4103,8 @@ end
 
 function SMODS.add_to_deck(card, args)
     args = args or {}
-    local is_playing_card = card.playing_card or args.playing_card or args.set == "Base" or args.set == "Enhanced"
+    local is_playing_card = card.playing_card or args.playing_card or
+        args.set == "Base" or args.set == "Enhanced" or card.ability.set == "Default" or card.ability.set == "Enhanced"
     if is_playing_card then
         if not card.playing_card and not args.playing_card then
             G.playing_card = (G.playing_card and G.playing_card + 1) or 1
