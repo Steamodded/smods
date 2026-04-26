@@ -281,7 +281,7 @@ SMODS.QuantumCardField{
     g_obj_table = SMODS.Stickers,
 }
 
--- Todo : Consider adding a SMODS.CardAbilityField class to generalize x_mult/h_x_mult/etc.
+-- Todo : Clear cache at the right locations
 
 function SMODS.clear_quantum_cache(card) 
     card._qfield_cache = nil
