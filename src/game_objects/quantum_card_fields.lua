@@ -23,6 +23,11 @@ local function _general_quantum_has_func(card, args)
     end
     SMODS.calculate_context(context) -- Card._qfield_cache.has is updated directly
     for key, q_field in pairs(SMODS.QuantumCardFields) do
+        for k, v in pairs(card._qfield_cache.get) do
+            local obj = q_field.g_obj_table[k]
+            if (key == "rank" and k == "m_stone") or obj["no_" + key] then card._qfield_cache.has[key].no = true end -- Todo : check if this explicit stone check is necessary
+            if obj["any_" + key] then card._qfield_cache.has[key].any = true end
+        end
         if card._qfield_cache.has[key].no and not card._qfield_cache.has[key].any then
             card._qfield_cache.get[key + "s"] = {}
         end
@@ -67,53 +72,6 @@ local function _general_quantum_getter(card, args)
     end
     return ret
 end
-
--- Todo : Check whether Stone + Wild enhancements need to be taken ownership of to set .any_suit / .no_rank, etc.
--- ! This function cannot support quantum field values; As in, a QUANTUM Stone card will NOT count as 'no_rank=true'.
--- This is necessary because has_no is called in the base_getter -> a loop would be caused if has_no depended on quantum values.
--- Todo : Merge this into the general getter context: base_getter just returns default value = "BASE", if 'no_rank' is returned in getter context, and def val still equals "BASE", remove it.
--- local function _general_quantum_has_no_func(key, card, _args)
---     local other_fields_values = {}
---     for other_key, obj in pairs(SMODS.QuantumCardFields) do
---         if other_key ~= key then
---             other_fields_values[other_key] = obj.get_base_value(card)
---         end
---     end
---     local has_no = false
---     local check_field_no = "no_" + key
---     local check_field_any = "any_" + key
---     for other_key, other_values in pairs(other_fields_values) do
---         local other_field_obj_table = SMODS.QuantumCardFields[other_key].g_obj_table
---         for k, v in pairs(other_values) do
---             if v and other_field_obj_table[k] and other_field_obj_table[k][check_field_no] then
---                 has_no = true
---             end
---             if v and other_field_obj_table[k] and other_field_obj_table[k][check_field_any] then
---                 return false -- 'any' overrules 'no' -> like Wild overruling Stone
---             end
---         end
---     end
---     return has_no
--- end
-
--- local function _general_quantum_has_any_func(key, card, _args)
---     local other_fields_values = {}
---     for other_key, obj in pairs(SMODS.QuantumCardFields) do
---         if other_key ~= key then
---             other_fields_values[other_key] = obj.getter(card)
---         end
---     end
---     local check_field = "any_" + key
---     for other_key, other_values in pairs(other_fields_values) do
---         local other_field_obj_table = SMODS.QuantumCardFields[other_key].g_obj_table
---         for k, v in pairs(other_values) do
---             if v and other_field_obj_table[k] and other_field_obj_table[k][check_field] then
---                 return true
---             end
---         end
---     end
---     return false
--- end
 
 local function _general_quantum_singular_is_func(key, card, value, _args)
     return SMODS.QuantumCardFields[key].plural_is(card, {[value] = true}, (_args or {}).all, _args)
