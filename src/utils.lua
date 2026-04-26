@@ -1935,23 +1935,32 @@ function SMODS.update_context_flags(context, flags)
         if context.drawing_cards then context.amount = flags.modify end
     end
     for key, q_field in pairs(SMODS.QuantumCardFields) do
-        local flag_key = key + "s"
-        if flags[flag_key] then
+        local getter_flag = key + "s"
+        local has_no_flag = "no_" + key 
+        local has_any_flag = "any_" + key 
+        if flags[getter_flag] then
             local no_mod_changed = false
             if flags.no_mod ~= nil then
                 context.no_mod = flags.no_mod
                 no_mod_changed = true
             end
             if not context.no_mod or no_mod_changed then
-                if flags.fixed then
-                    context[flag_key] = flags[flag_key]
+                if flags.fixed == getter_flag or type(flags.fixed) == "table" and flags.fixed[getter_flag] then
+                    context[getter_flag] = flags[getter_flag]
                 else
-                    for r, v in pairs(flags[flag_key]) do
-                        context[flag_key][r] = v
+                    for r, v in pairs(flags[getter_flag]) do
+                        context[getter_flag][r] = v
                     end
                 end
             end
-            flags[flag_key] = nil
+            context.card._qfield_cache.get[key] = context[getter_flag]
+            flags[getter_flag] = nil
+        end
+        if flags[has_no_flag] ~= nil then
+            context.card._qfield_cache.has[key].no = flags[has_no_flag]
+        end
+        if flags[has_any_flag] ~= nil then
+            context.card._qfield_cache.has[key].any = flags[has_any_flag]
         end
     end
 end

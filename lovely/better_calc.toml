@@ -149,31 +149,8 @@ end
 match_indent = true
 position = "at"
 payload = """
-if card.ability.set == 'Enhanced' then
-    local enhancement = card:calculate_enhancement(context)
-    if enhancement then
-        ret.enhancement = enhancement
-    end
-end
-if context.extra_enhancement then return ret end
-if card.edition then
-    local edition = card:calculate_edition(context)
-    if edition then
-        ret.edition = edition
-    end
-end
-if card.seal then
-    local seals = card:calculate_seal(context)
-    if seals then
-        ret.seals = seals
-    end
-end
-for _,k in ipairs(SMODS.Sticker.obj_buffer) do
-    local v = SMODS.Stickers[k]
-    local sticker = card:calculate_sticker(context, k)
-    if sticker then
-        ret[v] = sticker
-    end
+for i, q_field in ipairs(SMODS.QuantumCardField.obj_buffer) do
+    local ret = q_field.calculate(card, context)
 end
 
 -- TARGET: evaluate your own repetition effects
@@ -186,31 +163,9 @@ pattern = "if context.cardarea == G.jokers or context.card == G.consumeables the
 match_indent = true
 position = "before"
 payload = """
-if card.ability.set == 'Enhanced' then
-    local enhancement = card:calculate_enhancement(context)
-    if enhancement then
-        ret.enhancement = enhancement
-    end
-end
-if context.extra_enhancement then return ret end
-if card.edition then
-    local edition = card:calculate_edition(context)
-    if edition then
-        ret.edition = edition
-    end
-end
-if card.seal then
-    local seals = card:calculate_seal(context)
-    if seals then
-        ret.seals = seals
-    end
-end
-for _,k in ipairs(SMODS.Sticker.obj_buffer) do
-    local v = SMODS.Stickers[k]
-    local sticker = card:calculate_sticker(context, k)
-    if sticker then
-        ret[v] = sticker
-    end
+for i, q_field in ipairs(SMODS.QuantumCardField.obj_buffer) do
+    local key = q_field.key
+    q_field.calculate(card, context)
 end
 
 -- TARGET: evaluate your own general effects

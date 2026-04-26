@@ -1,16 +1,18 @@
 -- General helpers
+local _default_enabled = true
 
 -- Returns card._qfield_cache.has
 local function _general_quantum_has_func(card, args)
     if (card._qfield_cache or {}).has then
         return card._qfield_cache.has -- e.g. {rank = {any = true}, enhancement = {no = true}} 
     end
+    args = args or {}
     card._qfield_cache = {
         has = {},
         get = {}
     }
     local context = {card_has_check = true, card = self, no_mod = false}
-    local flags = args.flags or {}
+    local flags = args.flags or args
     for key, q_field in pairs(SMODS.QuantumCardFields) do
         card._qfield_cache.get[key + "s"] = q_field:base_getter(card, args)
         card._qfield_cache.has[key] = {}
@@ -19,16 +21,16 @@ local function _general_quantum_has_func(card, args)
     for key, flag in pairs(flags) do
         context[key] = flag
     end
-    local eval = SMODS.calculate_context(context) or {} -- {rank = {any = true}}
-    return eval
+    SMODS.calculate_context(context) -- Card._qfield_cache.has is updated directly
+    return card._qfield_cache.has
 end
 
--- Todo : Update this to be a complete quantum context and use card field caching
--- Returns card._qfield_cache.get
+-- Returns card._qfield_cache.get, sanitized to use only string keys
 local function _general_quantum_getter(card, args)
     if card._qfield_cache and card._qfield_cache.get then
         return card._qfield_cache.get
     end
+    args = args or {}
     local context = {_quantum_getter = true, card = self, no_mod = false} -- _quantum_getter flag should not be referenced in practice (as it doesn't account for optional_features.quantum_fields), use specific "get_ranks" etc. flags instead
     local has = _general_quantum_has_func(card, args)
     for key, q_field in pairs(SMODS.QuantumCardFields) do 
@@ -37,11 +39,12 @@ local function _general_quantum_getter(card, args)
             context[q_field.get_context_flag] = true
         end
     end
-    local flags = args.flags or {}
+    local flags = args.flags or args
     for key, flag in pairs(flags) do
         context[key] = flag
     end    
-    local eval = SMODS.calculate_context(context) or {} -- {ranks = {...}, ...}
+    SMODS.calculate_context(context) -- Card._qfield_cache.get is updated directly
+    local eval = card._qfield_cache.get
 
     local ret = {}
     for key, q_field in pairs(SMODS.QuantumCardFields) do 
@@ -53,7 +56,7 @@ local function _general_quantum_getter(card, args)
                 local obj = q_field.g_obj_table[new_key]
                 if obj and q_field.cache_ability then
                     card._qfield_cache.abilities = card._qfield_cache.abilities or {}
-                    card._qfield_cache.abilities[#card._qfield_cache.abilities+1] = {t = copy_table(obj.config) or {}, key = new_key, q_field_key = key}
+                    table.insert(card._qfield_cache.abilities, {t = copy_table(obj.config) or {}, key = new_key, qfield_key = key})
                 end
             end
         end
@@ -199,7 +202,8 @@ end
 
 local function _quantum_field_inject_calculate(args, target_objects)
     local calculate_func = args.override_calculate or function (self, context, ...)
-        return _general_quantum_calculate(args.key, self, context, ...)
+        local ret = _general_quantum_calculate(args.key, self, context, ...)
+        return SMODS.merge_effects(table.unpack(ret))
     end
     local func_field = "calculate_" + args.key
     for _, target_obj in ipairs(target_objects) do
@@ -246,16 +250,24 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
         SMODS.amount_return_flags[self.key + "s"] = true
         SMODS.amount_return_flags["no_" + self.key] = true
         SMODS.amount_return_flags["any_" + self.key] = true
+        if self.default_enabled then SMODS.optional_features.quantum_fields[self.key] = true end
     end,
     post_inject_class = function(self)
         
     end,
+    default_enabled = _default_enabled,
     cache_ability = nil, -- Whether the _general_quantum_getter should cache the .config table of this qfield's object values into card._qfield_cache.abilities
     base_value_ref = nil, -- e.g. 'base.value' for Rank, 'config.center.key' for Enhancement, ...
     get_base_value = function (self, card) return table_get_subfield(card, self.base_value_ref) end,
     base_getter = function (self, card, _args) 
         return {[self:get_base_value(card)] = "BASE"}
-    end
+    end,
+    getter = nil,       -- func defined by inject()
+    has_no = nil,       -- func defined by inject()
+    has_any = nil,      -- func defined by inject()
+    singular_is = nil,  -- func defined by inject()
+    plural_is = nil,    -- func defined by inject()
+    calculate = nil,    -- func defined by inject()
 }
 
 SMODS.QuantumCardField{
@@ -308,3 +320,7 @@ SMODS.QuantumCardField{
 }
 
 -- Todo : Consider adding a SMODS.CardAbilityField class to generalize x_mult/h_x_mult/etc.
+
+function SMODS.clear_quantum_cache(card) 
+    card._qfield_cache = nil
+end
