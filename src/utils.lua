@@ -1480,7 +1480,6 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'debuff' then
         return { [key] = amount, debuff_source = scored_card }
     end
-
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -3282,63 +3281,6 @@ function SMODS.next_stake(stake_key, deck_key, ignore_unlock)
         end
     end
     return (next_stake or SMODS.Stakes.stake_white).key
-end
-
-function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
-    if specific_vars and specific_vars.bonus_x_chips then
-        localize{type = 'other', key = 'card_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_x_chips}}
-    end
-    if specific_vars and specific_vars.bonus_mult then
-        localize{type = 'other', key = 'card_extra_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_mult)}}
-    end
-    if specific_vars and specific_vars.bonus_x_mult then
-        localize{type = 'other', key = 'card_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_x_mult}}
-    end
-    if specific_vars and specific_vars.bonus_h_chips then
-        localize{type = 'other', key = 'card_extra_h_chips', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_chips)}}
-    end
-    if specific_vars and specific_vars.bonus_h_x_chips then
-        localize{type = 'other', key = 'card_h_x_chips', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_chips}}
-    end
-    if specific_vars and specific_vars.bonus_h_mult then
-        localize{type = 'other', key = 'card_extra_h_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_mult)}}
-    end
-    if specific_vars and specific_vars.bonus_h_x_mult then
-        localize{type = 'other', key = 'card_h_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_h_x_mult}}
-    end
-    if specific_vars and specific_vars.bonus_p_dollars then
-        localize{type = 'other', key = 'card_extra_p_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_p_dollars)}}
-    end
-    if specific_vars and specific_vars.bonus_h_dollars then
-        localize{type = 'other', key = 'card_extra_h_dollars', nodes = desc_nodes, vars = {SMODS.signed_dollars(specific_vars.bonus_h_dollars)}}
-    end
-    if specific_vars and specific_vars.bonus_score then
-        localize{type = 'other', key = 'card_extra_score', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_score)}}
-    end
-    if specific_vars and specific_vars.bonus_h_score then
-        localize{type = 'other', key = 'card_extra_h_score', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_score)}}
-    end
-    if specific_vars and specific_vars.bonus_x_score then
-        localize{type = 'other', key = 'card_extra_x_score', nodes = desc_nodes, vars = {(specific_vars.bonus_x_score)}}
-    end
-    if specific_vars and specific_vars.bonus_h_x_score then
-        localize{type = 'other', key = 'card_extra_h_x_score', nodes = desc_nodes, vars = {(specific_vars.bonus_h_x_score)}}
-    end
-    if specific_vars and specific_vars.bonus_blind_size then
-        localize{type = 'other', key = 'card_extra_blind_size', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_blind_size)}}
-    end
-    if specific_vars and specific_vars.bonus_h_blind_size then
-        localize{type = 'other', key = 'card_extra_h_blind_size', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_blind_size)}}
-    end
-    if specific_vars and specific_vars.bonus_x_blind_size then
-        localize{type = 'other', key = 'card_extra_x_blind_size', nodes = desc_nodes, vars = {(specific_vars.bonus_x_blind_size)}}
-    end
-    if specific_vars and specific_vars.bonus_h_x_blind_size then
-        localize{type = 'other', key = 'card_extra_h_x_blind_size', nodes = desc_nodes, vars = {(specific_vars.bonus_h_x_blind_size)}}
-    end
-    if specific_vars and specific_vars.bonus_repetitions then
-        localize{type = 'other', key = 'card_extra_repetitions', nodes = desc_nodes, vars = {specific_vars.bonus_repetitions, localize(specific_vars.bonus_repetitions > 1 and 'b_retrigger_plural' or 'b_retrigger_single')}}
-    end
 end
 
 local ease_dollar_ref = ease_dollars

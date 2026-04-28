@@ -847,3 +847,8 @@ function SMODS.mod_blind_size(mod_blind_size) end
 ---@field card? Card Card responsible for blind size modification action, crucial for blind size display to work properly
 ---@field effect? table Table of effects that were calculated
 ---@field from_edition? boolean 
+
+---Upgrades the given perma bonuses on the given card by `amount`
+---Alternatively, provide a custom `func` to override the default upgrade behaviour
+---@param args table|{keys: string|table, card: Card|table, amount?: number, from?: Card|table, func?: fun(card: Card|table, amount: number, from: Card|table, perma_bonus: SMODS.PermaBonus)}
+function SMODS.upgrade_perma_bonus(args) end

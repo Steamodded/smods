@@ -2771,27 +2771,9 @@ function Card:quantum_set_ability(center)
     new_ability.type = center.config.type or ''
     new_ability.order = center.order or nil
     new_ability.forced_selection = self.ability and self.ability.forced_selection or nil
-    new_ability.perma_bonus = self.ability and self.ability.perma_bonus or 0
-    new_ability.perma_x_chips = self.ability and self.ability.perma_x_chips or 0
-    new_ability.perma_mult = self.ability and self.ability.perma_mult or 0
-    new_ability.perma_x_mult = self.ability and self.ability.perma_x_mult or 0
-    new_ability.perma_h_chips = self.ability and self.ability.perma_h_chips or 0
-    new_ability.perma_h_x_chips = self.ability and self.ability.perma_h_x_chips or 0
-    new_ability.perma_h_mult = self.ability and self.ability.perma_h_mult or 0
-    new_ability.perma_h_x_mult = self.ability and self.ability.perma_h_x_mult or 0
-    new_ability.perma_p_dollars = self.ability and self.ability.perma_p_dollars or 0
-    new_ability.perma_h_dollars = self.ability and self.ability.perma_h_dollars or 0
-    new_ability.perma_repetitions = self.ability and self.ability.perma_repetitions or 0
     new_ability.card_limit = self.ability and self.ability.card_limit or 0
     new_ability.extra_slots_used = self.ability and self.ability.extra_slots_used or 0
-    new_ability.perma_score = self.ability and self.ability.perma_score or 0
-    new_ability.perma_h_score = self.ability and self.ability.perma_h_score or 0
-    new_ability.perma_x_score = self.ability and self.ability.perma_x_score or 0
-    new_ability.perma_h_x_score = self.ability and self.ability.perma_h_x_score or 0
-    new_ability.perma_blind_size = self.ability and self.ability.perma_blind_size or 0
-    new_ability.perma_h_blind_size = self.ability and self.ability.perma_h_blind_size or 0
-    new_ability.perma_x_blind_size = self.ability and self.ability.perma_x_blind_size or 0
-    new_ability.perma_h_x_blind_size = self.ability and self.ability.perma_h_x_blind_size or 0
+	SMODS.set_perma_bonus(self, new_ability)
     
     self.ability = self.ability or {}
     new_ability.extra_value = nil
