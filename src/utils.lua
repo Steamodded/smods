@@ -993,38 +993,10 @@ function Card:remove_sticker(sticker)
     end
 end
 
-
-function Card:calculate_sticker(context, key)
-    local sticker = SMODS.Stickers[key]
-    if self.ability[key] and type(sticker.calculate) == 'function' then
-        SMODS.set_context_evaluee(sticker)
-        local o = sticker:calculate(self, context)
-        if o then
-            if not o.card then o.card = self end
-            return o
-        end
-    end
-    SMODS.set_context_evaluee(self)
-end
-
 function Card:can_calculate(ignore_debuff, ignore_sliced)
     local is_available = (not self.debuff or ignore_debuff) and (not self.getting_sliced or ignore_sliced)
     -- TARGET : Add extra conditions here
     return is_available
-end
-
-function Card:calculate_enhancement(context)
-    if self.ability.set ~= 'Enhanced' then return nil end
-    local center = self.config.center
-    if center.calculate and type(center.calculate) == 'function' then
-        SMODS.set_context_evaluee(center)
-        local o = center:calculate(self, context)
-        if o then
-            if not o.card then o.card = self end
-            return o
-        end
-    end
-    SMODS.set_context_evaluee(self)
 end
 
 function SMODS.get_enhancements(card, extra_only)
@@ -1131,42 +1103,43 @@ function SMODS.calculate_quantum_enhancements(card, effects, context)
 end
 
 function SMODS.has_no_suit(card)
+    if not SMODS.set_quantum_cache(card) then return end
     local is_stone = false
     local is_wild = false
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].no_suit then is_stone = true end
-        if k == 'm_wild' or G.P_CENTERS[k].any_suit then is_wild = true end
+    for key, qfield in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(card._qfield_cache.get[key .. "s"]) do
+            local obj = qfield.g_obj_table[k] or {}
+            if (key == "enhancement" and k == "m_stone") or obj.no_suit then is_stone = true end
+            if (key == "enhancement" and k == "m_wild") or obj.any_suit then return false end
+        end
     end
-    return is_stone and not is_wild
+    return is_stone
 end
 function SMODS.has_any_suit(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_wild' or G.P_CENTERS[k].any_suit then return true end
-    end
-end
-function SMODS.has_no_rank(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].no_rank then return true end
+    if not SMODS.set_quantum_cache(card) then return end
+    for key, qfield in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(card._qfield_cache.get[key .. "s"]) do
+            local obj = qfield.g_obj_table[k] or {}
+            if (key == "enhancement" and k == "m_wild") or obj.any_suit then return true end
+        end
     end
 end
 function SMODS.always_scores(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].always_scores then return true end
-    end
-    if (G.P_CENTERS[(card.edition or {}).key] or {}).always_scores then return true end
-    if (G.P_SEALS[card.seal or {}] or {}).always_scores then return true end
-    for k, v in pairs(SMODS.Stickers) do
-        if v.always_scores and card.ability[k] then return true end
+    if not SMODS.set_quantum_cache(card) then return end
+    for key, qfield in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(card._qfield_cache.get[key .. "s"]) do
+            local obj = qfield.g_obj_table[k] or {}
+            if obj.always_scores then return true end
+        end
     end
 end
 function SMODS.never_scores(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if G.P_CENTERS[k].never_scores then return true end
-    end
-    if (G.P_CENTERS[(card.edition or {}).key] or {}).never_scores then return true end
-    if (G.P_SEALS[card.seal or {}] or {}).never_scores then return true end
-    for k, v in pairs(SMODS.Stickers) do
-        if v.never_scores and card.ability[k] then return true end
+    if not SMODS.set_quantum_cache(card) then return end
+    for key, qfield in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(card._qfield_cache.get[key .. "s"]) do
+            local obj = qfield.g_obj_table[k]
+            if obj.never_scores then return true end
+        end
     end
 end
 
@@ -1751,21 +1724,6 @@ SMODS.calculate_retriggers = function(card, context, _ret)
     return retriggers
 end
 
-function Card:calculate_edition(context)
-    if self.edition then
-        local edition = G.P_CENTERS[self.edition.key]
-        if edition.calculate and type(edition.calculate) == 'function' then
-            SMODS.set_context_evaluee(edition)
-            local o = edition:calculate(self, context)
-            if o then
-                if not o.card then o.card = self end
-                return o
-            end
-        end
-    end
-    SMODS.set_context_evaluee(self)
-end
-
 function SMODS.calculate_card_areas(_type, context, return_table, args)
     local flags = {}
     if _type == 'jokers' then
@@ -1836,7 +1794,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 -- If context is for probability, eval_card() anyway
                 -- This allows Seals, etc. to affect Joker probabilities during individual scoring:
                 -- For example; A seal can double the probability of Blood Stone hitting for the playing card it is applied to.
-                if context.mod_probability or context.fix_probability then
+                if SMODS.get_context_type(context) == SMODS.CONTEXT_TYPES.PROBABILITY then
                     for _, card in ipairs(area.cards) do
                         if SMODS.check_looping_context(card) then
                             goto skip
@@ -1938,9 +1896,9 @@ function SMODS.update_context_flags(context, flags)
         if context.drawing_cards then context.amount = flags.modify end
     end
     for key, q_field in pairs(SMODS.QuantumCardFields) do
-        local getter_flag = key + "s"
-        local has_no_flag = "no_" + key 
-        local has_any_flag = "any_" + key 
+        local getter_flag = key .. "s"
+        local has_no_flag = "no_" .. key 
+        local has_any_flag = "any_" .. key 
         if flags[getter_flag] then
             local no_mod_changed = false
             if flags.no_mod ~= nil then
@@ -2023,7 +1981,7 @@ function SMODS.push_to_context_stack(context, func)
     end
     local len = #SMODS.context_stack
     if len <= 0 or SMODS.context_stack[len].context ~= context then
-        SMODS.context_stack[len+1] = {context = context, count = 1, caller = SMODS.context_stack[len].evaluee}
+        SMODS.context_stack[len+1] = {context = context, count = 1, caller = (SMODS.context_stack[len] or {}).evaluee}
     else
         SMODS.context_stack[len].count = SMODS.context_stack[len].count + 1
     end

@@ -33,12 +33,6 @@ SMODS.Enhancement = setmetatable({}, {
     end
 })
 
----@param self Card|table
----@param context CalcContext|table
----@return table?
---- Calculates Enhancements on cards. 
-function Card:calculate_enhancement(context) end
-
 ---@param args table|{key?: string, type_key?: string, mod?: number, guaranteed?: true, options?: table}
 ---@return Enhancements|string?
 --- Polls all Enhancements with `args` for additional settings, and returns the key to a selected enhancement. 

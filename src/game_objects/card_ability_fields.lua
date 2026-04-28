@@ -3,6 +3,11 @@ SMODS.CARD_VALUE_TYPES = {
     MULTIPLICATIVE = "multiplicative"
 }
 
+-- Helper function to get a card's qfield-cached abilities, or if uncached just card.ability
+function SMODS.get_card_abilities(card)
+    return card._qfield_cache and card._qfield_cache.abilities or {{t = card.ability}}
+end
+
 SMODS.CardAbilityFields = {}
 SMODS.CardAbilityField = SMODS.GameObject:extend {
     obj_table = SMODS.CardAbilityFields,
@@ -16,14 +21,21 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
         local inject_args = self.inject_args or {}
         if not inject_args.no_getter then
             local _getter = function (card, ...)
-                local abilities = card._qfield_cache and card._qfield_cache.abilities or {{t = card.ability}}
+                local abilities = SMODS.get_card_abilities(card)
                 return self:getter(abilities, card, ...)
             end
-            Card["get_" + self.key] = _getter
+            Card["get_" .. self.key] = _getter
         end
         self.value_ref = self.value_ref or self.calc_key
         if self.value_ref then
-            self.perma_value_ref = self.perma_value_ref or "perma_" + self.value_ref
+            self.perma_value_ref = self.perma_value_ref or "perma_" .. self.value_ref
+        end
+        if not self.value_refs then -- This is used instead of the singular value_ref
+            self.value_refs = {self.value_ref}
+        end
+        if not self.default_value then
+            if self.stacking_type == SMODS.CARD_VALUE_TYPES.ADDITIVE then self.default_value = 0
+            elseif self.stacking_type == SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE then self.default_value = 1 end
         end
     end,
     scoring_card_areas = {
@@ -32,32 +44,41 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
     post_inject_class = function(self) end,
     calc_key = nil, -- e.g. "mult"
     value_ref = nil, -- property path relative to Card.ability, e.g. "x_chips"
+    value_refs = nil, -- list of the above, used for compat with e.g. Xmult / x_mult
     perma_value_ref = nil, -- ^ for permanent bonus
     stacking_type = SMODS.CARD_VALUE_TYPES.ADDITIVE,
+    max_value = math.huge,
+    min_value = -math.huge,
+    default_value = 0,
     getter = function (self, abilities, card, ...) -- abilities is of form {integer: {t = [ability table], key = [source obj key], qfield_key = [qfield key]}}
-        if self.debuff then return 0 end
-        local ret = 0
+        -- if self.debuff then return self.default_value end
+        local ret = self.default_value
         for _, ability_t in ipairs(abilities) do
             local ability = ability_t.t
             if self.stacking_type == SMODS.CARD_VALUE_TYPES.ADDITIVE then
-                ret = ret + table_get_subfield(ability or {}, self.value_ref) or 0
+                for _, v_ref in ipairs(self.value_refs) do
+                    ret = ret + (table_get_subfield(ability or {}, v_ref) or 0)
+                end
             elseif self.stacking_type == SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE then
-                local base = table_get_subfield(ability or {}, self.value_ref) or 0
-                ret = SMODS.multiplicative_stacking(ret, base)
+                for _, v_ref in ipairs(self.value_refs) do
+                    ret = ret * (table_get_subfield(ability or {}, v_ref) or 1)
+                end
             end
         end
         if self.stacking_type == SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE then
-            ret = SMODS.multiplicative_stacking(ret, table_get_subfield(card.ability or {}, self.value_ref) or 0)
+            ret = ret * (table_get_subfield(card.ability or {}, self.perma_value_ref) or 1)
         else
-            ret = ret + table_get_subfield(card.ability or {}, self.perma_value_ref) or 0
+            ret = ret + (table_get_subfield(card.ability or {}, self.perma_value_ref) or 0)
         end
         return ret
     end,
     insert_value = function (self, card, ret_table, ...)
-        local abilities = card._qfield_cache and card._qfield_cache.abilities or {{t = card.ability}}
-        local value = self:getter(abilities, ...)
-        ret_table.playing_card = ret_table.playing_card or {}
-        ret_table.playing_card[self.calc_key] = value
+        local abilities = SMODS.get_card_abilities(card)
+        local value = self:getter(abilities, card, ...)
+        if self.max_value >= value and value >= self.min_value and value ~= self.default_value then
+            ret_table.playing_card = ret_table.playing_card or {}
+            ret_table.playing_card[self.calc_key] = value
+        end
     end
 }
 
@@ -66,7 +87,7 @@ SMODS.CardAbilityField{
     calc_key = "repetitions",
     scoring_card_areas = {},
     insert_value = function (self, card, ret_table, ...)
-        local abilities = card._qfield_cache and card._qfield_cache.abilities or {{t = card.ability}}
+        local abilities = SMODS.get_card_abilities(card)
         local reps = self:getter(abilities, card, ...)
         if reps > 0 then
             ret_table.seals = ret_table.seals or { card = card, message = localize('k_again_ex') }
@@ -79,16 +100,16 @@ SMODS.CardAbilityField{
     key = "chip_bonus",
     calc_key = "chips",
     getter = function(self, abilities, card, ...)
-        local base = card.base.nominal
+        local base = card.base.nominal or 0
         local ret = 0
         for _, ability_t in ipairs(abilities) do
             local ability = ability_t.t or {}
             if ability.effect == "Stone Card" or ((ability_t.qfield_key and SMODS.QuantumCardFields[ability_t.qfield_key].g_obj_table[ability_t.key] or {}).replace_base_card) then
                 base = 0
             end
-            ret = ret + ability.chips
+            ret = ret + (ability.chips or 0) + (ability.bonus or 0)
         end
-        return base + ret + card.ability.perma_chips
+        return base + ret + (card.ability.perma_chips or 0)
     end
 }
 
@@ -103,9 +124,9 @@ SMODS.CardAbilityField{
                 card.lucky_trigger = true
                 ret = ret + ability.mult
             end
-            ret = ret + ability.mult
+            ret = ret + (ability.mult or 0)
         end
-        return ret + card.ability.perma_mult
+        return ret + (card.ability.perma_mult or 0)
     end
 }
 
@@ -113,6 +134,7 @@ SMODS.CardAbilityField{
     key = "chip_x_mult",
     stacking_type = SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE,
     calc_key = "x_mult",
+    value_refs = {"x_mult", "Xmult"},
 }
 
 SMODS.CardAbilityField{
@@ -158,9 +180,16 @@ SMODS.CardAbilityField{
     calc_key = "p_dollars",
     getter = function (self, abilities, card, ...) 
         local ret = 0
-        -- local obj = G.P_SEALS[card.seal] or {}
-        -- if obj.get_p_dollars and type(obj.get_p_dollars) == 'function' then
-        --     ret = ret + obj:get_p_dollars(card)
+        -- Todo : check if this should even be supported (generic p_dollars is supported via obj.config tables already -> function needed?)
+        for key, q_field in pairs(SMODS.QuantumCardFields) do
+            local values = q_field.getter(card)
+            for k, v in pairs(values) do
+                local obj = q_field.g_obj_table[k] or {}
+                if obj.get_p_dollars and type(obj.get_p_dollars) == 'function' then
+                    ret = ret + obj:get_p_dollars(card)
+                end
+            end
+        end
         for _, ability_t in ipairs(abilities) do
             local ability = ability_t.t or {}
             if ability_t.key == "Gold" and ability_t.qfield_key == "seal" then
@@ -170,13 +199,13 @@ SMODS.CardAbilityField{
                 card.lucky_trigger = true
                 ret = ret + ability.p_dollars
             end
-            ret = ret + ability.p_dollars
+            ret = ret + (ability.p_dollars or 0)
         end
         if ret ~= 0 then
             G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + ret
             G.E_MANAGER:add_event(Event({func = (function() G.GAME.dollar_buffer = 0; return true end)}))
         end
-        return ret + card.ability.perma_p_dollars
+        return ret + (card.ability.perma_p_dollars or 0)
     end
 }
 

@@ -3356,6 +3356,15 @@ SMODS.UndiscoveredCompat = {
                 card.glass_trigger = true
                 return { remove = true }
             end
+            if context.check_enhancement and context.card == card and context.card:has_seal("Red") then
+                return {
+                    enhancements = {
+                        m_glass = false,
+                        m_lucky = true,
+                        m_steel = true
+                    }
+                }
+            end
         end,
     })
 
@@ -3998,6 +4007,18 @@ SMODS.UndiscoveredCompat = {
         func = function(self, chips, mult, flames) return chips ^ mult end,
         text = '^'
     }
+
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.CardAbilityField
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/game_objects/card_ability_fields.lua'), ('=[SMODS _ "src/game_objects/card_ability_fields.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.QuantumCardField
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/game_objects/quantum_card_fields.lua'), ('=[SMODS _ "src/game_objects/quantum_card_fields.lua"]')))()
 
 
     -------------------------------------------------------------------------------------------------

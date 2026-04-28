@@ -2676,17 +2676,10 @@ end
 local eval_card_ref = eval_card
 function eval_card(card, context)
 	SMODS.push_to_context_stack(context, "overrides.lua : eval_card")
+	SMODS.set_quantum_cache(card)
 	local eff, post = eval_card_ref(card, context)
 	SMODS.clear_quantum_cache(card)
 	SMODS.pop_from_context_stack(context, "overrides.lua : eval_card")
-	return eff, post
-end
-
-local calculate_seal_ref = Card.calculate_seal
-function Card:calculate_seal(context, ...)
-	SMODS.push_to_context_stack(context, "overrides.lua : Card.calculate_seal")
-	local eff, post = calculate_seal_ref(self, context, ...)
-	SMODS.pop_from_context_stack(context, "overrides.lua : Card.calculate_seal")
 	return eff, post
 end
 
