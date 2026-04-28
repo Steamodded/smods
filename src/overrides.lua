@@ -2064,8 +2064,6 @@ end
 -- immediate = boolean value
 -- silent = boolean value
 function Card:set_edition(edition, immediate, silent, delay)
-	SMODS.enh_cache:write(self, nil)
-
 	silent = silent or SMODS.create_card_silent_edition
 
 	if self.edition then
@@ -2693,7 +2691,6 @@ end
 
 local set_ability = Card.set_ability
 function Card:set_ability(center, initial, delay_sprites)
-    if delay_sprites == "quantum" then return self:quantum_set_ability(center) end
 	local old_center = self.config.center
 	set_ability(self, center, initial, delay_sprites)
 	if not initial and (G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT) then
@@ -2713,151 +2710,6 @@ function add_tag(_tag)
 	add_tag_ref(_tag)
 end
 
-function Card:quantum_set_ability(center)
-    SMODS.enh_cache:write(self, nil)
-
-    if self.ability then
-        self.ability.card_limit = self.ability.card_limit - (self.config.center.config.card_limit or 0)
-        self.ability.extra_slots_used = self.ability.extra_slots_used - (self.config.center.config.extra_slots_used or 0)
-    end
-
-    local old_center = self.config.center
-    self.from_quantum = true
-    if type(center) == 'string' then
-        assert(G.P_CENTERS[center], ("Could not find center \"%s\""):format(center))
-        center = G.P_CENTERS[center]
-    end
-    self.config.center = center
-    if self.config.center.key then
-        self.config.center_key = self.config.center.key
-    else
-        for k, v in pairs(G.P_CENTERS) do
-            if center == v then self.config.center_key = k end
-        end
-    end
-
-    if self.ability and old_center and old_center.config.bonus then
-        self.ability.bonus = self.ability.bonus - old_center.config.bonus
-    end
-
-    self.ARGS.smods_quantum_ability = self.ARGS.smods_quantum_ability or {}
-    local new_ability = self.ARGS.smods_quantum_ability
-
-    new_ability.name = center.name
-    new_ability.effect = center.effect
-    new_ability.set = center.set
-    new_ability.mult = center.config.mult or 0
-    new_ability.h_mult = center.config.h_mult or 0
-    new_ability.h_x_mult = center.config.h_x_mult or 0
-    new_ability.h_dollars = center.config.h_dollars or 0
-    new_ability.p_dollars = center.config.p_dollars or 0
-    new_ability.t_mult = center.config.t_mult or 0
-    new_ability.t_chips = center.config.t_chips or 0
-    new_ability.x_mult = center.config.Xmult or center.config.x_mult or 1
-    new_ability.h_chips = center.config.h_chips or 0
-    new_ability.x_chips = center.config.x_chips or 1
-    new_ability.h_x_chips = center.config.h_x_chips or 1
-    new_ability.repetitions = center.config.repetitions or 0
-    new_ability.h_size = center.config.h_size or 0
-    new_ability.d_size = center.config.d_size or 0
-    new_ability.extra = copy_table(center.config.extra) or nil
-    new_ability.extra_value = 0
-    new_ability.type = center.config.type or ''
-    new_ability.order = center.order or nil
-    new_ability.forced_selection = self.ability and self.ability.forced_selection or nil
-    new_ability.perma_bonus = self.ability and self.ability.perma_bonus or 0
-    new_ability.perma_x_chips = self.ability and self.ability.perma_x_chips or 0
-    new_ability.perma_mult = self.ability and self.ability.perma_mult or 0
-    new_ability.perma_x_mult = self.ability and self.ability.perma_x_mult or 0
-    new_ability.perma_h_chips = self.ability and self.ability.perma_h_chips or 0
-    new_ability.perma_h_x_chips = self.ability and self.ability.perma_h_x_chips or 0
-    new_ability.perma_h_mult = self.ability and self.ability.perma_h_mult or 0
-    new_ability.perma_h_x_mult = self.ability and self.ability.perma_h_x_mult or 0
-    new_ability.perma_p_dollars = self.ability and self.ability.perma_p_dollars or 0
-    new_ability.perma_h_dollars = self.ability and self.ability.perma_h_dollars or 0
-    new_ability.perma_repetitions = self.ability and self.ability.perma_repetitions or 0
-    new_ability.card_limit = self.ability and self.ability.card_limit or 0
-    new_ability.extra_slots_used = self.ability and self.ability.extra_slots_used or 0
-    new_ability.perma_score = self.ability and self.ability.perma_score or 0
-    new_ability.perma_h_score = self.ability and self.ability.perma_h_score or 0
-    new_ability.perma_x_score = self.ability and self.ability.perma_x_score or 0
-    new_ability.perma_h_x_score = self.ability and self.ability.perma_h_x_score or 0
-    new_ability.perma_blind_size = self.ability and self.ability.perma_blind_size or 0
-    new_ability.perma_h_blind_size = self.ability and self.ability.perma_h_blind_size or 0
-    new_ability.perma_x_blind_size = self.ability and self.ability.perma_x_blind_size or 0
-    new_ability.perma_h_x_blind_size = self.ability and self.ability.perma_h_x_blind_size or 0
-    
-    self.ability = self.ability or {}
-    new_ability.extra_value = nil
-    new_ability.debuff_sources = {}
-    self.ability.extra_value = self.ability.extra_value or 0
-    for k, v in pairs(new_ability) do
-        self.ability[k] = v
-    end
-
-    -- handles card_limit/extra_slots_used changes
-    self.ability.card_limit = self.ability.card_limit + (center.config.card_limit or 0)
-    self.ability.extra_slots_used = self.ability.extra_slots_used + (center.config.extra_slots_used or 0)
-
-
-    -- reset keys do not persist on ability change
-    for _, k in ipairs(SMODS.get_ability_reset_keys(self) or {}) do
-        self.ability[k] = new_ability[k]
-    end
-
-    self.ability.bonus = (self.ability.bonus or 0) + (center.config.bonus or 0)
-    if not self.ability.name then self.ability.name = center.key end
-    for k, v in pairs(center.config) do
-        if k ~= 'bonus' then
-            if type(v) == 'table' then
-                self.ability[k] = copy_table(v)
-            else
-                self.ability[k] = v
-            end
-        end
-    end
-
-    if center.consumeable then 
-        self.ability.consumeable = center.config
-    end
-
-    if self.ability.name == "Invisible Joker" then 
-        self.ability.invis_rounds = 0
-    end
-    if self.ability.name == 'To Do List' then
-        local _poker_hands = {}
-        for k, v in pairs(G.GAME.hands) do
-            if SMODS.is_poker_hand_visible(k) then _poker_hands[#_poker_hands+1] = k end
-        end
-        local old_hand = self.ability.to_do_poker_hand
-        self.ability.to_do_poker_hand = nil
-
-        while not self.ability.to_do_poker_hand do
-            self.ability.to_do_poker_hand = pseudorandom_element(_poker_hands, pseudoseed((self.area and self.area.config.type == 'title') and 'false_to_do' or 'to_do'))
-            if self.ability.to_do_poker_hand == old_hand then self.ability.to_do_poker_hand = nil end
-        end
-    end
-    if self.ability.name == 'Caino' then 
-        self.ability.caino_xmult = 1
-    end
-    if self.ability.name == 'Yorick' then 
-        self.ability.yorick_discards = self.ability.extra.discards
-    end
-    if self.ability.name == 'Loyalty Card' then 
-        self.ability.burnt_hand = 0
-        self.ability.loyalty_remaining = self.ability.extra.every
-    end
-
-    self.ability.hands_played_at_create = G.GAME and G.GAME.hands_played or 0
-
-    local obj = self.config.center
-    if obj.set_ability and type(obj.set_ability) == 'function' then
-        obj:set_ability(self, false, nil)
-    end
-
-    EMPTY(new_ability)
-    self.from_quantum = nil
-end
 -- Fix visual glitch in deck select
 local g_funcs_change_viewed_back_ref = G.FUNCS.change_viewed_back
 G.FUNCS.change_viewed_back = function(...)

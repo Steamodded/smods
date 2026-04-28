@@ -195,15 +195,6 @@ position = "at"
 payload = "if self:has_seal('Blue') and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then"
 match_indent = true
 
-# Reset enh cache on game update
-[[patches]]
-[patches.pattern]
-target = "game.lua"
-pattern = "modulate_sound(dt)"
-position = "after"
-payload = "SMODS.enh_cache:clear()"
-match_indent = true
-
 # Invalidate enhancement cache when card changes / replace_base_card fix pt1
 [[patches]]
 [patches.pattern]
@@ -211,7 +202,6 @@ target = "card.lua"
 pattern = "function Card:set_ability(center, initial, delay_sprites)"
 position = "after"
 payload = '''
-    SMODS.enh_cache:write(self, nil)
 
     if self.ability and not initial then
         self.ability.card_limit = self.ability.card_limit - (self.config.center.config.card_limit or 0)
@@ -245,13 +235,6 @@ payload = '''if self.ability and not initial and not delay_sprites then
   self.front_hidden = self:should_hide_front()
 end'''
 match_indent = true
-[[patches]]
-[patches.pattern]
-target = "card.lua"
-pattern = "function Card:set_base(card, initial)"
-position = "after"
-payload = "SMODS.enh_cache:write(self, nil)"
-match_indent = true
 
 [[patches]]
 [patches.pattern]
@@ -259,7 +242,6 @@ target = "card.lua"
 pattern = "function Card:set_seal(_seal, silent, immediate)"
 position = "after"
 payload = '''
-    SMODS.enh_cache:write(self, nil)
     if self.seal then
         self.ability.card_limit = self.ability.card_limit - (self.ability.seal.card_limit or 0)
         self.ability.extra_slots_used = self.ability.extra_slots_used - (self.ability.seal.extra_slots_used or 0)

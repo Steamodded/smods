@@ -3356,6 +3356,7 @@ SMODS.UndiscoveredCompat = {
                 card.glass_trigger = true
                 return { remove = true }
             end
+            -- Todo : figure out why this isn't working
             if context.check_enhancement and context.card == card and card:has_seal("Red") then
                 return {
                     enhancements = {

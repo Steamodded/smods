@@ -982,14 +982,12 @@ function Card:add_sticker(sticker, bypass_check)
     local sticker = SMODS.Stickers[sticker]
     if bypass_check or (sticker and sticker.should_apply and type(sticker.should_apply) == 'function' and sticker:should_apply(self, self.config.center, self.area, true)) then
         sticker:apply(self, true)
-        SMODS.enh_cache:write(self, nil)
     end
 end
 
 function Card:remove_sticker(sticker)
     if (sticker == 'pinned' and self.pinned) or self.ability[sticker] then
         SMODS.Stickers[sticker]:apply(self, false)
-        SMODS.enh_cache:write(self, nil)
     end
 end
 
@@ -997,57 +995,6 @@ function Card:can_calculate(ignore_debuff, ignore_sliced)
     local is_available = (not self.debuff or ignore_debuff) and (not self.getting_sliced or ignore_sliced)
     -- TARGET : Add extra conditions here
     return is_available
-end
-
-function SMODS.get_enhancements(card, extra_only)
-    if not SMODS.optional_features.quantum_fields.enhancement or not G.hand then
-        return not extra_only and card.ability.set == 'Enhanced' and { [card.config.center.key] = true } or {}
-    end
-    if not SMODS.enh_cache:read(card, extra_only) then
-
-        local enhancements = {}
-        if card.config.center.key ~= "c_base" then
-            enhancements[card.config.center.key] = true
-        end
-        local calc_return = {}
-        SMODS.calculate_context({other_card = card, check_enhancement = true, no_blueprint = true}, calc_return)
-        for _, eval in pairs(calc_return) do
-            for key, eval2 in pairs(eval) do
-                if type(eval2) == 'table' then
-                    for key2, _ in pairs(eval2) do
-                        if G.P_CENTERS[key2] then enhancements[key2] = true end
-                    end
-                else
-                    if G.P_CENTERS[key] then enhancements[key] = true end
-                end
-            end
-        end
-        SMODS.enh_cache:write(card, enhancements)
-    end
-    return SMODS.enh_cache:read(card, extra_only)
-end
-
-SMODS.enh_cache = {
-    write = function(self, key, value)
-        self.data[key] = value
-    end,
-    read = function(self, key, extra_only)
-        if not self.data[key] then return end
-        local ret = copy_table(self.data[key])
-        if extra_only then ret[key.config.center.key] = nil end
-        return ret
-    end,
-    clear = function(self)
-        self.data = setmetatable({}, { __mode = 'k' })
-    end,
-}
-SMODS.enh_cache:clear()
-
-function SMODS.has_enhancement(card, key)
-    if card.config.center.key == key then return true end
-    local enhancements = SMODS.get_enhancements(card)
-    if enhancements[key] then return true end
-    return false
 end
 
 function SMODS.shatters(card)
@@ -1068,79 +1015,58 @@ function SMODS.get_ability_reset_keys(card)
     return reset_keys
 end
 
-function SMODS.calculate_quantum_enhancements(card, effects, context)
-    if not SMODS.optional_features.quantum_fields.enhancement then return end
-    if context.extra_enhancement or context.check_enhancement or SMODS.extra_enhancement_calc_in_progress then return end
-    context.extra_enhancement = true
-    SMODS.extra_enhancement_calc_in_progress = true
-    local extra_enhancements = SMODS.get_enhancements(card, true)
-    local old_ability = copy_table(card.ability)
-    local old_center = card.config.center
-    local old_center_key = card.config.center_key
-    -- Note: For now, just trigger extra enhancements in order.
-    -- Future work: combine enhancements during
-    -- playing card scoring (ex. Mult comes before Glass because +_mult
-    -- naturally comes before x_mult)
-    local extra_enhancements_list = {}
-    for k, _ in pairs(extra_enhancements) do
-        if G.P_CENTERS[k] then
-            table.insert(extra_enhancements_list, k)
-        end
-    end
-    table.sort(extra_enhancements_list, function(a, b) return G.P_CENTERS[a].order < G.P_CENTERS[b].order end)
-
-    for _, k in ipairs(extra_enhancements_list) do
-        card:quantum_set_ability(G.P_CENTERS[k])
-        card.ability.extra_enhancement = k
-        local eval = eval_card(card, context)
-        table.insert(effects, eval)
-    end
-    card.ability = old_ability
-    card.config.center = old_center
-    card.config.center_key = old_center_key
-    context.extra_enhancement = nil
-    SMODS.extra_enhancement_calc_in_progress = nil
-end
-
 function SMODS.has_no_suit(card)
     if not SMODS.set_quantum_cache(card) then return end
     local is_stone = false
-    local is_wild = false
-    for key, qfield in pairs(SMODS.QuantumCardFields) do
-        for k, _ in pairs(card._qfield_cache.get[key .. "s"]) do
-            local obj = qfield.g_obj_table[k] or {}
+    for key, q_field in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
+            local obj = q_field.g_obj_table[k] or {}
             if (key == "enhancement" and k == "m_stone") or obj.no_suit then is_stone = true end
-            if (key == "enhancement" and k == "m_wild") or obj.any_suit then return false end
+            if (key == "enhancement" and k == "m_wild") or obj.any_suit then is_stone = false; goto continue end
         end
     end
+    ::continue::
+    SMODS.clear_quantum_cache(card)
     return is_stone
 end
 function SMODS.has_any_suit(card)
     if not SMODS.set_quantum_cache(card) then return end
-    for key, qfield in pairs(SMODS.QuantumCardFields) do
-        for k, _ in pairs(card._qfield_cache.get[key .. "s"]) do
-            local obj = qfield.g_obj_table[k] or {}
-            if (key == "enhancement" and k == "m_wild") or obj.any_suit then return true end
+    local ret = false
+    for key, q_field in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
+            local obj = q_field.g_obj_table[k] or {}
+            if (key == "enhancement" and k == "m_wild") or obj.any_suit then ret = true; goto continue end
         end
     end
+    ::continue::
+    SMODS.clear_quantum_cache(card)
+    return ret
 end
 function SMODS.always_scores(card)
     if not SMODS.set_quantum_cache(card) then return end
-    for key, qfield in pairs(SMODS.QuantumCardFields) do
-        for k, _ in pairs(card._qfield_cache.get[key .. "s"]) do
-            local obj = qfield.g_obj_table[k] or {}
-            if obj.always_scores then return true end
+    local ret = false
+    for key, q_field in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
+            local obj = q_field.g_obj_table[k] or {}
+            if obj.always_scores then ret = true; goto continue end
         end
     end
+    ::continue::
+    SMODS.clear_quantum_cache(card)
+    return ret
 end
 function SMODS.never_scores(card)
     if not SMODS.set_quantum_cache(card) then return end
-    for key, qfield in pairs(SMODS.QuantumCardFields) do
-        for k, _ in pairs(card._qfield_cache.get[key .. "s"]) do
-            local obj = qfield.g_obj_table[k]
-            if obj.never_scores then return true end
+    local ret = false
+    for key, q_field in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
+            local obj = q_field.g_obj_table[k]
+            if obj.never_scores then ret = true; goto continue end
         end
     end
+    ::continue::
+    SMODS.clear_quantum_cache(card)
+    return ret
 end
 
 SMODS.collection_pool = function(_base_pool)
@@ -1896,26 +1822,25 @@ function SMODS.update_context_flags(context, flags)
         if context.drawing_cards then context.amount = flags.modify end
     end
     for key, q_field in pairs(SMODS.QuantumCardFields) do
-        local getter_flag = key .. "s"
         local has_no_flag = "no_" .. key 
         local has_any_flag = "any_" .. key 
-        if flags[getter_flag] then
+        if flags[q_field.return_flag] then
             local no_mod_changed = false
             if flags.no_mod ~= nil then
                 context.no_mod = flags.no_mod
                 no_mod_changed = true
             end
             if not context.no_mod or no_mod_changed then
-                if flags.fixed == getter_flag or type(flags.fixed) == "table" and flags.fixed[getter_flag] then
-                    context[getter_flag] = flags[getter_flag]
+                if flags.fixed == q_field.return_flag or type(flags.fixed) == "table" and flags.fixed[q_field.return_flag] then
+                    context[q_field.return_flag] = flags[q_field.return_flag]
                 else
-                    for r, v in pairs(flags[getter_flag]) do
-                        context[getter_flag][r] = v
+                    for r, v in pairs(flags[q_field.return_flag]) do
+                        context[q_field.return_flag][r] = v
                     end
                 end
             end
-            context.card._qfield_cache.get[key] = context[getter_flag]
-            flags[getter_flag] = nil
+            context.card._qfield_cache.get[key] = context[q_field.return_flag]
+            flags[q_field.return_flag] = nil
         end
         if flags[has_no_flag] ~= nil then
             context.card._qfield_cache.has[key].no = flags[has_no_flag]
@@ -1954,13 +1879,14 @@ end
 
 function SMODS.check_looping_context(eval_object)
     if #SMODS.context_stack < 2 then return false end
-    local getter_type = SMODS.get_context_type(SMODS.context_stack[#SMODS.context_stack].context)
-    if not getter_type then return end
+    local context_type = SMODS.get_context_type(SMODS.context_stack[#SMODS.context_stack].context)
+    if not context_type then return end
     for i, t in ipairs(SMODS.context_stack) do
         local other_type = SMODS.get_context_type(t.context)
         local next_context_t = SMODS.context_stack[i+1]
         -- If the current kind of context has caused the eval_object to incite another context before, dont evaluate the object again
-        if other_type == getter_type and next_context_t and SMODS.get_context_type(next_context_t.context) and next_context_t.caller == eval_object then
+        if other_type == context_type and next_context_t and SMODS.get_context_type(next_context_t.context) and next_context_t.caller == eval_object then
+            sendWarnMessage(("SMODS.check_looping_context prevented loop; context type '%s', caller '%s'"):format(context_type, inspect(next_context_t.caller)), "Utils")
             return true
         end
     end

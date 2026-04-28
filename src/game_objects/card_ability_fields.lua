@@ -3,10 +3,12 @@ SMODS.CARD_VALUE_TYPES = {
     MULTIPLICATIVE = "multiplicative"
 }
 
+
 -- Helper function to get a card's qfield-cached abilities, or if uncached just card.ability
 function SMODS.get_card_abilities(card)
     return card._qfield_cache and card._qfield_cache.abilities or {{t = card.ability}}
 end
+
 
 SMODS.CardAbilityFields = {}
 SMODS.CardAbilityField = SMODS.GameObject:extend {
@@ -30,8 +32,8 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
         if self.value_ref then
             self.perma_value_ref = self.perma_value_ref or "perma_" .. self.value_ref
         end
-        if not self.value_refs then -- This is used instead of the singular value_ref
-            self.value_refs = {self.value_ref}
+        if not self.variant_refs then -- This is used mostly instead of the singular value_ref
+            self.variant_refs = {self.value_ref}
         end
         if not self.default_value then
             if self.stacking_type == SMODS.CARD_VALUE_TYPES.ADDITIVE then self.default_value = 0
@@ -56,17 +58,21 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
         for _, ability_t in ipairs(abilities) do
             local ability = ability_t.t
             if self.stacking_type == SMODS.CARD_VALUE_TYPES.ADDITIVE then
-                for _, v_ref in ipairs(self.value_refs) do
-                    ret = ret + (table_get_subfield(ability or {}, v_ref) or 0)
+                for _, v_ref in ipairs(self.variant_refs) do
+                    local v = (table_get_subfield(ability or {}, v_ref) or 0)
+                    ret = ret + v
+                    if v ~= self.default_value then break end -- Only apply value once
                 end
             elseif self.stacking_type == SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE then
-                for _, v_ref in ipairs(self.value_refs) do
-                    ret = ret * (table_get_subfield(ability or {}, v_ref) or 1)
+                for _, v_ref in ipairs(self.variant_refs) do
+                    local v = (table_get_subfield(ability or {}, v_ref) or 1)
+                    ret = ret * v
+                    if v ~= self.default_value then break end -- Only apply value once
                 end
             end
         end
         if self.stacking_type == SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE then
-            local base = table_get_subfield(card.ability or {}, self.perma_value_ref)
+            local base = (table_get_subfield(card.ability or {}, self.perma_value_ref) or 0)
             ret = ret * (base and base + 1 or 1)
         else
             ret = ret + (table_get_subfield(card.ability or {}, self.perma_value_ref) or 0)
@@ -121,11 +127,14 @@ SMODS.CardAbilityField{
         local ret = 0
         for _, ability_t in ipairs(abilities) do
             local ability = ability_t.t or {}
-            if ability.effect == "Lucky Card" and SMODS.pseudorandom_probability(card, 'lucky_mult', 1, 5) then
-                card.lucky_trigger = true
-                ret = ret + ability.mult
+            if ability.effect == "Lucky Card" then
+                if SMODS.pseudorandom_probability(card, 'lucky_mult', 1, 5) then
+                    card.lucky_trigger = true
+                    ret = ret + ability.mult
+                end
+            else
+                ret = ret + (ability.mult or 0)
             end
-            ret = ret + (ability.mult or 0)
         end
         return ret + (card.ability.perma_mult or 0)
     end
@@ -196,11 +205,14 @@ SMODS.CardAbilityField{
         end
         for _, ability_t in ipairs(abilities) do
             local ability = ability_t.t or {}
-            if ability.effect == "Lucky Card" and SMODS.pseudorandom_probability(card, 'lucky_money', 1, 15) then
-                card.lucky_trigger = true
-                ret = ret + ability.p_dollars
+            if ability.effect == "Lucky Card" then
+                if SMODS.pseudorandom_probability(card, 'lucky_money', 1, 15) then
+                    card.lucky_trigger = true
+                    ret = ret + (ability.p_dollars or 0)
+                end
+            else
+                ret = ret + (ability.p_dollars or 0)
             end
-            ret = ret + (ability.p_dollars or 0)
         end
         if ret ~= 0 then
             G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + ret
@@ -257,3 +269,21 @@ SMODS.CardAbilityField{
     scoring_card_areas = {hand = true},
     stacking_type = SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE
 }
+
+
+-- Helper function to get a sanitized ability table -> ! Only contains keys supported by SMODS.CardAbilityField
+function SMODS.get_ability_from_obj(obj)
+    local ability = {}
+    local config = obj.config
+    if config then
+        for key, ca_field in pairs(SMODS.CardAbilityFields) do
+            for _, variant in ipairs(ca_field.variant_refs) do
+                if config[variant] then
+                    ability[ca_field.value_ref] = config[variant]
+                    break
+                end
+            end
+        end
+    end
+    return ability
+end
