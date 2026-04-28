@@ -21,7 +21,9 @@ local function _general_quantum_has_func(card, args)
     for key, flag in pairs(flags) do
         context[key] = flag
     end
-    SMODS.calculate_context(context) -- Card._qfield_cache.has is updated directly
+    if next(SMODS.optional_features.quantum_fields) then -- Only calculate the context if any quantum fields are toggled on
+        SMODS.calculate_context(context) -- Card._qfield_cache.has is updated directly
+    end 
     for key, q_field in pairs(SMODS.QuantumCardFields) do
         if (key == "rank" and card._qfield_cache.get.enhancements.m_stone) then card._qfield_cache.has[key].no = true end -- Todo : check if this explicit stone check is necessary
         for k, v in pairs(card._qfield_cache.get[key .. "s"]) do
@@ -48,6 +50,8 @@ function SMODS.clear_quantum_cache(card)
     if card._qfield_cache and not card._qfield_cache._clear_queued then
         G.E_MANAGER:add_event(Event({
             trigger = "immediate",
+            blocking = false,
+            blockable = false,
             func = function ()
                 card._qfield_cache = nil
                 return true
@@ -74,8 +78,10 @@ local function _general_quantum_getter(card, args)
     local flags = args.flags or args
     for key, flag in pairs(flags) do
         context[key] = flag
-    end    
-    SMODS.calculate_context(context) -- Card._qfield_cache.get is updated directly
+    end
+    if next(SMODS.optional_features.quantum_fields) then -- Only calculate the context if any quantum fields are toggled on
+        SMODS.calculate_context(context) -- Card._qfield_cache.get is updated directly
+    end
     local eval = card._qfield_cache.get
     local ret = {}
     for key, q_field in pairs(SMODS.QuantumCardFields) do 
@@ -192,12 +198,7 @@ end
 local function _quantum_field_inject_calculate(args, target_objects)
     local calculate_func = args.override_calculate or function (card, context, ...)
         local ret = _general_quantum_calculate(args.key, card, context, ...)
-        local merged = SMODS.merge_effects(unpack(ret)) -- unsure if unpack is deprecated or not
-        if merged then 
-            print("card : ", card)
-            print("merged card: ", merged.card) 
-        end
-        return merged 
+        return SMODS.merge_effects(unpack(ret)) -- unsure if unpack is deprecated or not
     end
     local func_field = "calculate_" .. args.key
     for _, target_obj in ipairs(target_objects) do
@@ -342,7 +343,7 @@ SMODS.Seal:take_ownership("Red", {
             return {
                 message = localize('k_again_ex'),
                 repetitions = 1,
-                card = self
+                card = card
             }
         end
     end
@@ -350,7 +351,7 @@ SMODS.Seal:take_ownership("Red", {
 
 SMODS.Seal:take_ownership("Purple", {
     calculate = function (self, card, context)
-        if context.discard and context.other_card == self and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then
+        if context.discard and context.other_card == card and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then
             G.GAME.consumeable_buffer = G.GAME.consumeable_buffer + 1
             G.E_MANAGER:add_event(Event({
                 trigger = 'before',
@@ -360,7 +361,7 @@ SMODS.Seal:take_ownership("Purple", {
                     G.GAME.consumeable_buffer = 0
                     return true
                 end)}))
-            card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize('k_plus_tarot'), colour = G.C.PURPLE})
+            card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_plus_tarot'), colour = G.C.PURPLE})
             return nil, true
         end
     end

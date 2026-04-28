@@ -49,7 +49,7 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
     stacking_type = SMODS.CARD_VALUE_TYPES.ADDITIVE,
     max_value = math.huge,
     min_value = -math.huge,
-    default_value = 0,
+    default_value = nil,
     getter = function (self, abilities, card, ...) -- abilities is of form {integer: {t = [ability table], key = [source obj key], qfield_key = [qfield key]}}
         -- if self.debuff then return self.default_value end
         local ret = self.default_value
@@ -66,7 +66,8 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
             end
         end
         if self.stacking_type == SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE then
-            ret = ret * (table_get_subfield(card.ability or {}, self.perma_value_ref) or 1)
+            local base = table_get_subfield(card.ability or {}, self.perma_value_ref)
+            ret = ret * (base and base + 1 or 1)
         else
             ret = ret + (table_get_subfield(card.ability or {}, self.perma_value_ref) or 0)
         end
@@ -190,11 +191,11 @@ SMODS.CardAbilityField{
                 end
             end
         end
+        if card:has_seal("Gold") then
+            ret = ret +  3
+        end
         for _, ability_t in ipairs(abilities) do
             local ability = ability_t.t or {}
-            if ability_t.key == "Gold" and ability_t.qfield_key == "seal" then
-                ret = ret +  3
-            end
             if ability.effect == "Lucky Card" and SMODS.pseudorandom_probability(card, 'lucky_money', 1, 15) then
                 card.lucky_trigger = true
                 ret = ret + ability.p_dollars
