@@ -1660,7 +1660,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 if SMODS.check_looping_context(_card) then
                     goto skip
                 end
-                SMODS.set_context_evaluee(_card)
                 local eval, post = eval_card(_card, context)
                 if args and args.main_scoring and eval.jokers then
                     eval.jokers.juice_card = eval.jokers.juice_card or eval.jokers.card or _card
@@ -1725,11 +1724,9 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                         if SMODS.check_looping_context(card) then
                             goto skip
                         end
-                        SMODS.set_context_evaluee(card)
                         local effects = {eval_card(card, context)}
                         local f = SMODS.trigger_effects(effects, card)
                         for k,v in pairs(f) do flags[k] = v end
-
                         SMODS.update_context_flags(context, flags)
                         ::skip::
                     end
@@ -1752,10 +1749,8 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 end
                 --calculate the played card effects
                 if return_table then
-                    SMODS.set_context_evaluee(card)
                     return_table[#return_table+1] = eval_card(card, context)
                 else
-                    SMODS.set_context_evaluee(card)
                     local effects = {eval_card(card, context)}
                     local f = SMODS.trigger_effects(effects, card)
                     for k,v in pairs(f) do flags[k] = v end
@@ -1772,7 +1767,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             if SMODS.check_looping_context(area.object) then
                 goto skip
             end
-            SMODS.set_context_evaluee(area.object)
             local eval, post = SMODS.eval_individual(area, context)
             if args and args.main_scoring and eval.individual then
                 eval.individual.juice_card = eval.individual.juice_card or eval.individual.card or area.scored_card
@@ -1805,7 +1799,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             ::skip::
         end
     end
-    SMODS.set_context_evaluee(nil)
     return flags
 end
 
@@ -2252,6 +2245,7 @@ end
 
 function SMODS.eval_individual(individual, context)
     SMODS.push_to_context_stack(context, "utils.lua : SMODS.eval_individual")
+    SMODS.set_context_evaluee(individual.object)
     local ret = {}
     local post_trig = {}
 
@@ -2272,6 +2266,7 @@ function SMODS.eval_individual(individual, context)
             SMODS.calculate_context({blueprint_card = context.blueprint_card, post_trigger = true, other_card = individual.object, other_context = context, other_ret = ret}, post_trig)
         end
     end
+    SMODS.set_context_evaluee(nil)
     SMODS.pop_from_context_stack(context, "utils.lua : SMODS.eval_individual")
     return ret, post_trig
 end

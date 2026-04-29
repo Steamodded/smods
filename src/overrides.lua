@@ -2674,9 +2674,11 @@ end
 local eval_card_ref = eval_card
 function eval_card(card, context)
 	SMODS.push_to_context_stack(context, "overrides.lua : eval_card")
+	SMODS.set_context_evaluee(card)
 	SMODS.set_quantum_cache(card)
 	local eff, post = eval_card_ref(card, context)
 	SMODS.clear_quantum_cache(card)
+	SMODS.set_context_evaluee(nil)
 	SMODS.pop_from_context_stack(context, "overrides.lua : eval_card")
 	return eff, post
 end

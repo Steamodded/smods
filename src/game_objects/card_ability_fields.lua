@@ -156,7 +156,8 @@ SMODS.CardAbilityField{
 SMODS.CardAbilityField{
     key = "chip_h_x_mult",
     stacking_type = SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE,
-    calc_key = "h_x_mult",
+    value_ref = "h_x_mult",
+    calc_key = "x_mult",
     scoring_card_areas = {hand = true},
 }
 
@@ -175,7 +176,8 @@ SMODS.CardAbilityField{
 SMODS.CardAbilityField{
     key = "chip_h_x_bonus",
     stacking_type = SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE,
-    calc_key = "h_x_chips",
+    value_ref = "h_x_chips",
+    calc_key = "x_chips",
     scoring_card_areas = {hand = true},
 }
 
@@ -259,19 +261,21 @@ SMODS.CardAbilityField{
 
 SMODS.CardAbilityField{
     key = "bonus_h_blind_size",
-    calc_key = "h_blind_size",
+    value_ref = "h_blind_size",
+    calc_key = "blind_size",
     scoring_card_areas = {hand = true},
 }
 
 SMODS.CardAbilityField{
     key = "bonus_h_x_blind_size",
-    calc_key = "h_x_blind_size",
+    value_ref = "h_x_blind_size",
+    calc_key = "x_blind_size",
     scoring_card_areas = {hand = true},
     stacking_type = SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE
 }
 
 
--- Helper function to get a sanitized ability table -> ! Only contains keys supported by SMODS.CardAbilityField
+-- Helper function to get a sanitized ability table
 function SMODS.get_ability_from_obj(obj)
     local ability = {}
     local config = obj.config
@@ -284,6 +288,14 @@ function SMODS.get_ability_from_obj(obj)
                 end
             end
         end
+        ability.name = obj.name
+        ability.effect = obj.effect
+        ability.set = obj.set
+        ability.h_size = config.h_size or 0
+        ability.d_size = config.d_size or 0
+        ability.extra = copy_table(config.extra) or nil
+        ability.extra_value = 0
+        ability.type = config.type or ''
     end
     return ability
 end

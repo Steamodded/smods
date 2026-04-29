@@ -25,7 +25,7 @@ local function _general_quantum_has_func(card, args)
         SMODS.calculate_context(context) -- Card._qfield_cache.has is updated directly
     end 
     for key, q_field in pairs(SMODS.QuantumCardFields) do
-        if (key == "rank" and card._qfield_cache.get.enhancements.m_stone) then card._qfield_cache.has[key].no = true end -- Todo : check if this explicit stone check is necessary
+        if (key == "rank" and card._qfield_cache.get.enhancements.m_stone) then card._qfield_cache.has.rank.no = true end -- Todo : check if this explicit stone check is necessary
         for k, v in pairs(card._qfield_cache.get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k] or {}
             if obj["no_" .. key] then card._qfield_cache.has[key].no = true end 
@@ -91,7 +91,7 @@ local function _general_quantum_getter(card, args)
                 local obj = q_field.g_obj_table[new_key]
                 if obj and q_field.cache_ability then
                     card._qfield_cache.abilities = card._qfield_cache.abilities or {}
-                    local ability = SMODS.get_ability_from_obj(obj)
+                    local ability = type(obj.cache_ability) == "function" and obj:cache_ability() or SMODS.get_ability_from_obj(obj)
                     table.insert(card._qfield_cache.abilities, {t = ability, key = new_key, qfield_key = key})
                 end
             else
