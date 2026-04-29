@@ -315,35 +315,33 @@ function SMODS.modify_rank(card, amount, manual_sprites)
     local rank_data = SMODS.Ranks[card.base.value]
     if amount > 0 then
         for _ = 1, amount do
-            local behavior = rank_data.strength_effect or { fixed = 1, ignore = false, random = false }
+            local behavior = rank_data.strength_effect or { fixed_next = false, ignore = false, random = false }
             if behavior.ignore or not next(rank_data.next) then
                 break
             elseif behavior.random then
                 rank_key = pseudorandom_element(
-                    rank_data.next,
+                    SMODS.get_keys(rank_data.next),
                     pseudoseed('strength'),
                     { in_pool = function(key) return SMODS.add_to_pool(SMODS.Ranks[key], { suit = card.base.suit }) end }
                 )
             else
-                local i = (behavior.fixed and rank_data.next[behavior.fixed]) and behavior.fixed or 1
-                rank_key = rank_data.next[i]
+                rank_key = (behavior.fixed_next and rank_data.next[behavior.fixed_next]) or rank_data.next[SMODS.get_keys(rank_data.next)[1]]
             end
             rank_data = SMODS.Ranks[rank_key]
         end
     else
         for _ = 1, -amount do
-            local behavior = rank_data.prev_behavior or { fixed = 1, ignore = false, random = false }
+            local behavior = rank_data.prev_behavior or { fixed_prev = false, ignore = false, random = false }
             if not next(rank_data.prev) or behavior.ignore then
                 break
             elseif behavior.random then
                 rank_key = pseudorandom_element(
-                    rank_data.prev,
+                    SMODS.get_keys(rank_data.prev),
                     pseudoseed('weakness'),
                     { in_pool = function(key) return SMODS.add_to_pool(SMODS.Ranks[key], { suit = card.base.suit }) end }
                 )
             else
-                local i = (behavior.fixed and rank_data.prev[behavior.fixed]) and behavior.fixed or 1
-                rank_key = rank_data.prev[i]
+                rank_key = (behavior.fixed_prev and rank_data.prev[behavior.fixed_prev]) or rank_data.prev[SMODS.get_keys(rank_data.prev)[1]]
             end
             rank_data = SMODS.Ranks[rank_key]
         end
@@ -1378,7 +1376,6 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'debuff' then
         return { [key] = amount, debuff_source = scored_card }
     end
-
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1477,6 +1474,7 @@ SMODS.other_calculation_keys = {
     'message',
     'level_up', 'func',
     'numerator', 'denominator',
+    'ranks', 'fixed',
     'modify',
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
@@ -1491,6 +1489,7 @@ SMODS.silent_calculation = {
     cards_to_draw = true,
     func = true, extra = true,
     numerator = true, denominator = true,
+    ranks = true,
     no_destroy = true
 }
 
@@ -1695,7 +1694,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                         return_table[#return_table+1] = v
                     end
                 else
-                    local f = SMODS.trigger_effects(effects, _card)
+                    local f = SMODS.trigger_effects(effects, _card) or {}
                     for k,v in pairs(f) do flags[k] = v end
                     SMODS.update_context_flags(context, flags)
                 end
@@ -1804,6 +1803,23 @@ function SMODS.update_context_flags(context, flags)
     if flags.denominator then context.denominator = flags.denominator end
     if flags.cards_to_draw then context.amount = flags.cards_to_draw end
     if flags.saved then context.game_over = false end
+    if flags.ranks then
+        local no_mod_changed = false
+        if flags.no_mod ~= nil then
+            context.no_mod = flags.no_mod
+            no_mod_changed = true
+        end
+        if not context.no_mod or no_mod_changed then
+            if flags.fixed then
+                context.ranks = flags.ranks
+            else
+                for r, v in pairs(flags.ranks) do
+                    context.ranks[r] = v
+                end
+            end
+        end
+        flags.ranks = nil
+    end
     if flags.modify then
         -- insert general modified value updating here
         if context.modify_ante then context.modify_ante = flags.modify end
@@ -2829,6 +2845,28 @@ function SMODS.wrap_around_straight()
     return false
 end
 
+function SMODS.get_straight_ranks(t, objectified)
+    t = t or SMODS.Ranks
+    local ret = {}
+    for k, rank in pairs(t) do
+        local key = k
+        if type(k) == "table" then
+            rank = k
+            key = k.key
+        end
+        if rank and next(rank.virtual.ranks) then
+            for _, v_rank in ipairs(rank.virtual.ranks) do
+                if SMODS.VirtualRanks[v_rank] then
+                    ret[objectified and SMODS.VirtualRanks[v_rank] or v_rank] = objectified or {}
+                end
+            end
+        else
+            ret[objectified and SMODS.Ranks[key] or key] = objectified or {}
+        end
+    end
+    return ret
+end
+
 function SMODS.merge_effects(...)
     local t = {}
     for _, v in ipairs({...}) do
@@ -3520,6 +3558,25 @@ function CardArea:handle_card_limit()
     end
 end
 
+
+function SMODS.to_map(t)
+    if type(t) ~= "table" then return {} end
+    local ret = {}
+    for _, v in ipairs(t) do
+        ret[v] = true
+    end
+    return ret
+end
+
+function SMODS.get_keys(t)
+    if type(t) ~= "table" then return {} end
+    local ret = {}
+    for k, _ in pairs(t) do
+        ret[#ret + 1] = k
+    end
+    table.sort(ret, function (a, b) return a < b end)
+    return ret
+end
 
 function SMODS.get_atlas(atlas_key)
     return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key]

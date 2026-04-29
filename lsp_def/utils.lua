@@ -100,6 +100,13 @@
 ---@field new_suit? Suits|string New suit the card changed to.
 ---@field old_suit? Suits|string Old suit the card changed from.
 ---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
+---@field _quantum_getter? true Internal flag for the general quantum getter context, see per-field flags below.
+---@field get_ranks? true Check if `true` for modifying the rank(s) of the context.card. `context.ranks` is a map of `SMODS.Rank` keys. Return `ranks` to add or remove ranks, or return 'fixed = true' to override the `context.ranks` 
+---@field get_enhancements? true Check if `true` for modifying the enhancement(s) of the context.card. ^
+---@field get_seals? true Check if `true` for modifying the seal(s) of the context.card. ^
+---@field get_editions? true Check if `true` for modifying the edition(s) of the context.card. ^
+---@field get_stickers? true Check if `true` for modifying the sticker(s) of the context.card. ^
+---@field no_mod? boolean Check if `true` to decide whether an effect should modify context.get_ranks' ranks field. (If you want to override and block other effects, return `no_mod=true` alongside ranks=[only your ranks] and fixed=true)
 ---@field money_altered? true Check if `true` for effects when the amount of money the player has changes.
 ---@field from_shop? true Check if `true` if money changed during the shop.
 ---@field from_consumeable? true Check if `true` if money changed by a consumable.
@@ -133,7 +140,7 @@ function SMODS.merge_lists(...) end
 
 --- A table of SMODS feature that mods can choose to enable.
 ---@class SMODS.optional_features: table
----@field quantum_enhancements? boolean Enables "Quantum Enhancement" contexts. Cards can count as having multiple enhancements at once.
+---@field quantum_fields? table<SMODS.QuantumCardField.key|string, true> Map of SMODS.QuantumCardField keys and whether the corresponding field is toggled on. Allows a playing card to have multiple values for Ranks, Enhancements, Seals, Editions or Stickers.
 ---@field retrigger_joker? boolean Enables "Joker Retrigger" contexts. Jokers can be retriggered by other jokers or effects.
 ---@field post_trigger? boolean Enables "Post Trigger" contexts. Allows calculating effects after a Joker has been calculated.
 ---@field cardareas? SMODS.optional_features.cardareas Enables additional CardArea calculation.
@@ -264,24 +271,6 @@ function SMODS.smart_level_up_hand(card, hand, instant, amount) end
 function SMODS.get_card_areas(_type, _context) end
 
 ---@param card Card|table
----@param extra_only? boolean Return table will not have the card's actual enhancement.
----@return table<Enhancements|string, true> enhancements
---- Returns table of enhancements the provided `card` has.
-function SMODS.get_enhancements(card, extra_only) end
-
----@param card Card|table
----@param key Enhancements|string
----@return boolean
---- Checks if this card a specific enhancement.
-function SMODS.has_enhancement(card, key) end
-
----@param card Card|table
----@param effects table
----@param context CalcContext|table
---- Calculates quantum Enhancements. Require `SMODS.optional_features.quantum_enhancements` to be `true`.
-function SMODS.calculate_quantum_enhancements(card, effects, context) end
-
----@param card Card|table
 ---@return boolean?
 --- Check if the card should shatter.
 function SMODS.shatters(card) end
@@ -296,10 +285,6 @@ function SMODS.has_no_suit(card) end
 --- Checks if the card counts as having all suits.
 function SMODS.has_any_suit(card) end
 
----@param card Card|table
----@return boolean?
---- Checks if the card counts as having no rank.
-function SMODS.has_no_rank(card) end
 
 ---@param card Card|table
 ---@return boolean?
@@ -720,6 +705,22 @@ function SMODS.is_poker_hand_visible(handname) end
 --- `trigger` is the card or effect that runs the check
 function SMODS.is_eternal(card, trigger) end
 
+---@param id number
+---@return SMODS.Rank rank
+--- Returns the first rank from SMODS.Ranks whose .id == [id].
+function SMODS.get_rank_from_id(id) end
+
+---@param cards table<integer, Card>
+---@param flags? table
+---@return table<SMODS.Rank, integer> tally
+---@return table<SMODS.Rank, table<integer, Card>> rank_to_cards
+function SMODS.get_rank_tally(cards, flags) end
+
+
+---@param cards table<integer, Card>
+---@return table<"lowest"|"highest", table<"rank"|"cards", SMODS.Rank|table<integer, Card>>>
+function SMODS.lowest_and_highest_rank(cards) end
+
 ---@param card Card|table
 ---@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: '+'|'X'|'-'|string|fun(ref_table: table, ref_value: string, initial: number, change: number)?, block_overrides: {value: boolean?, scalar: boolean?, message: boolean?}?, scaling_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
 --- Tells Jokers that this card is scaling allowing for scaling detection
@@ -768,7 +769,29 @@ function SMODS.get_context_type(context) end
 --- skipping the evaluation of the object and preventing an infinite loop.
 function SMODS.check_looping_context(eval_object) end
 
----@param atlas_key string The key of the atlas
+-- Todo : Complete QuantumCardField lsp defs
+
+---@param parity integer The parity to be checked. (See SMODS.Rank lsp def)
+---@return boolean
+function Card:is_parity(parity) end
+
+---@param t? table The list to turn into a map
+---@return table
+--- This function turns a list into a mapping, so for {k: v} -> {v: true}
+function SMODS.to_map(t) end
+
+---@param t? table The table from which to get the keys.
+---@return table
+--- This function gets the keys of a table and returns them as a list
+function SMODS.get_keys(t) end
+
+---@param t? table The table of ranks to use as reference, SMODS.Ranks by default
+---@param objectified? boolean Whether to return a map of 'SMODS.Rank's or rank keys
+---@return table<SMODS.Rank|string, true|table>
+--- Helper function for straight calculation, gets SMODS.Ranks with respect to VirtualRanks
+function SMODS.get_straight_ranks(t, objectified) end
+
+---@param atlas_key string The key of the atlas 
 --- This function gets an atlas from G.ASSET_ATLAS or G.ANIMATION_ATLAS
 function SMODS.get_atlas(atlas_key) end
 

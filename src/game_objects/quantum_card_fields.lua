@@ -60,19 +60,20 @@ local function _general_quantum_getter(card, args)
     for key, q_field in pairs(SMODS.QuantumCardFields) do 
         ret[q_field.return_flag] = {} 
         for k, v in pairs(eval[q_field.return_flag]) do
-            local new_key = type(k) == "table" and k.key or k
+            local string_key = type(k) == "table" and k.key or k
             if v then
-                ret[q_field.return_flag][new_key] = true
-                local obj = q_field.g_obj_table[new_key]
+                local obj = q_field.g_obj_table[string_key]
+                local ret_key = args.as_objs and obj or string_key
+                ret[q_field.return_flag][ret_key] = true
                 if obj and q_field.cache_ability then
                     local ability = type(obj.cache_ability) == "function" and obj:cache_ability(card) or SMODS.get_ability_from_obj(obj)
                     if ability then
                         card._qfield_cache.abilities = card._qfield_cache.abilities or {}
-                        table.insert(card._qfield_cache.abilities, {t = ability, key = new_key, qfield_key = key})
+                        table.insert(card._qfield_cache.abilities, {t = ability, key = string_key, qfield_key = key})
                     end
                 end
             else
-                card._qfield_cache.get[q_field.return_flag][new_key] = nil
+                card._qfield_cache.get[q_field.return_flag][string_key] = nil
             end
         end
     end
@@ -377,4 +378,99 @@ SMODS.Seal:take_ownership("Purple", {
     end
 })
 
+SMODS.Joker:take_ownership("cloud_9", {
+    update = function () end,
+    loc_vars = function (self, info_queue, card)
+        local tally = SMODS.get_rank_tally(G.playing_cards)
+        card.ability.nine_tally = tally["9"] or 0
+        return { vars = {card.ability.extra, card.ability.extra*(card.ability.nine_tally or 0)}}
+    end,
+    calc_dollar_bonus = function (self, card)
+        local tally = SMODS.get_rank_tally(G.playing_cards)
+        card.ability.nine_tally = tally["9"] or 0
+        if card.ability.nine_tally and card.ability.nine_tally > 0 then
+            return card.ability.extra*(card.ability.nine_tally)
+        end
+    end
+})
+
 -- Todo : reset_idol_card() etc. may need to be updated
+
+
+-- Card rank functions
+function SMODS.get_rank_from_id(id)
+    for _, rank in pairs(SMODS.Ranks) do
+        if rank.id == id then
+            return rank
+        end
+    end
+    return nil
+end
+
+function SMODS.get_rank_tally(cards, args)
+    if cards.playing_card then
+        cards = {cards}
+    end
+    args = args or {}
+    local tally = {}
+    local rank_to_cards = {}
+    for _, pcard in ipairs(cards) do
+        local pcard_ranks = {}
+        pcard_ranks = pcard:get_ranks(args)
+        for rank, t in pairs(pcard_ranks) do
+            if t then
+                tally[rank] = tally[rank] and tally[rank] + 1 or 1
+                if rank_to_cards[rank] then table.insert(rank_to_cards[rank], pcard)
+                else rank_to_cards[rank] = {pcard} end
+            end
+        end
+    end
+    return tally, rank_to_cards
+end
+
+function Card:is_parity(parity)
+    if not self.playing_card then return end
+    if SMODS.has_any_rank(self, {is_parity_getting_ranks = {parity = parity}}) then
+        return true
+    end
+    for rank, _ in pairs(self:get_ranks({is_parity_getting_ranks = {parity = parity}}, true)) do
+        if rank.parity == parity then
+            return true
+        end
+    end
+    return false
+end
+
+function Card:is_royal()
+    for rank, _ in pairs(self:get_ranks({is_royal_getting_ranks = true}, true)) do
+        if rank.is_royal then
+            return true
+        end
+    end
+    return false
+end
+
+function SMODS.all_royal(cards)
+    if type(cards) ~= "table" then return false end
+    for _, pcard in ipairs(cards) do
+        if not pcard:is_royal() then
+            return false
+        end
+    end
+    return #cards > 0
+end
+
+function SMODS.lowest_and_highest_rank(cards)
+    local rank_tally, rank_to_cards = SMODS.get_rank_tally(cards)
+    local lowest
+    local highest
+    for rank, _ in pairs(rank_tally) do
+        if not lowest or rank.sort_nominal < lowest.sort_nominal then
+            lowest = {rank = rank, sort_nominal = rank.sort_nominal}
+        end
+        if not highest or rank.sort_nominal > highest.sort_nominal then
+            highest = {rank = rank, sort_nominal = rank.sort_nominal}
+        end
+    end
+    return {lowest = {rank = lowest.rank, cards = rank_to_cards[lowest.rank]}, highest = {rank = highest.rank, cards = rank_to_cards[highest.rank]}}
+end
