@@ -3351,20 +3351,11 @@ SMODS.UndiscoveredCompat = {
     -- })
 
     SMODS.Enhancement:take_ownership('glass', {
+        shatters = true,
         calculate = function(self, card, context)
             if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and SMODS.pseudorandom_probability(card, 'glass', 1, card.ability.extra) then
                 card.glass_trigger = true
                 return { remove = true }
-            end
-            -- Todo : figure out why this isn't working
-            if context.check_enhancement and context.card == card and card:has_seal("Red") then
-                return {
-                    enhancements = {
-                        m_glass = false,
-                        m_lucky = true,
-                        m_steel = true
-                    }
-                }
             end
         end,
     })

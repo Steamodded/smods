@@ -6,7 +6,11 @@ SMODS.CARD_VALUE_TYPES = {
 
 -- Helper function to get a card's qfield-cached abilities, or if uncached just card.ability
 function SMODS.get_card_abilities(card)
-    return card._qfield_cache and card._qfield_cache.abilities or {{t = card.ability}}
+    if (card._qfield_cache or {}).abilities then
+        return card._qfield_cache.abilities
+    end
+    SMODS.set_quantum_cache(card)
+    return card._qfield_cache.abilities or {{t = card.ability}}
 end
 
 
@@ -48,7 +52,7 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
     post_inject_class = function(self) end,
     calc_key = nil, -- e.g. "mult"
     value_ref = nil, -- property path relative to Card.ability, e.g. "x_chips"
-    value_refs = nil, -- list of the above, used for compat with e.g. Xmult / x_mult
+    variant_refs = nil, -- list of the above, used for compat with e.g. Xmult / x_mult
     perma_value_ref = nil, -- ^ for permanent bonus
     stacking_type = SMODS.CARD_VALUE_TYPES.ADDITIVE,
     max_value = math.huge,
@@ -148,7 +152,7 @@ SMODS.CardAbilityField{
     key = "chip_x_mult",
     stacking_type = SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE,
     calc_key = "x_mult",
-    value_refs = {"x_mult", "Xmult"},
+    variant_refs = {"x_mult", "Xmult"},
 }
 
 SMODS.CardAbilityField{
@@ -284,9 +288,10 @@ SMODS.CardAbilityField{
 
 -- Helper function to get a sanitized ability table
 function SMODS.get_ability_from_obj(obj)
-    local ability = {}
+    local ability
     local config = obj.config
     if config then
+        ability = {}
         for key, ca_field in pairs(SMODS.CardAbilityFields) do
             for _, variant in ipairs(ca_field.variant_refs) do
                 if config[variant] then

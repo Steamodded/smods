@@ -1000,10 +1000,14 @@ function Card:can_calculate(ignore_debuff, ignore_sliced)
 end
 
 function SMODS.shatters(card)
-    local enhancements = SMODS.get_enhancements(card)
-    for key, _ in pairs(enhancements) do
-        if G.P_CENTERS[key].shatters or key == 'm_glass' then return true end
+    if not SMODS.set_quantum_cache(card) then return end
+    for key, q_field in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
+            local obj = q_field.g_obj_table[k] or {}
+            if obj.shatters then return true end
+        end
     end
+    return false
 end
 
 function SMODS.get_ability_reset_keys(card)
@@ -1024,51 +1028,40 @@ function SMODS.has_no_suit(card)
         for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k] or {}
             if (key == "enhancement" and k == "m_stone") or obj.no_suit then is_stone = true end
-            if (key == "enhancement" and k == "m_wild") or obj.any_suit then is_stone = false; goto continue end
+            if (key == "enhancement" and k == "m_wild") or obj.any_suit then return false end
         end
     end
-    ::continue::
-    SMODS.clear_quantum_cache(card)
     return is_stone
 end
 function SMODS.has_any_suit(card)
     if not SMODS.set_quantum_cache(card) then return end
-    local ret = false
     for key, q_field in pairs(SMODS.QuantumCardFields) do
         for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k] or {}
-            if (key == "enhancement" and k == "m_wild") or obj.any_suit then ret = true; goto continue end
+            if (key == "enhancement" and k == "m_wild") or obj.any_suit then return true end
         end
     end
-    ::continue::
-    SMODS.clear_quantum_cache(card)
-    return ret
+    return false
 end
 function SMODS.always_scores(card)
     if not SMODS.set_quantum_cache(card) then return end
-    local ret = false
     for key, q_field in pairs(SMODS.QuantumCardFields) do
         for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k] or {}
-            if obj.always_scores then ret = true; goto continue end
+            if obj.always_scores then return true end
         end
     end
-    ::continue::
-    SMODS.clear_quantum_cache(card)
-    return ret
+    return false
 end
 function SMODS.never_scores(card)
     if not SMODS.set_quantum_cache(card) then return end
-    local ret = false
     for key, q_field in pairs(SMODS.QuantumCardFields) do
         for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k]
-            if obj.never_scores then ret = true; goto continue end
+            if obj.never_scores then return true end
         end
     end
-    ::continue::
-    SMODS.clear_quantum_cache(card)
-    return ret
+    return false
 end
 
 SMODS.collection_pool = function(_base_pool)
@@ -1717,11 +1710,12 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             for _,v in ipairs(context.scoring_hand) do scoring_map[v] = true end
         end
         for _, area in ipairs(SMODS.get_card_areas('playing_cards')) do
+            if not args or not args.has_area then context.cardarea = area end
             if area == G.play and not context.scoring_hand then
-                -- If context is for probability, eval_card() anyway
-                -- This allows Seals, etc. to affect Joker probabilities during individual scoring:
-                -- For example; A seal can double the probability of Blood Stone hitting for the playing card it is applied to.
-                if SMODS.get_context_type(context) == SMODS.CONTEXT_TYPES.PROBABILITY then
+                -- If context is a getter context (quantum/probability), eval_card() anyway
+                -- This allows Seals/etc. to affect Joker probabilities / card quantum values during individual scoring:
+                -- For example; A seal can double the probability of Blood Stone hitting for the playing card it is applied to, or make the card count as a lucky card.
+                if SMODS.is_getter_context(context) then
                     for _, card in ipairs(area.cards) do
                         if SMODS.check_looping_context(card) then
                             goto skip
@@ -1735,7 +1729,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 end
                 goto continue
             end
-            if not args or not args.has_area then context.cardarea = area end
             for _, card in ipairs(area.cards) do
                 if SMODS.check_looping_context(card) then
                     goto skip
@@ -1816,25 +1809,27 @@ function SMODS.update_context_flags(context, flags)
         if context.modify_ante then context.modify_ante = flags.modify end
         if context.drawing_cards then context.amount = flags.modify end
     end
+    local no_mod_changed = false
+    if flags.no_mod ~= nil then
+        context.no_mod = flags.no_mod
+        no_mod_changed = true
+    end
     for key, q_field in pairs(SMODS.QuantumCardFields) do
         local has_no_flag = "no_" .. key 
         local has_any_flag = "any_" .. key 
-        if flags[q_field.return_flag] then
-            local no_mod_changed = false
-            if flags.no_mod ~= nil then
-                context.no_mod = flags.no_mod
-                no_mod_changed = true
-            end
+        if context[q_field.get_context_flag] and flags[q_field.return_flag] then
             if not context.no_mod or no_mod_changed then
                 if flags.fixed == q_field.return_flag or type(flags.fixed) == "table" and flags.fixed[q_field.return_flag] then
                     context[q_field.return_flag] = flags[q_field.return_flag]
                 else
-                    for r, v in pairs(flags[q_field.return_flag]) do
-                        context[q_field.return_flag][r] = v
+                    for k, v in pairs(flags[q_field.return_flag]) do
+                        context[q_field.return_flag][k] = v
                     end
                 end
             end
-            context.card._qfield_cache.get[key] = context[q_field.return_flag]
+            if context[q_field.return_flag] then
+                context.card._qfield_cache.get[key] = context[q_field.return_flag]
+            end
             flags[q_field.return_flag] = nil
         end
         if flags[has_no_flag] ~= nil then
@@ -1858,30 +1853,33 @@ SMODS.CONTEXT_TYPES = {
 -- Joker A calls SMODS.has_enhancement() during a probability context to check whether it should double the numerator
 -- Joker B calls SMODS.pseudorandom_probability() to check whether it should trigger
 -- A loop is caused (ignore the fact that Joker B would be the trigger_obj and not a playing card) (I'd write a Quantum Ranks example, If I had any!!)
--- To avoid this; Check before evaluating any object, whether the current getter context type (if it's a getter context) has previously caused said object to create a getter context,
+-- To avoid this; Check before evaluating any object, whether the current context type has previously caused said object to create a context of a previous type,
 -- if yes, don't evaluate the object.
 function SMODS.get_context_type(context)
     if context.mod_probability or context.fix_probability then return SMODS.CONTEXT_TYPES.PROBABILITY end
     if context.post_trigger then return SMODS.CONTEXT_TYPES.POST_TRIGGER end
     if context._quantum_getter then return SMODS.CONTEXT_TYPES.QUANTUM_GETTER end
-    for key, q_field in pairs(SMODS.QuantumCardFields) do
-        if context[q_field.context_flag] then
-            return SMODS.CONTEXT_TYPES[key]
-        end
-    end
 end
 
+SMODS.GETTER_CONTEXT_TYPES = {
+    [SMODS.CONTEXT_TYPES.PROBABILITY] = true,
+    [SMODS.CONTEXT_TYPES.QUANTUM_GETTER] = true,
+}
+
+function SMODS.is_getter_context(context)
+    return SMODS.GETTER_CONTEXT_TYPES[SMODS.get_context_type(context)]
+end
 
 function SMODS.check_looping_context(eval_object)
     if #SMODS.context_stack < 2 then return false end
     local context_type = SMODS.get_context_type(SMODS.context_stack[#SMODS.context_stack].context)
-    if not context_type then return end
+    if not context_type then return false end
     for i, t in ipairs(SMODS.context_stack) do
         local other_type = SMODS.get_context_type(t.context)
         local next_context_t = SMODS.context_stack[i+1]
         -- If the current kind of context has caused the eval_object to incite another context before, dont evaluate the object again
         if other_type == context_type and next_context_t and SMODS.get_context_type(next_context_t.context) and next_context_t.caller == eval_object then
-            sendWarnMessage(("SMODS.check_looping_context prevented loop; context type '%s', caller '%s'"):format(context_type, inspect(next_context_t.caller)), "Utils")
+            sendWarnMessage(("SMODS.check_looping_context prevented loop; context type '%s', caller '%s'"):format(context_type, inspect(eval_object)), "Utils")
             return true
         end
     end

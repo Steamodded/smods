@@ -510,7 +510,7 @@ target = "card.lua"
 match_indent = true
 pattern = "if v.config.center == G.P_CENTERS.m_steel then self.ability.steel_tally = self.ability.steel_tally+1 end"
 position = "at"
-payload = "if SMODS.has_enhancement(v, 'm_steel') then self.ability.steel_tally = self.ability.steel_tally+1 end"
+payload = "if SMODS.has_enhancement(v, 'm_steel') then self.ability.steel_tally = self.ability.steel_tally+1 end" # Todo : make lazy (like QRank Cloud 9)
 
 # Stone Joker
 [[patches]]
@@ -519,7 +519,7 @@ target = "card.lua"
 match_indent = true
 pattern = "if v.config.center == G.P_CENTERS.m_stone then self.ability.stone_tally = self.ability.stone_tally+1 end"
 position = "at"
-payload = "if SMODS.has_enhancement(v, 'm_stone') then self.ability.stone_tally = self.ability.stone_tally+1 end"
+payload = "if SMODS.has_enhancement(v, 'm_stone') then self.ability.stone_tally = self.ability.stone_tally+1 end" # Todo : make lazy (like QRank Cloud 9)
 
 # Golden Ticket
 [[patches]]
@@ -555,7 +555,7 @@ target = "card.lua"
 match_indent = true
 pattern = "if v.config.center ~= G.P_CENTERS.c_base then self.ability.driver_tally = self.ability.driver_tally+1 end"
 position = "at"
-payload = "if next(SMODS.get_enhancements(v)) then self.ability.driver_tally = self.ability.driver_tally+1 end"
+payload = "if next(SMODS.get_enhancements(v)) then self.ability.driver_tally = self.ability.driver_tally+1 end" # Todo : make lazy (like QRank Cloud 9)
 # Basegame fix for the reroll vouchers redeem function when only the center but no card object exists
 
 # Card:apply_to_run
