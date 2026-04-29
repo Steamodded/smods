@@ -3210,7 +3210,7 @@ function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
         localize{type = 'other', key = 'card_extra_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_mult)}}
     end
     if specific_vars and specific_vars.bonus_x_mult then
-        localize{type = 'other', key = 'card_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_x_mult}}
+        localize{type = 'other', key = 'card_extra_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_x_mult}}
     end
     if specific_vars and specific_vars.bonus_h_chips then
         localize{type = 'other', key = 'card_extra_h_chips', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_chips)}}
