@@ -39,6 +39,8 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
             if self.stacking_type == SMODS.CARD_VALUE_TYPES.ADDITIVE then self.default_value = 0
             elseif self.stacking_type == SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE then self.default_value = 1 end
         end
+        self.start_value = self.start_value or self.default_value
+        self.value_offset = self.value_offset or 0
     end,
     scoring_card_areas = {
         play = true,
@@ -51,33 +53,35 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
     stacking_type = SMODS.CARD_VALUE_TYPES.ADDITIVE,
     max_value = math.huge,
     min_value = -math.huge,
+    start_value = nil,
     default_value = nil,
+    value_offset = nil,
     getter = function (self, abilities, card, ...) -- abilities is of form {integer: {t = [ability table], key = [source obj key], qfield_key = [qfield key]}}
         -- if self.debuff then return self.default_value end
-        local ret = self.default_value
+        local ret = self.start_value
         for _, ability_t in ipairs(abilities) do
             local ability = ability_t.t
             if self.stacking_type == SMODS.CARD_VALUE_TYPES.ADDITIVE then
                 for _, v_ref in ipairs(self.variant_refs) do
-                    local v = (table_get_subfield(ability or {}, v_ref) or 0)
-                    ret = ret + v
-                    if v ~= self.default_value then break end -- Only apply value once
+                    local v = (table_get_subfield(ability or {}, v_ref) or self.default_value)
+                    ret = ret + v + self.value_offset
+                    if v ~= (self.default_value + self.value_offset) then break end -- Only apply value once
                 end
             elseif self.stacking_type == SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE then
                 for _, v_ref in ipairs(self.variant_refs) do
-                    local v = (table_get_subfield(ability or {}, v_ref) or 1)
-                    ret = ret * v
-                    if v ~= self.default_value then break end -- Only apply value once
+                    local v = (table_get_subfield(ability or {}, v_ref) or self.default_value)
+                    ret = ret * (v + self.value_offset)
+                    if v ~= (self.default_value + self.value_offset) then break end -- Only apply value once
                 end
             end
         end
         if self.stacking_type == SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE then
             local base = (table_get_subfield(card.ability or {}, self.perma_value_ref) or 0)
-            ret = ret * (base and base + 1 or 1)
+            ret = ret * (base + 1)
         else
             ret = ret + (table_get_subfield(card.ability or {}, self.perma_value_ref) or 0)
         end
-        return ret
+        return ret - self.value_offset
     end,
     insert_value = function (self, card, ret_table, ...)
         local abilities = SMODS.get_card_abilities(card)
@@ -156,6 +160,9 @@ SMODS.CardAbilityField{
 SMODS.CardAbilityField{
     key = "chip_h_x_mult",
     stacking_type = SMODS.CARD_VALUE_TYPES.MULTIPLICATIVE,
+    default_value = 0,
+    start_value = 1,
+    value_offset = 1,
     value_ref = "h_x_mult",
     calc_key = "x_mult",
     scoring_card_areas = {hand = true},
