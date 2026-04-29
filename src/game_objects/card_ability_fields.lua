@@ -9,8 +9,9 @@ function SMODS.get_card_abilities(card)
     if (card._qfield_cache or {}).abilities then
         return card._qfield_cache.abilities
     end
-    SMODS.set_quantum_cache(card)
-    return card._qfield_cache.abilities or {{t = card.ability}}
+    local fallback = card.ability and {{t = card.ability}} or {}
+    if not SMODS.set_quantum_cache(card) then return fallback end
+    return (card._qfield_cache or {}).abilities or fallback
 end
 
 

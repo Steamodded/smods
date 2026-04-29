@@ -4,10 +4,22 @@ local _default_enabled = true
 -- Returns card._qfield_cache.get, sanitized to use only string keys
 local function _general_quantum_getter(card, args)
     SMODS.clear_quantum_cache(card) -- Makes sure that card._qfield_cache gets cleared next frame
-    if (card._qfield_cache or {}).get then
-        return card._qfield_cache.get
-    end
     args = args or {}
+    if (card._qfield_cache or {}).get then
+        if args.as_objs then
+            local ret = {}
+            local eval = card._qfield_cache.get
+            for key, q_field in pairs(SMODS.QuantumCardFields) do 
+                ret[q_field.return_flag] = {} 
+                for k, _ in pairs(eval[q_field.return_flag]) do
+                    ret[q_field.return_flag][q_field.g_obj_table[type(k) == "table" and k.key or k]] = true
+                end
+            end
+            return ret
+        else
+            return card._qfield_cache.get 
+        end
+    end
     card._qfield_cache = {
         has = {},
         get = {}

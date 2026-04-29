@@ -1863,15 +1863,16 @@ SMODS.CONTEXT_TYPES = {
     POST_TRIGGER = "post_trigger",
     QUANTUM_GETTER = "quantum_getter"
 }
--- Used to avoid looping getter context calls. Example;
+-- Used to avoid looping context calls. Example;
 -- Joker A: Doubles lucky card probabilities
 -- Joker B: 1 in 3 chance that a card counts as a lucky card
 -- Joker A calls SMODS.has_enhancement() during a probability context to check whether it should double the numerator
 -- Joker B calls SMODS.pseudorandom_probability() to check whether it should trigger
--- A loop is caused (ignore the fact that Joker B would be the trigger_obj and not a playing card) (I'd write a Quantum Ranks example, If I had any!!)
+-- A loop is caused (ignore the fact that Joker B would be the trigger_obj and not a playing card)
 -- To avoid this; Check before evaluating any object, whether the current context type has previously caused said object to create a context of a previous type,
 -- if yes, don't evaluate the object.
 function SMODS.get_context_type(context)
+    if not context then return end
     if context.mod_probability or context.fix_probability then return SMODS.CONTEXT_TYPES.PROBABILITY end
     if context.post_trigger then return SMODS.CONTEXT_TYPES.POST_TRIGGER end
     if context._quantum_getter then return SMODS.CONTEXT_TYPES.QUANTUM_GETTER end
@@ -1886,16 +1887,20 @@ function SMODS.is_getter_context(context)
     return SMODS.GETTER_CONTEXT_TYPES[SMODS.get_context_type(context)]
 end
 
+function SMODS.is_loopable_context(context)
+    return SMODS.get_context_type(context) ~= SMODS.CONTEXT_TYPES.QUANTUM_GETTER
+end
+
 function SMODS.check_looping_context(eval_object)
     if #SMODS.context_stack < 2 then return false end
     local context_type = SMODS.get_context_type(SMODS.context_stack[#SMODS.context_stack].context)
     if not context_type then return false end
     for i, t in ipairs(SMODS.context_stack) do
         local other_type = SMODS.get_context_type(t.context)
-        local next_context_t = SMODS.context_stack[i+1]
+        local next_context_t = SMODS.context_stack[i+1] or {}
         -- If the current kind of context has caused the eval_object to incite another context before, dont evaluate the object again
-        if other_type == context_type and next_context_t and SMODS.get_context_type(next_context_t.context) and next_context_t.caller == eval_object then
-            sendWarnMessage(("SMODS.check_looping_context prevented loop; context type '%s', caller '%s'"):format(context_type, inspect(eval_object)), "Utils")
+        if other_type == context_type and SMODS.is_loopable_context(next_context_t.context) and next_context_t.caller == eval_object then
+            sendWarnMessage(("SMODS.check_looping_context prevented loop; context type '%s', caller '%s'"):format(context_type, eval_object), "Utils")
             return true
         end
     end
