@@ -503,24 +503,6 @@ payload = 'for k, v in pairs(G.I.SPRITE) do'
 
 ## Make vanilla enhancement jokers work with extra enhancements
 
-# Steel Joker
-[[patches]]
-[patches.pattern]
-target = "card.lua"
-match_indent = true
-pattern = "if v.config.center == G.P_CENTERS.m_steel then self.ability.steel_tally = self.ability.steel_tally+1 end"
-position = "at"
-payload = "if SMODS.has_enhancement(v, 'm_steel') then self.ability.steel_tally = self.ability.steel_tally+1 end" # Todo : make lazy (like QRank Cloud 9)
-
-# Stone Joker
-[[patches]]
-[patches.pattern]
-target = "card.lua"
-match_indent = true
-pattern = "if v.config.center == G.P_CENTERS.m_stone then self.ability.stone_tally = self.ability.stone_tally+1 end"
-position = "at"
-payload = "if SMODS.has_enhancement(v, 'm_stone') then self.ability.stone_tally = self.ability.stone_tally+1 end" # Todo : make lazy (like QRank Cloud 9)
-
 # Golden Ticket
 [[patches]]
 [patches.pattern]

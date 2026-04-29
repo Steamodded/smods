@@ -711,13 +711,6 @@ function SMODS.is_eternal(card, trigger) end
 function SMODS.get_rank_from_id(id) end
 
 ---@param cards table<integer, Card>
----@param flags? table
----@return table<SMODS.Rank, integer> tally
----@return table<SMODS.Rank, table<integer, Card>> rank_to_cards
-function SMODS.get_rank_tally(cards, flags) end
-
-
----@param cards table<integer, Card>
 ---@return table<"lowest"|"highest", table<"rank"|"cards", SMODS.Rank|table<integer, Card>>>
 function SMODS.lowest_and_highest_rank(cards) end
 

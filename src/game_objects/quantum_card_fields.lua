@@ -131,6 +131,26 @@ local function _general_quantum_plural_is_func(key, card, values_map, args, ...)
     return args.all
 end
 
+local function _general_quantum_tally(key, cards, ...)
+    if cards.playing_card then
+        cards = {cards}
+    end
+    local tally = {}
+    local value_to_cards = {}
+    for _, pcard in ipairs(cards) do
+        local values = {}
+        values = SMODS.QuantumCardFields[key].getter(pcard, ...)
+        for value, t in pairs(values) do
+            if t then
+                tally[value] = tally[value] and tally[value] + 1 or 1
+                if value_to_cards[value] then table.insert(value_to_cards[value], pcard)
+                else value_to_cards[value] = {pcard} end
+            end
+        end
+    end
+    return tally, value_to_cards
+end
+
 local function _general_quantum_calculate(key, card, context, ...)
     SMODS.push_to_context_stack(context, "quantum_card_fields.lua : _general_quantum_calculate")
     local values = SMODS.QuantumCardFields[key].getter(card, ...)
@@ -202,6 +222,18 @@ local function _quantum_field_inject_is_funcs(args, target_objects)
     field_object.plural_is = plural_is_func
 end
 
+local function _quantum_field_inject_tally(args, target_objects)
+    local tally_func = args.override_tally or function (cards, ...)
+        return _general_quantum_tally(args.key, cards, ...)
+    end
+    local func_field = "get_" .. args.key .. "_tally"
+    for _, target_obj in ipairs(target_objects) do
+        target_obj[func_field] = tally_func
+    end
+    local field_object = SMODS.QuantumCardFields[args.key]
+    field_object.tally = tally_func
+end
+
 local function _quantum_field_inject_calculate(args, target_objects)
     local calculate_func = args.override_calculate or function (card, context, ...)
         local ret = _general_quantum_calculate(args.key, card, context, ...)
@@ -241,6 +273,10 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
         if not inject_args.no_is_func then
             target_objects.is_funcs = target_objects.is_funcs or {Card}
             _quantum_field_inject_is_funcs({key = self.key, func_prefix = inject_args.is_func_prefix or "is"}, target_objects.is_funcs)
+        end
+        if not inject_args.no_tally then
+            target_objects.tally = target_objects.tally or {SMODS}
+            _quantum_field_inject_tally({key = self.key, override_tally = self.override_tally}, target_objects.tally)
         end
         if not inject_args.no_calculate then
             target_objects.calculate = target_objects.calculate or {Card}
@@ -394,6 +430,46 @@ SMODS.Joker:take_ownership("cloud_9", {
     end
 })
 
+SMODS.Joker:take_ownership("steel_joker", {
+    update = function () end,
+    loc_vars = function (self, info_queue, card)
+        local tally = SMODS.get_enhancement_tally(G.playing_cards)
+        card.ability.steel_tally = tally["m_steel"] or 0
+        return { vars = {card.ability.extra, card.ability.extra*(card.ability.steel_tally or 0)}}
+    end,
+    calculate = function (self, card, context)
+        if context.joker_main then
+            local tally = SMODS.get_enhancement_tally(G.playing_cards)
+            card.ability.steel_tally = tally["m_steel"] or 0
+            if card.ability.steel_tally and card.ability.steel_tally > 0 then
+                return {
+                    x_mult = card.ability.extra*(card.ability.steel_tally)
+                }
+            end
+        end
+    end
+})
+
+SMODS.Joker:take_ownership("stone_joker", {
+    update = function () end,
+    loc_vars = function (self, info_queue, card)
+        local tally = SMODS.get_enhancement_tally(G.playing_cards)
+        card.ability.stone_tally = tally["m_stone"] or 0
+        return { vars = {card.ability.extra, card.ability.extra*(card.ability.stone_tally or 0)}}
+    end,
+    calculate = function (self, card, context)
+        if context.joker_main then
+            local tally = SMODS.get_enhancement_tally(G.playing_cards)
+            card.ability.stone_tally = tally["m_steel"] or 0
+            if card.ability.stone_tally and card.ability.stone_tally > 0 then
+                return {
+                    chips = card.ability.extra*(card.ability.stone_tally)
+                }
+            end
+        end
+    end
+})
+
 -- Todo : reset_idol_card() etc. may need to be updated
 
 
@@ -405,27 +481,6 @@ function SMODS.get_rank_from_id(id)
         end
     end
     return nil
-end
-
-function SMODS.get_rank_tally(cards, args)
-    if cards.playing_card then
-        cards = {cards}
-    end
-    args = args or {}
-    local tally = {}
-    local rank_to_cards = {}
-    for _, pcard in ipairs(cards) do
-        local pcard_ranks = {}
-        pcard_ranks = pcard:get_ranks(args)
-        for rank, t in pairs(pcard_ranks) do
-            if t then
-                tally[rank] = tally[rank] and tally[rank] + 1 or 1
-                if rank_to_cards[rank] then table.insert(rank_to_cards[rank], pcard)
-                else rank_to_cards[rank] = {pcard} end
-            end
-        end
-    end
-    return tally, rank_to_cards
 end
 
 function Card:is_parity(parity)
