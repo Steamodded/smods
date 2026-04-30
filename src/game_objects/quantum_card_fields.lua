@@ -154,8 +154,8 @@ local function _general_quantum_tally(key, cards, ...)
         for value, t in pairs(values) do
             if t then
                 tally[value] = tally[value] and tally[value] + 1 or 1
-                if value_to_cards[value] then table.insert(value_to_cards[value], pcard)
-                else value_to_cards[value] = {pcard} end
+                if value_to_cards[value] then value_to_cards[value][pcard] = true
+                else value_to_cards[value] = {[pcard] = true} end
             end
         end
     end
@@ -515,6 +515,7 @@ SMODS.Joker:take_ownership("stone_joker", {
 
 -- Todo : In general there may be some problems with debuffed cards counting / not counting as stuff. Look into it maybe
 
+-- Todo : currently flower pot triggers twice for some reason
 SMODS.Joker:take_ownership("flower_pot", {
     calculate = function (self, card, context)
         if context.joker_main and #context.scoring_hand > 3 then
@@ -522,7 +523,7 @@ SMODS.Joker:take_ownership("flower_pot", {
             local all = suit_tally.Spades and suit_tally.Hearts and suit_tally.Diamonds and suit_tally.Clubs
             if all and SMODS.count_bipartite_matching(value_to_cards) > 3 then 
                 return {
-                    x_mult = self.ability.extra
+                    x_mult = card.ability.extra
                 }
             end
         end
@@ -538,7 +539,8 @@ SMODS.Enhancement:take_ownership("wild", {
     any_suit = true,
 })
 
--- Todo : reset_idol_card() etc. may need to be updated
+
+-- Todo : Currently the _quantum_getter context is called every time a card is however (probably due to SMODS.has_no_suit() for the card name), this causes quite a bit of lag when done (very) rapidly. Consider looking into fixing this.
 
 
 -- Card rank functions
@@ -595,5 +597,5 @@ function SMODS.lowest_and_highest_rank(cards)
             highest = {rank = rank, sort_nominal = rank.sort_nominal}
         end
     end
-    return {lowest = {rank = lowest.rank, cards = rank_to_cards[lowest.rank]}, highest = {rank = highest.rank, cards = rank_to_cards[highest.rank]}}
+    return {lowest = {rank = lowest.rank, cards_map = rank_to_cards[lowest.rank]}, highest = {rank = highest.rank, cards_map = rank_to_cards[highest.rank]}}
 end

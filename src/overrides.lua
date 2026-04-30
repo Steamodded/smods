@@ -627,12 +627,8 @@ function get_flush(hand)
 	if #hand < four_fingers then return ret end
 	local suit_tally, value_to_cards = SMODS.get_suit_tally(hand)
 	for _, k in ipairs(SMODS.Suit.obj_buffer) do
-		if suit_tally[k] > four_fingers then
-			local t = {}
-			for pcard, v in pairs(value_to_cards[k]) do
-				t[#t+1] = pcard
-			end
-			table.sort(t, function (a, b) return a.rank < b.rank end)
+		if (suit_tally[k] or 0) >= four_fingers then
+			local t = SMODS.get_sorted_card_list(value_to_cards[k])
 			table.insert(ret, t)
 			return ret -- Vanilla early return
 		end
@@ -849,13 +845,14 @@ function get_X_same(num, hand, or_more)
 		end
 		return ret
 	else
-		local rank_tally, rank_cards = SMODS.get_rank_tally(hand, {eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}})
+		local rank_tally, rank_to_cards = SMODS.get_rank_tally(hand, {eval_getting_ranks = {type = "x_same", x_same = num, or_more = or_more}})
 
 		local ret = {}
 
 		for rank, tally in pairs(rank_tally) do
 			if or_more and (tally >= num) or (tally == num) then
-				table.insert(ret, rank_cards[rank])
+				local rank_cards = SMODS.get_sorted_card_list(rank_to_cards[rank])
+				table.insert(ret, rank_cards)
 			end
 		end
 		return ret

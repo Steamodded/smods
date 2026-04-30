@@ -5,13 +5,29 @@ priority = -10
 
 ### Suit ###
 
+# blind.lua : Blind:debuff_card() : update card:is_suit() check and add card:is_rank() check
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+pattern = '''if self.debuff.suit and card:is_suit(self.debuff.suit, true) then'''
+position = "at"
+match_indent = true
+payload = '''if self.debuff.suit and card:is_suit(self.debuff.suit, {bypass_debuff = true}) then'''
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+pattern = '''if self.debuff.value and self.debuff.value == card.base.value then'''
+position = "at"
+match_indent = true
+payload = '''if self.debuff.value and card:is_rank(self.debuff.value) then'''
+
 # Blackboard
 [[patches]]
 [patches.pattern]
 target = "card.lua"
 pattern = '''if v:is_suit('Clubs', nil, true) or v:is_suit('Spades', nil, true) then'''
 position = "at"
-match_indent = false
+match_indent = true
 payload = '''if v:is_suits({Clubs = true, Spades = true}) then'''
 
 ### Rank ###
@@ -26,16 +42,16 @@ payload = '''if v:is_suits({Clubs = true, Spades = true}) then'''
 # position = 'at'
 # payload = ''':is_rank(SMODS.get_rank_from_id($1)) $2'''
 
-# Sixth Sense
+# Sixth Sense 
 [[patches]]
 [patches.pattern]
 target = "card.lua"
 pattern = '''
-            if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:get_id() == 6 and G.GAME.current_round.hands_played == 0 then'''
+if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:get_id() == 6 and not context.full_hand[1].sixth_sense and G.GAME.current_round.hands_played == 0 then'''
 position = "at"
-match_indent = false
+match_indent = true
 payload = '''
-            if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:is_rank("6") and G.GAME.current_round.hands_played == 0 then'''
+if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:is_rank("6") and not context.full_hand[1].sixth_sense and G.GAME.current_round.hands_played == 0 then'''
 
 # Mail-In Rebate
 [[patches]]
@@ -46,7 +62,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-            context.other_card:is_rank(G.GAME.current_round.mail_card.id) then''' # Todo : update together with reset_mail_rank()
+            context.other_card:is_rank(G.GAME.current_round.mail_card.rank) then'''
 
 # Hit the Road
 [[patches]]
@@ -86,7 +102,7 @@ pattern = '''
 position = "at"
 match_indent = false
 payload = '''
-                    context.other_card:is_rank(G.GAME.current_round.idol_card.id, false) and ''' # Todo : update together with reset_idol_card()
+                    context.other_card:is_rank(G.GAME.current_round.idol_card.rank) and '''
 
 # Scholar
 [[patches]]

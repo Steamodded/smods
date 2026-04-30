@@ -4070,3 +4070,13 @@ function SMODS.count_bipartite_matching(obj_to_cards)
     end
     return count, card_to_obj
 end
+
+-- Returns a list of card sorted by their position in their cardarea
+function SMODS.get_sorted_card_list(card_map)
+    local ret = {}
+    for pcard, v in pairs(card_map) do
+        ret[#ret+1] = pcard
+    end
+    table.sort(ret, function (a, b) return a.rank < b.rank end)
+    return ret
+end
