@@ -129,15 +129,11 @@ local function _general_quantum_plural_is_func(key, card, values_map, args, ...)
     args = args or {}
     if card.debuff and not args.bypass_debuff then return false end
     local field_values = SMODS.QuantumCardFields[key].getter(card, ...)
-    local is_wild = SMODS.QuantumCardFields[key].has_any(card, ...) -- Todo : currently wild cards are weaker than the getter context, as in, quantum effects can subtract values from wild cards, so this needs to be changed
 
     for k, _ in pairs(field_values) do
-        if values_map[k] then
+        if values_map[k] then 
             if not args.all then return true end
-        else
-            if args.all and not is_wild then return false
-            elseif args.all then is_wild = false end
-        end
+        elseif args.all then return false end
     end
     return args.all
 end
@@ -515,7 +511,7 @@ SMODS.Joker:take_ownership("stone_joker", {
 
 -- Todo : In general there may be some problems with debuffed cards counting / not counting as stuff. Look into it maybe
 
--- Todo : currently flower pot triggers twice for some reason
+-- Todo : currently flower pot's x_mult triggers twice for some reason
 SMODS.Joker:take_ownership("flower_pot", {
     calculate = function (self, card, context)
         if context.joker_main and #context.scoring_hand > 3 then
@@ -540,7 +536,7 @@ SMODS.Enhancement:take_ownership("wild", {
 })
 
 
--- Todo : Currently the _quantum_getter context is called every time a card is however (probably due to SMODS.has_no_suit() for the card name), this causes quite a bit of lag when done (very) rapidly. Consider looking into fixing this.
+-- Todo : Currently the _quantum_getter context is called every time a card is hovered (probably due to SMODS.has_no_suit() for the card name), this causes quite a bit of lag when done (very) rapidly. Consider looking into fixing this.
 
 
 -- Card rank functions

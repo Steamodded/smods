@@ -204,7 +204,6 @@ SMODS.CardAbilityField{
     calc_key = "p_dollars",
     getter = function (self, abilities, card, ...) 
         local ret = 0
-        -- Todo : check if this should even be supported (generic p_dollars is supported via obj.config tables already -> function needed?)
         for key, q_field in pairs(SMODS.QuantumCardFields) do
             local values = q_field.getter(card)
             for k, v in pairs(values) do
