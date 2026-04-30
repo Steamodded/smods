@@ -1018,29 +1018,6 @@ function SMODS.get_ability_reset_keys(card)
     end
     return reset_keys
 end
-
-function SMODS.has_no_suit(card)
-    if not SMODS.set_quantum_cache(card) then return end
-    local is_stone = false
-    for key, q_field in pairs(SMODS.QuantumCardFields) do
-        for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
-            local obj = q_field.g_obj_table[k] or {}
-            if (key == "enhancement" and k == "m_stone") or obj.no_suit then is_stone = true end
-            if (key == "enhancement" and k == "m_wild") or obj.any_suit then return false end
-        end
-    end
-    return is_stone
-end
-function SMODS.has_any_suit(card)
-    if not SMODS.set_quantum_cache(card) then return end
-    for key, q_field in pairs(SMODS.QuantumCardFields) do
-        for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
-            local obj = q_field.g_obj_table[k] or {}
-            if (key == "enhancement" and k == "m_wild") or obj.any_suit then return true end
-        end
-    end
-    return false
-end
 function SMODS.always_scores(card)
     if not SMODS.set_quantum_cache(card) then return end
     for key, q_field in pairs(SMODS.QuantumCardFields) do
@@ -2533,50 +2510,23 @@ function SMODS.smeared_check(card, suit)
         return false
     end
 
-    if ((card.base.suit == 'Hearts' or card.base.suit == 'Diamonds') and (suit == 'Hearts' or suit == 'Diamonds')) then
-        return true
-    elseif (card.base.suit == 'Spades' or card.base.suit == 'Clubs') and (suit == 'Spades' or suit == 'Clubs') then
-        return true
+    if (card.base.suit == 'Hearts' or card.base.suit == 'Diamonds') and (not suit or (suit == 'Hearts' or suit == 'Diamonds')) then
+        return not suit and {Hearts = true, Diamonds = true} or true    -- Modified to return the suits -> useful in SMODS.QuantumCardField.suit.base_getter
+    elseif (card.base.suit == 'Spades' or card.base.suit == 'Clubs') and (not suit or (suit == 'Spades' or suit == 'Clubs')) then
+        return not suit and {Spades = true, Clubs = true} or true       -- Modified to return the suits -> useful in SMODS.QuantumCardField.suit.base_getter
     end
     return false
-end
-
-local function has_any_other_suit(count, suit)
-    for k, v in pairs(count) do
-        if k ~= suit then
-            if v > 0 then
-                return true
-            end
-        end
-    end
-    return false
-end
-
-local function saw_double(count, suit)
-    if count[suit] > 0 and has_any_other_suit(count, suit) then return true else return false end
 end
 
 function SMODS.seeing_double_check(hand, suit)
-    local suit_tally = {}
-    for i = #SMODS.Suit.obj_buffer, 1, -1 do
-        suit_tally[SMODS.Suit.obj_buffer[i]] = 0
+    if #hand < 2 then return false end
+    local suit_tally = SMODS.get_suit_tally(hand)
+    if (suit_tally[suit] or 0) < 1 then return false end
+    for v, tally in pairs(suit_tally) do
+        -- If any other suit has cards and there's more than two cards. (tally > 0 is implicit, as else v wouldn't be indexed at all)
+        if v ~= suit then return true end
     end
-    for i = 1, #hand do
-        if not SMODS.has_any_suit(hand[i]) then
-            for k, v in pairs(suit_tally) do
-                if hand[i]:is_suit(k) then suit_tally[k] = suit_tally[k] + 1 end
-            end
-        end
-    end
-    for i = 1, #hand do
-        if SMODS.has_any_suit(hand[i]) then
-            if hand[i]:is_suit(suit) and suit_tally[suit] == 0 then suit_tally[suit] = suit_tally[suit] + 1 end
-            for k, v in pairs(suit_tally) do
-                if hand[i]:is_suit(k) and suit_tally[k] == 0  then suit_tally[k] = suit_tally[k] + 1 end
-            end
-        end
-    end
-    if saw_double(suit_tally, suit) then return true else return false end
+    return false 
 end
 
 function SMODS.localize_box(lines, args)
@@ -4088,4 +4038,35 @@ function table_get_subfield(_table, key_string)
         if not _t then return end
     end
     return _t
+end
+
+-- Recursive bipartite matching function
+-- obj is one of the "jobs" (cards are "people") (lmao)
+-- obj_to_cards is a map of "jobs" to all its "people" candidates
+-- card_to_obj is a map of "people" to their current assigned "job"
+-- used_c is a map of cards that have been assigned a "job"
+function SMODS.recursive_bipartite_matching(obj, obj_to_cards, card_to_obj, used_c)
+    for pcard, _ in pairs(obj_to_cards[obj]) do
+        if not used_c[pcard] then
+            used_c[pcard] = true
+            if not card_to_obj[pcard] or SMODS.recursive_bipartite_matching(card_to_obj[pcard], obj_to_cards, card_to_obj, used_c) then
+                card_to_obj[pcard] = obj
+                return true
+            end
+        end
+    end
+end
+
+-- Returns the number of "people" that can get a "job" (-> cards that can be assigned to a unique object), and the map of "person" to "job" (-> card to obj)
+function SMODS.count_bipartite_matching(obj_to_cards)
+    local used_cards = {}
+    local card_to_obj = {}
+    local count = 0
+    for obj, _ in pairs(obj_to_cards) do
+        used_cards = {}
+        if SMODS.recursive_bipartite_matching(obj, obj_to_cards, card_to_obj, used_cards) then
+            count = count + 1
+        end
+    end
+    return count, card_to_obj
 end

@@ -3,6 +3,18 @@ version = "1.0.0"
 dump_lua = true
 priority = -10
 
+### Suit ###
+
+# Blackboard
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''if v:is_suit('Clubs', nil, true) or v:is_suit('Spades', nil, true) then'''
+position = "at"
+match_indent = false
+payload = '''if v:is_suits({Clubs = true, Spades = true}) then'''
+
+### Rank ###
 
 # Oh boy.
 
@@ -13,7 +25,6 @@ priority = -10
 # pattern = ''':get_id\(\)\s+==\s+([^\)]*?)\s(and|then)'''
 # position = 'at'
 # payload = ''':is_rank(SMODS.get_rank_from_id($1)) $2'''
-
 
 # Sixth Sense
 [[patches]]
@@ -26,7 +37,6 @@ match_indent = false
 payload = '''
             if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:is_rank("6") and G.GAME.current_round.hands_played == 0 then'''
 
-
 # Mail-In Rebate
 [[patches]]
 [patches.pattern]
@@ -38,7 +48,6 @@ match_indent = false
 payload = '''
             context.other_card:is_rank(G.GAME.current_round.mail_card.id) then''' # Todo : update together with reset_mail_rank()
 
-
 # Hit the Road
 [[patches]]
 [patches.pattern]
@@ -48,7 +57,6 @@ position = "at"
 match_indent = true
 payload = '''context.other_card:is_rank("Jack") and not context.blueprint then'''
 
-
 # Wee Joker
 [[patches]]
 [patches.pattern]
@@ -57,7 +65,6 @@ pattern = '''context.other_card:get_id() == 2 and not context.blueprint then'''
 position = "at"
 match_indent = true
 payload = '''context.other_card:is_rank("2") and not context.blueprint then'''
-
 
 # 8 Ball
 [[patches]]
@@ -70,7 +77,6 @@ match_indent = false
 payload = '''
                     if (context.other_card:is_rank("8")) and (pseudorandom('8ball') < G.GAME.probabilities.normal/self.ability.extra) then''' 
 
-
 # The Idol
 [[patches]]
 [patches.pattern]
@@ -81,7 +87,6 @@ position = "at"
 match_indent = false
 payload = '''
                     context.other_card:is_rank(G.GAME.current_round.idol_card.id, false) and ''' # Todo : update together with reset_idol_card()
-
 
 # Scholar
 [[patches]]
@@ -94,7 +99,6 @@ match_indent = false
 payload = '''
                     context.other_card:is_rank("Ace") then'''
 
-
 # Walkie Talkie
 [[patches]]
 [patches.pattern]
@@ -105,7 +109,6 @@ position = "at"
 match_indent = false
 payload = '''
                 (context.other_card:is_ranks({["10"]=true, ["4"]=true})) then'''
-
 
 # Fibonacci
 [[patches]]
@@ -147,7 +150,6 @@ match_indent = false
 payload = '''
                     (context.other_card:is_ranks({["Queen"]=true, ["King"]=true})) then'''
 
-
 # Shoot the Moon
 [[patches]]
 [patches.pattern]
@@ -159,7 +161,6 @@ match_indent = false
 payload = '''
                         context.other_card:is_rank("Queen") then'''
 
-
 # Baron
 [[patches]]
 [patches.pattern]
@@ -170,8 +171,6 @@ position = "at"
 match_indent = false
 payload = '''
                         context.other_card:is_rank("King") then'''
-
-
 
 # Hack
 [[patches]]
@@ -203,7 +202,6 @@ if self.ability.name == 'Hack' and (
     end
 '''
 
-
 # Superposition
 [[patches]]
 [patches.pattern]
@@ -214,7 +212,6 @@ position = "at"
 match_indent = false
 payload = '''
                                 if context.scoring_hand[i]:is_rank("Ace") then aces = aces + 1 end'''
-
 
 # Even Steven and Odd Todd
 [[patches]]

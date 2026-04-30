@@ -619,7 +619,26 @@ G.FUNCS.change_stake = function(args)
 end
 
 --#endregion
---#region Straights, X same, quantum Full House and Two Pair
+--#region Flush, Straights, X same, quantum Full House and Two Pair
+
+function get_flush(hand)
+	local ret = {}
+	local four_fingers = SMODS.four_fingers('flush')
+	if #hand < four_fingers then return ret end
+	local suit_tally, value_to_cards = SMODS.get_suit_tally(hand)
+	for _, k in ipairs(SMODS.Suit.obj_buffer) do
+		if suit_tally[k] > four_fingers then
+			local t = {}
+			for pcard, v in pairs(value_to_cards[k]) do
+				t[#t+1] = pcard
+			end
+			table.sort(t, function (a, b) return a.rank < b.rank end)
+			table.insert(ret, t)
+			return ret -- Vanilla early return
+		end
+	end
+	return ret
+end
 
 function get_straight(hand, min_length, skip, wrap)
     min_length = min_length or 5
@@ -627,244 +646,182 @@ function get_straight(hand, min_length, skip, wrap)
     if #hand < min_length then return {} end
     local ranks = SMODS.get_straight_ranks()
 
-	if not SMODS.optional_features.quantum_fields.rank then -- Todo : replace vanilla calc
-		-- for _,card in ipairs(hand) do
-		-- 	local id = card:get_id()
-		-- 	if id > 0 then
-		-- 		for k,v in pairs(SMODS.Ranks) do
-		-- 			if v.id == id then table.insert(ranks[k], card); break end
-		-- 		end
-		-- 	end
-		-- end
-		-- local function next_ranks(key)
-		-- 	local rank = SMODS.Ranks[key]
-		-- 	local ret = {}
-		-- 	for v, _ in pairs(rank.next) do
-		-- 		ret[#ret+1] = v
-		-- 		if skip and (wrap or not next(SMODS.Ranks[v].straight_edges) or not SMODS.Ranks[v].straight_edges[key]) then
-		-- 			for w, _ in pairs(SMODS.Ranks[v].next) do
-		-- 				ret[#ret+1] = w
-		-- 			end
-		-- 		end
-		-- 	end
-		-- 	return ret
-		-- end
-		-- local tuples = {}
-		-- local ret = {}
-		-- for _,k in ipairs(SMODS.Rank.obj_buffer) do
-		-- 	if next(ranks[k]) then
-		-- 		tuples[#tuples+1] = {k}
-		-- 	end
-		-- end
-		-- for i = 2, #hand+1 do
-		-- 	local new_tuples = {}
-		-- 	for _, tuple in ipairs(tuples) do
-		-- 		local any_tuple
-		-- 		if i ~= #hand+1 then
-		-- 			if (i == 2 or wrap or not next(SMODS.Ranks[tuple[i-1]].straight_edges) or not SMODS.Ranks[tuple[i-1]].straight_edges[tuple[i-2]]) then
-		-- 				for _,l in ipairs(next_ranks(tuple[i-1])) do
-		-- 					if next(ranks[l]) then
-		-- 						local new_tuple = {}
-		-- 						for _,v in ipairs(tuple) do new_tuple[#new_tuple+1] = v end
-		-- 						new_tuple[#new_tuple+1] = l
-		-- 						new_tuples[#new_tuples+1] = new_tuple
-		-- 						any_tuple = true
-		-- 					end
-		-- 				end
-		-- 			end
-		-- 		end
-		-- 		if i > min_length and not any_tuple then
-		-- 			local straight = {}
-		-- 			for _,v in ipairs(tuple) do
-		-- 				for _,card in ipairs(ranks[v]) do
-		-- 					straight[#straight+1] = card
-		-- 				end
-		-- 			end
-		-- 			ret[#ret+1] = straight
-		-- 		end
-		-- 	end
-		-- 	tuples = new_tuples
-		-- end
-		-- table.sort(ret, function(a,b) return #a > #b end)
-		-- return ret
-	else 													-- If quantum ranks are toggled on
-		-- Card Representer Struct
-		-- This is placed into [ranks] at every rank its card may be. 
-		local CardRep = {
-			new = function (card, av_ranks)
-				local cr = {
-					card = card,
-					ranks = av_ranks -- Map of ranks or "WILD" if Wild Rank
-				}
-				return cr
+	-- Card Representer Struct
+	-- This is placed into [ranks] at every rank its card may be. 
+	local CardRep = {
+		new = function (card, av_ranks)
+			local cr = {
+				card = card,
+				ranks = av_ranks -- Map of ranks or "WILD" if Wild Rank
+			}
+			return cr
+		end
+	}
+
+	-- All card_rep instances
+	local card_reps = {}
+
+	local wild_reps = {}
+	local wild_rank_count = 0
+
+	for _, pcard in ipairs(hand) do
+		if SMODS.has_any_rank(pcard, {eval_getting_ranks = {type = "straight"}}) then
+			local card_rep = CardRep.new(pcard, "WILD")
+			card_reps[#card_reps+1] = card_rep
+			wild_reps[#wild_reps+1] = card_rep
+			wild_rank_count = wild_rank_count + 1
+		else
+			local pcard_ranks = SMODS.get_straight_ranks(pcard:get_ranks({as_objs = true}), true)
+
+			if next(pcard_ranks) then
+				local card_rep = CardRep.new(pcard, pcard_ranks)
+				card_reps[#card_reps+1] = card_rep						-- Add card_rep to card_reps_holder
+
+				for p_rank, _ in pairs(pcard_ranks) do
+					ranks[p_rank.key][card_rep] = true 					-- Add card_rep to rank
+				end
 			end
-		}
+		end
+	end
 
-		-- All card_rep instances
-		local card_reps = {}
+	-- TODO: Optimization that may or may not be worth it: 
+	-- Remove all card_reps that share a rank with a 1-rank card_rep at that rank. Repeat until none are removed.
+	-- Also, collapse any N card_reps that share N ranks into one of those ranks each. (Hard to implement / too inefficient maybe)
 
-		local wild_reps = {}
-		local wild_rank_count = 0
+	-- Recursive function to get all .nexts/.prevs of a rank and its .next/.prev ranks down to a [depth] (which should be the shortcut level), merged into one table
+	-- [depth] = 0 is base, 1 is shortcut
+	local get_next_ranks
+	get_next_ranks = function (rank, depth, do_wrap, direction)
+		direction = direction or "next"
+		local rec_ret = {}
+		for r, _ in pairs(rank:get_straight_next(direction, do_wrap)) do
+			rec_ret[#rec_ret+1] = SMODS.Ranks[r] or SMODS.VirtualRanks[r]
+			if depth > 0 then
+				for v, _ in pairs(get_next_ranks(SMODS.Ranks[r] or SMODS.VirtualRanks[r], depth - 1, do_wrap, direction)) do
+					rec_ret[#rec_ret+1] = v
+				end
+			end
+		end
+		return rec_ret
+	end
 
-		for _, pcard in ipairs(hand) do
-			if SMODS.has_any_rank(pcard, {eval_getting_ranks = {type = "straight"}}) then
-				local card_rep = CardRep.new(pcard, "WILD")
-				card_reps[#card_reps+1] = card_rep
-				wild_reps[#wild_reps+1] = card_rep
-				wild_rank_count = wild_rank_count + 1
+	-- Recursive function to find a valid straight, with [rank] as the starting point
+	-- This function goes both ways; .next and .prev
+	-- When called with [direction] = nil, the function first sets the [current_straight] to the best straight from a [direction] = "prev_base" call to itself
+	-- and then uses that as a base recursively with [direction] = "next_base"
+	local recursive_get_straight
+	recursive_get_straight = function (rank, other_rank, current_straight, max_skips, do_wrap, direction, used_c_reps, used_wilds)
+		local next_straight = {}
+		for k, v in pairs(current_straight) do next_straight[k] = v end
+		local ret_straight = next_straight
+
+		-- Check and setup c_reps for the current rank 
+		local c_reps = ranks[rank.key]
+		if not c_reps or not next(c_reps) then
+			if used_wilds < wild_rank_count then
+				used_wilds = used_wilds + 1
+				c_reps = {[wild_reps[used_wilds]] = "WILD"}
 			else
-				local pcard_ranks = SMODS.get_straight_ranks(pcard:get_ranks({as_objs = true}), true)
-
-				if next(pcard_ranks) then
-					local card_rep = CardRep.new(pcard, pcard_ranks)
-					card_reps[#card_reps+1] = card_rep						-- Add card_rep to card_reps_holder
-
-					for p_rank, _ in pairs(pcard_ranks) do
-						ranks[p_rank.key][card_rep] = true 					-- Add card_rep to rank
-					end
-				end
+				return current_straight -- If no card_representers are present for the given [rank] and no Wild Ranks remain, return whatever [current_straight] was passed to the function
 			end
 		end
 
-		-- TODO: Optimization that may or may not be worth it: 
-		-- Remove all card_reps that share a rank with a 1-rank card_rep at that rank. Repeat until none are removed.
-		-- Also, collapse any N card_reps that share N ranks into one of those ranks each. (Hard to implement / too inefficient maybe)
+		-- Get all next ranks for this rank
+		local rank_nexts = get_next_ranks(rank, max_skips, do_wrap, direction)
 
-		-- Recursive function to get all .nexts/.prevs of a rank and its .next/.prev ranks down to a [depth] (which should be the shortcut level), merged into one table
-		-- [depth] = 0 is base, 1 is shortcut
-		local get_next_ranks
-		get_next_ranks = function (rank, depth, do_wrap, direction)
-			direction = direction or "next"
-			local rec_ret = {}
-			for r, _ in pairs(rank:get_straight_next(direction, do_wrap)) do
-				rec_ret[#rec_ret+1] = SMODS.Ranks[r] or SMODS.VirtualRanks[r]
-				if depth > 0 then
-					for v, _ in pairs(get_next_ranks(SMODS.Ranks[r] or SMODS.VirtualRanks[r], depth - 1, do_wrap, direction)) do
-						rec_ret[#rec_ret+1] = v
+		for c_rep, exists in pairs(c_reps) do
+			if exists and not used_c_reps[c_rep] then -- If the encountered card_rep hasn't assumed a rank yet
+				if exists ~= "WILD" then used_c_reps[c_rep] = true end
+				next_straight[#next_straight+1] = {c_rep=c_rep, rank=exists ~= "WILD" and rank}
+				ret_straight = next_straight
+				local all_dead_ends = true
+				for _, n_rank in ipairs(rank_nexts) do
+					local rec_ret_straight = recursive_get_straight(n_rank, other_rank, next_straight, max_skips, do_wrap, direction, used_c_reps, used_wilds)
+					if rec_ret_straight ~= next_straight then
+						all_dead_ends = false
+					end
+					if #rec_ret_straight > #ret_straight then
+						ret_straight = rec_ret_straight
+					end
+					if #ret_straight >= #hand then
+						return ret_straight
 					end
 				end
+				if other_rank and all_dead_ends then -- If it hit a dead end, try to extend backwards from beginning
+					ret_straight = recursive_get_straight(other_rank, nil, next_straight, max_skips, do_wrap, "prev", used_c_reps, used_wilds - (exists == "WILD" and 1 or 0)) -- If the current c_rep was a wild_rep, reduce used_wilds by one, so that it may instead be used to extend the prev part of the straight.
+				end
+				if SMODS.optional_features.quantum_straight_min_return and #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
+				next_straight = {}
+				for k, v in pairs(current_straight) do next_straight[k] = v end
+				used_c_reps[c_rep] = false
 			end
-			return rec_ret
 		end
 
-		-- Recursive function to find a valid straight, with [rank] as the starting point
-		-- This function goes both ways; .next and .prev
-		-- When called with [direction] = nil, the function first sets the [current_straight] to the best straight from a [direction] = "prev_base" call to itself
-		-- and then uses that as a base recursively with [direction] = "next_base"
-		local recursive_get_straight
-		recursive_get_straight = function (rank, other_rank, current_straight, max_skips, do_wrap, direction, used_c_reps, used_wilds)
-			local next_straight = {}
-			for k, v in pairs(current_straight) do next_straight[k] = v end
-			local ret_straight = next_straight
-
-			-- Check and setup c_reps for the current rank 
-			local c_reps = ranks[rank.key]
-			if not c_reps or not next(c_reps) then
-				if used_wilds < wild_rank_count then
-					used_wilds = used_wilds + 1
-					c_reps = {[wild_reps[used_wilds]] = "WILD"}
-				else
-					return current_straight -- If no card_representers are present for the given [rank] and no Wild Ranks remain, return whatever [current_straight] was passed to the function
-				end
-			end
-
-			-- Get all next ranks for this rank
-			local rank_nexts = get_next_ranks(rank, max_skips, do_wrap, direction)
-
-			for c_rep, exists in pairs(c_reps) do
-				if exists and not used_c_reps[c_rep] then -- If the encountered card_rep hasn't assumed a rank yet
-					if exists ~= "WILD" then used_c_reps[c_rep] = true end
-					next_straight[#next_straight+1] = {c_rep=c_rep, rank=exists ~= "WILD" and rank}
-					ret_straight = next_straight
-					local all_dead_ends = true
-					for _, n_rank in ipairs(rank_nexts) do
-						local rec_ret_straight = recursive_get_straight(n_rank, other_rank, next_straight, max_skips, do_wrap, direction, used_c_reps, used_wilds)
-						if rec_ret_straight ~= next_straight then
-							all_dead_ends = false
-						end
-						if #rec_ret_straight > #ret_straight then
-							ret_straight = rec_ret_straight
-						end
-						if #ret_straight >= #hand then
-							return ret_straight
-						end
-					end
-					if other_rank and all_dead_ends then -- If it hit a dead end, try to extend backwards from beginning
-						ret_straight = recursive_get_straight(other_rank, nil, next_straight, max_skips, do_wrap, "prev", used_c_reps, used_wilds - (exists == "WILD" and 1 or 0)) -- If the current c_rep was a wild_rep, reduce used_wilds by one, so that it may instead be used to extend the prev part of the straight.
-					end
-					if SMODS.optional_features.quantum_straight_min_return and #ret_straight > min_length then return ret_straight end -- Greatly decreases calculation time but doesn't ensure that the longest straight is found.
-					next_straight = {}
-					for k, v in pairs(current_straight) do next_straight[k] = v end
-					used_c_reps[c_rep] = false
-				end
-			end
-
-			return ret_straight
-		end
+		return ret_straight
+	end
 
 
-		-- Alright now we can evaluate the straight :)
+	-- Alright now we can evaluate the straight :)
 
-		local max_hole_size = skip and 1 or 0
-		local best_straight = {}
-		local branches_checked = 0
+	local max_hole_size = skip and 1 or 0
+	local best_straight = {}
+	local branches_checked = 0
 
-		local appeared_in_ret_straight = {} -- {rank: boolean}
+	local appeared_in_ret_straight = {} -- {rank: boolean}
 
-		-- Iterate over all card_reps and all their ranks as starting points of straight calculation, however:
-		-- ranks that have appeared in a returned straight are no longer used as starting points, because they cannot yield a new straight.
-		-- (Even if their .next/.prev forks, because then the fork's ranks will yield the fork's straight later on)
-		for _, c_rep in ipairs(card_reps) do
-			if c_rep.ranks ~= "WILD" then
-				local used_c_reps = {[c_rep] = true} -- This is a set of all card_reps used during this eval. They are set in recursive_get_straight()
-				local had_new_rank = false
-				for rank, _ in pairs(c_rep.ranks) do
-					if not appeared_in_ret_straight[rank] then
-						local current_straight = {{c_rep=c_rep, rank=rank}}
-						had_new_rank = true
-						for _, next_rank in ipairs(get_next_ranks(rank, max_hole_size, wrap, "next")) do
-							for _, prev_rank in ipairs(get_next_ranks(rank, max_hole_size, wrap, "prev")) do
-								local ret_straight = recursive_get_straight(next_rank, prev_rank, current_straight, max_hole_size, wrap, "next", used_c_reps, 0)
+	-- Iterate over all card_reps and all their ranks as starting points of straight calculation, however:
+	-- ranks that have appeared in a returned straight are no longer used as starting points, because they cannot yield a new straight.
+	-- (Even if their .next/.prev forks, because then the fork's ranks will yield the fork's straight later on)
+	for _, c_rep in ipairs(card_reps) do
+		if c_rep.ranks ~= "WILD" then
+			local used_c_reps = {[c_rep] = true} -- This is a set of all card_reps used during this eval. They are set in recursive_get_straight()
+			local had_new_rank = false
+			for rank, _ in pairs(c_rep.ranks) do
+				if not appeared_in_ret_straight[rank] then
+					local current_straight = {{c_rep=c_rep, rank=rank}}
+					had_new_rank = true
+					for _, next_rank in ipairs(get_next_ranks(rank, max_hole_size, wrap, "next")) do
+						for _, prev_rank in ipairs(get_next_ranks(rank, max_hole_size, wrap, "prev")) do
+							local ret_straight = recursive_get_straight(next_rank, prev_rank, current_straight, max_hole_size, wrap, "next", used_c_reps, 0)
 
-								if #ret_straight >= min_length and #ret_straight > #best_straight then
-									best_straight = ret_straight
+							if #ret_straight >= min_length and #ret_straight > #best_straight then
+								best_straight = ret_straight
+							end
+
+							for _, tup in ipairs(ret_straight) do
+								if tup.rank then
+									appeared_in_ret_straight[tup.rank] = true
 								end
-
-								for _, tup in ipairs(ret_straight) do
-									if tup.rank then
-										appeared_in_ret_straight[tup.rank] = true
-									end
-								end
-								-- Optimization: If the size of the played hand minus the minimum straight length (5=default, 4=Four Fingers)
-								-- minus the amount of branches checked (unique returned straights) is less than zero, there cannot be a straight in the hand.
-								-- (Equally, if the length of the best_straight is more or equal the length of the hand minus one, the remaining card cannot result in a longer straight (it must be a fork in .next/.prev))
-								if (
-									#hand - min_length - branches_checked < 0 or
-									#best_straight >= #hand - 1 or
-									(SMODS.optional_features.quantum_straight_min_return and #best_straight > min_length)
-								) then
-									goto continue
-								end
+							end
+							-- Optimization: If the size of the played hand minus the minimum straight length (5=default, 4=Four Fingers)
+							-- minus the amount of branches checked (unique returned straights) is less than zero, there cannot be a straight in the hand.
+							-- (Equally, if the length of the best_straight is more or equal the length of the hand minus one, the remaining card cannot result in a longer straight (it must be a fork in .next/.prev))
+							if (
+								#hand - min_length - branches_checked < 0 or
+								#best_straight >= #hand - 1 or
+								(SMODS.optional_features.quantum_straight_min_return and #best_straight > min_length)
+							) then
+								goto continue
 							end
 						end
 					end
 				end
-				if had_new_rank then branches_checked = branches_checked + 1 end
 			end
+			if had_new_rank then branches_checked = branches_checked + 1 end
 		end
-
-		::continue::
-
-		if #best_straight >= min_length then
-			for k, v in ipairs(best_straight) do best_straight[k] = v.c_rep.card end
-			return {best_straight} -- Only return best found straight. Feasible to return all found straights, but I need sleep :)
-		elseif #wild_reps >= min_length then
-			for i, c_rep in ipairs(wild_reps) do best_straight[i] = c_rep.card end
-			return {best_straight}
-		end
-
-		return {}
 	end
+
+	::continue::
+
+	if #best_straight >= min_length then
+		for k, v in ipairs(best_straight) do best_straight[k] = v.c_rep.card end
+		return {best_straight} -- Only return best found straight. Feasible to return all found straights, but I need sleep :)
+	elseif #wild_reps >= min_length then
+		for i, c_rep in ipairs(wild_reps) do best_straight[i] = c_rep.card end
+		return {best_straight}
+	end
+
+	return {}
 end
 
 

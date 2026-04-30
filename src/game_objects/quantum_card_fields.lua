@@ -39,7 +39,6 @@ local function _general_quantum_getter(card, args)
         SMODS.calculate_context(has_context) -- Card._qfield_cache.has is updated directly
     end 
     for key, q_field in pairs(SMODS.QuantumCardFields) do
-        if (key == "rank" and card._qfield_cache.get.enhancements.m_stone) then card._qfield_cache.has.rank.no = true end -- Todo : check if this explicit stone check is necessary
         for k, v in pairs(card._qfield_cache.get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k] or {}
             if obj["no_" .. key] then card._qfield_cache.has[key].no = true end 
@@ -367,12 +366,18 @@ SMODS.QuantumCardField{
     base_value_ref = "edition.key"
 }
 
--- Todo : consider implementing quantum suits
--- SMODS.QuantumCardField{
---     key = "suit",
---     g_obj_table = SMODS.Suits,
---     base_value_ref = "base.suit"
--- }
+SMODS.QuantumCardField{
+    key = "suit",
+    g_obj_table = SMODS.Suits,
+    base_value_ref = "base.suit",
+    base_getter = function (self, card, _args) 
+        local base = self:get_base_value(card)
+        local smeared = SMODS.smeared_check(card)
+        if smeared then return smeared end
+        if base then return {[base] = "BASE"} end
+        return {}
+    end
+}
 
 SMODS.QuantumCardField{
     key = "sticker",
@@ -436,8 +441,34 @@ SMODS.Joker:take_ownership("cloud_9", {
     calc_dollar_bonus = function (self, card)
         local tally = SMODS.get_rank_tally(G.playing_cards)
         card.ability.nine_tally = tally["9"] or 0
-        if card.ability.nine_tally and card.ability.nine_tally > 0 then
+        if card.ability.nine_tally > 0 then
             return card.ability.extra*(card.ability.nine_tally)
+        end
+    end
+})
+
+SMODS.Joker:take_ownership("drivers_license", {
+    update = function () end,
+    loc_vars = function (self, info_queue, card)
+        local tally = 0
+        for _, pcard in ipairs(G.playing_cards) do
+            if next(SMODS.get_enhancements(pcard)) then tally = tally + 1 end
+        end
+        card.ability.driver_tally = tally
+        return { vars = {card.ability.extra, card.ability.driver_tally or 0}}
+    end,
+    calculate = function (self, card, context)
+        if context.joker_main then
+            local tally = 0
+            for _, pcard in ipairs(G.playing_cards) do
+                if next(SMODS.get_enhancements(pcard)) then tally = tally + 1 end
+            end
+            card.ability.driver_tally = tally
+            if card.ability.driver_tally >= 16 then
+                return {
+                    x_mult = card.ability.extra
+                }
+            end
         end
     end
 })
@@ -453,7 +484,7 @@ SMODS.Joker:take_ownership("steel_joker", {
         if context.joker_main then
             local tally = SMODS.get_enhancement_tally(G.playing_cards)
             card.ability.steel_tally = tally["m_steel"] or 0
-            if card.ability.steel_tally and card.ability.steel_tally > 0 then
+            if card.ability.steel_tally > 0 then
                 return {
                     x_mult = card.ability.extra*(card.ability.steel_tally)
                 }
@@ -480,6 +511,31 @@ SMODS.Joker:take_ownership("stone_joker", {
             end
         end
     end
+})
+
+-- Todo : In general there may be some problems with debuffed cards counting / not counting as stuff. Look into it maybe
+
+SMODS.Joker:take_ownership("flower_pot", {
+    calculate = function (self, card, context)
+        if context.joker_main and #context.scoring_hand > 3 then
+            local suit_tally, value_to_cards = SMODS.get_suit_tally(context.scoring_hand, {bypass_debuff = true})
+            local all = suit_tally.Spades and suit_tally.Hearts and suit_tally.Diamonds and suit_tally.Clubs
+            if all and SMODS.count_bipartite_matching(value_to_cards) > 3 then 
+                return {
+                    x_mult = self.ability.extra
+                }
+            end
+        end
+    end
+})
+
+SMODS.Enhancement:take_ownership("stone", {
+    no_rank = true,
+    no_suit = true,
+})
+
+SMODS.Enhancement:take_ownership("wild", {
+    any_suit = true,
 })
 
 -- Todo : reset_idol_card() etc. may need to be updated
