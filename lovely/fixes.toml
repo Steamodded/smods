@@ -607,7 +607,6 @@ position = "after"
 payload = """
 if G.SETTINGS.paused and key ~= 'to_do' then return math.random() end
 """
-overwrite = true
 match_indent = true
 
 # Fixes Steam API not loading on unix
@@ -636,7 +635,6 @@ target = "main.lua"
 pattern = '''if os == 'OS X' or os == 'Windows' then'''
 position = "at"
 payload = '''if os == 'OS X' or os == 'Windows' or os == 'Linux' then'''
-overwrite = true
 match_indent = true
 
 [[patches]]
@@ -645,7 +643,6 @@ target = "main.lua"
 pattern = '''if os == 'OS X' then'''
 position = "at"
 payload = '''if os == 'OS X' or os == 'Linux' then'''
-overwrite = true
 match_indent = true
 
 [[patches]]
@@ -655,7 +652,6 @@ pattern = "st = require 'luasteam'"
 position = "at"
 payload = """local success, _st = pcall(require, 'luasteam')
 if success then st = _st else sendWarnMessage(_st, "LuaSteam"); st = {} end"""
-overwrite = true
 match_indent = true
 
 # copy_card: Reorder timings
@@ -733,7 +729,6 @@ target = "card.lua"
 pattern = "if next(find_joker('Smeared Joker')) and (self.base.suit == 'Hearts' or self.base.suit == 'Diamonds') == (suit == 'Hearts' or suit == 'Diamonds') then"
 position = "at"
 payload = "if SMODS.smeared_check(self, suit) then"
-overwrite = true
 match_indent = true
 
 # fix Seeing Double compat issues with modded suits
@@ -778,7 +773,6 @@ payload = """if SMODS.seeing_double_check(context.scoring_hand, 'Clubs') then
         Xmult_mod = self.ability.extra
     }
 end"""
-overwrite = true
 match_indent = true
 
 # Card:get_end_of_round_effect
@@ -922,3 +916,16 @@ pattern = '''{n=G.UIT.O, config={object = DynaText({string = {card_center.set ==
 position = "at"
 payload = '''{n=G.UIT.O, config={object = DynaText({string = { SMODS.create_unlock_text(card_center) }, colours = { G.C.BLUE }, shadow = true, rotate = true, bump = true, pop_in = 0.3, pop_in_rate = 2, scale = 1.2})}}'''
 match_indent = true
+
+# Fix undiscovered cards having sets hard coded
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+(self.ability.set == 'Joker' or self.ability.set == 'Edition' or self.ability.consumeable or self.ability.set == 'Voucher' or self.ability.set == 'Booster') and
+'''
+payload = '''
+(self.ability.consumeable or SMODS.UndiscoveredCompat[self.ability.set]) and
+'''

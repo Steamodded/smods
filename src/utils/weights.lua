@@ -370,7 +370,7 @@ function SMODS.create_shop_card(area)
     card_args.key = SMODS.poll_object({type = card_args.type, append = 'sho'})
     if card_args.key == 'INTERNAL_PLAYING_CARD' then card_args.key = nil; card_args.set = 'Base' end
 
-    local flags = SMODS.calculate_context({create_shop_card = true, set = card_args.type, key = card_args.key})
+    local flags = SMODS.calculate_context({create_shop_card = true, set = card_args.type, key = card_args.key, area = card_args.area})
 
     local card = SMODS.create_card(SMODS.merge_defaults(flags.shop_create_flags or {}, card_args))
 
