@@ -20,7 +20,6 @@ if extra.update_score then
     update_score = true
 end
 """
-overwrite = true
 match_indent = true
 
 
@@ -33,7 +32,6 @@ position = "before"
 payload = """
 local update_score = nil
 """
-overwrite = true
 match_indent = true
 
 
@@ -50,7 +48,6 @@ if update_score then
     G.HUD:get_UIE_by_ID('chip_UI_count'):juice_up(0.3, 0.3)
 end
 """
-overwrite = true
 match_indent = true
 
 
@@ -68,5 +65,4 @@ payload = """if G.SCORE_DISPLAY_QUEUE and G.SCORE_DISPLAY_QUEUE[1] then
     return
 end
 """
-overwrite = true
 match_indent = true
