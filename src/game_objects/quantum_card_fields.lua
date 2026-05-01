@@ -513,9 +513,6 @@ SMODS.Joker:take_ownership("stone_joker", {
     end
 })
 
--- Todo : In general there may be some problems with debuffed cards counting / not counting as stuff. Look into it maybe
-
--- Todo : currently flower pot's x_mult triggers twice for some reason
 SMODS.Joker:take_ownership("flower_pot", {
     calculate = function (self, card, context)
         if context.joker_main and #context.scoring_hand > 3 then
