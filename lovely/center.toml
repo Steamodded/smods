@@ -708,3 +708,17 @@ end
 
 function Card:set_sell_value()
 '''
+
+# create_card now supports card scale
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = false
+position = 'at'
+pattern = '''    
+local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, front, center,
+'''
+payload = '''
+SMODS.create_card_scale = SMODS.create_card_scale or {w = 1, h = 1}
+local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W*SMODS.create_card_scale.w, G.CARD_H*SMODS.create_card_scale.h, front, center,
+'''

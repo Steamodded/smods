@@ -407,22 +407,27 @@ function SMODS.create_card(t)
         end
         t.front = t.front or (t.suit and t.rank and (t.suit .. "_" .. t.rank)) or nil
     end
+    t.silent = t.silent == true and { edition = true, seal = true } or type(t.silent) ~= "table" and {} or t.silent
     SMODS.bypass_create_card_edition = t.no_edition or t.edition
     SMODS.bypass_create_card_discover = t.discover
     SMODS.bypass_create_card_discovery_center = t.bypass_discovery_center
     SMODS.set_create_card_front = G.P_CARDS[t.front]
     SMODS.create_card_allow_duplicates = t.allow_duplicates
+    SMODS.create_card_scale = t.scale and { w = t.scale.w or 1, h = t.scale.h or 1 }
+    SMODS.create_card_silent_edition = t.silent.edition
     local _card = create_card(t.set, t.area, t.legendary, t.rarity, t.skip_materialize, t.soulable, t.key, t.key_append)
+    SMODS.create_card_scale = nil
     SMODS.bypass_create_card_edition = nil
     SMODS.bypass_create_card_discover = nil
     SMODS.bypass_create_card_discovery_center = nil
     SMODS.set_create_card_front = nil
     SMODS.create_card_allow_duplicates = nil
+    SMODS.create_card_silent_edition = nil
 
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
-    if t.edition then _card:set_edition(t.edition) end
-    if t.seal then _card:set_seal(t.seal); _card.ability.delay_seal = false end
+    if t.edition then _card:set_edition(t.edition, nil, t.silent.edition) end
+    if t.seal then _card:set_seal(t.seal, t.silent.seal); _card.ability.delay_seal = false end
     if t.stickers then
         for i, v in ipairs(t.stickers) do
             _card:add_sticker(v, t.force_stickers)
@@ -1169,7 +1174,7 @@ SMODS.collection_pool = function(_base_pool)
     local is_array = _base_pool[1]
     local ipairs = is_array and ipairs or pairs
     for _, v in ipairs(_base_pool) do
-        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and not v.no_collection then
+        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not v.no_collection or (type(v.no_collection) == "function" and not v.no_collection())) then
             pool[#pool+1] = v
         end
     end
@@ -3287,7 +3292,7 @@ function SMODS.localize_perma_bonuses(specific_vars, desc_nodes)
         localize{type = 'other', key = 'card_extra_mult', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_mult)}}
     end
     if specific_vars and specific_vars.bonus_x_mult then
-        localize{type = 'other', key = 'card_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_x_mult}}
+        localize{type = 'other', key = 'card_extra_x_mult', nodes = desc_nodes, vars = {specific_vars.bonus_x_mult}}
     end
     if specific_vars and specific_vars.bonus_h_chips then
         localize{type = 'other', key = 'card_extra_h_chips', nodes = desc_nodes, vars = {SMODS.signed(specific_vars.bonus_h_chips)}}
