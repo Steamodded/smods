@@ -470,13 +470,6 @@ SMODS.Joker:take_ownership("drivers_license", {
                 }
             end
         end
-        if context.get_editions and context.card:is_rank("King") then
-            return {
-                editions = {
-                    e_polychrome = true
-                }
-            }
-        end
     end
 })
 
