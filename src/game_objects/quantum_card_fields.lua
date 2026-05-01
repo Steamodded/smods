@@ -470,6 +470,13 @@ SMODS.Joker:take_ownership("drivers_license", {
                 }
             end
         end
+        if context.get_editions and context.card:is_rank("King") then
+            return {
+                editions = {
+                    e_polychrome = true
+                }
+            }
+        end
     end
 })
 
@@ -493,7 +500,7 @@ SMODS.Joker:take_ownership("steel_joker", {
     end
 })
 
-SMODS.Joker:take_ownership("stone_joker", {
+SMODS.Joker:take_ownership("stone", {
     update = function () end,
     loc_vars = function (self, info_queue, card)
         local tally = SMODS.get_enhancement_tally(G.playing_cards)

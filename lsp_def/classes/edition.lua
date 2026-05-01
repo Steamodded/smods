@@ -47,12 +47,6 @@ SMODS.Edition = setmetatable({}, {
 })
 
 ---@param self Card|table
----@param context CalcContext|table
----@return table?
---- Calculates Editions on cards. 
-function Card:calculate_edition(context) end
-
----@param self Card|table
 ---@param edition? Editions|string|{[string]: true} Both `string` values are the key of the edition to apply. 
 ---@param immediate? boolean
 ---@param silent? boolean 

@@ -3672,7 +3672,7 @@ SMODS.UndiscoveredCompat = {
         calculate = function(self, card, context)
             if context.pre_joker or (context.main_scoring and context.cardarea == G.play) then
                 return {
-                    chips = card.edition.chips
+                    chips = (card.edition or {}).chips
                 }
             end
         end
@@ -3705,7 +3705,7 @@ SMODS.UndiscoveredCompat = {
         calculate = function(self, card, context)
             if context.pre_joker or (context.main_scoring and context.cardarea == G.play) then
                 return {
-                    mult = card.edition.mult
+                    mult = (card.edition or {}).mult
                 }
             end
         end
@@ -3738,7 +3738,7 @@ SMODS.UndiscoveredCompat = {
         calculate = function(self, card, context)
             if context.post_joker or (context.main_scoring and context.cardarea == G.play) then
                 return {
-                    x_mult = card.edition.x_mult
+                    x_mult = (card.edition or {}).x_mult
                 }
             end
         end
