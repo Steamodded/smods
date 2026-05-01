@@ -1780,23 +1780,6 @@ function SMODS.update_context_flags(context, flags)
     if flags.denominator then context.denominator = flags.denominator end
     if flags.cards_to_draw then context.amount = flags.cards_to_draw end
     if flags.saved then context.game_over = false end
-    if flags.ranks then
-        local no_mod_changed = false
-        if flags.no_mod ~= nil then
-            context.no_mod = flags.no_mod
-            no_mod_changed = true
-        end
-        if not context.no_mod or no_mod_changed then
-            if flags.fixed then
-                context.ranks = flags.ranks
-            else
-                for r, v in pairs(flags.ranks) do
-                    context.ranks[r] = v
-                end
-            end
-        end
-        flags.ranks = nil
-    end
     if flags.modify then
         -- insert general modified value updating here
         if context.modify_ante then context.modify_ante = flags.modify end

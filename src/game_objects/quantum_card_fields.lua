@@ -39,13 +39,12 @@ local function _general_quantum_getter(card, args)
         SMODS.calculate_context(has_context) -- Card._qfield_cache.has is updated directly
     end 
     for key, q_field in pairs(SMODS.QuantumCardFields) do
-        for k, v in pairs(card._qfield_cache.get[q_field.return_flag]) do
+        for k, v in pairs(card._qfield_cache.get[q_field.return_flag]) do -- For every value
             local obj = q_field.g_obj_table[k] or {}
-            if obj["no_" .. key] then card._qfield_cache.has[key].no = true end 
-            if obj["any_" .. key] then card._qfield_cache.has[key].any = true end
-        end
-        if card._qfield_cache.has[key].no and not card._qfield_cache.has[key].any then
-            card._qfield_cache.get[q_field.return_flag] = {}
+            for other_key, _ in pairs(SMODS.QuantumCardFields) do -- Check every has flag
+                if obj["no_" .. other_key] then card._qfield_cache.has[other_key].no = true end 
+                if obj["any_" .. other_key] then card._qfield_cache.has[other_key].any = true end
+            end
         end
     end
 
@@ -66,13 +65,14 @@ local function _general_quantum_getter(card, args)
     if next(SMODS.optional_features.quantum_fields) then -- Only calculate the context if any quantum fields are toggled on
         SMODS.calculate_context(get_context) -- Card._qfield_cache.get is updated directly
     end
+    -- Prepare ret
     local eval = card._qfield_cache.get
     local ret = {}
     for key, q_field in pairs(SMODS.QuantumCardFields) do 
         ret[q_field.return_flag] = {} 
         for k, v in pairs(eval[q_field.return_flag]) do
-            local string_key = type(k) == "table" and k.key or k
             if v then
+                local string_key = type(k) == "table" and k.key or k
                 local obj = q_field.g_obj_table[string_key]
                 local ret_key = args.as_objs and obj or string_key
                 ret[q_field.return_flag][ret_key] = true
@@ -84,7 +84,7 @@ local function _general_quantum_getter(card, args)
                     end
                 end
             else
-                card._qfield_cache.get[q_field.return_flag][string_key] = nil
+                card._qfield_cache.get[q_field.return_flag][k] = nil
             end
         end
     end
@@ -159,6 +159,7 @@ local function _general_quantum_tally(key, cards, ...)
 end
 
 local function _general_quantum_calculate(key, card, context, ...)
+    if not card.playing_card then return end
     SMODS.push_to_context_stack(context, "quantum_card_fields.lua : _general_quantum_calculate")
     local values = SMODS.QuantumCardFields[key].getter(card, ...)
     local ret = {}
@@ -244,6 +245,7 @@ end
 local function _quantum_field_inject_calculate(args, target_objects)
     local calculate_func = args.override_calculate or function (card, context, ...)
         local ret = _general_quantum_calculate(args.key, card, context, ...)
+        if not ret then return end
         return SMODS.merge_effects(unpack(ret)) -- unsure if unpack is deprecated or not
     end
     local func_field = "calculate_" .. args.key
@@ -331,7 +333,7 @@ SMODS.QuantumCardField{
 
 SMODS.QuantumCardField{
     key = "enhancement",
-    g_obj_table = G.P_CENTERS,
+    g_obj_table = SMODS.Enhancements,
     cache_ability = true,
     get_context_flag = "check_enhancement",
     inject_args = {
@@ -358,7 +360,7 @@ SMODS.QuantumCardField{
 SMODS.QuantumCardField{
     key = "edition",
     cache_ability = true,
-    g_obj_table = G.P_CENTERS,
+    g_obj_table = SMODS.Editions,
     base_value_ref = "edition.key"
 }
 
@@ -448,7 +450,8 @@ SMODS.Joker:take_ownership("drivers_license", {
     loc_vars = function (self, info_queue, card)
         local tally = 0
         for _, pcard in ipairs(G.playing_cards) do
-            if next(SMODS.get_enhancements(pcard)) then tally = tally + 1 end
+            local enhs = SMODS.get_enhancements(pcard)
+            if next(enhs) ~= "c_base" or table_length(enhs) > 1 then tally = tally + 1 end
         end
         card.ability.driver_tally = tally
         return { vars = {card.ability.extra, card.ability.driver_tally or 0}}
@@ -457,7 +460,8 @@ SMODS.Joker:take_ownership("drivers_license", {
         if context.joker_main then
             local tally = 0
             for _, pcard in ipairs(G.playing_cards) do
-                if next(SMODS.get_enhancements(pcard)) then tally = tally + 1 end
+                local enhs = SMODS.get_enhancements(pcard)
+                if next(enhs) ~= "c_base" or table_length(enhs) > 1 then tally = tally + 1 end
             end
             card.ability.driver_tally = tally
             if card.ability.driver_tally >= 16 then
@@ -474,7 +478,7 @@ SMODS.Joker:take_ownership("steel_joker", {
     loc_vars = function (self, info_queue, card)
         local tally = SMODS.get_enhancement_tally(G.playing_cards)
         card.ability.steel_tally = tally["m_steel"] or 0
-        return { vars = {card.ability.extra, card.ability.extra*(card.ability.steel_tally or 0)}}
+        return { vars = {card.ability.extra, 1 + card.ability.extra*(card.ability.steel_tally or 0)}}
     end,
     calculate = function (self, card, context)
         if context.joker_main then
@@ -482,7 +486,7 @@ SMODS.Joker:take_ownership("steel_joker", {
             card.ability.steel_tally = tally["m_steel"] or 0
             if card.ability.steel_tally > 0 then
                 return {
-                    x_mult = card.ability.extra*(card.ability.steel_tally)
+                    x_mult = 1 + card.ability.extra*(card.ability.steel_tally)
                 }
             end
         end
@@ -526,12 +530,12 @@ SMODS.Joker:take_ownership("flower_pot", {
     end
 })
 
-SMODS.Enhancement:take_ownership("stone", {
+SMODS.Enhancement:take_ownership("m_stone", {
     no_rank = true,
     no_suit = true,
 })
 
-SMODS.Enhancement:take_ownership("wild", {
+SMODS.Enhancement:take_ownership("m_wild", {
     any_suit = true,
 })
 

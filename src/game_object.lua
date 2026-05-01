@@ -1960,7 +1960,6 @@ SMODS.UndiscoveredCompat = {
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Suit
     -------------------------------------------------------------------------------------------------
-
     SMODS.inject_p_card = function(suit, rank)
         G.P_CARDS[suit.card_key .. '_' .. rank.card_key] = {
             name = rank.key .. ' of ' .. suit.key,
@@ -3432,6 +3431,10 @@ SMODS.UndiscoveredCompat = {
     ----- API CODE GameObject.Enhancement
     -------------------------------------------------------------------------------------------------
 
+    SMODS.Enhancements = {}
+    for _, k in ipairs({"c_base", "m_bonus", "m_mult", "m_wild", "m_glass", "m_steel", "m_stone", "m_gold", "m_lucky"}) do
+        SMODS.Enhancements[k] = G.P_CENTERS[k]
+    end
     SMODS.Enhancement = SMODS.Center:extend {
         set = 'Enhanced',
         class_prefix = 'm',
@@ -3461,6 +3464,7 @@ SMODS.UndiscoveredCompat = {
             self.config = self.config or {}
             assert(not (self.no_suit and self.any_suit), "Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Enhancement object.")
             if self.no_rank then self.overrides_base_rank = true end
+            SMODS.Enhancements[self.key] = self
             SMODS.Enhancement.super.register(self)
         end,
         -- Produces the description of the whole playing card
@@ -3624,6 +3628,10 @@ SMODS.UndiscoveredCompat = {
     ----- API CODE GameObject.Edition
     -------------------------------------------------------------------------------------------------
 
+    SMODS.Editions = {}
+    for _, k in ipairs({"e_base", "e_foil", "e_holo", "e_polychrome", "e_negative"}) do
+        SMODS.Editions[k] = G.P_CENTERS[k]
+    end
     SMODS.Edition = SMODS.Center:extend {
         set = 'Edition',
         -- atlas only matters for displaying editions in the collection
@@ -3661,6 +3669,7 @@ SMODS.UndiscoveredCompat = {
                     generic = string.sub(self.key, 3) .. '_generic' .. '_SMODS_INTERNAL'
                 }
             end
+            SMODS.Editions[self.key] = self
             SMODS.Edition.super.register(self)
         end,
         process_loc_text = function(self)
