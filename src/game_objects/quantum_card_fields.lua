@@ -92,11 +92,11 @@ local function _general_quantum_getter(card, args)
 end
 
 -- Returns card._qfield_cache.has
-local function _general_quantum_has_func(card, args)
+local function _general_quantum_has_func(card, ...)
     if (card._qfield_cache or {}).has then
         return card._qfield_cache.has -- e.g. {rank = {any = true}, enhancement = {no = true}} 
     end
-    _general_quantum_getter(card, args)
+    _general_quantum_getter(card, ...)
     return card._qfield_cache.has
 end
 
@@ -279,7 +279,7 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
             target_objects.has_funcs = target_objects.has_funcs or {SMODS}
             _quantum_field_inject_has_funcs({key = self.key, override_has_no = self.override_has_no, override_has_any = self.override_has_any}, target_objects.has_funcs)
         end
-        if not inject_args.no_is_func then
+        if not inject_args.no_is_funcs then
             target_objects.is_funcs = target_objects.is_funcs or {Card}
             _quantum_field_inject_is_funcs({key = self.key, func_prefix = inject_args.is_func_prefix or "is"}, target_objects.is_funcs)
         end

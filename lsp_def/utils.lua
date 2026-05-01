@@ -101,7 +101,7 @@
 ---@field old_suit? Suits|string Old suit the card changed from.
 ---@field round_eval? true Check if `true` for effects during round evaluation (cashout screen).
 ---@field _quantum_getter? true Internal flag for the general quantum getter context, see per-field flags below.
----@field get_ranks? true Check if `true` for modifying the rank(s) of the context.card. `context.ranks` is a map of `SMODS.Rank` keys. Return `ranks` to add or remove ranks, or return 'fixed = true' to override the `context.ranks` 
+---@field get_ranks? true Check if `true` for modifying the rank(s) of the context.card. `context.ranks` is a map of `SMODS.Rank` keys. Return `ranks` to add or remove ranks, and return `fixed = 'ranks'` (or `fixed = {ranks = true}`) to override the `context.ranks` entirely. 
 ---@field get_enhancements? true Check if `true` for modifying the enhancement(s) of the context.card. ^
 ---@field get_seals? true Check if `true` for modifying the seal(s) of the context.card. ^
 ---@field get_editions? true Check if `true` for modifying the edition(s) of the context.card. ^
