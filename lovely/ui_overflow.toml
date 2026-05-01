@@ -92,4 +92,3 @@ payload = '''
 if v:collides_with_point(cursor_trans) and not v.REMOVED and v:inside_overflow_boundaries(cursor_trans) then
 '''
 match_indent = true
-overwrite = false
