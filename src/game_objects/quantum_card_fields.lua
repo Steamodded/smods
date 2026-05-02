@@ -35,7 +35,7 @@ local function _general_quantum_getter(card, args)
     for key, flag in pairs(flags) do
         has_context[key] = flag
     end
-    if next(SMODS.optional_features.quantum_fields) then -- Only calculate the context if any quantum fields are toggled on
+    if next(SMODS.optional_features.quantum_fields) and not args._no_contexts then -- Only calculate the context if any quantum fields are toggled on
         SMODS.calculate_context(has_context) -- Card._qfield_cache.has is updated directly
     end 
     for key, q_field in pairs(SMODS.QuantumCardFields) do
@@ -62,7 +62,7 @@ local function _general_quantum_getter(card, args)
     for key, flag in pairs(flags) do
         get_context[key] = flag
     end
-    if next(SMODS.optional_features.quantum_fields) then -- Only calculate the context if any quantum fields are toggled on
+    if next(SMODS.optional_features.quantum_fields) and not args._no_contexts then -- Only calculate the context if any quantum fields are toggled on
         SMODS.calculate_context(get_context) -- Card._qfield_cache.get is updated directly
     end
     -- Prepare ret
@@ -76,7 +76,7 @@ local function _general_quantum_getter(card, args)
                 local obj = q_field.g_obj_table[string_key]
                 local ret_key = args.as_objs and obj or string_key
                 ret[q_field.return_flag][ret_key] = true
-                if obj and q_field.cache_ability then
+                if obj and q_field.cache_ability and not args._no_cache_ability then
                     local ability = type(obj.cache_ability) == "function" and obj:cache_ability(card) or SMODS.get_ability_from_obj(obj)
                     if ability then
                         card._qfield_cache.abilities = card._qfield_cache.abilities or {}
@@ -101,8 +101,7 @@ local function _general_quantum_has_func(card, ...)
 end
 
 function SMODS.set_quantum_cache(card)
-    if card.playing_card then _general_quantum_getter(card) 
-    else return false end
+    _general_quantum_getter(card)
     return true
 end
 
@@ -158,13 +157,13 @@ local function _general_quantum_tally(key, cards, ...)
     return tally, value_to_cards
 end
 
-local function _general_quantum_calculate(key, card, context, ...)
-    if not card.playing_card then return end
+local function _general_quantum_calculate(key, card, context, args, ...)
     SMODS.push_to_context_stack(context, "quantum_card_fields.lua : _general_quantum_calculate")
-    local values = SMODS.QuantumCardFields[key].getter(card, ...)
+    local q_field = SMODS.QuantumCardFields[key]
+    local values = q_field.getter(card, args, ...)
     local ret = {}
     for c_key, v in pairs(values) do
-        local obj = SMODS.QuantumCardFields[key].g_obj_table[c_key]
+        local obj = q_field.g_obj_table[c_key] or {} -- Due to Enhancements storing their key equivalently to Jokers (config.center.key), this {} is necessary to prevent a crash when quantum_calculating Jokers. 
         if obj.calculate and type(obj.calculate) == 'function' then
             SMODS.set_context_evaluee(obj)
             local o = obj:calculate(card, context)

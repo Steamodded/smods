@@ -276,3 +276,56 @@ then
     }
 end
 '''
+
+### Sticker ###
+# card.lua : Card:calculate_perishable() : update logic
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.perishable and self.ability.perish_tally > 0 then
+    if self.ability.perish_tally == 1 then
+        self.ability.perish_tally = 0
+        card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize('k_disabled_ex'),colour = G.C.FILTER, delay = 0.45})
+        self:set_debuff()
+    else
+        self.ability.perish_tally = self.ability.perish_tally - 1
+        card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type='variable',key='a_remaining',vars={self.ability.perish_tally}},colour = G.C.FILTER, delay = 0.45})
+    end
+end'''
+position = "at"
+match_indent = true
+payload = '''
+local is_perishable = self:has_sticker("perishable", {bypass_debuff = true})
+if is_perishable and self.ability.perish_tally and self.ability.perish_tally > 0 then
+    if self.ability.perish_tally == 1 then
+        self.ability.perish_tally = 0
+        card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize('k_disabled_ex'),colour = G.C.FILTER, delay = 0.45})
+        self:set_debuff()
+    else
+        self.ability.perish_tally = self.ability.perish_tally - 1
+        card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type='variable',key='a_remaining',vars={self.ability.perish_tally}},colour = G.C.FILTER, delay = 0.45})
+    end
+elseif is_perishable then
+    self.ability.perish_tally = 4
+    card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type='variable',key='a_remaining',vars={self.ability.perish_tally}},colour = G.C.FILTER, delay = 0.45})
+else
+    self.ability.perish_tally = nil
+end'''
+
+# card.lua : Card:calculate_rental() : update logic
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.rental then
+    ease_dollars(-G.GAME.rental_rate)
+    card_eval_status_text(self, 'dollars', -G.GAME.rental_rate)
+end'''
+position = "at"
+match_indent = true
+payload = '''
+if self:has_sticker("rental", {bypass_debuff = true}) then
+    ease_dollars(-G.GAME.rental_rate)
+    card_eval_status_text(self, 'dollars', -G.GAME.rental_rate)
+end'''
