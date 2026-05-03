@@ -750,6 +750,7 @@ local function load_mods()
                 local data = SMODS.NFS.newFileData(mod.path.."/assets/1x/"..mod.icon_path)
                 local image_data = love.graphics.newImage(data)
                 local atlas_table = mod.icon_width and mod.icon_width ~= image_data:getWidth() and 'ANIMATION_ATLAS' or "ASSET_ATLAS"
+                local frames = atlas_table == 'ANIMATION_ATLAS' and math.floor(image_data:getWidth() / mod.icon_width)
                 SMODS.Atlas {
                     key = "modicon",
                     path = mod.icon_path,
@@ -757,7 +758,8 @@ local function load_mods()
                     py = image_data:getHeight(),
                     atlas_table = atlas_table,
                     fps = mod.icon_fps,
-                    image = image_data
+                    image = image_data,
+                    frames = frames
                 }
             end
             if mod.can_load and not mod.lovely_only then
