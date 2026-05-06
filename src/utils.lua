@@ -325,7 +325,7 @@ function SMODS.modify_rank(card, amount, manual_sprites)
                     { in_pool = function(key) return SMODS.add_to_pool(SMODS.Ranks[key], { suit = card.base.suit }) end }
                 )
             else
-                rank_key = (behavior.fixed_next and rank_data.next[behavior.fixed_next]) or rank_data.next[SMODS.get_keys(rank_data.next)[1]]
+                rank_key = behavior.fixed_next or SMODS.get_keys(rank_data.next)[1]
             end
             rank_data = SMODS.Ranks[rank_key]
         end
@@ -341,7 +341,7 @@ function SMODS.modify_rank(card, amount, manual_sprites)
                     { in_pool = function(key) return SMODS.add_to_pool(SMODS.Ranks[key], { suit = card.base.suit }) end }
                 )
             else
-                rank_key = (behavior.fixed_prev and rank_data.prev[behavior.fixed_prev]) or rank_data.prev[SMODS.get_keys(rank_data.prev)[1]]
+                rank_key = behavior.fixed_prev or SMODS.get_keys(rank_data.prev)[1]
             end
             rank_data = SMODS.Ranks[rank_key]
         end
