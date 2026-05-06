@@ -662,7 +662,7 @@ self.boss = blind and not not blind.boss
 '''
 payload = '''
 self[self.current_slot or ''] = nil
-self[string.lower(G.GAME.blind_on_deck or '')] = true
+self[string.lower(G.GAME.blind_on_deck or '')] = blind and true or nil
 self.current_slot = string.lower(G.GAME.blind_on_deck or '')
 '''
 # Handle 'Defeated' tagging
@@ -697,6 +697,21 @@ pattern = '''if v.boss.showdown then '''
 position = "at"
 payload = '''if v.boss and v.boss.showdown then '''
 match_indent = true
+
+# # Fix boss colour not resetting properly
+# [[patches]]
+# [patches.pattern]
+# target = 'blind.lua'
+# match_indent = true
+# position = 'at'
+# pattern = '''
+# if not self.boss and self.name then 
+# '''
+# payload = '''
+# if not self.boss and not self.in_blind then
+# '''
+
+
 
 # These patches prepare vanilla blinds for polling with weights and differing slots
 [[patches]]
