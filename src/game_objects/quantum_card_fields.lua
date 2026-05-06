@@ -1,5 +1,5 @@
 -- General helpers
-local _default_enabled = true
+local _default_enabled = false
 
 -- Returns card._qfield_cache.get, sanitized to use only string keys
 local function _general_quantum_getter(card, args)
