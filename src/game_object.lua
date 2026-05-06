@@ -1308,15 +1308,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         inject = function(self)
             -- call the parent function to ensure all pools are set
             SMODS.Center.inject(self)
-            if self.taken_ownership and self.rarity_original and self.rarity_original ~= self.rarity then
-                SMODS.remove_pool(G.P_JOKER_RARITY_POOLS[self.rarity_original] or {}, self.key)
+            local vanilla_rarities = { ["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4 }
+            self.rarity = vanilla_rarities[self.rarity] or self.rarity
+            local original_rarity = vanilla_rarities[self.rarity_original] or self.rarity_original
+            if self.taken_ownership and original_rarity and original_rarity ~= self.rarity then
+                SMODS.remove_pool(G.P_JOKER_RARITY_POOLS[original_rarity] or {}, self.key)
                 SMODS.insert_pool(G.P_JOKER_RARITY_POOLS[self.rarity], self, false)
             else
                 SMODS.insert_pool(G.P_JOKER_RARITY_POOLS[self.rarity], self)
-                local vanilla_rarities = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
-                if vanilla_rarities[self.rarity] then
-                    SMODS.insert_pool(G.P_JOKER_RARITY_POOLS[vanilla_rarities[self.rarity]], self)
-                end
             end
         end
     }
@@ -3481,16 +3480,19 @@ SMODS.UndiscoveredCompat = {
         inject = function(self)
             self.full_path = (self.mod and self.mod.path or SMODS.path) ..
                 'assets/shaders/' .. self.path
+
             local file = assert(NFS.read(self.full_path),
                 ('Failed to collect file data for Shader %s'):format(self.key))
+
             local lovely_success, lovely = pcall(require, "lovely")
             if lovely_success and lovely.apply_patches then
-                file = assert(lovely.apply_patches("=[SMODS " .. self.mod.id .. ' "' .. self.path .. '"]', file))
+                file = assert(lovely.apply_patches(
+                    "=[SMODS " .. self.mod.id .. ' "' .. self.path .. '"]',
+                    file
+                ))
             end
-            love.filesystem.write(self.key .. "-temp.fs", file)
-            G.SHADERS[self.key] = love.graphics.newShader(self.key .. "-temp.fs")
-            love.filesystem.remove(self.key .. "-temp.fs")
-            -- G.SHADERS[self.key] = love.graphics.newShader(self.full_path)
+            
+            G.SHADERS[self.key] = love.graphics.newShader(file)
         end,
         process_loc_text = function() end
     }
@@ -3911,7 +3913,7 @@ SMODS.UndiscoveredCompat = {
                 if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
                 self:modify(amount)
                 card_eval_status_text(scored_card, 'extra', nil, percent, nil, 
-                    {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, colour = self.colour})
+                    {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {math.abs(amount)}}, colour = self.colour})
                 return true
             end
         end
@@ -3929,7 +3931,7 @@ SMODS.UndiscoveredCompat = {
                 self:modify(amount)
                 if not effect.remove_default_message then
                     if from_edition then
-                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, chip_mod = amount, colour = G.C.EDITION, edition = true})
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {math.abs(amount)}}, chip_mod = amount, colour = G.C.EDITION, edition = true})
                     else
                         if key ~= 'chip_mod' then
                             if effect.chip_message then
@@ -3947,7 +3949,7 @@ SMODS.UndiscoveredCompat = {
                 self:modify(hand_chips * (amount - 1))
                 if not effect.remove_default_message then
                     if from_edition then
-                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xchips' or 'a_xchips_minus',vars={amount}}, Xchips_mod =  amount, colour =  G.C.EDITION, edition = true})
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xchips' or 'a_xchips_minus',vars={math.abs(amount)}}, Xchips_mod =  amount, colour =  G.C.EDITION, edition = true})
                     else
                         if key ~= 'Xchip_mod' then
                             if effect.xchip_message then
@@ -3981,7 +3983,7 @@ SMODS.UndiscoveredCompat = {
                 self:modify(amount)
                 if not effect.remove_default_message then
                     if from_edition then
-                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_mult' or 'a_mult_minus', vars = {amount}}, mult_mod = amount, colour = G.C.DARK_EDITION, edition = true})
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_mult' or 'a_mult_minus', vars = {math.abs(amount)}}, mult_mod = amount, colour = G.C.DARK_EDITION, edition = true})
                     else
                         if key ~= 'mult_mod' then
                             if effect.mult_message then
