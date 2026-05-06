@@ -95,7 +95,23 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
             ret_table.playing_card = ret_table.playing_card or {}
             ret_table.playing_card[self.calc_key] = value
         end
+    end,
+    context_criteria = nil,
+    check_context_criteria = function (self, context)
+        local valid = false
+        for card_area_key, _ in pairs(self.scoring_card_areas) do
+            if context.cardarea == G[card_area_key] then
+                valid = true
+                break
+            end
+        end
+        if not valid then return false end
+        for c_key, _ in pairs(self.context_criteria or {}) do
+            if not context[c_key] then return false end
+        end
+        return true
     end
+
 }
 
 SMODS.CardAbilityField{
@@ -115,6 +131,7 @@ SMODS.CardAbilityField{
 SMODS.CardAbilityField{
     key = "chip_bonus",
     calc_key = "chips",
+    variant_refs = {"chips", "bonus"},
     getter = function(self, abilities, card, ...)
         local base = card.base.nominal or 0
         local ret = 0
@@ -197,6 +214,7 @@ SMODS.CardAbilityField{
     key = "h_dollars",
     calc_key = "h_dollars",
     scoring_card_areas = {hand = true},
+    context_criteria = {playing_card_end_of_round = true}
 }
 
 SMODS.CardAbilityField{

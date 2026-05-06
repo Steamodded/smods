@@ -91,7 +91,7 @@ payload = """
 if context.cardarea == G.play and context.main_scoring then
     for i, key in ipairs(SMODS.CardAbilityField.obj_buffer) do
         local ca_field = SMODS.CardAbilityFields[key]
-        if ca_field.scoring_card_areas.play then
+        if ca_field:check_context_criteria(context) then
             ca_field:insert_value(card, ret)
         end
     end
@@ -131,7 +131,7 @@ payload = """
 if context.cardarea == G.hand and context.main_scoring then
     for i, key in ipairs(SMODS.CardAbilityField.obj_buffer) do
         local ca_field = SMODS.CardAbilityFields[key]
-        if ca_field.scoring_card_areas.hand then
+        if ca_field:check_context_criteria(context) then
             ca_field:insert_value(card, ret)
         end
     end

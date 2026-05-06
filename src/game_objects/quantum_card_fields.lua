@@ -529,6 +529,7 @@ SMODS.Joker:take_ownership("flower_pot", {
 SMODS.Enhancement:take_ownership("m_stone", {
     no_rank = true,
     no_suit = true,
+    always_scores = true,
 })
 
 SMODS.Enhancement:take_ownership("m_wild", {
