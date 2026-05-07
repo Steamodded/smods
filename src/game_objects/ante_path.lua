@@ -15,6 +15,67 @@ function SMODS.create_CanvasContainer_BlindSelect(run_info)
 end
 
 ------- API CODE SMODS.AntePath 
+
+-- Helper funcs
+function SMODS.create_blind_ap_node(args)
+    args = args or {}
+    args.node_index = args.node_index or 1
+    if args.blind_type == "Small" then
+        return SMODS.APNode {
+            index = args.node_index,
+            callbacks = {
+                {key = "enter_blind", triggers = {selected = true}},
+                {key = "evaluate_round", triggers = {defeated = true}},
+                {key = "enter_shop", triggers = {cashed_out = true}},
+                {key = "enter_blind_select", triggers = {shop_ended = true}},
+                {key = "create_tag", triggers = {skipped = true}},
+            },
+            blinds = {"bl_small"},
+            tags = {get_next_tag_key()},
+            next_nodes_indices = args.nni
+        }
+    elseif args.blind_type == "Big" then
+        return SMODS.APNode {
+            index = args.node_index,
+            callbacks = {
+                {key = "enter_blind", triggers = {selected = true}},
+                {key = "evaluate_round", triggers = {defeated = true}},
+                {key = "enter_shop", triggers = {cashed_out = true}},
+                {key = "enter_blind_select", triggers = {shop_ended = true}},
+                {key = "create_tag", triggers = {skipped = true}},
+            },
+            blinds = {"bl_big"},
+            tags = {get_next_tag_key()},
+            next_nodes_indices = args.nni
+        }
+    elseif args.blind_type == "Boss" then
+        local boss_type = (G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante > 0 and "Showdown" or "Boss"
+        return SMODS.APNode {
+            index = args.node_index,
+            callbacks = {
+                {key = "enter_blind", triggers = {selected = true}},
+                {key = "ante_up", triggers = {defeated = true}},
+                {key = "evaluate_round", triggers = {defeated = true}},
+                {key = "enter_blind_select", triggers = {shop_ended = true}},
+                {key = "next_ante_path", triggers = {cashed_out = true}},
+                {key = "enter_shop", triggers = {cashed_out = true}},
+            },
+            blinds = {SMODS.get_new_blind({[boss_type] = true})}, -- Todo : Replace with correct function
+            next_nodes_indices = args.nni,
+        }
+    else
+        return SMODS.APNode {
+            index = args.node_index,
+            hidden = true,
+            selected = true,
+        }
+    end
+end
+
+function SMODS.get_vanilla_ap_blinds()
+    return {"Small", "Big", "Boss"}
+end
+
 SMODS.AntePaths = {}
 SMODS.AntePath = SMODS.GameObject:extend {
     set = 'AntePath',
@@ -29,56 +90,17 @@ SMODS.AntePath = SMODS.GameObject:extend {
     create_data = function (self)
         -- Vanilla Blind structure
         -- "Small" -> "Big" -> "Boss"
-        local boss_type = (G.GAME.round_resets.ante)%G.GAME.win_ante == 0 and G.GAME.round_resets.ante > 0 and "Showdown" or "Boss"
         local path_data = {
-            key = "vanilla",
+            key = self.key,
             active_node = 1,
             nodes = {
-                SMODS.APNode {
-                    index = 1,
-                    hidden = true,
-                    selected = true,
-                },
-                SMODS.APNode {
-                    index = 2,
-                    callbacks = {
-                        {key = "enter_blind", triggers = {selected = true}},
-                        {key = "evaluate_round", triggers = {defeated = true}},
-                        {key = "enter_shop", triggers = {cashed_out = true}},
-                        {key = "enter_blind_select", triggers = {shop_ended = true}},
-                        {key = "create_tag", triggers = {skipped = true}},
-                    },
-                    blinds = {"bl_small"},
-                    tags = {get_next_tag_key()},
-                    next_nodes_indices = {[3] = true}
-                },
-                SMODS.APNode {
-                    index = 3,
-                    callbacks = {
-                        {key = "enter_blind", triggers = {selected = true}},
-                        {key = "evaluate_round", triggers = {defeated = true}},
-                        {key = "enter_shop", triggers = {cashed_out = true}},
-                        {key = "enter_blind_select", triggers = {shop_ended = true}},
-                        {key = "create_tag", triggers = {skipped = true}},
-                    },
-                    blinds = {"bl_big"},
-                    tags = {get_next_tag_key()},
-                    next_nodes_indices = {[4] = true}
-                },
-                SMODS.APNode {
-                    index = 4,
-                    callbacks = {
-                        {key = "enter_blind", triggers = {selected = true}},
-                        {key = "ante_up", triggers = {defeated = true}},
-                        {key = "evaluate_round", triggers = {defeated = true}},
-                        {key = "enter_blind_select", triggers = {shop_ended = true}},
-                        {key = "next_ante_path", triggers = {cashed_out = true}},
-                        {key = "enter_shop", triggers = {cashed_out = true}},
-                    },
-                    blinds = {SMODS.get_new_blind({[boss_type] = true})}, -- Todo : Replace with correct function
-                }
+                SMODS.create_blind_ap_node(), -- Invisible, selected start node
             }
         }
+        local vanilla_blinds = SMODS.get_vanilla_ap_blinds()
+        for i, blind_type in ipairs(vanilla_blinds) do
+            table.insert(path_data.nodes, SMODS.create_blind_ap_node({blind_type = blind_type, node_index = i + 1, nni = i < #vanilla_blinds and {[i + 2] = true} or nil}))
+        end
         return path_data
     end,
     create_ui = function (self)
@@ -185,9 +207,8 @@ end
 
 ------- API CODE Object.APNode
 SMODS.APNode = Object:extend()
-function SMODS.APNode:init(...)
-    local args = {...}
-
+function SMODS.APNode:init(args)
+    args = args or {}
     if args.node_table then
         self:load(args.node_table)
         return
@@ -322,7 +343,7 @@ SMODS.APNodeCallback {
     key = "enter_blind",
     on_callback = function (self, ap_node, cb, trigger_type)
         -- Change game state to ap_node:get_blind()
-        SMODS.enter_state(SMODS.STATES.BLIND, {key = ap_node:get_blind(), trigger_callbacks = true})
+        SMODS.enter_state(SMODS.STATES.BLIND, {key = ap_node:get_blind(), trigger_callbacks = true}) -- Todo : update all instances of use according to GameStates PR
         return true
     end,
     create_ui = function (self, ap_node, ap_node_UIE)
