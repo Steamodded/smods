@@ -120,7 +120,7 @@ function Card:__call(...) return self end
 ---@param self Card
 ---@param vars_only? boolean Only return description values
 ---@return table # Becomes `loc_vars` if `vars_only` is `true`. 
----@return table? man_start Only returns if `vars_only` is `true`. 
+---@return table? main_start Only returns if `vars_only` is `true`. 
 ---@return table? main_end Only returns if `vars_only` is `true`. 
 --- Handles variables before passing into `generate_card_ui()`. 
 function Card:generate_UIBox_ability_table(vars_only) end
