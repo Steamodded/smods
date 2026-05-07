@@ -100,6 +100,10 @@ function Blind:get_type()
     else return '' end
 end
 
+function Blind:is_type(blind_type)
+    return self:get_type() == blind_type
+end
+
 function SMODS.reset_blind_choices(choices)
     G.GAME.round_resets.blind_order = {'Small', 'Big', 'Boss'} -- prepared for custom antes
     for _, k in ipairs(G.GAME.round_resets.blind_order) do
