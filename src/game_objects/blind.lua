@@ -78,14 +78,14 @@ function SMODS.add_boss_to_used_table(boss_key, type)
     end
 end
 
-function SMODS.get_new_blind(type)
+function SMODS.get_new_blind(blind_type)
     local ret_boss
     if SMODS.optional_features.object_weights then
-        ret_boss = SMODS.poll_object({type = 'Blind', blind_type = type, seed = type or 'boss'})
+        ret_boss = SMODS.poll_object({type = 'Blind', blind_type = blind_type, seed = blind_type or 'boss'})
     else
-        ret_boss = pseudorandom_element(SMODS.create_blind_pool(type), pseudoseed(type or 'boss'))
+        ret_boss = pseudorandom_element(SMODS.create_blind_pool(blind_type), pseudoseed(blind_type or 'boss'))
     end
-    SMODS.add_boss_to_used_table(ret_boss, type or 'boss')
+    SMODS.add_boss_to_used_table(ret_boss, blind_type or 'boss')
     return ret_boss
 end
 
