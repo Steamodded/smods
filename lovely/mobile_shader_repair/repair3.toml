@@ -1,0 +1,55 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+### CLEANUP: false positives
+
+# comparisons in preprocessor directives
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_SHADER_REPAIR.fs"
+pattern = '''(__\w+__\s*[<>]\s*\d+)\.'''
+payload = '$1'
+position = 'at'
+
+# scientific notation
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_SHADER_REPAIR.fs"
+pattern = '''([\d.]e\-?\d+)\.'''
+payload = '$1'
+position = 'at'
+
+# array length/index
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_SHADER_REPAIR.fs"
+pattern = '''\[(\d+)\.\]'''
+payload = '[$1]'
+position = 'at'
+
+# fall back to explicit int conversion when the above patch doesn't work
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_SHADER_REPAIR.fs"
+pattern = '''\[([^\[\]]*[^\d.][^\[\]]*)\]'''
+payload = '[int($1)]'
+position = 'at'
+
+# remove unsupported float suffixes
+# matching the full decimals because of an inexplicable space it adds before what's matched
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_SHADER_REPAIR.fs"
+pattern = '''(?<n>(\d+\.)?\d+)f'''
+payload = '$n'
+position = 'at'
+
+# de-initialize initialized uniforms
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_SHADER_REPAIR.fs"
+pattern = '''(extern|uniform)([^=\n]*)=.*'''
+payload = '$1$2;'
+position = 'at'
