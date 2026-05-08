@@ -76,6 +76,8 @@ function SMODS.get_vanilla_ap_blinds()
     return {"Small", "Big", "Boss"}
 end
 
+local vanilla_ap_key = "VANILLA"
+
 SMODS.AntePaths = {}
 SMODS.AntePath = SMODS.GameObject:extend {
     set = 'AntePath',
@@ -132,11 +134,11 @@ SMODS.AntePath = SMODS.GameObject:extend {
 }
 
 SMODS.AntePath {
-    key = "vanilla",
+    key = vanilla_ap_key,
 }
 
 function SMODS.get_ante_path()
-    return SMODS.ANTE_PATH and SMODS.AntePaths[SMODS.ANTE_PATH.key] or SMODS.AntePaths["vanilla"]
+    return SMODS.ANTE_PATH and SMODS.AntePaths[SMODS.ANTE_PATH.key] or SMODS.AntePaths[vanilla_ap_key]
 end
 
 function SMODS.get_ap_node(index)
@@ -550,106 +552,6 @@ function G.FUNCS.cash_out(e)
     end
 end
 
--- TODO : move to lovely patches
-function G.FUNCS.evaluate_round()
-    total_cashout_rows = 0
-    local pitch = 0.95
-    local dollars = 0
-
-    if not G.GAME.blind then
-        add_round_eval_row({dollars = G.GAME.default_eval_dollars or 0, name='???', pitch = pitch}) -- TODO: Check name
-        pitch = pitch + 0.06
-        dollars = dollars + (G.GAME.default_eval_dollars or 0)
-    elseif G.GAME.chips - G.GAME.blind.chips >= 0 then
-        add_round_eval_row({dollars = G.GAME.blind.dollars, name='blind1', pitch = pitch})
-        pitch = pitch + 0.06
-        dollars = dollars + G.GAME.blind.dollars
-    else
-        add_round_eval_row({dollars = 0, name='blind1', pitch = pitch, saved = true})
-        pitch = pitch + 0.06
-    end
-
-    delay(0.2)
-    G.E_MANAGER:add_event(Event({
-        func = function()
-            ease_background_colour_blind(G.STATES.ROUND_EVAL, '')
-            return true
-        end
-    }))
-    SMODS.calculate_context{round_eval = true}
-    G.GAME.selected_back:trigger_effect({context = 'eval'})
-
-    if G.GAME.current_round.hands_left > 0 and not G.GAME.modifiers.no_extra_hand_money then
-        add_round_eval_row({dollars = G.GAME.current_round.hands_left*(G.GAME.modifiers.money_per_hand or 1), disp = G.GAME.current_round.hands_left, bonus = true, name='hands', pitch = pitch})
-        pitch = pitch + 0.06
-        dollars = dollars + G.GAME.current_round.hands_left*(G.GAME.modifiers.money_per_hand or 1)
-    end
-    if G.GAME.current_round.discards_left > 0 and G.GAME.modifiers.money_per_discard then
-        add_round_eval_row({dollars = G.GAME.current_round.discards_left*(G.GAME.modifiers.money_per_discard), disp = G.GAME.current_round.discards_left, bonus = true, name='discards', pitch = pitch})
-        pitch = pitch + 0.06
-        dollars = dollars +  G.GAME.current_round.discards_left*(G.GAME.modifiers.money_per_discard)
-    end
-    local i = 0
-    for _, area in ipairs(SMODS.get_card_areas('jokers')) do
-            for _, _card in ipairs(area.cards) do
-            local ret = _card:calculate_dollar_bonus()
-    
-            -- TARGET: calc_dollar_bonus per card
-            if ret then
-                i = i+1
-                add_round_eval_row({dollars = ret, bonus = true, name='joker'..i, pitch = pitch, card = _card})
-                pitch = pitch + 0.06
-                dollars = dollars + ret
-            end
-        end
-    end
-    for i = 1, #G.GAME.tags do
-        local ret = G.GAME.tags[i]:apply_to_run({type = 'eval'})
-        if ret then
-            add_round_eval_row({dollars = ret.dollars, bonus = true, name='tag'..i, pitch = pitch, condition = ret.condition, pos = ret.pos, tag = ret.tag})
-            pitch = pitch + 0.06
-            dollars = dollars + ret.dollars
-        end
-    end
-    if G.GAME.dollars >= 5 and not G.GAME.modifiers.no_interest then
-        add_round_eval_row({bonus = true, name='interest', pitch = pitch, dollars = G.GAME.interest_amount*math.min(math.floor(G.GAME.dollars/5), G.GAME.interest_cap/5)})
-        pitch = pitch + 0.06
-        if (not G.GAME.seeded and not G.GAME.challenge) or SMODS.config.seeded_unlocks then
-            if G.GAME.interest_amount*math.min(math.floor(G.GAME.dollars/5), G.GAME.interest_cap/5) == G.GAME.interest_amount*G.GAME.interest_cap/5 then 
-                G.PROFILES[G.SETTINGS.profile].career_stats.c_round_interest_cap_streak = G.PROFILES[G.SETTINGS.profile].career_stats.c_round_interest_cap_streak + 1
-            else
-                G.PROFILES[G.SETTINGS.profile].career_stats.c_round_interest_cap_streak = 0
-            end
-        end
-        check_for_unlock({type = 'interest_streak'})
-        dollars = dollars + G.GAME.interest_amount*math.min(math.floor(G.GAME.dollars/5), G.GAME.interest_cap/5)
-    end
-
-    pitch = pitch + 0.06
-
-    if total_cashout_rows > 7 then
-        local total_hidden = total_cashout_rows - 7
-    
-        G.E_MANAGER:add_event(Event({
-            trigger = 'before',delay = 0.38,
-            func = function()
-                local hidden = {n=G.UIT.R, config={align = "cm"}, nodes={
-                    {n=G.UIT.O, config={object = DynaText({
-                        string = {localize{type = 'variable', key = 'cashout_hidden', vars = {total_hidden}}}, 
-                        colours = {G.C.WHITE}, shadow = true, float = false, 
-                        scale = 0.45,
-                        font = G.LANGUAGES['en-us'].font, pop_in = 0
-                    })}}
-                }}
-    
-                G.round_eval:add_child(hidden, G.round_eval:get_UIE_by_ID('bonus_round_eval'))
-                return true
-            end
-        }))
-    end
-    add_round_eval_row({name = 'bottom', dollars = dollars})
-end
-
 -- Needs to be patched..
 function new_round()
     -- .. because of this;
@@ -670,150 +572,7 @@ function new_round()
     -- G.GAME.blind:set_blind(G.GAME.round_resets.blind)
 end
 
--- end_round() TODO : move to lovely patches
-function end_round()
-    G.E_MANAGER:add_event(Event({
-        trigger = 'after',
-        delay = 0.2,
-        func = function()
-            G.GAME.blind.in_blind = false
-            local game_over = true
-            local game_won = false
-            G.RESET_BLIND_STATES = true
-            G.RESET_JIGGLES = true
-            if G.GAME.chips - G.GAME.blind.chips >= 0 then
-                game_over = false
-            end
-            -- context.end_of_round calculations
-            SMODS.saved = false
-            G.GAME.saved_text = nil
-            SMODS.calculate_context({end_of_round = true, game_over = game_over, beat_boss = G.GAME.blind.boss })
-            if SMODS.saved then game_over = false end
-            -- TARGET: main end_of_round evaluation
-            if G.GAME.round_resets.ante == G.GAME.win_ante and G.GAME.blind:is_type("Boss") then
-                game_won = true
-                G.GAME.won = true
-            end
-            if game_over then
-                G.STATE = G.STATES.GAME_OVER
-                if not G.GAME.won and not G.GAME.seeded and not G.GAME.challenge then 
-                    G.PROFILES[G.SETTINGS.profile].high_scores.current_streak.amt = 0
-                end
-                G:save_settings()
-                G.FILE_HANDLER.force = true
-                G.STATE_COMPLETE = false
-            else
-                G.GAME.unused_discards = (G.GAME.unused_discards or 0) + G.GAME.current_round.discards_left
-                if G.GAME.blind and G.GAME.blind.config.blind then 
-                    discover_card(G.GAME.blind.config.blind)
-                end
-
-                if G.GAME.blind:is_type("Boss") then
-                    local _handname, _played, _order = 'High Card', -1, 100
-                    for k, v in pairs(G.GAME.hands) do
-                        if v.played > _played or (v.played == _played and _order > v.order) then 
-                            _played = v.played
-                            _handname = k
-                        end
-                    end
-                    G.GAME.current_round.most_played_poker_hand = _handname
-                end
-
-                if G.GAME.blind:is_type("Boss") and not G.GAME.seeded and not G.GAME.challenge  then
-                    G.GAME.current_boss_streak = G.GAME.current_boss_streak + 1
-                    check_and_set_high_score('boss_streak', G.GAME.current_boss_streak)
-                end
-                
-                if G.GAME.current_round.hands_played == 1 then 
-                    inc_career_stat('c_single_hand_round_streak', 1)
-                else
-                    if not G.GAME.seeded and not G.GAME.challenge  then
-                        G.PROFILES[G.SETTINGS.profile].career_stats.c_single_hand_round_streak = 0
-                        G:save_settings()
-                    end
-                end
-
-                check_for_unlock({type = 'round_win'})
-                set_joker_usage()
-                if game_won and not G.GAME.win_notified then
-                    G.GAME.win_notified = true
-                    G.E_MANAGER:add_event(Event({
-                        trigger = 'immediate',
-                        blocking = false,
-                        blockable = false,
-                        func = (function()
-                            if SMODS.GameStates[G.STATE] and SMODS.GameStates[G.STATE].check_win then
-                                win_game()
-                                G.GAME.won = true
-                                return true
-                            end
-                        end)
-                    }))
-                end
-                for _,v in ipairs(SMODS.get_card_areas('playing_cards', 'end_of_round')) do
-                    SMODS.calculate_end_of_round_effects({ cardarea = v, end_of_round = true, beat_boss = G.GAME.blind.boss })
-                end
-
-                G.FUNCS.draw_from_hand_to_discard()
-                if G.GAME.blind:is_type("Boss") then
-                    G.GAME.voucher_restock = nil
-                    if G.GAME.modifiers.set_eternal_ante and (G.GAME.round_resets.ante == G.GAME.modifiers.set_eternal_ante) then 
-                        for k, v in ipairs(G.jokers.cards) do
-                            v:set_eternal(true)
-                        end
-                    end
-                    if G.GAME.modifiers.set_joker_slots_ante and (G.GAME.round_resets.ante == G.GAME.modifiers.set_joker_slots_ante) then 
-                        G.jokers.config.card_limit = 0
-                    end
-                    delay(0.4)
-                end
-                G.FUNCS.draw_from_discard_to_deck()
-                G.E_MANAGER:add_event(Event({
-                    trigger = 'after',
-                    delay = 0.3,
-                    func = function()
-                        if SMODS.get_current_state().args.trigger_callbacks then
-                            SMODS.get_active_ap_node():trigger_callbacks("defeated")
-                        end
-                        G.STATE_COMPLETE = false
-
-                        if G.GAME.round_resets.blind == G.P_BLINDS.bl_small then
-                            -- TODO : Check/Replace blind_states
-                            G.GAME.round_resets.blind_states.Small = 'Defeated'
-                        elseif G.GAME.round_resets.blind == G.P_BLINDS.bl_big then
-                            G.GAME.round_resets.blind_states.Big = 'Defeated'
-                        else
-                            G.GAME.current_round.voucher = SMODS.get_next_vouchers()
-                            G.GAME.round_resets.blind_states.Boss = 'Defeated'
-                            for k, v in ipairs(G.playing_cards) do
-                                v.ability.played_this_ante = nil
-                            end
-                        end
-
-                        if G.GAME.round_resets.temp_handsize then G.hand:change_size(-G.GAME.round_resets.temp_handsize); G.GAME.round_resets.temp_handsize = nil end
-                        if G.GAME.round_resets.temp_reroll_cost then G.GAME.round_resets.temp_reroll_cost = nil; calculate_reroll_cost(true) end
-
-                        reset_idol_card()
-                        reset_mail_rank()
-                        reset_ancient_card()
-                        reset_castle_card()
-                        for _, mod in ipairs(SMODS.mod_list) do
-                            if mod.reset_game_globals and type(mod.reset_game_globals) == 'function' then
-                                mod.reset_game_globals(false)
-                            end
-                        end
-                        for k, v in ipairs(G.playing_cards) do
-                            v.ability.discarded = nil
-                            v.ability.forced_selection = nil
-                        end
-                    return true
-                    end
-                }))
-            end
-            return true
-        end
-    }))
-end
+-- Todo : once GameStates PR is merged, replace all SMODS.queue_state() calls with ApNodeCallbacks
 
 -- get_blind_main_colour() -> replace using own system for blind_states
 function get_blind_main_colour(blind)
