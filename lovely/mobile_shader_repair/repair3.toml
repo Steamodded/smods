@@ -58,6 +58,6 @@ position = 'at'
 [[patches]]
 [patches.regex]
 target = "GLSL_ES_SHADER_REPAIR.fs"
-pattern = '''(extern|uniform) (float|vec2|vec3|vec4)'''
+pattern = '''(extern|uniform)\s+(float|vec2|vec3|vec4)'''
 payload = '''$1 highp $2'''
 position = 'at'
