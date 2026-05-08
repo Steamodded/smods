@@ -46,12 +46,12 @@ pattern = '''(?<n>(\d+\.)?\d+)f'''
 payload = '$n'
 position = 'at'
 
-# de-initialize initialized uniforms
+# remove uniform from named globals (we're hoping they're constant, otherwise shit breaks)
 [[patches]]
 [patches.regex]
 target = "GLSL_ES_SHADER_REPAIR.fs"
-pattern = '''(extern|uniform)([^=\n]*)=.*'''
-payload = '$1$2;'
+pattern = '''(extern|uniform)([^=\n]*=.*)'''
+payload = '$2'
 position = 'at'
 
 # Add missing precision to "extern float"
