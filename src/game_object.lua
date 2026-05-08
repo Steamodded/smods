@@ -3424,6 +3424,7 @@ SMODS.UndiscoveredCompat = {
                             if love.graphics.getRendererInfo() == "OpenGL ES" then
                                 G.SHADERS[self.key] = SMODS.Shader.stub
                                 sendWarnMessage("To prevent crashes, a substitute shader that does nothing has been put in place. The mod developer(s) should manually adjust the shader to be compatible with OpenGL ES.", "Shader")
+                                return
                             end
                         end
                     end
