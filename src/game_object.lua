@@ -3395,43 +3395,41 @@ SMODS.UndiscoveredCompat = {
                 ))
             end
 
-            if 
-                (lovely_success and lovely.apply_patches) and 
-                (
-                    (self.mod and (self.mod.repair_gles or not self.mod.gles_alerted)) or
-                    love.graphics.getRendererInfo() == "OpenGL ES" 
-                )
-            then
-                local valid_gles, err = love.graphics.validateShader(true, file)
-                if not valid_gles then
-                    if self.mod and not self.mod.repair_gles and not self.mod.gles_alerted then
-                        sendWarnMessage(("%s: Some shaders in this mod are not compatible with OpenGL ES. Steamodded will try to repair these shaders if OpenGL ES is being used, e.g. on mobile devices. Add '\"repair_gles\": true' to this mod's metadata JSON file to apply the repair patches to all affected shaders in-place, if possible."):format(self.mod.id), "Shader")
-                        self.mod.gles_alerted = true
-                    end
-                    if love.graphics.getRendererInfo() == "OpenGL ES" or (self.mod and self.mod.repair_gles) then
-                        local fixed_file = assert(lovely.apply_patches(
-                            "GLSL_ES_SHADER_REPAIR.fs",
-                            file
-                        ))
-                        valid_gles, err = love.graphics.validateShader(true, fixed_file)
-                        if valid_gles then
-                            file = fixed_file
-                            if self.mod and self.mod.repair_gles then assert(NFS.write(self.full_path,file)) end
-                            sendInfoMessage(("Repaired shader '%s'%s successfully."):format(self.key, self.mod and self.mod.repair_gles and ' in-place' or ''))
-                        else
-                            assert(NFS.write(self.full_path:sub(1,-4)..'.bad.fs',file))
-                            sendWarnMessage(("Failed to repair shader %s:\n%s\nSaved bad repair output to '%s.bad.fs'."):format(self.key,err, self.full_path:sub(1,-4)), "Shader")
-                            if love.graphics.getRendererInfo() == "OpenGL ES" then
-                                G.SHADERS[self.key] = SMODS.Shader.stub
-                                sendWarnMessage("To prevent crashes, a substitute shader that does nothing has been put in place. The mod developer(s) should manually adjust the shader to be compatible with OpenGL ES.", "Shader")
-                                return
-                            end
-                        end
-                    end
-                end
+            if love.graphics.getRendererInfo() ~= "OpenGL ES" and (self.mod and not self.mod.gles_alerted) and not love.graphics.validateShader(true, file) then
+                sendWarnMessage(("%s: Some shaders in this mod are not compatible with OpenGL ES. Steamodded will try to repair these shaders if OpenGL ES is being used, e.g. on mobile devices. To obtain repaired shader code on desktop, run Balatro with 'LOVE_GRAPHICS_USE_OPENGLES=1' set as an environment variable."):format(self.mod and self.mod.name), "Shader")
+                self.mod.gles_alerted = true
             end
-            
-            G.SHADERS[self.key] = love.graphics.newShader(file)
+            local success, shader = pcall(love.graphics.newShader, file)
+            if success then
+                G.SHADERS[self.key] = shader
+                return
+            end
+            if love.graphics.getRendererInfo() ~= "OpenGL ES" then error(shader) end
+
+            -- We are running into a shader that doesn't compile on OpenGL ES. Let's try to fix it.
+            sendInfoMessage(("Cannot compile shader '%s' for OpenGL ES. Attempting repair..."):format(self.key), "Shader")
+
+            local fixed_file = assert(lovely.apply_patches(
+                "GLSL_ES_SHADER_REPAIR.fs",
+                file
+            ))
+            success, shader = pcall(love.graphics.newShader, fixed_file)
+            if success then
+                local fixed_path = self.full_path:sub(1,-4)..'.fixed.fs'
+                assert(NFS.write(fixed_path,fixed_file))
+                sendInfoMessage(("Repaired shader '%s' successfully. Output saved to '%s'."):format(self.key, fixed_path), "Shader")
+                G.SHADERS[self.key] = shader
+                return
+            end
+
+            -- Couldn't repair shader. Replace it with a stub instead.
+            local bad_path = self.full_path:sub(1,-4)..'.bad.fs'
+            assert(NFS.write(bad_path,fixed_file))
+            sendWarnMessage(("Failed to repair shader '%s':\n%s\nSaved bad repair output to '%s'."):format(self.key, shader, bad_path), "Shader")
+            sendWarnMessage(
+                ("To prevent crashes, a substitute shader that does nothing has been put in place. The mod developer(s) should manually update shader '%s' to be compatible with OpenGL ES."):format(self.key),
+                "Shader")
+            G.SHADERS[self.key] = SMODS.Shader.stub
         end,
         process_loc_text = function() end
     }

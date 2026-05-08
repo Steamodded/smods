@@ -53,3 +53,11 @@ target = "GLSL_ES_SHADER_REPAIR.fs"
 pattern = '''(extern|uniform)([^=\n]*)=.*'''
 payload = '$1$2;'
 position = 'at'
+
+# Add missing precision to "extern float"
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_SHADER_REPAIR.fs"
+pattern = '''(extern|uniform) (float|vec2|vec3|vec4)'''
+payload = '''$1 highp $2'''
+position = 'at'
