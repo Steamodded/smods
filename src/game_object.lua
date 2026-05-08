@@ -3422,14 +3422,7 @@ SMODS.UndiscoveredCompat = {
                             assert(NFS.write(self.full_path:sub(1,-4)..'.bad.fs',file))
                             sendWarnMessage(("Failed to repair shader %s:\n%s\nSaved bad repair output to '%s.bad.fs'."):format(self.key,err, self.full_path:sub(1,-4)), "Shader")
                             if love.graphics.getRendererInfo() == "OpenGL ES" then
-                                local shader = love.graphics.newShader [[
-                                vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _) {
-                                    return Texel(texture, tc);
-                                }
-                                ]]
-                                shader.send = function() end
-                                shader.sendColor = function() end
-                                G.SHADERS[self.key] = shader
+                                G.SHADERS[self.key] = SMODS.Shader.stub
                                 sendWarnMessage("To prevent crashes, a substitute shader that does nothing has been put in place. The mod developer(s) should manually adjust the shader to be compatible with OpenGL ES.", "Shader")
                             end
                         end
@@ -3441,6 +3434,27 @@ SMODS.UndiscoveredCompat = {
         end,
         process_loc_text = function() end
     }
+    -- stub shader
+    SMODS.Shader.stub = love.graphics.newShader [[
+    vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _) {
+        return Texel(texture, tc);
+    }
+    ]]
+    local mt = getmetatable(SMODS.Shader.stub)
+	local send = mt.send
+	local sendColor = mt.sendColor
+	function mt:send(...)
+		if self == SMODS.Shader.stub then
+			return
+		end
+		send(self, ...)
+	end
+	function mt:sendColor(...)
+		if self == SMODS.Shader.stub then
+			return
+		end
+		sendColor(self, ...)
+	end
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.ScreenShader
