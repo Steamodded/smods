@@ -149,7 +149,6 @@ function loadMods(modsDirectory)
         prefix = { type = 'string', required = true, check = function(mod, s) if string.find(s, '%$') then error("Disallowed use of reserved prefix "..s) end end },
         version = { type = 'string', check = function(mod, x) return x and sUtil.V(x):is_valid() and x or '0.0.0' end },
         dump_loc = { type = 'boolean' },
-        repair_gles = { type = 'boolean' },
         dependencies = { type = 'table', check = function(mod, t)
             local ops = {
                 ['<<'] = function(a,b) return a<b end,
