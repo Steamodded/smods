@@ -284,6 +284,7 @@ target = "card.lua"
 pattern = "self:set_sprites(center)"
 position = "after"
 payload = '''if self.ability and not initial then
+  self.delay_center = nil
   self.front_hidden = self:should_hide_front()
 end'''
 match_indent = true
