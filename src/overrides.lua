@@ -2929,8 +2929,8 @@ end
         if success then return shader end
 
 		-- -- Couldn't compile with patches. Try the original
-		-- local old_success, old_shader = pcall(newShader, code)
-		-- if old_success then return old_shader end
+		local old_success, old_shader = pcall(newShader, code)
+		if old_success then return old_shader end
 
         -- Neither worked
 		sendWarnMessage(("Failed to compile or patch shader for GLSL ES! Replacing affected shader with a stub that does nothing. To test on desktop, set LOVE_GRAPHICS_USE_OPENGLES=1 in your environment variables to run GLSL ES if supported. Patched shader code:\n%s\nError:\n%s"):format(patched_code, shader))
