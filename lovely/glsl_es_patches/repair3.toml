@@ -8,7 +8,7 @@ priority = -10
 # comparisons in preprocessor directives
 [[patches]]
 [patches.regex]
-target = "GLSL_ES_SHADER_REPAIR.fs"
+target = "GLSL_ES_PATCHES.fs"
 pattern = '''(__\w+__\s*[<>]\s*\d+)\.'''
 payload = '$1'
 position = 'at'
@@ -16,7 +16,7 @@ position = 'at'
 # scientific notation
 [[patches]]
 [patches.regex]
-target = "GLSL_ES_SHADER_REPAIR.fs"
+target = "GLSL_ES_PATCHES.fs"
 pattern = '''([\d.]e\-?\d+)\.'''
 payload = '$1'
 position = 'at'
@@ -24,7 +24,7 @@ position = 'at'
 # array length/index
 [[patches]]
 [patches.regex]
-target = "GLSL_ES_SHADER_REPAIR.fs"
+target = "GLSL_ES_PATCHES.fs"
 pattern = '''\[(\d+)\.\]'''
 payload = '[$1]'
 position = 'at'
@@ -32,7 +32,7 @@ position = 'at'
 # fall back to explicit int conversion when the above patch doesn't work
 [[patches]]
 [patches.regex]
-target = "GLSL_ES_SHADER_REPAIR.fs"
+target = "GLSL_ES_PATCHES.fs"
 pattern = '''\[([^\[\]]*[^\d.][^\[\]]*)\]'''
 payload = '[int($1)]'
 position = 'at'
@@ -41,7 +41,7 @@ position = 'at'
 # matching the full decimals because of an inexplicable space it adds before what's matched
 [[patches]]
 [patches.regex]
-target = "GLSL_ES_SHADER_REPAIR.fs"
+target = "GLSL_ES_PATCHES.fs"
 pattern = '''(?<n>(\d+\.)?\d+)f'''
 payload = '$n'
 position = 'at'
@@ -49,15 +49,7 @@ position = 'at'
 # remove uniform from named globals (we're hoping they're constant, otherwise shit breaks)
 [[patches]]
 [patches.regex]
-target = "GLSL_ES_SHADER_REPAIR.fs"
+target = "GLSL_ES_PATCHES.fs"
 pattern = '''(extern|uniform)([^=\n]*=.*)'''
 payload = '$2'
-position = 'at'
-
-# Add missing precision to "extern float"
-[[patches]]
-[patches.regex]
-target = "GLSL_ES_SHADER_REPAIR.fs"
-pattern = '''(extern|uniform)\s+(float|vec2|vec3|vec4)'''
-payload = '''$1 highp $2'''
 position = 'at'

@@ -6,7 +6,7 @@ priority = -12
 # replace int literals with floats
 [[patches]]
 [patches.regex]
-target = "GLSL_ES_SHADER_REPAIR.fs"
+target = "GLSL_ES_PATCHES.fs"
 pattern = '''([^\w\d.]\d+)([^\w\d.])'''
 payload = '$1.$2'
 position = 'at'
@@ -14,7 +14,7 @@ position = 'at'
 # swap out type "int" for "float" in case a now-float literal is attached to an explicit type
 [[patches]]
 [patches.regex]
-target = "GLSL_ES_SHADER_REPAIR.fs"
+target = "GLSL_ES_PATCHES.fs"
 pattern = '''([\s(\{])int([\s(\[])'''
 payload = '''$1 float$2'''
 position = 'at'

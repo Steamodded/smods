@@ -1,0 +1,30 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Some shaders go black because GLES defaults to lower mediump precision when unspecified. Add explicit highp to make them function properly
+
+# Externs
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''(extern|uniform)\s+(number|float|vec2|vec3|vec4|mat2|mat3|mat4)'''
+payload = '''$1 highp $2'''
+position = 'at'
+
+# other variables
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''([\n(]\s*)(number|float|vec2|vec3|vec4|mat2|mat3|mat4)([^=\n]*=)'''
+payload = '''$1 highp $2$3'''
+position = 'at'
+
+# uninitialized variables but NOT function heads
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''(\n\s*)(number|float|vec2|vec3|vec4|mat2|mat3|mat4)([^=\n(]*;)'''
+payload = '''$1 highp $2$3'''
+position = 'at'

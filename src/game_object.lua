@@ -3396,76 +3396,13 @@ SMODS.UndiscoveredCompat = {
             end
 
             if love.graphics.getRendererInfo() ~= "OpenGL ES" and (self.mod and not self.mod.gles_alerted) and not love.graphics.validateShader(true, file) then
-                sendWarnMessage(("%s: Some shaders in this mod are not compatible with OpenGL ES. Steamodded will try to repair these shaders if OpenGL ES is being used, e.g. on mobile devices. To test OpenGL ES results on desktop, run Balatro with 'LOVE_GRAPHICS_USE_OPENGLES=1' set as an environment variable."):format(self.mod and self.mod.name), "Shader")
+                sendWarnMessage(("%s: Some shaders in this mod (first one found: '%s') are not compatible with OpenGL ES. Steamodded will try to repair these shaders if OpenGL ES is being used, e.g. on mobile devices. To test OpenGL ES results on desktop, run Balatro with 'LOVE_GRAPHICS_USE_OPENGLES=1' set as an environment variable."):format(self.mod and self.mod.name, self.key), "Shader")
                 self.mod.gles_alerted = true
             end
-            SMODS.shader_creation = { mod = self.mod, key = self.key }
             G.SHADERS[self.key] = love.graphics.newShader(file)
         end,
         process_loc_text = function() end
     }
-    -- stub shader
-    SMODS.Shader.stub = love.graphics.newShader [[
-    vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _) {
-        return Texel(texture, tc);
-    }
-    ]]
-    local mt = getmetatable(SMODS.Shader.stub)
-	local send = mt.send
-	local sendColor = mt.sendColor
-	function mt:send(...)
-		if self == SMODS.Shader.stub then
-			return
-		end
-		send(self, ...)
-	end
-	function mt:sendColor(...)
-		if self == SMODS.Shader.stub then
-			return
-		end
-		sendColor(self, ...)
-	end
-
-    -- newShader hook so we catch devs not using SMODS.Shader too
-    local newShader = love.graphics.newShader
-    function love.graphics.newShader(code, other_code)
-        if other_code or not string.find(code,'\n') then return newShader(code,other_code) end
-        -- the newline means this is for sure code and not a file path. fix your stuff yourself if you're using a second argument i guess
-
-        -- lovely
-        local lovely_success, lovely = pcall(require, "lovely")
-        if not lovely_success then return newShader(code) end
-
-        -- debug info
-        local s = SMODS.shader_creation or {}
-        s.mod = s.mod or { name = '<unknown>' }
-        s.key = s.key or '<unknown>'
-        SMODS.shader_creation = nil
-       
-        local success, shader = pcall(newShader, code)
-        if success then return shader end
-        if love.graphics.getRendererInfo() ~= "OpenGL ES" then error(shader) end
-
-        -- We are running into a shader that doesn't compile on OpenGL ES. Let's try to fix it.
-        sendInfoMessage(("Cannot compile shader '%s' for OpenGL ES. Attempting repair..."):format(s.key), "Shader")
-
-        local fixed_code = assert(lovely.apply_patches(
-            "GLSL_ES_SHADER_REPAIR.fs",
-            code
-        ))
-        success, shader = pcall(newShader, fixed_code)
-        if success then
-            sendInfoMessage(("Repaired shader '%s' successfully."):format(s.key), "Shader")
-            return shader
-        end
-
-        -- Couldn't repair shader. Replace it with a stub instead.
-        sendWarnMessage(("Failed to repair shader '%s':\n%s"):format(s.key, shader), "Shader")
-        sendWarnMessage(
-            ("To prevent crashes, a substitute shader that does nothing has been put in place. The mod developer(s) should manually update shader '%s' to be compatible with OpenGL ES."):format(s.key),
-            "Shader")
-        return SMODS.Shader.stub
-    end
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.ScreenShader
