@@ -841,7 +841,7 @@ payload = '''
 local i = 0
 for _, area in ipairs(SMODS.get_card_areas('jokers')) do
     for _, _card in ipairs(area.cards) do
-        local ret, ret_opts = _card:calculate_dollar_bonus()
+        local ret, ret_opts = ((_card.config or {}).center or {}).calculate_dollar_bonus and _card.config.center:calculate_dollar_bonus() or _card:calculate_dollar_bonus()
         ret_opts = ret_opts or {}
 
         -- TARGET: calc_dollar_bonus per card
