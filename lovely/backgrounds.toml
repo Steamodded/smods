@@ -1,0 +1,146 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -1
+
+# Handle the vanilla background shaders
+# Sprite:draw
+[[patches]]
+[patches.pattern]
+target = "engine/sprite.lua"
+pattern = '''
+elseif _shader == 'vortex' then 
+        G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))
+'''
+position = "after"
+payload = '''
+elseif _shader == 'background' then
+    G.SHADERS['background']:send('time', G.TIMERS.REAL_SHADER)
+    G.SHADERS['background']:send('spin_time', G.TIMERS.BACKGROUND)
+    G.SHADERS['background']:send('colour_1', G.C.BACKGROUND.C)
+    G.SHADERS['background']:send('colour_2', G.C.BACKGROUND.L)
+    G.SHADERS['background']:send('colour_3', G.C.BACKGROUND.D)
+    G.SHADERS['background']:send('contrast', G.C.BACKGROUND.contrast)
+    G.SHADERS['background']:send('spin_amount', G.ARGS.spin and G.ARGS.spin.amount or 0)
+elseif _shader == 'splash' then
+    G.SHADERS['splash']:send('time', G.TIMERS.REAL)
+    G.SHADERS['splash']:send('vort_speed', G.STATE == G.STATES.SPLASH and 1 or 0.4)
+    G.SHADERS['splash']:send('colour_1', G.STATE == G.STATES.SPLASH and G.C.BLUE or G.C.RED)
+    G.SHADERS['splash']:send('colour_2', G.STATE == G.STATES.SPLASH and G.C.WHITE or G.C.BLUE)
+    G.SHADERS['splash']:send('mid_flash', SMODS.splash_mid_flash)
+    G.SHADERS['splash']:send('vort_offset', G.STATE == G.STATES.SPLASH and SMODS.splash_vort_offset or 0)
+'''
+match_indent = true
+
+# Make splash_args global
+# Game:main_menu, Game:demo_cta
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+local splash_args = {mid_flash = change_context == 'splash' and 1.6 or 0.}
+    ease_value(splash_args, 'mid_flash', -(change_context == 'splash' and 1.6 or 0), nil, nil, nil, 4)
+'''
+position = "after"
+payload = '''
+SMODS.splash_mid_flash = change_context == 'splash' and 1.6 or 0
+ease_value(SMODS, 'splash_mid_flash', -(change_context == 'splash' and 1.6 or 0), nil, nil, nil, 4)
+'''
+match_indent = true
+
+# Make vort_offset global
+# Game:splash_screen
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''--Prep the splash screen shaders for both the background(colour swirl) and the foreground(white flash), starting at black'''
+position = "after"
+payload = '''
+SMODS.vort_offset = ((2*90.15315131*os.time())%100000)
+'''
+match_indent = true
+
+# Draw custom bgs
+# Game:draw
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+if G.SPLASH_BACK then
+        if G.debug_background_toggle then
+            love.graphics.clear({0,1,0,1})
+        else
+            love.graphics.push()
+            G.SPLASH_BACK:translate_container()
+            G.SPLASH_BACK:draw()
+            love.graphics.pop()
+        end
+    end
+'''
+position = "at"
+payload = '''
+--[[
+if G.SPLASH_BACK then
+    if G.debug_background_toggle then
+        love.graphics.clear({0,1,0,1})
+    else
+        love.graphics.push()
+        G.SPLASH_BACK:translate_container()
+        G.SPLASH_BACK:draw()
+        love.graphics.pop()
+    end
+end
+]]
+
+if SMODS.PRIMARY_BG_CANVAS then
+    if G.debug_background_toggle then
+        love.graphics.clear({0,1,0,1})
+    else
+        SMODS.draw_background()
+    end
+end
+
+'''
+match_indent = true
+
+# Get current bg
+# Game:update
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''modulate_sound(dt)'''
+position = "after"
+payload = '''
+SMODS.update_background()
+'''
+match_indent = true
+
+# Create SMODS bg stuff
+# Game:main_menu, Game:demo_cta, Game:sandbox
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''if G.SPLASH_BACK then G.SPLASH_BACK:remove(); G.SPLASH_BACK = nil end'''
+position = "after"
+payload = '''
+SMODS.create_bg_canvasses()
+'''
+match_indent = true
+
+# Game:start_run
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+G.SPLASH_BACK:set_alignment({
+        major = G.play,
+        type = 'cm',
+        bond = 'Strong',
+        offset = {x=0,y=0}
+    })
+'''
+position = "after"
+payload = '''
+SMODS.create_bg_canvasses()
+'''
+match_indent = true
