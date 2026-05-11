@@ -367,7 +367,7 @@ function SMODS.create_shop_card(area)
         type = SMODS.poll_object_type({seed = 'cdt'..G.GAME.round_resets.ante}),
         area = area
     }
-    card_args.key = SMODS.poll_object({type = card_args.type, append = 'sho'})
+    card_args.key = SMODS.poll_object({type = card_args.type, append = 'sho', guaranteed = card_args.type == 'Enhanced'})
     if card_args.key == 'INTERNAL_PLAYING_CARD' then card_args.key = nil; card_args.set = 'Base' end
 
     local flags = SMODS.calculate_context({create_shop_card = true, set = card_args.type, key = card_args.key, area = card_args.area})
