@@ -62,6 +62,14 @@ pattern = '''(extern|uniform)\s+(number|float|vec2|vec3|vec4|mat2|mat3|mat4)'''
 payload = '''$1 highp $2'''
 position = 'at'
 
+# explicit mediump may cause issues because we've set the default to highp
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''mediump\s+(number|float|vec2|vec3|vec4|mat2|mat3|mat4)'''
+payload = '''highp $1'''
+position = 'at'
+
 ### let's put this on the wall of jank
 # [[patches]]
 # [patches.regex]
