@@ -41,29 +41,6 @@ match_indent = true
 [patches.pattern]
 target = 'card.lua'
 match_indent = true
-position = 'after'
-pattern = '''
-if delay_sprites then 
-'''
-payload = '''
- if delay_sprites ~= 'quantum' then
-'''
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'before'
-pattern = '''
-else
-    self:set_sprites(center)
-'''
-payload = '''
-end
-'''
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
 position = 'at'
 pattern = '''
 self:set_sprites(center)
@@ -433,13 +410,11 @@ payload = '''
     end'''
 
 [[patches]]
-[patches.pattern]
+[patches.regex]
 target = 'functions/common_events.lua'
-pattern = "local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, front, center,"
-match_indent = true
+pattern = "local front ="
 position = 'at'
-payload = '''
-local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, SMODS.set_create_card_front or front, center,'''
+payload = "local front = SMODS.set_create_card_front or"
 
 [[patches]]
 [patches.pattern]
@@ -683,4 +658,67 @@ remove_all(self.children)
 '''
 payload = '''
 if self.canvas_text then SMODS.clean_up_canvas_text(self) end
+'''
+
+# Card:set_cost()
+# Split Card:set_cost into Card:set_cost_value and Card:set_sell_value
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = false
+position = 'at'
+pattern = '''
+    if self.area and self.ability.couponed and (self.area == G.shop_jokers or self.area == G.shop_booster) then self.cost = 0 end
+    self.sell_cost_label = self.facing == 'back' and '?' or self.sell_cost
+end
+'''
+payload = '''
+end
+'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = false
+position = 'after'
+pattern = '''
+function Card:set_cost()
+    self.extra_cost = 0 + G.GAME.inflation
+'''
+payload = '''
+
+    self:set_cost_value()
+    self:set_sell_value()
+
+    if self.area and self.ability.couponed and (self.area == G.shop_jokers or self.area == G.shop_booster) then self.cost = 0 end
+    self.sell_cost_label = self.facing == 'back' and '?' or self.sell_cost
+end
+
+function Card:set_cost_value()
+'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = false
+position = 'after'
+pattern = '''
+    if self.ability.rental then self.cost = 1 end
+'''
+payload = '''
+end
+
+function Card:set_sell_value()
+'''
+
+# create_card now supports card scale
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = false
+position = 'at'
+pattern = '''    
+local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, front, center,
+'''
+payload = '''
+SMODS.create_card_scale = SMODS.create_card_scale or {w = 1, h = 1}
+local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W*SMODS.create_card_scale.w, G.CARD_H*SMODS.create_card_scale.h, front, center,
 '''

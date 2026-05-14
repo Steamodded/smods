@@ -19,7 +19,7 @@
 ---@field inject? fun(self: SMODS.Shader|table, i?: number) Called during `inject_class`. Injects the object into the game. 
 ---@field take_ownership? fun(self: SMODS.Shader|table, key: string, obj: SMODS.Shader|table, silent?: boolean): nil|table|SMODS.Shader Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.Shader|table, key: string): SMODS.Shader|table? Returns an object if one matches the `key`. 
----@field send_vars? fun(self: SMODS.Shader|table, sprite: Sprite, card: nil|Card): table? Used to send extra args to the shader via `Shader:send(key, value)`. 
+---@field send_vars? fun(sprite: Sprite, card: nil|Card): table? Used to send extra args to the shader via `Shader:send(key, value)`. 
 ---@overload fun(self: SMODS.Shader): SMODS.Shader
 SMODS.Shader = setmetatable({}, {
     __call = function(self)

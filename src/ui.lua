@@ -9,13 +9,16 @@ function SMODS.push_to_stencil_stack(stencil_fn)
     local old_level = #SMODS.stencil_stack
 	local new_level = old_level + 1
 
-    love.graphics.setStencilTest("equal", old_level)
+    if old_level == 0 then
+        SMODS.reset_stencil_stack()
+    end
+
+    SMODS.stencil_stack[new_level] = stencil_fn
+
 	love.graphics.stencil(function()
 		stencil_fn(false)
 	end, "increment", 1, true)
 	love.graphics.setStencilTest("equal", new_level)
-
-	SMODS.stencil_stack[new_level] = stencil_fn
 end
 function SMODS.pop_from_stencil_stack()
     local old_level = #SMODS.stencil_stack
@@ -26,13 +29,16 @@ function SMODS.pop_from_stencil_stack()
 		return
 	end
 
-    love.graphics.setStencilTest("equal", old_level)
-	love.graphics.stencil(function()
-		stencil_fn(true)
-	end, "decrement", 1, true)
-	love.graphics.setStencilTest("equal", new_level)
+    SMODS.stencil_stack[old_level] = nil
 
-	SMODS.stencil_stack[old_level] = nil
+    if new_level == 0 then
+        SMODS.reset_stencil_stack()
+    else
+        love.graphics.stencil(function()
+            stencil_fn(true)
+        end, "decrement", 1, true)
+        love.graphics.setStencilTest("equal", new_level)
+    end
 end
 function SMODS.reset_stencil_stack()
     EMPTY(SMODS.stencil_stack)
@@ -55,31 +61,62 @@ end
 
 --
 
+local uieInitRef = UIElement.init
+function UIElement:init(...)
+    uieInitRef(self, ...)
+    if self.config and self.config.no_overflow and self.config.no_overflow == true then
+        self.config.no_overflow = "vh"
+    end
+end
+
 local uieDrawChildrenRef = UIElement.draw_children
 function UIElement:draw_children(...)
 	local stenciled = false
 	if self.states.visible and self.config and self.config.no_overflow then
-        -- draw stencil for overflow container
-		stenciled = true
-		SMODS.push_to_stencil_stack(function(exit)
-			prep_draw(self, 1)
-			love.graphics.scale(1 / G.TILESIZE)
-			love.graphics.setColor(0, 0, 0, 1)
+        local v = string.find(self.config.no_overflow, 'v')
+        local h = string.find(self.config.no_overflow, 'h')
+        if v or h then
+            -- draw stencil for overflow container
+            stenciled = true
+            SMODS.push_to_stencil_stack(function(exit)
+                prep_draw(self, 1)
+                love.graphics.scale(1 / G.TILESIZE)
+                love.graphics.setColor(0, 0, 0, 1)
 
-			if self.config.r and self.VT.w > 0.01 then
-				self:draw_pixellated_rect("fill", 0)
-			else
-				love.graphics.rectangle("fill", 0, 0, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE)
-			end
+                local ds = math.max(G.WINDOWTRANS.w, G.WINDOWTRANS.h) * math.max(1 / self.VT.scale, 1) * G.TILESIZE * 3
 
-			love.graphics.pop()
-		end)
+                if v and h then
+                    if self.config.r and self.VT.w > 0.01 then
+                        self:draw_pixellated_rect("fill", 0)
+                    else
+                        love.graphics.rectangle("fill", 0, 0, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE)
+                    end
+                elseif v then
+                    love.graphics.rectangle("fill", -ds, 0, self.VT.w * G.TILESIZE + 2 * ds, self.VT.h * G.TILESIZE)
+                elseif h then
+                    love.graphics.rectangle("fill", 0, -ds, self.VT.w * G.TILESIZE, self.VT.h * G.TILESIZE + 2 * ds)
+                end
+    
+                love.graphics.pop()
+            end)
+        end
 	end
 	uieDrawChildrenRef(self, ...)
     -- cancel stencil for overflow container
 	if stenciled then SMODS.pop_from_stencil_stack() end
 end
 
+local old_collides_with_point = Node.collides_with_point
+function Node:collides_with_point(point)
+    if self.collide_check_timer == G.TIMERS.REAL and self.collide_check_point == point then
+		return self.collide_check_result or false
+	end
+    self.collide_check_timer = G.TIMERS.REAL
+    self.collide_check_point = point
+    local r = old_collides_with_point(self, point)
+    self.collide_check_result = r
+    return r
+end
 
 -- collision check
 function Node:inside_overflow_boundaries(point)
@@ -89,17 +126,41 @@ function Node:inside_overflow_boundaries(point)
 	end
 	self.overflow_check_timer = G.TIMERS.REAL
     self.overflow_check_point = point
-    local r = true
+
+    local set_value = function(r)
+        self.overflow_check_result = r
+        return r
+    end
 
     -- No parent = no overflow can be done so collide as usual
-    if not self.parent then r = true
-    -- If parent has overflow then we should check do we collide with it and if not, all children in it cannot be collided too
-    elseif self.parent.config and self.parent.config.no_overflow and not Node.collides_with_point(self.parent, point) then r = false
-    -- Otherwise process all parents looking for first non-collideable overflow
-    else r = Node.inside_overflow_boundaries(self.parent, point) end
+    if not self.parent then return set_value(true) end
 
-    self.overflow_check_result = r
-    return r
+    -- Parent has overflow = should check do we collide with it, accounting overflow directions
+    if self.parent.config and self.parent.config.no_overflow then
+        local v, h = string.find(self.parent.config.no_overflow, "v"), string.find(self.parent.config.no_overflow, "h")
+        -- Do additional check only if at least one direction present
+        if v or h then
+            local r = Node.collides_with_point(self.parent, point)
+            local T = self.parent.CT or self.parent.T
+            local _p = self.parent.ARGS.collides_with_point_point
+            local _b = self.parent.states.hover.is and G.COLLISION_BUFFER or 0
+            
+            -- Both directions = use default collision check
+            if v and h then
+            -- Vertical = only y coordinate
+            elseif v then
+                r = _p.y >= T.y - _b and _p.y <= T.y + T.h + _b
+            -- Horizontal = only x coordinate
+            elseif h then
+                r = _p.x >= T.x - _b and _p.x <= T.x + T.w + _b 
+            end
+
+            -- No collision = mark it and children as non-collideable
+            if not r then return set_value(false) end
+        end
+    end
+
+    return set_value(Node.inside_overflow_boundaries(self.parent, point) or false)
 end
 
 --
@@ -138,7 +199,7 @@ function SMODS.UIScrollBox:init(args)
 	self.content_container = UIBox(args.container)
 
     args.overflow.config = SMODS.merge_defaults(args.overflow.config, {})
-    args.overflow.node_config = SMODS.merge_defaults(args.overflow.node_config, { colour = G.C.CLEAR, no_overflow = true })
+    args.overflow.node_config = SMODS.merge_defaults(args.overflow.node_config, { colour = G.C.CLEAR, no_overflow = "vh" })
 	args.overflow.definition = {
 		n = G.UIT.ROOT,
 		config = args.overflow.node_config,
@@ -382,7 +443,25 @@ function Game:update(dt)
             node.children.alert.states.collide.can = false
         end
     end
+    if math.abs(SMODS.wheel_velocity.x) > 0.01 then
+		SMODS.wheel_velocity.x = SMODS.wheel_velocity.x - SMODS.wheel_velocity.x * math.min(dt * 15, 1)
+	else
+		SMODS.wheel_velocity.x = 0
+	end
+	if math.abs(SMODS.wheel_velocity.y) > 0.01 then
+		SMODS.wheel_velocity.y = SMODS.wheel_velocity.y - SMODS.wheel_velocity.y * math.min(dt * 15, 1)
+	else
+		SMODS.wheel_velocity.y = 0
+	end
     gameUpdateRef(self, dt)
+end
+
+SMODS.wheel_velocity = {x = 0, y = 0}
+local scrollRef = love.wheelmoved or function(x, y) end
+function love.wheelmoved(x, y)
+	scrollRef(x, y)
+    SMODS.wheel_velocity.x = SMODS.wheel_velocity.x + x
+	SMODS.wheel_velocity.y = SMODS.wheel_velocity.y + y
 end
 
 local function wrapText(text, maxChars)
@@ -1141,18 +1220,22 @@ function getModtagInfo(mod)
             tag_message = 'load_failure_m'
             specific_vars = {mod.main_file}
         end
-        if mod.load_issues.prefix_conflict then
+        if next(mod.load_issues.prefix_conflicts or {}) then
             tag_message = 'load_failure_p'
-            local name = mod.load_issues.prefix_conflict
-            for _, m in ipairs(SMODS.mod_list) do
-                if m.id == mod.load_issues.prefix_conflict then
-                    name = m.name or name
-                end
+            local conflict_str = ''
+            for _,id in ipairs(mod.load_issues.prefix_conflicts) do
+                conflict_str = conflict_str..SMODS.Mods[id].name..', '
             end
-            specific_vars = {name}
+            conflict_str = conflict_str:sub(1,-3)
+            specific_vars = {conflict_str}
         end
         if mod.disabled then
-            tag_pos = {x = 1, y = 0}
+            if mod.icon_path then
+                tag_pos = {x = 0, y = 0}
+                tag_atlas = mod.prefix and mod.prefix .. '_modicon' or 'modicon'
+            else
+                tag_pos = {x = 1, y = 0}
+            end
             tag_message = 'load_disabled'
         end
     end
@@ -1172,6 +1255,7 @@ function buildModtag(mod)
     tag_sprite:define_draw_steps({
         {shader = 'dissolve', shadow_height = 0.05},
         {shader = 'dissolve'},
+		mod.icon_path and mod.disabled and {shader = 'dissolve', shadow_height = 0, tilt_shadow = 1} or nil, --this is really gross, blame thunk
     })
     tag_sprite.float = true
     tag_sprite.states.hover.can = true
@@ -1250,10 +1334,45 @@ local function createClickableModBox(modInfo, scale)
     end
     bg_col = mix_colours({0.5,0.5,0.5,0.2},col,0.5)
     local label_nodes = {}
-    local modname_split = SMODS.smart_line_splitter(modInfo.name,18,true)
-    for _,v in ipairs(modname_split) do
-        table.insert(label_nodes,createTextColNode(v, scale * 1.2, text_col))
-    end
+    table.insert(label_nodes, {
+        n = G.UIT.R,
+        nodes = {{
+            n = G.UIT.O,
+            config = { object = SMODS.UIScrollBox({
+                content = DynaText({
+                    string = modInfo.name,
+                    colours = { text_col or G.C.UI.TEXT_LIGHT },
+                    shadow = true,
+                    scale = scale,
+                }),
+                container = {
+                    config = {
+                        can_collide = false,
+                    }
+                },
+                overflow = {
+                    node_config = {
+                        no_overflow = "h",
+                        w = 3,
+                    },
+                    config = {
+                        can_collide = false,
+                    }
+                },
+                sync_mode = "progress",
+                scroll_move = function(self, dt)
+                    self.real_progress = ((self.real_progress or 0) + G.real_dt / 8) % 1
+                    if self.real_progress < 0.25 then
+                        self.scroll_progress.x = 0
+                    elseif self.real_progress > 0.75 then
+                        self.scroll_progress.x = 1
+                    else
+                        self.scroll_progress.x = (self.real_progress - 0.25) / 0.5
+                    end
+                end,
+            })}
+        }}
+    })
     local version_col = copy_table(G.C.WHITE)
     version_col[4] = 0.6
     if modInfo.lovely_only then
@@ -1284,6 +1403,32 @@ local function createClickableModBox(modInfo, scale)
             }
         })
     end
+
+    -- if modInfo.available_versions and not modInfo.disabled then
+    --     local options = {}
+    --     local init_value
+    --     for i,v in ipairs(modInfo.available_versions) do
+    --         options[#options+1] = tostring(i)
+    --         if v == modInfo then init_value = tostring(i) end
+    --     end
+    --     modInfo.init_version_option = init_value
+    --     modInfo.saved_version_option = init_value
+    --     table.insert(under_checkbox_nodes, SMODS.GUI.dropdown_select({
+    --         ref_table = modInfo,
+    --         ref_value = "selected_version_option",
+    --         init_value = init_value,
+    --         options = options,
+    --         display_choice_func = function(opt)
+    --             return modInfo.available_versions[tonumber(opt)].version
+    --         end,
+    --         scale = scale*0.8,
+    --         align = "cm",
+    --         option_align = "cm",
+    --         callback = "mod_version_select",
+    --         max_menu_h = 3,
+    --         close_on_select = true,
+    --     }))
+    -- end
     if #sub_node_1 > 0 then
         table.insert(label_nodes, {
             n = G.UIT.R,
@@ -1294,23 +1439,45 @@ local function createClickableModBox(modInfo, scale)
         })
     end
     if not modInfo.lovely_only then
-        local tx = concatAuthors(modInfo.author, 12)
+        local tx = localize('b_by') .. concatAuthors(modInfo.author, 12)
         local the_colour = mix_colours(G.C.BLACK, G.C.WHITE, 0.2)
         the_colour[4] = 0.8
-        local authorDynatext = DynaText{
-            string = tx,
-            scale = scale * 0.7,
-            colours = {the_colour},
-            shadow = true,
-            maxw = 2.4,
-            marquee = true,
-        }
-        table.insert(label_nodes,
-            { n = G.UIT.R, config = { padding = 0, align = "lc", maxw = 4.5, maxh = 1.5, }, nodes = {
-                { n = G.UIT.T, config = {text= localize('b_by'), scale = scale*0.7, colour = the_colour}},
-                {
-                    n = G.UIT.O, config = {object = authorDynatext}
+        local scroll_container = SMODS.UIScrollBox({
+            content = DynaText{
+                string = tx,
+                scale = scale * 0.7,
+                colours = {the_colour},
+                shadow = true,
+            },
+            container = {
+                config = {
+                    can_collide = false
                 }
+            },
+            overflow = {
+                node_config = {
+                    w = 3,
+                    no_overflow = "h",
+                },
+                config = {
+                    can_collide = false
+                }
+            },
+            sync_mode = "progress",
+            scroll_move = function(self, dt)
+                self.real_progress = ((self.real_progress or 0) + G.real_dt / 8) % 1
+                if self.real_progress < 0.25 then
+                    self.scroll_progress.x = 0
+                elseif self.real_progress > 0.75 then
+                    self.scroll_progress.x = 1
+                else
+                    self.scroll_progress.x = (self.real_progress - 0.25) / 0.5
+                end
+            end,
+        })
+        table.insert(label_nodes,
+            { n = G.UIT.R, config = { padding = 0, align = "lc" }, nodes = {
+                { n = G.UIT.O, config = {object = scroll_container}}
             }
         })
     end
@@ -1413,6 +1580,34 @@ function G.FUNCS.mods_buttons_page(options)
     if not options or not options.cycle_config then
         return
     end
+end
+
+function G.FUNCS.mod_version_select(options)
+    -- options.config.value
+    -- options.config.args_table.ref_table
+    -- print(options.config)
+    local i = options.config.value
+    local modInfo = options.config.args_table.ref_table
+    local saved = modInfo.saved_version_option
+    local selected = modInfo.selected_version_option
+    local init = modInfo.init_version_option
+    if saved == selected then return end
+    local prev_mod = modInfo.available_versions[tonumber(saved)]
+    require"SMODS.preflight.loader".addToBlacklist(prev_mod.blacklist_name)
+    prev_mod.blacklisted = true
+    local new_mod = modInfo.available_versions[tonumber(selected)]
+    if new_mod.lovelyIgnored then
+        NFS.remove(SMODS.MODS_DIR.. "/" .. new_mod.blacklist_name ..'/.lovelyignore')
+        new_mod.lovelyIgnored = false
+    end
+    if modInfo.blacklisted then
+        require"SMODS.preflight.loader".removeFromBlacklist(new_mod.blacklist_name)
+        new_mod.blacklisted = false
+    end
+    local toChange = 0
+    if saved == init then toChange = 1 end
+    if selected == init then toChange = -1 end
+    SMODS.full_restart = SMODS.full_restart + toChange
 end
 
 function SMODS.load_mod_config(mod)
@@ -2563,4 +2758,448 @@ function G.UIDEF.custom_deck_tab(_suit)
     G.FUNCS.update_collab_cards(current_option, _suit, true)
 
     return {n=G.UIT.ROOT, config={align = "cm", padding = 0, colour = G.C.CLEAR, r = 0.1, minw = 7, minh = 4.2}, nodes=t}
+end
+
+function SMODS.GUI.scrollbar(args)
+    if not args.scroll_collision_obj and (not args.ref_table or not args.ref_value) then
+        error("args must have a ref_table and a ref_value if args.scroll_collision_obj is nil")
+    end
+    if not args.max then
+        args.max = 1
+    end
+    if not args.min then
+        args.min = 0
+    end
+    if args.horizontal then
+        if not args.knob_h and not args.h then
+            error("Height of scrollbar or height of knob must be specified if scrollbar is horizontal")
+        end
+    else
+        if not args.knob_w and not args.w then
+            error("Width of scrollbar or width of knob must be specified if scrollbar is vertical")
+        end
+    end
+    if not args.ref_table or not args.ref_value then
+        args.ref_table = args.scroll_collision_obj.scroll_offset
+        args.ref_value = args.horizontal and "x" or "y"
+        local dim = args.horizontal and "w" or "h"
+        args.max = args.scroll_collision_obj.content.T[dim] - args.scroll_collision_obj.T[dim]
+        args.scroll_collision_obj.scroll_args.sync_mode = "offset"
+        args.scroll_collision_obj.scroll_sync_mode = "offset"
+    end
+    if args.scroll_collision_obj and (not args.scroll_collision_obj.is or not args.scroll_collision_obj:is(SMODS.UIScrollBox)) then
+        error("args.scroll_collision_obj is not an UIScrollBox")
+    end
+	local track = UIBox({
+		definition = {
+			n = G.UIT.ROOT,
+			config = {
+				r = 0.25,
+				minh = not args.horizontal and args.h or nil,
+				minw = args.horizontal and args.w or nil,
+				colour = args.bg_colour or G.C.CLEAR,
+				focus_args = { type = "slider" },
+				collideable = true,
+				hover = true,
+			},
+			nodes = {
+				{
+					n = args.horizontal and G.UIT.C or G.UIT.R,
+					config = {
+						colour = args.colour or G.C.CLEAR,
+					},
+				},
+				{
+					n = args.horizontal and G.UIT.C or G.UIT.R,
+					config = {
+						collideable = true,
+						func = "scrollbar",
+						scroll_dir = args.horizontal and "h" or "v",
+						id = "track_item",
+						minh = args.knob_h or (args.horizontal and args.h or args.w),
+						minw = args.knob_w or (args.horizontal and args.h or args.w),
+						colour = args.knob_colour or G.C.WHITE,
+						r = 0,
+						ref_table = args.ref_table,
+						ref_value = args.ref_value,
+						min = args.min,
+						max = args.max,
+                        scroll_mult = args.scroll_mult,
+						offset = {
+							x = not args.horizontal and 0 or nil,
+							y = args.horizontal and 0 or nil,
+						},
+						scroll_collision_obj = args.scroll_collision_obj,
+					},
+				},
+			},
+		},
+		config = {
+        },
+	})
+	return {
+		n = args.ui_type or (args.horizontal and G.UIT.R or G.UIT.C),
+		config = {},
+		nodes = {
+			{
+				n = G.UIT.O,
+				config = {
+					object = track,
+				},
+			},
+		},
+	}
+end
+
+function G.FUNCS.scrollbar(e)
+	e.states.drag.can = true
+	local scrollbar_track = e.UIBox
+	scrollbar_track.states.drag.can = true
+	local ref_table = e.config.ref_table
+    local ref_value = e.config.ref_value
+    local scrollbox = e.config.scroll_collision_obj
+    local percent = (ref_table[ref_value] - e.config.min) / (e.config.max - e.config.min)
+    local should_scroll = true
+    if scrollbox then
+		if e.config.scroll_dir == "v" then
+            local h = scrollbox.scroll_args.overflow.node_config.h or scrollbox.scroll_args.overflow.node_config.maxh
+			should_scroll = scrollbox.content.T.h > (h or math.huge)
+		else
+            local w = scrollbox.scroll_args.overflow.node_config.w or scrollbox.scroll_args.overflow.node_config.maxw
+			should_scroll = scrollbox.content.T.w > (w or math.huge)
+		end
+    end
+	if should_scroll then
+        if
+            G.CONTROLLER
+            and G.CONTROLLER.dragging.target
+            and (G.CONTROLLER.dragging.target == e or G.CONTROLLER.dragging.target == scrollbar_track)
+        then
+            if e.config.scroll_dir == "h" then
+                percent = (G.CURSOR.T.x - e.parent.T.x - G.ROOM.T.x - e.T.w / 2) / (scrollbar_track.T.w - e.T.w)
+            else
+                percent = (G.CURSOR.T.y - e.parent.T.y - G.ROOM.T.y - e.T.h / 2) / (scrollbar_track.T.h - e.T.h)
+            end
+            percent = math.max(0, math.min(1, percent))
+            ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
+        elseif scrollbox and scrollbox:collides_with_point(G.CURSOR.T) or scrollbar_track:collides_with_point(G.CURSOR.T) then
+            local scroll_velocity = SMODS.wheel_velocity.y * (e.config.scroll_mult or 1) / G.TILESIZE
+            percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
+            percent = math.max(0, math.min(1, percent))
+            ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
+        end
+    end
+    if e.config.scroll_dir == "h" then
+        scrollbar_track.UIRoot.children[1].config.minw = percent * (scrollbar_track.T.w - e.T.w)
+    else
+        scrollbar_track.UIRoot.children[1].config.minh = percent * (scrollbar_track.T.h - e.T.h)
+    end
+    scrollbar_track:recalculate()
+end
+
+function SMODS.GUI.dropdown_select(args)
+    if not args.ref_table or not args.ref_value then
+        error("args.ref_table and args.ref_value must both be defined")
+    end
+    args.ref_table[args.ref_value] = args.ref_table[args.ref_value] or args.init_value
+    args.default = args.default or args.options[1]
+    args.scale = args.scale or 0.4
+    local needs_default = true
+    for _, v in ipairs(args.options) do
+        if args.ref_table[args.ref_value] == v then
+            needs_default = false
+            break
+        end
+    end
+    if needs_default and not args.ref_table[args.ref_value] then
+        args.ref_table[args.ref_value] = args.default
+    end
+    args.dropdown_bg_colour = args.dropdown_bg_colour or lighten(G.C.BLACK, 0.2)
+    args.selected_colour = args.selected_colour or G.C.BLACK
+	local arrow = SMODS.create_sprite(0, 0, args.scale * 0.75, args.scale * 0.75, "dropdown_arrow", { x = 0, y = 0 })
+    return {
+        n = args.ui_type or G.UIT.R,
+        config = {
+            align = "cm",
+        },
+        nodes = {
+            {
+                n = G.UIT.R,
+                config = {
+                    colour = args.colour or G.C.RED,
+                    r = 0.1,
+                    padding = 0.1,
+                    button_dist = 0,
+                    button = "toggle_dropdown_menu",
+                    hover = true,
+                    args_table = args,
+                    id = args.id
+                },
+                nodes = {
+                    {
+                        n = G.UIT.C,
+                        config = {
+                            minw = args.minw,
+                            align = args.align or "cm",
+                        },
+                        nodes = {
+                            {
+                                n = G.UIT.O,
+                                config = {
+                                    object = DynaText({
+                                        string = {
+                                            {
+                                                ref_table = args.display_choice_func and setmetatable({}, {
+                                                    __index = function(_, _)
+                                                        return args.display_choice_func(args.ref_table[args.ref_value])
+                                                    end
+                                                }) or args.ref_table,
+                                                ref_value = args.ref_value,
+                                            }
+                                        },
+                                        colours = { args.text_colour or G.C.UI.TEXT_LIGHT },
+                                        scale = args.scale,
+                                        non_recalc = type(args.minw) == "number",
+                                        shadow = true,
+                                        silent = true,
+                                    })
+                                },
+                            },
+                        }
+                    },
+                    {
+                        n = G.UIT.C,
+                        config = { align = "cm" },
+                        nodes = {
+                            {
+                                n = G.UIT.O,
+                                config = {
+                                    align = "cm",
+                                    object = arrow,
+                                },
+                            }
+                        }
+                    },
+                },
+            },
+        },
+    }
+end
+
+function G.FUNCS.toggle_dropdown_menu(e)
+    local cfg = {
+        align = "bm",
+        offset = { x = 0, y = 0.13 },
+        major = e,
+        parent = G.OVERLAY_MENU or G.ROOM_ATTACH,
+        instance_type = "DROPDOWN"
+    }
+    if not e.config.dropdown_obj then
+        e.config.dropdown_obj = UIBox({
+            definition = SMODS.GUI.create_UIBox_dropdown_menu(e.config.args_table, e.T.w, e),
+            config = cfg
+        })
+        e.config.dropdown_obj.states.visible = false
+        if e.config.dropdown_obj.T.y + e.config.dropdown_obj.T.h > G.ROOM.T.h then
+            e.config.dropdown_obj.alignment.type = "tm"
+            e.config.dropdown_obj.alignment.offset.y = -0.13
+            e.config.dropdown_obj:recalculate()
+        end
+        G.E_MANAGER:add_event(Event({
+            timer = "REAL",
+            blockable = false,
+            blocking = false,
+            func = function()
+                e.config.dropdown_obj.states.visible = true
+                return true
+            end
+        }))
+        e.children[2].children[1].config.object.T.r = e.children[2].children[1].config.object.T.r + math.pi
+    else
+        e.config.dropdown_obj:remove();
+        e.config.dropdown_obj = nil
+        e.children[2].children[1].config.object.T.r = e.children[2].children[1].config.object.T.r - math.pi
+    end
+end
+
+local uie_remove_ref = UIElement.remove
+function UIElement:remove()
+    if self.config.dropdown_obj then
+        self.config.dropdown_obj:remove()
+        self.config.dropdown_obj = nil
+    end
+    uie_remove_ref(self)
+end
+
+function G.FUNCS.dropdown_select(e)
+    local args = e.config.args_table
+    if e.config.value == args.ref_table[args.ref_value] and not args.no_unselect then
+        args.ref_table[args.ref_value] = args.default
+    else
+        args.ref_table[args.ref_value] = e.config.value
+    end
+    if args.callback then
+        G.FUNCS[args.callback](e)
+    end
+    if args.close_on_select then
+        G.FUNCS.toggle_dropdown_menu(e.config.dropdown_button)
+    end
+end
+
+function G.FUNCS.update_dropdown_select(e)
+    local args = e.config.args_table
+    if type(args.is_option_disabled) == "function" and args.is_option_disabled(e.config.value) then
+        e.config.button = nil
+        e.config.colour = args.disabled_colour or G.C.CLEAR
+        e.config.hover = false
+    else
+        e.config.button = "dropdown_select"
+        if e.config.value == args.ref_table[args.ref_value] then
+            e.config.colour = args.selected_colour
+        else
+            e.config.colour = args.dropdown_bg_colour
+        end
+        e.config.hover = true
+    end
+end
+
+function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
+    local rows = {}
+    for _, opt in ipairs(args.options) do
+        rows[#rows + 1] = {
+            n = G.UIT.R,
+            config = {
+                align = args.option_align or "cl",
+                button_dist = 0,
+                r = 0.1,
+                hover = true,
+                button = "dropdown_select",
+                func = "update_dropdown_select",
+                value = opt,
+                colour = args.dropdown_bg_colour,
+                args_table = args,
+                dropdown_button = parent,
+                minw = args.max_menu_h and (parent_width - 0.55) or (parent_width - 0.3)
+            },
+            nodes = {
+                type(args.dropdown_element_def) == "function" and args.dropdown_element_def(opt, args) or {
+                    n = G.UIT.C,
+                    config = { align = "cm", padding = 0.1 },
+                    nodes = {
+                        {
+                            n = G.UIT.T,
+                            config = {
+                                scale = args.dropdown_scale or 0.4,
+                                text = args.display_choice_func and args.display_choice_func(opt) or opt,
+                                colour = args.dropdown_text_colour or G.C.UI.TEXT_LIGHT
+                            },
+                        },
+                    },
+                },
+            },
+        }
+    end
+	local scrollbox = SMODS.UIScrollBox({
+		content = {
+			definition = {
+				n = G.UIT.ROOT,
+				config = { colour = G.C.CLEAR },
+				nodes = {
+					{
+						n = G.UIT.C,
+						config = { align = "cm", padding = 0.05 },
+						nodes = rows,
+					},
+				},
+			},
+            config = { align = "cm" },
+		},
+        overflow = {
+            node_config = {
+				maxh = args.max_menu_h,
+				r = 0.1,
+			},
+        },
+        sync_mode = "offset",
+	})
+    local force_no_scrollbar = false
+    if args.max_menu_h and scrollbox.content.UIRoot.T.h < args.max_menu_h then
+        force_no_scrollbar = true
+    end
+    if force_no_scrollbar then
+        scrollbox.scroll_args.overflow.node_config.maxh = nil
+    end
+    if args.max_menu_h and not force_no_scrollbar then
+        local total_h = scrollbox.content.UIRoot.T.h
+        local scrollbox_rows = scrollbox.content.UIRoot.children[1].children
+        local curr = args.ref_table[args.ref_value]
+        local final_h = 0.05
+        local found = false
+        for _, r in ipairs(scrollbox_rows) do
+            if r.config.value == curr then
+                found = true
+                final_h = final_h + (r.T.h) / 2
+                break
+            else
+                final_h = final_h + r.T.h + 0.05
+            end
+        end
+        if not found then
+            final_h = 0
+        end
+        scrollbox.scroll_offset.y = final_h - (args.max_menu_h / 2)
+        scrollbox.scroll_offset.y = math.min(math.max(scrollbox.scroll_offset.y, 0), total_h - args.max_menu_h)
+    end
+    return {
+        n = G.UIT.ROOT,
+        config = {
+            padding = 0.05,
+            emboss = 0.05,
+            colour = args.border_colour or lighten(G.C.JOKER_GREY, 0.5),
+            align = "cm",
+            r = 0.1,
+            minw = parent_width,
+        },
+        nodes = {
+            {
+                n = G.UIT.R,
+                config = {
+                    colour = args.dropdown_bg_colour,
+                    align = "cm",
+                    r = 0.1,
+                    padding = 0.05,
+                    minw = parent_width - 0.1
+                },
+                nodes = {
+                    {
+                        n = G.UIT.C,
+                        config = {},
+                        nodes = {
+                            {
+                                n = G.UIT.O,
+                                config = {
+                                    object = scrollbox,
+                                },
+                            }
+                        }
+                    },
+                    args.max_menu_h and {
+                        n = G.UIT.C,
+                        config = {
+                            padding = 0.05,
+                        },
+                        nodes = {
+                            SMODS.GUI.scrollbar({
+                                w = 0.1,
+                                h = math.min(args.max_menu_h, scrollbox.content.UIRoot.T.h) - 0.1,
+                                scroll_collision_obj = scrollbox,
+                                knob_h = args.max_menu_h / 6,
+                                bg_colour = { 0, 0, 0, 0.15 },
+                            })
+                        }
+                    } or nil,
+                }
+            }
+        }
+    }
 end

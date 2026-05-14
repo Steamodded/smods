@@ -120,7 +120,7 @@ function Card:__call(...) return self end
 ---@param self Card
 ---@param vars_only? boolean Only return description values
 ---@return table # Becomes `loc_vars` if `vars_only` is `true`. 
----@return table? man_start Only returns if `vars_only` is `true`. 
+---@return table? main_start Only returns if `vars_only` is `true`. 
 ---@return table? main_end Only returns if `vars_only` is `true`. 
 --- Handles variables before passing into `generate_card_ui()`. 
 function Card:generate_UIBox_ability_table(vars_only) end
@@ -325,3 +325,12 @@ function pseudorandom_element(_t, seed, args) end
 ---| 'Rare'
 ---| 'Uncommon'
 ---| 'Common'
+
+---@alias PlayAreas
+---| `G.play` # Area for cards played (check during scoring for cards scored)
+---| 'unscored' # Check for unscored cards during scoring
+---| `G.hand` # Area for cards held in hand
+---| `G.jokers` # Joker area
+---| `G.consumeables` # Consumable area
+---| `G.discard` # Discard area
+---| `G.deck` # Deck

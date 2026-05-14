@@ -6,7 +6,8 @@
 ---@field soul_set? string Key to the ConsumableType set this consumable can replace. Requires `hidden` to be true.
 ---@field soul_rate? number Chance this card replaces a consumable. Requires `hidden` to be true.
 ---@field type? SMODS.ConsumableType|table ConsumableType this center belongs to. 
----@field legendaries? (SMODS.Consumable|table)[] All injected "legendary" consumables. 
+---@field legendaries? (SMODS.Consumable|table)[] All injected "legendary" consumables.
+---@field disable_shine? boolean If true, disables the default shine shader (for Spectrals).
 ---@field __call? fun(self: SMODS.Consumable|table, o: SMODS.Consumable|table): nil|table|SMODS.Consumable
 ---@field extend? fun(self: SMODS.Consumable|table, o: SMODS.Consumable|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Consumable|table): boolean? Ensures objects already registered will not register. 
@@ -24,6 +25,7 @@
 ---@field use? fun(self: SMODS.Consumable|table, card: Card|table, area: CardArea|table, copier?: table) Defines behaviour when this consumable is used. 
 ---@field can_use? fun(self: SMODS.Consumable|table, card: Card|table): boolean? Return `true` if the consumable is allowed to be used. 
 ---@field keep_on_use? fun(self: SMODS.Consumable|table, card: Card|table): boolean? Return `true` if the consumable should stay after use.
+---@field calc_dollar_bonus? fun(self: SMODS.Consumable|table, card: Card|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money. 
 ---@field calc_scaling? fun(self: SMODS.Consumable|table, card: Card|table, other_card: Card|table, scaling_value: number, scalar_value: number, args: table): table? Called by `SMODS.scale_card`. Allows detection and modification of cards when scaling values. The return may include a `scaling_value` or `scalar_value` field to modify those values or any standard calculation return.
 ---@overload fun(self: SMODS.Consumable): SMODS.Consumable
 SMODS.Consumable = setmetatable({}, {
