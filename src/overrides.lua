@@ -2873,7 +2873,6 @@ G.FUNCS.change_viewed_back = function(...)
 	return g_funcs_change_viewed_back_ref(...)
 end
 
-<<<<<<< nametextvars
 --Patch to allow `type = "name_text"` to take vars
 local oldlocalize = localize
 function localize(args, misc_cat)
