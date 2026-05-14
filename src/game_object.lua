@@ -2870,10 +2870,18 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 self.obj_buffer,
                 function(a, b)
                     local x, y = self.obj_table[a], self.obj_table[b]
-                    local x_above = self.obj_table[x.above_hand or {}]
-                    local y_above = self.obj_table[y.above_hand or {}]
-                    local function eval(h) return h.mult*h.chips + (h.order_offset or 0) end
-                    return (x_above and (1e-6*eval(x) + eval(x_above)) or eval(x)) > (y_above and (1e-6*eval(y) + eval(y_above)) or eval(y))
+
+                    local function eval(h)
+                        local own_amt = h.mult*h.chips
+                        if h.above_hand and self.obj_table[h.above_hand] then
+                            local above_amt = eval(self.obj_table[h.above_hand])
+                            return above_amt + (own_amt * 1e-6) + (h.order_offset or 0)
+                        end
+
+                        return own_amt + (h.order_offset or 0)
+                    end
+
+                    return eval(x) > eval(y)
                 end
             )
             for i, v in ipairs(self.obj_buffer) do self.obj_table[v].order = i end
