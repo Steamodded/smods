@@ -2888,7 +2888,8 @@ function localize(args, misc_cat)
     end
 
     return ret
-=======
+end
+
 -- let's misuse this for blind size queue
 G.FUNCS.blind_chip_UI_scale = function(e)
 	if not (G.GAME.blind or {}).chips then return end
@@ -2898,5 +2899,4 @@ G.FUNCS.blind_chip_UI_scale = function(e)
 	end
 	G.GAME.blind.chip_text = number_format(blind_chips)
     e.config.scale = scale_number(blind_chips, 0.7, 100000)
->>>>>>> main
 end
