@@ -4137,15 +4137,19 @@ function SMODS.create_unlock_text(center)
 	return localize('k_'..string.lower(center and center.set or 'unknown'))
 end
 
-function SMODS.get_card_by_sort_id(sort_id)
-    for _, pcard in ipairs(G.playing_cards) do
-        if pcard.sort_id == sort_id then
-            return pcard
-        end
-    end
+-- Util function to get a single card by its sort_id.
+function SMODS.get_card_by_sort_id(sort_id, card_lists)
+    card_lists = card_lists or {(G.jokers or {}).cards or {}, (G.consumeables or {}).cards or {}, G.playing_cards}
+	for _, cards in ipairs(card_lists) do
+		for _, card in ipairs(cards) do
+			if card.sort_id == sort_id then return card end
+		end
+	end
 end
 
-function SMODS.get_cards_by_sort_ids(sort_ids)
+-- Util function to get multiple cards by their sort_ids.
+function SMODS.get_cards_by_sort_ids(sort_ids, card_lists)
+    card_lists = card_lists or {(G.jokers or {}).cards or {}, (G.consumeables or {}).cards or {}, G.playing_cards}
     local sort_ids_map = {}
     if sort_ids[1] and type(sort_ids[1]) == "number" then
         for _, sort_id in ipairs(sort_ids) do
@@ -4155,9 +4159,11 @@ function SMODS.get_cards_by_sort_ids(sort_ids)
         sort_ids_map = sort_ids
     end
     local ret = {}
-    for _, pcard in ipairs(G.playing_cards) do
-        if sort_ids_map[pcard.sort_id] then
-            ret[pcard.sort_id] = pcard
+    for _, cards in ipairs(card_lists) do
+        for _, card in ipairs(cards) do
+            if sort_ids_map[card.sort_id] then
+                ret[card.sort_id] = card
+            end
         end
     end
     return ret

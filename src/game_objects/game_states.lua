@@ -575,8 +575,8 @@ SMODS.GameState {
             G.GAME.current_round.hands_played = data.hands_played
             ease_discard(G.GAME.current_round.discards_left - data.discards_left)
             G.GAME.current_round.discards_used = data.discards_used
-            local hand_cards = SMODS.get_cards_by_sort_ids(data.hand_cards)
-            local discarded_cards = SMODS.get_cards_by_sort_ids(data.discarded_cards)
+            local hand_cards = SMODS.get_cards_by_sort_ids(data.hand_cards, {G.playing_cards})
+            local discarded_cards = SMODS.get_cards_by_sort_ids(data.discarded_cards, {G.playing_cards})
             for _, pcard_sort_id in ipairs(data.hand_cards) do
                 local pcard = hand_cards[pcard_sort_id]
                 if pcard and not pcard.removed then
