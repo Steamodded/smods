@@ -1258,7 +1258,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = self.set == 'Enhanced' and 'temp_value' or localize { type = 'name', set = res.name_set or target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {} }
             elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
-                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set }
+                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set, vars = res.name_vars or target.vars or {} }
                 if (not full_UI_table.from_detailed_tooltip or full_UI_table.info[1] == desc_nodes) 
                     and not full_UI_table.no_styled_name then
                     desc_nodes.name_styled = {}
@@ -1502,7 +1502,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize{type = 'name', set = 'Other', key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {}}
             elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
-                desc_nodes.name = localize { type = 'name_text', key = res.name_key or target.key, set = 'Other' }
+                desc_nodes.name = localize { type = 'name_text', key = res.name_key or target.key, set = 'Other', vars = res.name_vars or target.vars or {} }
                 if (not full_UI_table.from_detailed_tooltip or full_UI_table.info[1] == desc_nodes) 
                     and not full_UI_table.no_styled_name then
                     desc_nodes.name_styled = {}
@@ -1928,7 +1928,7 @@ SMODS.UndiscoveredCompat = {
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize { type = 'name', set = res.name_set or target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {} }
             elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
-                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set }
+                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set, vars = res.name_vars or target.vars or {} }
                 if (not full_UI_table.from_detailed_tooltip or full_UI_table.info[1] == desc_nodes) 
                     and not full_UI_table.no_styled_name then
                     desc_nodes.name_styled = {}
@@ -3079,7 +3079,7 @@ SMODS.UndiscoveredCompat = {
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize { type = 'name', set = res.name_set or target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or res.vars or {} }
             elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
-                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set }
+                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set, vars = res.name_vars or target.vars or {} }
                 if (not full_UI_table.from_detailed_tooltip or full_UI_table.info[1] == desc_nodes) 
                     and not full_UI_table.no_styled_name then
                     desc_nodes.name_styled = {}

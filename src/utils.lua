@@ -1933,6 +1933,14 @@ function SMODS.update_context_flags(context, flags)
         if context.modify_ante then context.modify_ante = flags.modify end
         if context.drawing_cards then context.amount = math.max(flags.modify, 0) end
     end
+    if context.evaluate_poker_hand then
+        if flags.replace_scoring_name then
+            context.scoring_name = flags.replace_scoring_name
+            context.display_name = flags.replace_scoring_name
+        end
+        if flags.replace_display_name then context.display_name = flags.replace_display_name end
+        if flags.replace_poker_hands then context.poker_hands = flags.replace_poker_hands end
+    end
 end
 
 SMODS.current_evaluated_object = nil
