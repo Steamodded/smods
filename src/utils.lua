@@ -439,15 +439,7 @@ end
 
 function SMODS.add_card(t)
     local card = SMODS.create_card(t)
-    if t.set == "Base" or t.set == "Enhanced" then
-        G.playing_card = (G.playing_card and G.playing_card + 1) or 1
-        card.playing_card = G.playing_card
-        table.insert(G.playing_cards, card)
-    end
-    card:add_to_deck()
-    local area = t.area or G.jokers
-    area:emplace(card)
-    return card
+    return SMODS.add_to_deck(card, t)
 end
 
 function SMODS.debuff_card(card, debuff, source)
@@ -1311,7 +1303,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if (key == 'p_dollars' or key == 'dollars' or key == 'h_dollars') and amount then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         SMODS.ease_dollars_calc = true
-        ease_dollars(amount)
+        ease_dollars(amount, effect.instant)
         SMODS.ease_dollars_calc = nil
         if not effect.remove_default_message then
             if effect.dollar_message then
@@ -1939,7 +1931,15 @@ function SMODS.update_context_flags(context, flags)
     if flags.modify then
         -- insert general modified value updating here
         if context.modify_ante then context.modify_ante = flags.modify end
-        if context.drawing_cards then context.amount = flags.modify end
+        if context.drawing_cards then context.amount = math.max(flags.modify, 0) end
+    end
+    if context.evaluate_poker_hand then
+        if flags.replace_scoring_name then
+            context.scoring_name = flags.replace_scoring_name
+            context.display_name = flags.replace_scoring_name
+        end
+        if flags.replace_display_name then context.display_name = flags.replace_display_name end
+        if flags.replace_poker_hands then context.poker_hands = flags.replace_poker_hands end
     end
 end
 
@@ -2640,6 +2640,16 @@ function SMODS.seeing_double_check(hand, suit)
     if saw_double(suit_tally, suit) then return true else return false end
 end
 
+local function parse_tooltip_vars(str, separator)
+    separator = separator or ";"
+
+    local vars = {}
+    for res in string.gmatch(str, "([^"..separator.."]+)") do
+        table.insert(vars, res)
+    end
+    return vars
+end
+
 function SMODS.localize_box(lines, args)
     local final_line = {}
     for _, part in ipairs(lines) do
@@ -2738,7 +2748,15 @@ function SMODS.localize_box(lines, args)
         else
             final_line[#final_line+1] = {n=G.UIT.T, config={
                 button = part.control.button,
-                detailed_tooltip = part.control.T and (G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T]) or nil,
+                detailed_tooltip = part.control.T and (
+                    G.P_CENTERS[part.control.T]
+                    or G.P_TAGS[part.control.T]
+                    or {
+                        set = part.control.T_set or 'Other',
+                        key = part.control.T,
+                        vars = part.control.T_vars and parse_tooltip_vars(part.control.T_vars) or {}
+                    }
+                  ) or nil,
                 text = assembled_string,
                 shadow = args.shadow,
                 colour = thunk.text_col or args.text_colour or loc_colour(nil, args.default_col),
@@ -2774,7 +2792,7 @@ function SMODS.info_queue_desc_from_rows(desc_nodes, empty, maxw)
   }}
 end
 
-function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
+function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colours)
     if not cards[1] then
         if Object.is(cards, Card) then
             cards = {cards}
@@ -2809,7 +2827,7 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
             if cards[i].shattered then
                 cards[i]:shatter()
             elseif cards[i].destroyed then
-                cards[i]:start_dissolve()
+                cards[i]:start_dissolve(colours)
             end
         else
             G.E_MANAGER:add_event(Event({
@@ -2817,7 +2835,7 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
                     if cards[i].shattered then
                         cards[i]:shatter()
                     elseif cards[i].destroyed then
-                        cards[i]:start_dissolve(nil, i == #cards)
+                        cards[i]:start_dissolve(colours, i == #cards)
                     end
                     return true
                 end
@@ -2858,7 +2876,7 @@ function SMODS.draw_cards(hand_space)
         return true
     end
 
-    local flags = SMODS.calculate_context({drawing_cards = true, amount = hand_space})
+    local flags = SMODS.calculate_context({drawing_cards = true, amount = math.max(hand_space, 0)})
     hand_space = math.min(#G.deck.cards, flags.cards_to_draw or flags.modify or hand_space)
     delay(0.3)
     SMODS.drawn_cards = {}
@@ -4096,4 +4114,41 @@ end
 -- Simple unlock text function, created to give mod authors an option to hook rather than patch for their use cases.
 function SMODS.create_unlock_text(center)
 	return localize('k_'..string.lower(center and center.set or 'unknown'))
+end
+
+function SMODS.copy_card(card, args)
+    args = args or {}
+    local playing_card
+    if args.playing_card ~= false then
+        playing_card = args.playing_card or card.playing_card and G.playing_card or nil
+    end
+    local copy = copy_card(card, args.new_card, args.card_scale, playing_card, args.strip_edition)
+
+    if args.new_card or args.no_add then return copy end
+
+    return SMODS.add_to_deck(copy, {area = args.area or card.area, playing_card = playing_card})
+end
+
+function SMODS.add_to_deck(card, args)
+    args = args or {}
+    local is_playing_card = card.playing_card or args.playing_card or
+        args.set == "Base" or args.set == "Enhanced" or card.ability.set == "Default" or card.ability.set == "Enhanced"
+    if is_playing_card then
+        if not card.playing_card and not args.playing_card then
+            G.playing_card = (G.playing_card and G.playing_card + 1) or 1
+        end
+        card.playing_card = args.playing_card or card.playing_card or G.playing_card
+        args.area = args.area or G.hand
+    end
+    if not args.area and SMODS.ConsumableTypes[card.ability.set] then
+        args.area = G.consumeables
+    end
+    card:add_to_deck()
+    if is_playing_card then
+        G.deck.config.card_limit = G.deck.config.card_limit + 1
+        table.insert(G.playing_cards, card)
+    end
+    local area = args.area or G.jokers
+    area:emplace(card)
+    return card
 end

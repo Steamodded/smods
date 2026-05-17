@@ -3,12 +3,14 @@ version = "1.0.0"
 dump_lua = true
 priority = -10
 
+# Use final_hand_chips value everywhere
 [[patches]]
 [patches.regex]
 target = "functions/state_events.lua"
 pattern = "^(.*)hand_chips\\s*\\*\\s*mult(.*)$"
 position = "at"
 payload = '''$1 SMODS.calculate_round_score() $2'''
+
 
 [[patches]]
 [patches.pattern]
@@ -207,6 +209,7 @@ delay(0.3)
 '''
 payload = '''
     SMODS.last_hand_oneshot = SMODS.calculate_round_score() > G.GAME.blind.chips
+    SMODS.last_hand_score = SMODS.calculate_round_score()
     G.E_MANAGER:add_event(Event({
       trigger = 'immediate',
       func = (function() 
