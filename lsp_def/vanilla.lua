@@ -325,3 +325,12 @@ function pseudorandom_element(_t, seed, args) end
 ---| 'Rare'
 ---| 'Uncommon'
 ---| 'Common'
+
+---@alias PlayAreas
+---| `G.play` # Area for cards played (check during scoring for cards scored)
+---| 'unscored' # Check for unscored cards during scoring
+---| `G.hand` # Area for cards held in hand
+---| `G.jokers` # Joker area
+---| `G.consumeables` # Consumable area
+---| `G.discard` # Discard area
+---| `G.deck` # Deck
