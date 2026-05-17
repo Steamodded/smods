@@ -4152,3 +4152,67 @@ function SMODS.add_to_deck(card, args)
     area:emplace(card)
     return card
 end
+
+-- Hook for the below Util function
+local sprite_draw_from_ref = Sprite.draw_from
+function Sprite:draw_from(...)
+    local old_filter_min, old_filter_mag
+    if self.atlas and SMODS.texture_filter_override then 
+        old_filter_min, old_filter_mag = self.atlas.image:getFilter()
+        self.atlas.image:setFilter(SMODS.texture_filter_override, SMODS.texture_filter_override) 
+    end
+    local ret = sprite_draw_from_ref(self, ...)
+    if self.atlas and SMODS.texture_filter_override then 
+        self.atlas.image:setFilter(old_filter_min, old_filter_mag) 
+    end
+    return ret
+end
+
+-- Hook for the below Util function
+local sprite_draw_self_ref = Sprite.draw_self
+function Sprite:draw_self(...)
+    local old_filter_min, old_filter_mag
+    if self.atlas and SMODS.texture_filter_override then 
+        old_filter_min, old_filter_mag = self.atlas.image:getFilter()
+        self.atlas.image:setFilter(SMODS.texture_filter_override, SMODS.texture_filter_override) 
+    end
+    local ret = sprite_draw_self_ref(self, ...)
+    if self.atlas and SMODS.texture_filter_override then 
+        self.atlas.image:setFilter(old_filter_min, old_filter_mag) 
+    end
+    return ret
+end
+
+-- Util function to render one card to a .png file (usually saved to the mods folder's parent directory)
+function SMODS.card_to_image(card, scale, filename)
+	if not type(card) == "table" then return end
+    local key = ((card.config or {}).center or {}).key or "card_to_image"
+    scale = scale or 2.0
+	filename = (filename or key == "j_joker" and "jimbo" or key) .. ".png"
+    
+	local canvas = love.graphics.newCanvas(71 * scale, 95 * scale, {type = '2d', readable = true})
+    canvas:setFilter('nearest', 'nearest')
+
+    local old_t = SMODS.shallow_copy(card.T)
+	local old_shadow = card.no_shadow
+    local old_rm = G.SETTINGS.reduced_motion
+    card.T.r = 0
+    local w = card.T.w / G.TILE_H * G.TILESCALE
+    local h = card.T.h / G.TILE_H * G.TILESCALE
+    local old_scale = card.T.scale 
+    card.T.scale = scale
+    card:hard_set_T(w/2*(scale-1), h/2*(scale-1), w, h)
+	card.no_shadow = true
+    G.SETTINGS.reduced_motion = true
+    SMODS.texture_filter_override = "nearest"
+	canvas:renderTo(card.draw, card)
+    SMODS.texture_filter_override = nil
+    G.SETTINGS.reduced_motion = old_rm
+    card.no_shadow = old_shadow
+    card.T.scale = old_scale
+    card:hard_set_T(old_t.x, old_t.y, old_t.w, old_t.h)
+
+	local image_data = canvas:newImageData()
+	image_data:encode("png", filename)
+	print("SMODS : Saved card image to "..love.filesystem.getSaveDirectory().."/"..filename)
+end
