@@ -873,5 +873,5 @@ function SMODS.add_to_deck(card, args) end
 -- Util function to render one card to a .png file (usually saved to the mods folder's parent directory)
 ---@param card Card|table Card to save as an image
 ---@param scale number? Scale to render the card at (default = 2.0)
----@param filename string? Name of the file
+---@param filename string? Name of the file (default = [center.key])
 function SMODS.card_to_image(card, scale, filename) end
