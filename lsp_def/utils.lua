@@ -5,7 +5,7 @@
 --- Internal class referring args passed as `context` in a SMODS object's `calculate` function.
 --- Not all arguments typed here are present in all contexts, see [Calculate Function](https://github.com/Steamodded/smods/wiki/calculate_functions#contexts) for details.
 ---@class CalcContext: table
----@field cardarea? CardArea|"unscored" The CardArea currently being checked.
+---@field cardarea? CardArea|PlayAreas|table The CardArea currently being checked.
 ---@field full_hand? Card[]|table[] All played or selected cards.
 ---@field scoring_hand? Card[]|table[] All scoring cards in played hand.
 ---@field scoring_name? PokerHands|string Key to the scoring poker hand.
@@ -62,15 +62,15 @@
 ---@field ending_booster? true Check if `true` for effects after a Booster Pack ends.
 ---@field starting_shop? true Check if `true` for effects when the shop is first opened.
 ---@field blind_disabled? true Check if `true` for effects when the blind is disabled.
----@field blind_defeated? true Check if `true` for effects when the blind is disabled.
+---@field blind_defeated? true Check if `true` for effects when the blind is defeated.
 ---@field press_play? true Check if `true` for effects when the Play button is pressed.
 ---@field debuff_card? Card|table The card being checked for if it should be debuffed.
 ---@field ignore_debuff? true Sets if `self.debuff` checks are ignored.
 ---@field debuff_hand? true Check if `true` for calculating if the played hand should be debuffed.
 ---@field check? true `true` when the blind is being checked for if it debuffs the played hand.
 ---@field stay_flipped? true Check if `true` for effects when a card is being drawn.
----@field to_area? CardArea|table CardArea the card is being drawn to.
----@field from_area? CardArea|table CardArea the card is being drawn from.
+---@field to_area? CardArea|PlayAreas|table CardArea the card is being drawn to.
+---@field from_area? CardArea|PlayAreas|table CardArea the card is being drawn from.
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand.
 ---@field drawing_cards? true `true` when cards are being drawn
 ---@field amount? number Used for in some contexts to specify a numerical amount.
@@ -668,8 +668,9 @@ function SMODS.get_multi_boxes(multi_box) end
 ---@param bypass_eternal boolean?
 ---@param immediate boolean?
 ---@param skip_anim boolean?
+---@param colours table?
 --- Destroys the cards passed to the function, handling calculation events that need to happen
-function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim) end
+function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colours) end
 
 ---@param hand_space number
 --- Used to draw cards to hand outside of the normal card draw
@@ -846,4 +847,25 @@ function SMODS.mod_blind_size(mod_blind_size) end
 ---@field mult? number Multiply blind size by this number
 ---@field card? Card Card responsible for blind size modification action, crucial for blind size display to work properly
 ---@field effect? table Table of effects that were calculated
----@field from_edition? boolean 
+---@field from_edition? boolean
+
+---@class CopyCardArgs
+---@field new_card Card|table? Copies the card into `new_card` instead of creating a new card (like the Death tarot)
+---@field card_scale number? Multiplier for the copy's scale
+---@field playing_card integer|false? Sets the card's playing card value. If `false`, the value is not set. If no value is specified, it sets it to the next G.playing_card (only if `card` is a playing card)
+---@field strip_edition boolean? Strips the edition from the copy
+---@field no_add boolean? Skips adding the card to deck
+---@field area CardArea|table? Adds the card to this area instead of the inferred one
+
+---Copies a card
+---@param card Card|table? Card to copy
+---@param args CopyCardArgs
+---@return Card|table
+function SMODS.copy_card(card, args) end
+
+---Performs common operations for when a card would be added to the deck
+---Such as calling `add_to_deck`, emplacing, adding a playing card to `G.playing_cards`, etc.
+---@param card Card|table Card to add
+---@param args {set: string?, area: CardArea|table?, playing_card: integer?}?
+---@return Card|table
+function SMODS.add_to_deck(card, args) end
