@@ -924,7 +924,12 @@ table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = localize
 '''
 payload = '''
 local loc_opts = config.loc_opts or {}
-table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = loc_opts.text or localize{type = 'name_text', set = loc_opts.set or config.card.config.center.set, key = loc_opts.key or config.card.config.center.key}, colours = {loc_opts.text_colour or G.C.FILTER}, shadow = true, pop_in = 0, scale = (loc_opts.scale or 0.6)*scale, silent = true})}})
+local vars = loc_opts.vars
+if not vars and type(config.card.config.center.loc_vars) == "function" then
+    local res = config.card.config.center:loc_vars({}, config.card)
+    vars = res.name_vars or res.vars or {}
+end
+table.insert(left_text, {n=G.UIT.O, config={object = DynaText({string = loc_opts.text or localize{type = 'name_text', set = loc_opts.set or config.card.config.center.set, key = loc_opts.key or config.card.config.center.key, vars = vars}, colours = {loc_opts.text_colour or G.C.FILTER}, shadow = true, pop_in = 0, scale = (loc_opts.scale or 0.6)*scale, silent = true})}})
 '''
 
 

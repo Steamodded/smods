@@ -2920,6 +2920,22 @@ function ease_background_colour_blind(state, blind_override)
 	return ease_bg_col_bl_ref(state, blind_override)
 end
 
+--Patch to allow `type = "name_text"` to take vars
+local oldlocalize = localize
+function localize(args, misc_cat)
+    local ret = oldlocalize(args, misc_cat)
+
+    if type(args) == "table" and type(ret) == "string" and args.type == "name_text" and (args.vars) then
+        for k,v in pairs(args.vars) do
+            if type(k) == "number" then
+                ret = ret:gsub("#"..tostring(k).."#", tostring(v))
+            end
+        end
+    end
+
+    return ret
+end
+
 -- let's misuse this for blind size queue
 G.FUNCS.blind_chip_UI_scale = function(e)
 	if not (G.GAME.blind or {}).chips then return end
