@@ -9,6 +9,10 @@ SMODS = {}
 MODDED_VERSION = ""
 
 ---@type string
+--- Version of most recent SMODS release
+RELEASE_VERSION = ""
+
+---@type string
 --- Path to SMODS directory
 SMODS.path = ""
 
