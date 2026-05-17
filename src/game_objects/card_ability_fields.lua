@@ -106,8 +106,8 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
             end
         end
         if not valid then return false end
-        for c_key, _ in pairs(self.context_criteria or {}) do
-            if not context[c_key] then return false end
+        for c_key, v in pairs(self.context_criteria or {}) do
+            if context[c_key] ~= v then return false end
         end
         return true
     end
