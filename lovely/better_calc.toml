@@ -324,13 +324,13 @@ if card.area and area_set[card.area] then
     if type(jokers) ~= 'table' then jokers = nil end
     if jokers or triggered then
         ret.jokers = jokers
-        if not (context.retrigger_joker_check or context.retrigger_joker) and not (jokers and jokers.no_retrigger) and not SMODS.is_getter_context(context) then
+        if not (jokers and jokers.no_retrigger) then
             local retriggers = SMODS.calculate_retriggers(card, context, ret)
             if next(retriggers) then
                 ret.retriggers = retriggers
             end
         end
-        if not context.post_trigger and not context.retrigger_joker_check and SMODS.optional_features.post_trigger then
+        if SMODS.optional_features.post_trigger and SMODS.can_context_post_trigger(context) then
             SMODS.calculate_context({blueprint_card = context.blueprint_card, post_trigger = true, other_card = card, other_context = context, other_ret = ret}, post_trig)
         end
     end

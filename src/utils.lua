@@ -1716,7 +1716,7 @@ end
 
 SMODS.calculate_retriggers = function(card, context, _ret)
     local retriggers = {}
-    if not SMODS.optional_features.retrigger_joker then return retriggers end
+    if not SMODS.optional_features.retrigger_joker or not SMODS.can_context_retrigger(context) then return retriggers end
     for _, area in ipairs(SMODS.get_card_areas('jokers')) do
         for _, _card in ipairs(area.cards) do
             local eval, post = eval_card(_card, {retrigger_joker_check = true, other_card = card, other_context = context, other_ret = _ret})
@@ -1957,6 +1957,37 @@ function SMODS.is_getter_context(context)
     if context.mod_probability or context.fix_probability then return "probability" end
     if context.check_enhancement then return "enhancement" end
     return false
+end
+
+SMODS.CONTEXT_RETRIGGER_BLACKLIST = {
+    mod_probability = true, fix_probability = true,
+    check_enhancement = true,
+    retrigger_joker_check = true, retrigger_joker = true
+}
+
+function SMODS.can_context_retrigger(context)
+    for entry, _ in pairs(SMODS.CONTEXT_RETRIGGER_BLACKLIST) do
+        if context[entry] then
+            return false
+        end
+    end
+    return true
+end
+
+SMODS.CONTEXT_POST_TRIGGER_BLACKLIST = {
+    mod_probability = true, fix_probability = true,
+    check_enhancement = true,
+    retrigger_joker_check = true, 
+    post_trigger = true
+}
+
+function SMODS.can_context_post_trigger(context)
+    for entry, _ in pairs(SMODS.CONTEXT_POST_TRIGGER_BLACKLIST) do
+        if context[entry] then
+            return false
+        end
+    end
+    return true
 end
 
 
@@ -2340,13 +2371,11 @@ function SMODS.eval_individual(individual, context)
     if (eff and not eff.no_retrigger) or triggered then
         --if type(eff) == 'table' then eff.juice_card = eff.juice_card or individual.scored_card end
         ret.individual = eff
-        if not (context.retrigger_joker_check or context.retrigger_joker) then
-            local retriggers = SMODS.calculate_retriggers(individual.object, context, ret)
-            if next(retriggers) then
-                ret.retriggers = retriggers
-            end
+        local retriggers = SMODS.calculate_retriggers(individual.object, context, ret)
+        if next(retriggers) then
+            ret.retriggers = retriggers
         end
-        if not context.post_trigger and not context.retrigger_joker_check and SMODS.optional_features.post_trigger then
+        if SMODS.optional_features.post_trigger and SMODS.can_context_post_trigger(context) then
             SMODS.calculate_context({blueprint_card = context.blueprint_card, post_trigger = true, other_card = individual.object, other_context = context, other_ret = ret}, post_trig)
         end
     end
