@@ -2995,6 +2995,7 @@ function Card:should_hide_front()
 end
 
 function SMODS.is_eternal(card, trigger)
+    if not card then return false end
     local calc_return = {}
     local ovr_compat = false
     local ret = false
