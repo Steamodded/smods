@@ -1,0 +1,98 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+### CLEANUP: false positives
+
+# comparisons in preprocessor directives
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''(__\w+__\s*[<>]\s*\d+)\.'''
+payload = '$1'
+position = 'at'
+
+# scientific notation
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''([\d.]e\-?\d+)\.'''
+payload = '$1'
+position = 'at'
+
+# array length/index
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''\[(\d+)\.\]'''
+payload = '[$1]'
+position = 'at'
+
+# fall back to explicit int conversion when the above patch doesn't work
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''\[([^\[\]]*[^\d.][^\[\]]*)\]'''
+payload = '[int($1)]'
+position = 'at'
+
+# remove unsupported float suffixes
+# matching the full decimals because of an inexplicable space it adds before what's matched
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''(?<n>(\d+\.)?\d+)f'''
+payload = '$n'
+position = 'at'
+
+# remove uniform from named globals (we're hoping they're constant, otherwise shit breaks)
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''(extern|uniform)([^=\n]*=.*)'''
+payload = '$2'
+position = 'at'
+
+# i'm not sure this still matters with the below but i'm leaving it because it prevented a compile error earlier
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''(extern|uniform)\s+(number|float|vec2|vec3|vec4|mat2|mat3|mat4)'''
+payload = '''$1 highp $2'''
+position = 'at'
+
+# explicit mediump may cause issues because we've set the default to highp
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''mediump\s+(number|float|vec2|vec3|vec4|mat2|mat3|mat4)'''
+payload = '''highp $1'''
+position = 'at'
+
+### let's put this on the wall of jank
+# [[patches]]
+# [patches.regex]
+# target = "GLSL_ES_PATCHES.fs"
+# pattern = '''([\n(]\s*)(number|float|vec2|vec3|vec4|mat2|mat3|mat4)([^=\n]*=)'''
+# payload = '''$1 highp $2$3'''
+# position = 'at'
+
+# # uninitialized variables but NOT function heads
+# [[patches]]
+# [patches.regex]
+# target = "GLSL_ES_PATCHES.fs"
+# pattern = '''(\n\s*)(number|float|vec2|vec3|vec4|mat2|mat3|mat4)([^=\n(]*;)'''
+# payload = '''$1 highp $2$3'''
+# position = 'at'
+
+# Floats defaulting to mediump causes a bunch of visual issues. we can't have that
+
+# what could go wrong
+[[patches]]
+[patches.pattern]
+target = '=[love "wrap_GraphicsShader.lua"]'
+pattern = 'precision mediump float;'
+payload = 'precision highp float;'
+position = 'at'
+match_indent = true

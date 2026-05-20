@@ -2899,3 +2899,57 @@ G.FUNCS.blind_chip_UI_scale = function(e)
 	G.GAME.blind.chip_text = number_format(blind_chips)
     e.config.scale = scale_number(blind_chips, 0.7, 100000)
 end
+
+	-- patch all shaders on GLSL ES
+	-- stub shader
+    SMODS.shader_stub = love.graphics.newShader [[
+    vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _) {
+        return Texel(texture, tc);
+    }
+    ]]
+    local mt = getmetatable(SMODS.shader_stub)
+	local send = mt.send
+	local sendColor = mt.sendColor
+	function mt:send(...)
+		if self == SMODS.shader_stub then
+			return
+		end
+		send(self, ...)
+	end
+	function mt:sendColor(...)
+		if self == SMODS.shader_stub then
+			return
+		end
+		sendColor(self, ...)
+	end
+
+    -- this is where the patching happens
+	-- code that gets here is usually already patched with its own buffer name. here we patch it as a second catchall buffer name
+    local newShader = love.graphics.newShader
+    function love.graphics.newShader(code, other_code)
+		-- this only supports a single argument passed as code, file names are not supported
+		-- only when we're running GLSL ES do we need to patch
+        if other_code or not string.find(code,'\n') or love.graphics.getRendererInfo() ~= "OpenGL ES" then
+			return newShader(code,other_code)
+		end
+
+        -- we can't patch if lovely is too old
+        local lovely_success, lovely = pcall(require, "lovely")
+        if not lovely_success then return newShader(code) end
+
+        local patched_code = assert(lovely.apply_patches(
+            "GLSL_ES_PATCHES.fs",
+            code
+        ))
+        local success, shader = pcall(newShader, patched_code)
+        if success then return shader end
+
+		-- -- Couldn't compile with patches. Try the original
+		local old_success, old_shader = pcall(newShader, code)
+		if old_success then return old_shader end
+
+        -- Neither worked
+		sendWarnMessage(("Failed to compile or patch shader for GLSL ES! Replacing affected shader with a stub that does nothing. To test on desktop, set LOVE_GRAPHICS_USE_OPENGLES=1 in your environment variables to run GLSL ES if supported. Patched shader code:\n%s\nError:\n%s"):format(patched_code, shader), "Shader")
+
+        return SMODS.shader_stub
+    end

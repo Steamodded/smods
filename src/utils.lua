@@ -3648,7 +3648,7 @@ function AnimatedSprite:animate()
 end
 
 function SMODS.is_active_blind(key, ignore_disabled)
-    return G.GAME and G.GAME.blind and G.GAME.facing_blind and (G.GAME.blind.name == key or G.GAME.blind.config.key == key) and (not G.GAME.blind.disabled or ignore_disabled)
+    return G.GAME and G.GAME.blind and G.GAME.facing_blind and (G.GAME.blind.name == key or G.GAME.blind.config.blind.key == key) and (not G.GAME.blind.disabled or ignore_disabled)
 end
 
 -- Function used to determine whether the current blind modifies the number of cards drawn
