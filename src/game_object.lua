@@ -736,7 +736,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             for i = 1, #G.P_CENTER_POOLS[self.set] do
                 G.C.STAKES[i] = G.P_CENTER_POOLS[self.set][i].colour or G.C.WHITE
             end
-            convert_save_data()
+            --convert_save_data()
         end,
         process_loc_text = function(self)
             -- empty loc_txt indicates there are existing values that shouldn't be changed or it isn't necessary
@@ -802,7 +802,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sticker_pos = { x = 1, y = 0 },
         colour = G.C.WHITE,
         loc_txt = {},
-        hide_from_run_info = true
+        hide_from_run_info = true,
+        vanilla_index = 1,
     }
     SMODS.Stake {
         name = "Red Stake",
@@ -816,7 +817,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.GAME.modifiers.no_blind_reward.Small = true
         end,
         colour = G.C.RED,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 2,
     }
     SMODS.Stake {
         name = "Green Stake",
@@ -829,7 +831,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.GAME.modifiers.scaling = (G.GAME.modifiers.scaling or 1) + 1
         end,
         colour = G.C.GREEN,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 3,
     }
     SMODS.Stake {
         name = "Black Stake",
@@ -842,7 +845,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.GAME.modifiers.enable_eternals_in_shop = true
         end,
         colour = G.C.BLACK,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 4,
     }
     SMODS.Stake {
         name = "Blue Stake",
@@ -855,7 +859,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.GAME.starting_params.discards = G.GAME.starting_params.discards - 1
         end,
         colour = G.C.BLUE,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 5,
     }
     SMODS.Stake {
         name = "Purple Stake",
@@ -868,7 +873,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.GAME.modifiers.scaling = (G.GAME.modifiers.scaling or 1) + 1
         end,
         colour = G.C.PURPLE,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 6,
     }
     SMODS.Stake {
         name = "Orange Stake",
@@ -882,6 +888,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         colour = G.C.ORANGE,
         loc_txt = {},
+        vanilla_index = 7,
     }
     SMODS.Stake {
         name = "Gold Stake",
@@ -894,7 +901,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         end,
         colour = G.C.GOLD,
         shiny = true,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 8,
     }
 
     -------------------------------------------------------------------------------------------------
