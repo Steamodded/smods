@@ -808,7 +808,7 @@ function SMODS.stake_from_index(index)
     return stake.key
 end
 
-local function convert_usage_entry(entry)
+function convert_usage_entry(entry)
     for _,keys in ipairs{ {"wins","wins_by_key"},{"losses","losses_by_key"}} do
         entry[keys[1]] = entry[keys[1]] or {}
         entry[keys[2]] = entry[keys[2]] or {}
@@ -835,6 +835,7 @@ local function convert_usage_entry(entry)
             end
         end
     end
+    return entry
 end
 
 function convert_save_data()
@@ -3242,13 +3243,16 @@ function SMODS.challenge_is_unlocked(challenge, k)
 end
 
 function SMODS.stake_is_unlocked(stake_key, deck_key)
-    if not (SMODS.Stakes[stake_key] and G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key]) then return stake_key == SMODS.stake_from_index(1) end
     if G.PROFILES[G.SETTINGS.profile].all_unlocked then return true end
     local stake = SMODS.Stakes[stake_key]
+    if not stake then return false end
     if stake.unlocked then return true end
+    if not G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key] then
+        return not next(stake.applied_stakes)
+    end
     local unlocked = true
     local wins = G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key].wins_by_key
-    for i,v in ipairs(stake.applied_stakes) do
+    for _,v in ipairs(stake.applied_stakes) do
         if not (wins[v] and wins[v] > 0) then
             unlocked = false
         end

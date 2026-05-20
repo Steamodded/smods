@@ -2395,7 +2395,7 @@ function set_deck_win()
 	if G.GAME.selected_back and G.GAME.selected_back.effect and G.GAME.selected_back.effect.center and G.GAME.selected_back.effect.center.key then
 		local deck_key = G.GAME.selected_back.effect.center.key
 		local deck_usage = G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key]
-		if not deck_usage then deck_usage = { count = 1, order =
+		if not deck_usage then deck_usage = convert_usage_entry{ count = 1, order =
 			G.GAME.selected_back.effect.center.order, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {} } end
 		if deck_usage then
 			deck_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] = (deck_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] or 0) + 1
