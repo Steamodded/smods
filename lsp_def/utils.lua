@@ -522,7 +522,7 @@ function SMODS.get_blind_amount(ante) end
 
 --- Converts save data for a single vanilla object.
 ---@param entry {count?:number,[("wins"|"losses")]?: table<number,number>, [("wins_by_key"|"losses_by_key")]?:table<string,number>}|table A deck/joker usage entry.
----@return entry
+---@return table
 function convert_usage_entry(entry) end
 
 --- Converts save data for vanilla objects.
