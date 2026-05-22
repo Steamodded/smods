@@ -644,18 +644,17 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         inject = function(self) self[1], self[2], self[3], self[4] = 0,0,0,1 end,
         update = function(self, dt)
             if #self.colours < 2 then return end
-            local timer = G.TIMERS.REAL%self.cycle
-            local start_index = math.ceil(timer*#self.colours/self.cycle)
+            local timer = (G.TIMERS.REAL*#self.colours/self.cycle) % #self.colours
+            local start_index = 1 + math.floor(timer)
             local end_index = start_index == #self.colours and 1 or start_index+1
             local start_colour, end_colour = self.colours[start_index], self.colours[end_index]
-            local partial_timer = (timer%(self.cycle/#self.colours))*#self.colours/self.cycle
+            local partial_timer = timer % 1
+            local blend = partial_timer
+            if self.interpolation == 'trig' then
+                blend = 0.5*(1-math.cos(partial_timer*math.pi))
+            end
             for i = 1, 4 do
-                if self.interpolation == 'linear' then
-
-                    self[i] = start_colour[i] + partial_timer*(end_colour[i]-start_colour[i])
-                elseif self.interpolation == 'trig' then
-                    self[i] = start_colour[i] + 0.5*(1-math.cos(partial_timer*math.pi))*(end_colour[i]-start_colour[i])
-                end
+                self[i] = (1-blend)*start_colour[i] + blend*end_colour[i]
             end
         end,
     }
@@ -1259,7 +1258,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = self.set == 'Enhanced' and 'temp_value' or localize { type = 'name', set = res.name_set or target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {} }
             elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
-                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set }
+                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set, vars = res.name_vars or target.vars or {} }
                 if (not full_UI_table.from_detailed_tooltip or full_UI_table.info[1] == desc_nodes) 
                     and not full_UI_table.no_styled_name then
                     desc_nodes.name_styled = {}
@@ -1308,15 +1307,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         inject = function(self)
             -- call the parent function to ensure all pools are set
             SMODS.Center.inject(self)
-            if self.taken_ownership and self.rarity_original and self.rarity_original ~= self.rarity then
-                SMODS.remove_pool(G.P_JOKER_RARITY_POOLS[self.rarity_original] or {}, self.key)
+            local vanilla_rarities = { ["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4 }
+            self.rarity = vanilla_rarities[self.rarity] or self.rarity
+            local original_rarity = vanilla_rarities[self.rarity_original] or self.rarity_original
+            if self.taken_ownership and original_rarity and original_rarity ~= self.rarity then
+                SMODS.remove_pool(G.P_JOKER_RARITY_POOLS[original_rarity] or {}, self.key)
                 SMODS.insert_pool(G.P_JOKER_RARITY_POOLS[self.rarity], self, false)
             else
                 SMODS.insert_pool(G.P_JOKER_RARITY_POOLS[self.rarity], self)
-                local vanilla_rarities = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
-                if vanilla_rarities[self.rarity] then
-                    SMODS.insert_pool(G.P_JOKER_RARITY_POOLS[vanilla_rarities[self.rarity]], self)
-                end
             end
         end
     }
@@ -1504,7 +1502,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize{type = 'name', set = 'Other', key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {}}
             elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
-                desc_nodes.name = localize { type = 'name_text', key = res.name_key or target.key, set = 'Other' }
+                desc_nodes.name = localize { type = 'name_text', key = res.name_key or target.key, set = 'Other', vars = res.name_vars or target.vars or {} }
                 if (not full_UI_table.from_detailed_tooltip or full_UI_table.info[1] == desc_nodes) 
                     and not full_UI_table.no_styled_name then
                     desc_nodes.name_styled = {}
@@ -1930,7 +1928,7 @@ SMODS.UndiscoveredCompat = {
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize { type = 'name', set = res.name_set or target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or target.vars or {} }
             elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
-                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set }
+                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set, vars = res.name_vars or target.vars or {} }
                 if (not full_UI_table.from_detailed_tooltip or full_UI_table.info[1] == desc_nodes) 
                     and not full_UI_table.no_styled_name then
                     desc_nodes.name_styled = {}
@@ -2879,10 +2877,18 @@ SMODS.UndiscoveredCompat = {
                 self.obj_buffer,
                 function(a, b)
                     local x, y = self.obj_table[a], self.obj_table[b]
-                    local x_above = self.obj_table[x.above_hand or {}]
-                    local y_above = self.obj_table[y.above_hand or {}]
-                    local function eval(h) return h.mult*h.chips + (h.order_offset or 0) end
-                    return (x_above and (1e-6*eval(x) + eval(x_above)) or eval(x)) > (y_above and (1e-6*eval(y) + eval(y_above)) or eval(y))
+
+                    local function eval(h)
+                        local own_amt = h.mult*h.chips
+                        if h.above_hand and self.obj_table[h.above_hand] then
+                            local above_amt = eval(self.obj_table[h.above_hand])
+                            return above_amt + (own_amt * 1e-6) + (h.order_offset or 0)
+                        end
+
+                        return own_amt + (h.order_offset or 0)
+                    end
+
+                    return eval(x) > eval(y)
                 end
             )
             for i, v in ipairs(self.obj_buffer) do self.obj_table[v].order = i end
@@ -3081,7 +3087,7 @@ SMODS.UndiscoveredCompat = {
             if desc_nodes == full_UI_table.main and not full_UI_table.name then
                 full_UI_table.name = localize { type = 'name', set = res.name_set or target.set, key = res.name_key or target.key, nodes = full_UI_table.name, vars = res.name_vars or res.vars or {} }
             elseif desc_nodes ~= full_UI_table.main and not desc_nodes.name then
-                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set }
+                desc_nodes.name = localize{type = 'name_text', key = res.name_key or target.key, set = res.name_set or target.set, vars = res.name_vars or target.vars or {} }
                 if (not full_UI_table.from_detailed_tooltip or full_UI_table.info[1] == desc_nodes) 
                     and not full_UI_table.no_styled_name then
                     desc_nodes.name_styled = {}
@@ -3384,16 +3390,23 @@ SMODS.UndiscoveredCompat = {
         inject = function(self)
             self.full_path = (self.mod and self.mod.path or SMODS.path) ..
                 'assets/shaders/' .. self.path
+
             local file = assert(NFS.read(self.full_path),
                 ('Failed to collect file data for Shader %s'):format(self.key))
+
             local lovely_success, lovely = pcall(require, "lovely")
             if lovely_success and lovely.apply_patches then
-                file = assert(lovely.apply_patches("=[SMODS " .. self.mod.id .. ' "' .. self.path .. '"]', file))
+                file = assert(lovely.apply_patches(
+                    "=[SMODS " .. self.mod.id .. ' "' .. self.path .. '"]',
+                    file
+                ))
             end
-            love.filesystem.write(self.key .. "-temp.fs", file)
-            G.SHADERS[self.key] = love.graphics.newShader(self.key .. "-temp.fs")
-            love.filesystem.remove(self.key .. "-temp.fs")
-            -- G.SHADERS[self.key] = love.graphics.newShader(self.full_path)
+
+            if love.graphics.getRendererInfo() ~= "OpenGL ES" and (self.mod and not self.mod.gles_alerted) and not love.graphics.validateShader(true, file) then
+                sendWarnMessage(("%s: Some shaders in this mod (first one found: '%s') are not compatible with OpenGL ES. Steamodded will try to repair these shaders if OpenGL ES is being used, e.g. on mobile devices. To test OpenGL ES results on desktop, run Balatro with 'LOVE_GRAPHICS_USE_OPENGLES=1' set as an environment variable."):format(self.mod and self.mod.name, self.key), "Shader")
+                self.mod.gles_alerted = true
+            end
+            G.SHADERS[self.key] = love.graphics.newShader(file)
         end,
         process_loc_text = function() end
     }
@@ -3809,7 +3822,7 @@ SMODS.UndiscoveredCompat = {
                 if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
                 self:modify(amount)
                 card_eval_status_text(scored_card, 'extra', nil, percent, nil, 
-                    {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, colour = self.colour})
+                    {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {math.abs(amount)}}, colour = self.colour})
                 return true
             end
         end
@@ -3827,7 +3840,7 @@ SMODS.UndiscoveredCompat = {
                 self:modify(amount)
                 if not effect.remove_default_message then
                     if from_edition then
-                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {amount}}, chip_mod = amount, colour = G.C.EDITION, edition = true})
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {math.abs(amount)}}, chip_mod = amount, colour = G.C.EDITION, edition = true})
                     else
                         if key ~= 'chip_mod' then
                             if effect.chip_message then
@@ -3845,7 +3858,7 @@ SMODS.UndiscoveredCompat = {
                 self:modify(hand_chips * (amount - 1))
                 if not effect.remove_default_message then
                     if from_edition then
-                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xchips' or 'a_xchips_minus',vars={amount}}, Xchips_mod =  amount, colour =  G.C.EDITION, edition = true})
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xchips' or 'a_xchips_minus',vars={math.abs(amount)}}, Xchips_mod =  amount, colour =  G.C.EDITION, edition = true})
                     else
                         if key ~= 'Xchip_mod' then
                             if effect.xchip_message then
@@ -3879,7 +3892,7 @@ SMODS.UndiscoveredCompat = {
                 self:modify(amount)
                 if not effect.remove_default_message then
                     if from_edition then
-                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_mult' or 'a_mult_minus', vars = {amount}}, mult_mod = amount, colour = G.C.DARK_EDITION, edition = true})
+                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_mult' or 'a_mult_minus', vars = {math.abs(amount)}}, mult_mod = amount, colour = G.C.DARK_EDITION, edition = true})
                     else
                         if key ~= 'mult_mod' then
                             if effect.mult_message then

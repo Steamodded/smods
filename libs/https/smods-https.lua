@@ -60,7 +60,7 @@ if not https then
 end
 
 if not https and not curl then
-	error("Could not load a suitable backend")
+	sendDebugMessage("Could not load a suitable backend! Using a stub: the HTTPS module exists, but all requests will fail.", "SMODS.https")
 end
 
 local M = {}
@@ -111,7 +111,7 @@ if https then
 		options = checkAndHandleInput(url, options)
 		return https.request(url, options)
 	end
-else -- curl
+elseif curl then
 	sendDebugMessage("Using curl backend", "SMODS.https")
 	local ffi = require "ffi"
 	userAgent = userAgent .. " curl/" .. ffi.string(curl.curl_version_info(curl.CURLVERSION_FOURTH).version)
@@ -200,6 +200,10 @@ else -- curl
 
 		curlCleanup(ch, list, cb)
 		return status, buff, headers
+	end
+else -- stub
+	M.request = function(url, options)
+		return 0, "Failed to load a suitable backend!", {}
 	end
 end
 
