@@ -8,7 +8,7 @@ StateSprite = AnimatedSprite:extend()
         (frames = [amount of frames] |OR| end_pos = { [same as start_pos] }),
         frame_order = "linear" |OR| "random" |OR| {1: x, 2: y, .. n: m}
         (optional) flipped_h/flipped_v = true,
-        (optional) exit_to = [state],
+        (optional) exit_to = [state] |OR [function(state_table, sprite), returning a state],
         (optional) frame_durations = {1: 2, 2:...},     (in Frames according to G.ANIMATION_FPS)
         (optional) default_frame_duration = 1,          (in Frames according to G.ANIMATION_FPS)
     }, 
@@ -25,7 +25,7 @@ StateSprite = AnimatedSprite:extend()
     wakey = {
         start_pos = {x = 4},        (y is set to 0)
         frames = 4,                 (end_pos is set to start_pos with .x + frames)
-        default_frame_duration = 3,
+        default_frame_duration = 3, (all frames last 3 times longer (0.3 seconds with default G.ANIMATION_FPS == 10))
         exit_to = "lookey",         (after one iteration, sets state to this value)
     },
     lookey = {
@@ -45,8 +45,9 @@ function StateSprite:init(X, Y, W, H, new_sprite_atlas, _pos, args)
     else
         self.sprite_args = args
         self.states_offset = args.states_offset and {x = args.states_offset.x or 0, y = args.states_offset.y or 0} or {x = 0, y = 0}
+        self.default_state = args.default_state or next(args.states)
         self:load_states(args.states)
-        self:set_state(args.default_state or next(args.states))
+        self:set_state(self.default_state)
     end
 
     self.flipped_h = false
@@ -76,6 +77,7 @@ function StateSprite:load_states(states)
     for key, state in pairs(states) do
         state.start_pos = state.start_pos and {x = state.start_pos.x or 0, y = state.start_pos.y or 0} or {x = 0, y = 0}
         state.frames = state.frames or ((state.end_pos or state.start_pos).x - state.start_pos.x + ((state.end_pos.y or state.start_pos).y - state.start_pos.y) * self.atlas.columns + 1)
+        state.key = key
         if type(state.frame_order) == "string" then
             local keymap = {
                 linear=true,
@@ -98,7 +100,11 @@ end
 function StateSprite:animate()
     if not self.state then return end
     if self.state.exit_to and self.current_animation.elapsed >= self.current_animation.frames then
-        self:set_state(self.state.exit_to)
+        if type(self.state.exit_to) == "function" then
+            self:set_state(self.state:exit_to(self) or self.default_state)
+        else
+            self:set_state(self.state.exit_to)
+        end
     end
     local frame_finished = (math.floor(G.ANIMATION_FPS*(G.TIMERS.REAL - self.offset_seconds) / (self.current_animation.frame_duration or self.state.default_frame_duration or 1))) > 0
     if frame_finished then
