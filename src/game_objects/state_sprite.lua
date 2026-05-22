@@ -9,7 +9,8 @@ StateSprite = AnimatedSprite:extend()
         frame_order = "linear" |OR| "random" |OR| {1: x, 2: y, .. n: m}
         (optional) flipped_h/flipped_v = true,
         (optional) exit_to = [state],
-        (optional) frame_durations = {1: 2, 2:...}
+        (optional) frame_durations = {1: 2, 2:...},     (in Frames according to G.ANIMATION_FPS)
+        (optional) default_frame_duration = 1,          (in Frames according to G.ANIMATION_FPS)
     }, 
     ...
 }
@@ -24,6 +25,7 @@ StateSprite = AnimatedSprite:extend()
     wakey = {
         start_pos = {x = 4},        (y is set to 0)
         frames = 4,                 (end_pos is set to start_pos with .x + frames)
+        default_frame_duration = 3,
         exit_to = "lookey",         (after one iteration, sets state to this value)
     },
     lookey = {
@@ -98,7 +100,7 @@ function StateSprite:animate()
     if self.state.exit_to and self.current_animation.elapsed >= self.current_animation.frames then
         self:set_state(self.state.exit_to)
     end
-    local frame_finished = (math.floor(G.ANIMATION_FPS*(G.TIMERS.REAL - self.offset_seconds) / (self.current_animation.frame_duration or 1))) > 0
+    local frame_finished = (math.floor(G.ANIMATION_FPS*(G.TIMERS.REAL - self.offset_seconds) / (self.current_animation.frame_duration or self.state.default_frame_duration or 1))) > 0
     if frame_finished then
         local new_frame
         if type(self.state.frame_order) == "table" then
@@ -109,7 +111,7 @@ function StateSprite:animate()
         end
         self.current_animation.current = new_frame or ((self.current_animation.current + 1) % self.current_animation.frames)
         self.current_animation.elapsed = self.current_animation.elapsed + 1
-        self.current_animation.frame_duration = (self.state.frame_durations or {})[self.current_animation.current] or 1
+        self.current_animation.frame_duration = (self.state.frame_durations or {})[self.current_animation.current] or self.state.default_frame_duration or 1
         local _x = self.animation.w * ((self.states_offset.x + self.state.start_pos.x + self.current_animation.current) % self.atlas.columns)
         local _y = self.animation.h * (self.states_offset.y + self.state.start_pos.y + math.floor(self.current_animation.current / self.atlas.columns))
         self.sprite:setViewport(
@@ -143,7 +145,7 @@ function StateSprite:set_sprite_pos(sprite_pos)
         w = self.animation.w,
         h = self.animation.h,
         elapsed = 0,
-        frame_duration = (self.state.frame_durations or {})[0] or 1
+        frame_duration = (self.state.frame_durations or {})[0] or self.state.default_frame_duration or 1
     }
 
     self.image_dims = self.image_dims or {}
