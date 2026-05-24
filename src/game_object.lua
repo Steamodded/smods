@@ -1819,6 +1819,7 @@ SMODS.UndiscoveredCompat = {
         config = {},
         dollars = 5,
         mult = 2,
+        blind_types = nil, -- Map of types, used by SMODS.get_new_blind()
         atlas = 'blind_chips',
         discovered = false,
         pos = { x = 0, y = 0 },
@@ -1838,6 +1839,9 @@ SMODS.UndiscoveredCompat = {
             end
             G.P_BLINDS[self.key] = self
             if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
+        end,
+        get_types = function(self)
+            return self.blind_types
         end
     }
     SMODS.Blind:take_ownership('eye', {
@@ -4013,6 +4017,12 @@ SMODS.UndiscoveredCompat = {
         text = '^'
     }
 
+
+    -------------------------------------------------------------------------------------------------
+    ------- API IMPORT SMODS.GameObject.AntePath
+    -------------------------------------------------------------------------------------------------
+    
+    assert(load(NFS.read(SMODS.path..'src/ante_path.lua'), ('=[SMODS _ "src/ante_path.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
