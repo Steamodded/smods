@@ -2808,7 +2808,7 @@ function SMODS.destroy_cards(cards, args, ...)
         else args = {} end
     end
     args.immediate = args.immediate or other_args[1]
-    args.skip_anim = args.skip_anim or other_args[2]
+    args.pinch_anim = args.pinch_anim or other_args[2]
     args.colours = args.colours or other_args[3]
 
     if not cards[1] then
@@ -2832,7 +2832,7 @@ function SMODS.destroy_cards(cards, args, ...)
             if card.base.name then
                 playing_cards[#playing_cards + 1] = card
             end
-            card.skip_destroy_animation = args.skip_anim
+            card.skip_destroy_animation = args.pinch_anim
         end
     end
 
@@ -2842,7 +2842,7 @@ function SMODS.destroy_cards(cards, args, ...)
 
     local per_card_delay = args.total_delay and args.total_delay / #cards or nil
     for i = 1, #cards do
-        if args.immediate or args.skip_anim then
+        if args.immediate or args.pinch_anim then
             if cards[i].shattered then
                 cards[i]:shatter()
             elseif cards[i].destroyed then
