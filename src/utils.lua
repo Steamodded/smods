@@ -2801,7 +2801,16 @@ function SMODS.info_queue_desc_from_rows(desc_nodes, empty, maxw)
   }}
 end
 
-function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colours)
+function SMODS.destroy_cards(cards, args, ...)
+    local other_args = {...}
+    if type(args) ~= "table" then
+        if args then args = {bypass_debuff = true}
+        else args = {} end
+    end
+    args.immediate = args.immediate or other_args[1]
+    args.skip_anim = args.skip_anim or other_args[2]
+    args.colours = args.colours or other_args[3]
+
     if not cards[1] then
         if Object.is(cards, Card) then
             cards = {cards}
@@ -2812,7 +2821,7 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colour
     local glass_shattered = {}
     local playing_cards = {}
     for _, card in ipairs(cards) do
-        if bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
+        if args.bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
             card.getting_sliced = true
             if SMODS.shatters(card) then
                 card.shattered = true
@@ -2823,7 +2832,7 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colour
             if card.base.name then
                 playing_cards[#playing_cards + 1] = card
             end
-            card.skip_destroy_animation = skip_anim
+            card.skip_destroy_animation = args.skip_anim
         end
     end
 
@@ -2831,20 +2840,23 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colour
 
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
+    local per_card_delay = args.total_delay and args.total_delay / #cards or nil
     for i = 1, #cards do
-        if immediate or skip_anim then
+        if args.immediate or args.skip_anim then
             if cards[i].shattered then
                 cards[i]:shatter()
             elseif cards[i].destroyed then
-                cards[i]:start_dissolve(colours)
+                cards[i]:start_dissolve(args.colours)
             end
         else
             G.E_MANAGER:add_event(Event({
-                func = function()
+                trigger = per_card_delay and "after" or "immediate",
+                delay = per_card_delay,
+                func = function()                    
                     if cards[i].shattered then
                         cards[i]:shatter()
                     elseif cards[i].destroyed then
-                        cards[i]:start_dissolve(colours, i == #cards)
+                        cards[i]:start_dissolve(args.colours, i == #cards)
                     end
                     return true
                 end
