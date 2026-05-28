@@ -681,9 +681,9 @@ function SMODS.pinch_and_remove(card) end
 ---@param cards Card|Card[]
 ---@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], delay?: number, destroy_func?: fun(card: Card, args: table<>)}
 ---@param ... ... Old signature arguments in the above order, up to and including colours
----@return Card[] destroyed
+---@return Card[] destroy_queued
 --- Destroys the cards passed to the function, handling calculation events that need to happen.
---- Returns list of cards successfully destroyed
+--- Returns list of cards queued for destruction
 function SMODS.destroy_cards(cards, args, ...) end
 
 ---@param hand_space number
