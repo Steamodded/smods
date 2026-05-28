@@ -4246,11 +4246,11 @@ local _matcher_evaluate_count_subflags = function(count_flag, total)
     end
     if count_flag.at_most then
         is_match = is_match and total <= count_flag.at_most
-        if is_match then below = true end
+        if total <= count_flag.at_most then below = true end
     end
     if count_flag.at_least then
         is_match = is_match and total >= count_flag.at_least
-        below = not is_match
+        below = total < count_flag.at_least
     end
     if count_flag.func then
         is_match = is_match and count_flag.func(total)
@@ -4290,13 +4290,13 @@ end
 local _matcher_evaluate_count_overlap_subflags = function (matcher, condition, other_condition, pcard, other_cards, subflags)
     local pcard_values = _matcher_get_card_condition_values(pcard, other_condition)
     local failed_cards = {}
-    local total_cards = {}
     if subflags.any then
         for other_card, _ in pairs(other_cards) do
             if other_card ~= pcard and not failed_cards[other_card] then
-                total_cards[other_card] = true
-                if not (other_condition == condition or _matcher_evaluate_card_overlap(pcard_values, _matcher_get_card_condition_values(other_card, other_condition))) then
-                    failed_cards[other_card] = true
+                if other_condition ~= condition then
+                    if not _matcher_evaluate_card_overlap(pcard_values, _matcher_get_card_condition_values(other_card, other_condition)) then
+                        failed_cards[other_card] = true
+                    end
                 end
             end
         end
@@ -4307,7 +4307,6 @@ local _matcher_evaluate_count_overlap_subflags = function (matcher, condition, o
         for other_card, _ in pairs(other_cards) do
             primary_card_values = pcard_values
             if other_card ~= pcard and not failed_cards[other_card] then
-                total_cards[other_card] = true
                 if subflags.all_either then primary_card_values = ((matcher._pre_count[other_condition] or {})[pcard] or 0) <= ((matcher._pre_count[other_condition] or {})[other_card] or 0) and pcard_values or _matcher_get_card_condition_values(other_card, other_condition) end
                 check_card_values = primary_card_values == pcard_values and _matcher_get_card_condition_values(other_card, other_condition) or pcard_values
                 if not _matcher_evaluate_card_overlap(primary_card_values, check_card_values, true) then
@@ -4319,43 +4318,42 @@ local _matcher_evaluate_count_overlap_subflags = function (matcher, condition, o
     if subflags.none then
         for other_card, _ in pairs(other_cards) do
             if other_card ~= pcard and not failed_cards[other_card] then
-                total_cards[other_card] = true
                 if other_condition == condition or _matcher_evaluate_card_overlap(pcard_values, _matcher_get_card_condition_values(other_card, other_condition)) then
                     failed_cards[other_card] = true
                 end
             end
         end
     end
-    local success_number = table_length(total_cards) - table_length(failed_cards)
+    local success_number = table_length(other_cards) - table_length(failed_cards)
     local success = _matcher_evaluate_count_subflags(subflags, success_number)
     if not success then return 0 end
     return success_number
 end
 local _matcher_evaluate_count_overlap = function(matcher, condition, pcard, property_value)
     local overlap_flag = matcher[condition].count.overlap
+    local other_cards = matcher._pre_count[condition][property_value]
     if overlap_flag.all then
         for other_condition, subflags in pairs(overlap_flag.all) do
-            local success_number = _matcher_evaluate_count_overlap_subflags(matcher, condition, other_condition, pcard, matcher._pre_count[condition][property_value], subflags)
+            local success_number = _matcher_evaluate_count_overlap_subflags(matcher, condition, other_condition, pcard, other_cards, subflags)
             if not _matcher_evaluate_count_subflags(matcher[condition].count, success_number + 1) then return false end -- +1 to count the pcard too
         end
     end
     
     local any_succeeded = false
     if overlap_flag.any then
-        local successful_cards = {}
         for other_condition, subflags in pairs(overlap_flag.any) do
-            local success_number = _matcher_evaluate_count_overlap_subflags(matcher, condition, other_condition, pcard, matcher._pre_count[condition][property_value], subflags)
+            local success_number = _matcher_evaluate_count_overlap_subflags(matcher, condition, other_condition, pcard, other_cards, subflags)
             if _matcher_evaluate_count_subflags(matcher[condition].count, success_number + 1) then -- +1 to count the pcard too
                 any_succeeded = true
                 break
             end
         end
     end
-    if not any_succeeded then return false end
+    if overlap_flag.any and not any_succeeded then return false end
     
     if overlap_flag.none then
         for other_condition, subflags in pairs(overlap_flag.none) do
-            local success_number = _matcher_evaluate_count_overlap_subflags(matcher, condition, other_condition, pcard, matcher._pre_count[condition][property_value], subflags)
+            local success_number = _matcher_evaluate_count_overlap_subflags(matcher, condition, other_condition, pcard, other_cards, subflags)
             if _matcher_evaluate_count_subflags(matcher[condition].count, success_number + 1) then return false end -- +1 to count the pcard too
         end
     end
