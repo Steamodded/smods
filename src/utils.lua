@@ -4125,17 +4125,54 @@ function SMODS.create_card_matcher(conditions)
     return matcher
 end
 
-local _general_insert_all_any_or_none = function(_table, subcondition, flags)
+local _warn_invalid_condition = function (at, condition)
+    sendWarnMessage(("%s called with invalid condition '%s'"):format(at, condition), "Utils")
+end
+
+local _general_insert_all_any_or_none = function(_table, condition, flags)
     local whitelist = { 
         all = true, 
         any = true, 
         none = true
     }
-    if not whitelist[subcondition] then return end
-    _table[subcondition] = {}
-    for obj_key, v in pairs(flags[subcondition]) do
+    if not whitelist[condition] then _warn_invalid_condition("SMODS.insert_card_matcher_condition", condition); return false end
+    _table[condition] = {}
+    for obj_key, v in pairs(flags[condition]) do
         if v then
-            _table[subcondition][obj_key] = true
+            _table[condition][obj_key] = v
+        end
+    end
+end
+local _overlap_insert_flags = function (flags)
+    local whitelist = {
+        all = true,
+        all_either = true,
+        any = true,
+        none = true,
+        exact = true,
+        at_least = true,
+        at_most = true
+    }
+    local _flags = {}
+    for flag, v in pairs(flags) do
+        if whitelist[flag] then
+            _flags[flag] = v
+        else _warn_invalid_condition("SMODS.insert_card_matcher_condition -> insert overlap -> insert flags", flag) end
+    end
+    return _flags
+end
+local _overlap_insert_all_any_or_none = function(_table, condition, flags)
+    local whitelist = { 
+        all = true, 
+        any = true, 
+        none = true
+    }
+    if not whitelist[condition] then _warn_invalid_condition("SMODS.insert_card_matcher_condition -> insert overlap", condition); return false end
+    _table[condition] = {}
+    for obj_key, v in pairs(flags[condition]) do
+        if v then
+            if type(v) ~= "table" then v = {any = true} end
+            _table[condition][obj_key] = _overlap_insert_flags(v)
         end
     end
 end
@@ -4150,18 +4187,16 @@ local _matcher_insert_count = function(matcher, condition, subflags)
             matcher[condition].count.at_most = v
         elseif flag == "func" then
             matcher[condition].count.func = v
-        elseif flag == "any_related" then
-            matcher[condition].count.any_related = v
         elseif flag == "overlap" then
             matcher[condition].count.overlap = {}
             if v.all then
-                _general_insert_all_any_or_none(matcher[condition].count.overlap, "all", v)
+                _overlap_insert_all_any_or_none(matcher[condition].count.overlap, "all", v)
             end
             if v.any then
-                _general_insert_all_any_or_none(matcher[condition].count.overlap, "any", v)
+                _overlap_insert_all_any_or_none(matcher[condition].count.overlap, "any", v)
             end
             if v.none then
-                _general_insert_all_any_or_none(matcher[condition].count.overlap, "none", v)
+                _overlap_insert_all_any_or_none(matcher[condition].count.overlap, "none", v)
             end
         end
     end
@@ -4176,7 +4211,7 @@ function SMODS.insert_card_matcher_condition(matcher, condition, flags)
         suit = true,
         check_function = true,
     }
-    if not whitelist[condition] then return false end
+    if not whitelist[condition] then _warn_invalid_condition("SMODS.insert_card_matcher_condition", condition); return false end
     if condition == "check_function" then
         matcher.check_function = flags.check_function
         return true
@@ -4204,19 +4239,23 @@ SMODS.card_matcher_nil_sentinel = "--NONE--"
 
 local _matcher_evaluate_count_subflags = function(count_flag, total)
     local is_match = true
+    local below = false
     if count_flag.exact then
         is_match = is_match and total == count_flag.exact
-    end
-    if count_flag.at_least then
-        is_match = is_match and total >= count_flag.at_least
+        if count_flag.exact > total then below = true end
     end
     if count_flag.at_most then
         is_match = is_match and total <= count_flag.at_most
+        if is_match then below = true end
+    end
+    if count_flag.at_least then
+        is_match = is_match and total >= count_flag.at_least
+        below = not is_match
     end
     if count_flag.func then
         is_match = is_match and count_flag.func(total)
     end
-    return is_match
+    return is_match, below
 end
 local _matcher_get_card_condition_values = function(pcard, condition)
     local keys
@@ -4238,82 +4277,99 @@ local _matcher_get_card_condition_values = function(pcard, condition)
     end
     return keys
 end
-local _matcher_evaluate_card_overlap = function(pcard_values, other_card_values)
+local _matcher_evaluate_card_overlap = function(pcard_values, other_card_values, all)
     for p_value, v in pairs(pcard_values) do
         if v and other_card_values[p_value] then
-            return true
+            if not all then return true end
+        elseif all then
+            return false
         end
     end
-    return false
+    return not not all
 end
-local _matcher_evaluate_count_overlap_subflag = function(matcher, condition, pcard, property_value)
-    local overlap_flag = matcher[condition].count.overlap
-    local successful_overlaps = 1 -- Counting the pcard itself too
-    if overlap_flag.all then
-        local failed_cards = {}
-        local total_cards = {}
-        for other_condition, _ in pairs(overlap_flag.all) do
-            local pcard_values
-            if other_condition ~= condition then
-                pcard_values = _matcher_get_card_condition_values(pcard, other_condition)
-            end
-            for other_card, v in pairs(matcher._pre_count[condition][property_value]) do
-                if other_card ~= pcard and not failed_cards[other_card] then
-                    total_cards[other_card] = true
-                    if not (other_condition == condition or _matcher_evaluate_card_overlap(pcard_values, _matcher_get_card_condition_values(other_card, other_condition))) then
-                        failed_cards[other_card] = true
-                    end
+local _matcher_evaluate_count_overlap_subflags = function (matcher, condition, other_condition, pcard, other_cards, subflags)
+    local pcard_values = _matcher_get_card_condition_values(pcard, other_condition)
+    local failed_cards = {}
+    local total_cards = {}
+    if subflags.any then
+        for other_card, _ in pairs(other_cards) do
+            if other_card ~= pcard and not failed_cards[other_card] then
+                total_cards[other_card] = true
+                if not (other_condition == condition or _matcher_evaluate_card_overlap(pcard_values, _matcher_get_card_condition_values(other_card, other_condition))) then
+                    failed_cards[other_card] = true
                 end
             end
         end
-        successful_overlaps = successful_overlaps + table_length(total_cards) - table_length(failed_cards)
     end
+    if subflags.all or subflags.all_either then
+        local primary_card_values
+        local check_card_values
+        for other_card, _ in pairs(other_cards) do
+            primary_card_values = pcard_values
+            if other_card ~= pcard and not failed_cards[other_card] then
+                total_cards[other_card] = true
+                if subflags.all_either then primary_card_values = ((matcher._pre_count[other_condition] or {})[pcard] or 0) <= ((matcher._pre_count[other_condition] or {})[other_card] or 0) and pcard_values or _matcher_get_card_condition_values(other_card, other_condition) end
+                check_card_values = primary_card_values == pcard_values and _matcher_get_card_condition_values(other_card, other_condition) or pcard_values
+                if not _matcher_evaluate_card_overlap(primary_card_values, check_card_values, true) then
+                    failed_cards[other_card] = true
+                end
+            end
+        end
+    end
+    if subflags.none then
+        for other_card, _ in pairs(other_cards) do
+            if other_card ~= pcard and not failed_cards[other_card] then
+                total_cards[other_card] = true
+                if other_condition == condition or _matcher_evaluate_card_overlap(pcard_values, _matcher_get_card_condition_values(other_card, other_condition)) then
+                    failed_cards[other_card] = true
+                end
+            end
+        end
+    end
+    local success_number = table_length(total_cards) - table_length(failed_cards)
+    local success = _matcher_evaluate_count_subflags(subflags, success_number)
+    if not success then return 0 end
+    return success_number
+end
+local _matcher_evaluate_count_overlap = function(matcher, condition, pcard, property_value)
+    local overlap_flag = matcher[condition].count.overlap
+    if overlap_flag.all then
+        for other_condition, subflags in pairs(overlap_flag.all) do
+            local success_number = _matcher_evaluate_count_overlap_subflags(matcher, condition, other_condition, pcard, matcher._pre_count[condition][property_value], subflags)
+            if not _matcher_evaluate_count_subflags(matcher[condition].count, success_number + 1) then return false end -- +1 to count the pcard too
+        end
+    end
+    
+    local any_succeeded = false
     if overlap_flag.any then
         local successful_cards = {}
-        for other_condition, _ in pairs(overlap_flag.any) do
-            local pcard_values
-            if other_condition ~= condition then
-                pcard_values = _matcher_get_card_condition_values(pcard, other_condition)
-            end
-            for other_card, v in pairs(matcher._pre_count[condition][property_value]) do
-                if other_card ~= pcard and not successful_cards[other_card] then
-                    if other_condition == condition or _matcher_evaluate_card_overlap(pcard_values, _matcher_get_card_condition_values(other_card, other_condition)) then
-                        successful_cards[other_card] = true 
-                    end
-                end
+        for other_condition, subflags in pairs(overlap_flag.any) do
+            local success_number = _matcher_evaluate_count_overlap_subflags(matcher, condition, other_condition, pcard, matcher._pre_count[condition][property_value], subflags)
+            if _matcher_evaluate_count_subflags(matcher[condition].count, success_number + 1) then -- +1 to count the pcard too
+                any_succeeded = true
+                break
             end
         end
-        successful_overlaps = successful_overlaps +  table_length(successful_cards)
     end
+    if not any_succeeded then return false end
+    
     if overlap_flag.none then
-        local failed_cards = {}
-        local total_cards = {}
-        for other_condition, _ in pairs(overlap_flag.none) do
-            local pcard_values
-            if other_condition ~= condition then
-                pcard_values = _matcher_get_card_condition_values(pcard, other_condition)
-            end
-            for other_card, v in pairs(matcher._pre_count[condition][property_value]) do
-                if other_card ~= pcard and not failed_cards[other_card] then
-                    total_cards[other_card] = true
-                    if other_condition == condition or _matcher_evaluate_card_overlap(pcard_values, _matcher_get_card_condition_values(other_card, other_condition)) then
-                        failed_cards[other_card] = true
-                    end
-                end
-            end
+        for other_condition, subflags in pairs(overlap_flag.none) do
+            local success_number = _matcher_evaluate_count_overlap_subflags(matcher, condition, other_condition, pcard, matcher._pre_count[condition][property_value], subflags)
+            if _matcher_evaluate_count_subflags(matcher[condition].count, success_number + 1) then return false end -- +1 to count the pcard too
         end
-        successful_overlaps = successful_overlaps +  table_length(total_cards) - table_length(failed_cards)
     end
-    return _matcher_evaluate_count_subflags(matcher[condition].count, successful_overlaps)
+    return true
 end
 local _matcher_evaluate_count = function(matcher, pcard, condition)
     local is_match = true
+    local below -- Optimization to not calculate overlap, because overlap can only reduce the count
     local keys = _matcher_get_card_condition_values(pcard, condition)
     for key, v in pairs(keys) do
         if v then
-            is_match = _matcher_evaluate_count_subflags(matcher[condition].count, table_length(matcher._pre_count[condition][key]))
-            if matcher[condition].count.overlap then
-                is_match = _matcher_evaluate_count_overlap_subflag(matcher, condition, pcard, key)
+            is_match, below = _matcher_evaluate_count_subflags(matcher[condition].count, table_length(matcher._pre_count[condition][key]))
+            if not below and matcher[condition].count.overlap then
+                is_match = _matcher_evaluate_count_overlap(matcher, condition, pcard, key)
             end
             if is_match then break end
         end
@@ -4391,18 +4447,11 @@ local _matcher_count_condition = function(matcher, condition, pcard)
             values = {[SMODS.card_matcher_nil_sentinel] = true}
         end
     end
-    local propagate_to = matcher[condition].count.any_related and matcher[condition].any
+    matcher._pre_count[condition][pcard] = 0 -- Number of [condition]s a card has -> used by overlap.all_either to determine the primary card
     for key, _ in pairs(values) do
         matcher._pre_count[condition][key] = matcher._pre_count[condition][key] or {}
         matcher._pre_count[condition][key][pcard] = true
-        if propagate_to and propagate_to[key] then -- If it should propagate (count is any_related and there's an "any" flag) and the card has a property value that matches the "any" flag
-            for p_key, v in pairs(propagate_to) do
-                if v then
-                    matcher._pre_count[condition][p_key] = matcher._pre_count[condition][p_key] or {}
-                    matcher._pre_count[condition][p_key][pcard] = true
-                end
-            end
-        end
+        matcher._pre_count[condition][pcard] = matcher._pre_count[condition][pcard] + 1
     end
 end
 

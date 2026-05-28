@@ -792,11 +792,19 @@ function SMODS.create_sprite(X, Y, W, H, atlas, pos) end
 ---             "at_least" = integer    -> The minimum number of cards ...^
 ---             "at_most" = integer     -> The maximum number of cards ...^
 ---             "func" = function       -> A function, which is called with the total number of cards that share a card's property (^), expecting a boolean return value to determine whether it matches or not. -> e.g. is_even() check or similar
----             "any_related" = boolean -> Whether to count a matched card's property as all of the property keys of the "any" flag. -> This allows matching cards based on the number of cards that share any of the "any" values, instead of specifically the card's property value.
 ---             "overlap" = {...}       -> "overlap" allows for linking conditions and has the following subflags;
 ---                     "any" = {...}       -> A map of conditions; A card which shares the base condition (e.g. enhancement) with another card must also share any of the conditions in this map.
 ---                     "all" = {...}       -> Same as the above, but a card must share all conditions.
 ---                     "none" = {...}      -> Same but only matches if the card shares none of them.
+---                             [condition] = true, or {...};   -> These per-condition flags allow overlapping cards based on how many of the [condition] overlap;
+---                                     "any" = boolean         -> any [condition]s overlap
+---                                     "all" = boolean         -> all [condition]s of the primary card checked overlap with the card checked against
+---                                     "all_either" = boolean  -> all [condition]s of the card with fewer [condition]s overlap with the other card 
+---                                     "none" = boolean        -> none of the [condition]s overlap
+---                                     "exact" = integer       -> [exact] number of cards overlap
+---                                     "at_least" = integer    -> [at_least] number of cards overlap
+---                                     "at_most" = integer     -> [at_most] number of cards overlap
+---                                     "func" = functions      -> see above count.func
 ---     "invert" = boolean      -> If true, inverts the final result of a condition.
 --- Unique flags:
 --- "check_function" condition:
