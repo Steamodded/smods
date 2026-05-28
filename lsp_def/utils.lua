@@ -136,6 +136,7 @@ function SMODS.merge_lists(...) end
 ---@field quantum_enhancements? boolean Enables "Quantum Enhancement" contexts. Cards can count as having multiple enhancements at once.
 ---@field retrigger_joker? boolean Enables "Joker Retrigger" contexts. Jokers can be retriggered by other jokers or effects.
 ---@field post_trigger? boolean Enables "Post Trigger" contexts. Allows calculating effects after a Joker has been calculated.
+---@field object_weights? boolean Enables individual weights for object polling. 
 ---@field cardareas? SMODS.optional_features.cardareas Enables additional CardArea calculation.
 
 ---@class SMODS.optional_features.cardareas: table
@@ -658,6 +659,7 @@ function SMODS.seeing_double_check(hand, suit) end
 
 ---@param lines table
 ---@param args table
+---@return table
 --- Handles localization description boxes.
 function SMODS.localize_box(lines, args) end
 
