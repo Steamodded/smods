@@ -4125,6 +4125,17 @@ function SMODS.create_unlock_text(center)
 	return localize('k_'..string.lower(center and center.set or 'unknown'))
 end
 
+function Card:get_suits(bypass_debuff, flush_calc)
+    local ret = {}
+    local is_wild = SMODS.has_any_suit(self)
+    for suit, _ in pairs(SMODS.Suits) do
+        if is_wild or self:is_suit(suit, bypass_debuff, flush_calc) then
+            ret[suit] = true
+        end
+    end
+    return ret
+end
+
 function SMODS.copy_card(card, args)
     args = args or {}
     local playing_card
