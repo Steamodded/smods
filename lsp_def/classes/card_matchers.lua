@@ -88,7 +88,7 @@ function SMODS.match_cards(cards, matchers) end
 
 ---@param matchers_met_cards table<table<string, table>, table<Card, boolean>> A map of matchers indexing the cards each matched with.
 ---@param cards_met_matchers table<Card, table<table<string, table>, boolean>> The inverse of the above.
----@param args table<"deduplicate_matches"|"all_matched_cards_score", boolean> Args;
+---@param args table<"deduplicate_matches"|"all_matched_cards_score"|"matcher_max_cards", boolean> Args;
 ---     "deduplicate_matches": Whether to make sure that each matcher matches a unique card. 
 ---     "all_matched_cards_score": In addition; As long as every matcher has at least one unique card, all cards that matched any matcher should score. (-> Akin to how Straight Flushes with Four Fingers work.)
 ---     "matcher_max_cards": A table<matcher, integer> allowing a matcher to count for more than one card, without needing to calculate it twice.
