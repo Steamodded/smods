@@ -2868,6 +2868,7 @@ function SMODS.destroy_cards(cards, args, ...)
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
     local destroy_func = function (card, args)
+        if not card.getting_sliced then return false end
         if args.destroy_func then 
             return args.destroy_func(card, args) ~= false
         elseif args.pinch_anim then
