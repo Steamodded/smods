@@ -1,55 +1,3 @@
-SMODS.MatcherConditions = {}
-SMODS.MatcherCondition = SMODS.GameObject:extend{
-    obj_table = SMODS.MatcherConditions,
-    obj_buffer = {},
-    required_params = {
-        'key',
-    },
-    inject = function(self) end,
-    getter = function (card) return {} end
-}
-
-SMODS.MatcherCondition {
-    key = "rank",
-    getter = function (card)
-        return {[SMODS.has_no_rank(card) and SMODS.card_matcher_nil_sentinel or card.base.value] = true}
-    end
-}
-SMODS.MatcherCondition {
-    key = "suit",
-    getter = function (card)
-        local keys
-        if not SMODS.has_no_suit(card) then
-            keys = card:get_suits()
-        else
-            keys = {[SMODS.card_matcher_nil_sentinel] = true}
-        end
-        return keys
-    end
-}
-SMODS.MatcherCondition {
-    key = "enhancement",
-    getter = function (card)
-        local keys = SMODS.get_enhancements(card)
-        if not next(keys) then keys = {[SMODS.card_matcher_nil_sentinel] = true} end
-        return keys
-    end
-}
-SMODS.MatcherCondition {
-    key = "edition",
-    getter = function (card)
-        return {[card.edition and card.edition.key or SMODS.card_matcher_nil_sentinel] = true}
-    end
-}
-SMODS.MatcherCondition {
-    key = "seal",
-    getter = function (card)
-        return {[card.seal or SMODS.card_matcher_nil_sentinel] = true}
-    end
-}
-SMODS.MatcherCondition {
-    key = "check_function",
-}
 
 -- Creates and returns (sanitized) matcher table
 function SMODS.create_card_matcher(conditions)
@@ -139,27 +87,7 @@ end
 
 function SMODS.insert_card_matcher_condition(matcher, condition, flags)
     if not SMODS.MatcherConditions[condition] then _warn_invalid_condition("SMODS.insert_card_matcher_condition", condition); return false end
-    if condition == "check_function" then
-        matcher.check_function = flags.check_function
-        return true
-    end
-    matcher[condition] = {}
-    if flags.all then
-        _general_insert_all_any_or_none(matcher[condition], "all", flags)
-    end
-    if flags.any then
-        _general_insert_all_any_or_none(matcher[condition], "any", flags)
-    end
-    if flags.none then
-        _general_insert_all_any_or_none(matcher[condition], "none", flags)
-    end
-    if flags.count then
-        _matcher_insert_count(matcher, condition, flags.count)
-    end
-    if matcher[condition] and flags.invert then
-        matcher[condition].invert = true
-    end
-    return true
+    return SMODS.MatcherConditions[condition]:insert_condition(matcher, flags)
 end
 
 SMODS.card_matcher_nil_sentinel = "--NONE--"
@@ -195,13 +123,13 @@ local _matcher_evaluate_card_overlap = function(pcard_values, other_card_values,
     return not not all
 end
 local _matcher_evaluate_count_overlap_subflags = function (matcher, condition, other_condition, pcard, all_cards, subflags)
-    local pcard_values = SMODS.MatcherConditions[other_condition].getter(pcard)
+    local pcard_values = SMODS.MatcherConditions[other_condition]:getter(pcard)
     local failed_cards = {}
     if subflags.any then
         for other_card, _ in pairs(all_cards) do
             if other_card ~= pcard and not failed_cards[other_card] then
                 if other_condition ~= condition then
-                    if not _matcher_evaluate_card_overlap(pcard_values, SMODS.MatcherConditions[other_condition].getter(other_card)) then
+                    if not _matcher_evaluate_card_overlap(pcard_values, SMODS.MatcherConditions[other_condition]:getter(other_card)) then
                         failed_cards[other_card] = true
                     end
                 end
@@ -214,8 +142,8 @@ local _matcher_evaluate_count_overlap_subflags = function (matcher, condition, o
         for other_card, _ in pairs(all_cards) do
             primary_card_values = pcard_values
             if other_card ~= pcard and not failed_cards[other_card] then
-                if subflags.all_either then primary_card_values = ((matcher._pre_count[other_condition] or {})[pcard] or 0) <= ((matcher._pre_count[other_condition] or {})[other_card] or 0) and pcard_values or SMODS.MatcherConditions[other_condition].getter(other_card) end
-                check_card_values = primary_card_values == pcard_values and SMODS.MatcherConditions[other_condition].getter(other_card) or pcard_values
+                if subflags.all_either then primary_card_values = ((matcher._pre_count[other_condition] or {})[pcard] or 0) <= ((matcher._pre_count[other_condition] or {})[other_card] or 0) and pcard_values or SMODS.MatcherConditions[other_condition]:getter(other_card) end
+                check_card_values = primary_card_values == pcard_values and SMODS.MatcherConditions[other_condition]:getter(other_card) or pcard_values
                 if not _matcher_evaluate_card_overlap(primary_card_values, check_card_values, true) then
                     failed_cards[other_card] = true
                 end
@@ -225,7 +153,7 @@ local _matcher_evaluate_count_overlap_subflags = function (matcher, condition, o
     if subflags.none then
         for other_card, _ in pairs(all_cards) do
             if other_card ~= pcard and not failed_cards[other_card] then
-                if other_condition == condition or _matcher_evaluate_card_overlap(pcard_values, SMODS.MatcherConditions[other_condition].getter(other_card)) then
+                if other_condition == condition or _matcher_evaluate_card_overlap(pcard_values, SMODS.MatcherConditions[other_condition]:getter(other_card)) then
                     failed_cards[other_card] = true
                 end
             end
@@ -269,7 +197,7 @@ end
 local _matcher_evaluate_count = function(matcher, pcard, condition)
     local is_match = true
     local below -- Optimization to not calculate overlap, because overlap can only reduce the count
-    local keys = SMODS.MatcherConditions[condition].getter(pcard)
+    local keys = SMODS.MatcherConditions[condition]:getter(pcard)
     for key, v in pairs(keys) do
         if v then
             is_match, below = _matcher_evaluate_count_subflags(matcher[condition].count, table_length(matcher._pre_count[condition][key]))
@@ -301,7 +229,7 @@ function SMODS.matcher_partial_evaluate(matcher, pcard, condition)
     }
     local partial_match = true 
     if simplified[condition] then
-        local card_values = SMODS.MatcherConditions[condition].getter(pcard)
+        local card_values = SMODS.MatcherConditions[condition]:getter(pcard)
         if matcher[condition].all then
             for key, _ in pairs(matcher[condition].all) do
                 partial_match = card_values[key]
@@ -336,7 +264,7 @@ end
 
 local _matcher_count_condition = function(matcher, condition, pcard)
     matcher._pre_count[condition][pcard] = 0 -- Number of [condition]s a card has -> used by overlap.all_either to determine the primary card
-    for key, _ in pairs(SMODS.MatcherConditions[condition].getter(pcard)) do
+    for key, _ in pairs(SMODS.MatcherConditions[condition]:getter(pcard)) do
         matcher._pre_count[condition][key] = matcher._pre_count[condition][key] or {}
         matcher._pre_count[condition][key][pcard] = true
         matcher._pre_count[condition][pcard] = matcher._pre_count[condition][pcard] + 1
@@ -449,3 +377,79 @@ function SMODS.get_hand_from_matching(matchers_to_cards, cards_to_matchers, args
     end
     return {}
 end
+
+
+SMODS.MatcherConditions = {}
+SMODS.MatcherCondition = SMODS.GameObject:extend{
+    obj_table = SMODS.MatcherConditions,
+    obj_buffer = {},
+    required_params = {
+        'key',
+    },
+    inject = function(self) end,
+    insert_condition = function(self, matcher, flags) 
+        matcher[self.key] = {}
+        if flags.all then
+            _general_insert_all_any_or_none(matcher[self.key], "all", flags)
+        end
+        if flags.any then
+            _general_insert_all_any_or_none(matcher[self.key], "any", flags)
+        end
+        if flags.none then
+            _general_insert_all_any_or_none(matcher[self.key], "none", flags)
+        end
+        if flags.count then
+            _matcher_insert_count(matcher, self.key, flags.count)
+        end
+        if matcher[self.key] and flags.invert then
+            matcher[self.key].invert = true
+        end
+    end,
+    getter = function (self, card) return {} end
+}
+
+SMODS.MatcherCondition {
+    key = "rank",
+    getter = function (self, card)
+        return {[SMODS.has_no_rank(card) and SMODS.card_matcher_nil_sentinel or card.base.value] = true}
+    end
+}
+SMODS.MatcherCondition {
+    key = "suit",
+    getter = function (self, card)
+        local keys
+        if not SMODS.has_no_suit(card) then
+            keys = card:get_suits()
+        else
+            keys = {[SMODS.card_matcher_nil_sentinel] = true}
+        end
+        return keys
+    end
+}
+SMODS.MatcherCondition {
+    key = "enhancement",
+    getter = function (self, card)
+        local keys = SMODS.get_enhancements(card)
+        if not next(keys) then keys = {[SMODS.card_matcher_nil_sentinel] = true} end
+        return keys
+    end
+}
+SMODS.MatcherCondition {
+    key = "edition",
+    getter = function (self, card)
+        return {[card.edition and card.edition.key or SMODS.card_matcher_nil_sentinel] = true}
+    end
+}
+SMODS.MatcherCondition {
+    key = "seal",
+    getter = function (self, card)
+        return {[card.seal or SMODS.card_matcher_nil_sentinel] = true}
+    end
+}
+SMODS.MatcherCondition {
+    key = "check_function",
+    insert_condition = function (self, matcher, flags)
+        matcher.check_function = flags.check_function
+        return true
+    end
+}
