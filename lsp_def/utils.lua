@@ -879,4 +879,4 @@ function SMODS.add_to_deck(card, args) end
 ---@param shade string Suit shade to check for
 ---@param bypass_debuff boolean? Whether to ignore the card's debuff status
 ---@return boolean
-function Card.is_suit_shade(card, shade, bypass_debuff)
+function Card.is_suit_shade(card, shade, bypass_debuff) end
