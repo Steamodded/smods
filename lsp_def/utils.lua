@@ -873,3 +873,10 @@ function SMODS.copy_card(card, args) end
 ---@param args {set: string?, area: CardArea|table?, playing_card: integer?}?
 ---@return Card|table
 function SMODS.add_to_deck(card, args) end
+
+---Checks if a card counts as at least one suit that matches the provided suit shade
+---@param card Card|table Card to check
+---@param shade string Suit shade to check for
+---@param bypass_debuff boolean? Whether to ignore the card's debuff status
+---@return boolean
+function Card.is_suit_shade(card, shade, bypass_debuff)

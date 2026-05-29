@@ -2082,6 +2082,7 @@ SMODS.UndiscoveredCompat = {
         ui_pos = { x = 1, y = 1 },
         keep_base_colours = true,
         sort_id = 3,
+        shade = "light",
     }
     SMODS.Suit {
         key = 'Clubs',
@@ -2090,6 +2091,7 @@ SMODS.UndiscoveredCompat = {
         ui_pos = { x = 2, y = 1 },
         keep_base_colours = true,
         sort_id = 4,
+        shade = "dark",
     }
     SMODS.Suit {
         key = 'Hearts',
@@ -2098,6 +2100,7 @@ SMODS.UndiscoveredCompat = {
         ui_pos = { x = 0, y = 1 },
         keep_base_colours = true,
         sort_id = 2,
+        shade = "light",
     }
     SMODS.Suit {
         key = 'Spades',
@@ -2106,6 +2109,7 @@ SMODS.UndiscoveredCompat = {
         ui_pos = { x = 3, y = 1 },
         keep_base_colours = true,
         sort_id = 1,
+        shade = "dark",
     }
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Rank
