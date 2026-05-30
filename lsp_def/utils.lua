@@ -51,7 +51,8 @@
 ---@field reroll_shop? true Check if `true` for effects after rerolling the shop.
 ---@field ending_shop? true Check if `true` for effects after leaving the shop.
 ---@field first_hand_drawn? true Check if `true` for effects after drawing the first hand.
----@field hand_drawn? true Check if `true` for effects after drawing a hand.
+---@field hand_drawn? Card[] List of cards that just got drawn during a blind
+---@field other_drawn? Card[] List of cards that just got drawn outside a blind
 ---@field using_consumeable? true Check if `true` for effects after using a Consumable.
 ---@field skip_blind? true Check if `true` for effects after skipping a blind.
 ---@field playing_card_added? true Check if `true` for effects after a playing card was added into the deck.
