@@ -1282,6 +1282,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
             desc_nodes.background_colour = res.background_colour
+        end,
+        has_attribute = function(self, attribute)
+            if not SMODS.Attributes[attribute] or not self.attributes then return false end
+            if self.attributes[attribute] then return true end
+            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
+                if self.attributes[att] then return true end
+            end
+            return false
         end
     }
 
@@ -1838,6 +1846,22 @@ SMODS.UndiscoveredCompat = {
             end
             G.P_BLINDS[self.key] = self
             if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
+            if self.attributes then
+                for _, attribute in ipairs(self.attributes) do
+                    if SMODS.Attributes[attribute] then
+                        self.attributes[attribute] = true
+                        SMODS.Attributes[attribute].keys = SMODS.merge_lists({SMODS.Attributes[attribute].keys or {}, {self.key}})
+                    end
+                end
+            end
+        end,
+        has_attribute = function(self, attribute)
+            if not SMODS.Attributes[attribute] or not self.attributes then return false end
+            if self.attributes[attribute] then return true end
+            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
+                if self.attributes[att] then return true end
+            end
+            return false
         end
     }
     SMODS.Blind:take_ownership('eye', {
@@ -1898,6 +1922,14 @@ SMODS.UndiscoveredCompat = {
             self.badge_to_key[self.key:lower() .. '_seal'] = self.key
             SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
             self.rng_buffer[#self.rng_buffer + 1] = self.key
+            if self.attributes then
+                for _, attribute in ipairs(self.attributes) do
+                    if SMODS.Attributes[attribute] then
+                        self.attributes[attribute] = true
+                        SMODS.Attributes[attribute].keys = SMODS.merge_lists({SMODS.Attributes[attribute].keys or {}, {self.key}})
+                    end
+                end
+            end
         end,
         process_loc_text = function(self)
             SMODS.process_loc_text(G.localization.descriptions.Other, self.key:lower() .. '_seal', self.loc_txt)
@@ -1951,6 +1983,14 @@ SMODS.UndiscoveredCompat = {
         create_fake_card = function(self)
 	        return { ability = { seal = copy_table(self.config) }, fake_card = self.key }
         end,
+        has_attribute = function(self, attribute)
+            if not SMODS.Attributes[attribute] or not self.attributes then return false end
+            if self.attributes[attribute] then return true end
+            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
+                if self.attributes[att] then return true end
+            end
+            return false
+        end
     }
     for _,v in ipairs { 'Purple', 'Gold', 'Blue', 'Red' } do
         SMODS.Seal:take_ownership(v, { badge_colour = G.C[v:upper()], pos = G.shared_seals[v].sprite_pos, generate_ui = SMODS.Seal.generate_ui })
@@ -3058,6 +3098,14 @@ SMODS.UndiscoveredCompat = {
         inject = function(self)
             G.P_TAGS[self.key] = self
             SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
+            if self.attributes then
+                for _, attribute in ipairs(self.attributes) do
+                    if SMODS.Attributes[attribute] then
+                        self.attributes[attribute] = true
+                        SMODS.Attributes[attribute].keys = SMODS.merge_lists({SMODS.Attributes[attribute].keys or {}, {self.key}})
+                    end
+                end
+            end
         end,
         generate_ui = function(self, info_queue, card, desc_nodes, specific_vars, full_UI_table)
             if not card then
@@ -3106,6 +3154,14 @@ SMODS.UndiscoveredCompat = {
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
             desc_nodes.background_colour = res.background_colour
+        end,
+        has_attribute = function(self, attribute)
+            if not SMODS.Attributes[attribute] or not self.attributes then return false end
+            if self.attributes[attribute] then return true end
+            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
+                if self.attributes[att] then return true end
+            end
+            return false
         end
     }
 

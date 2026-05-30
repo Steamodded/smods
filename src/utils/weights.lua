@@ -10,13 +10,17 @@ function SMODS.poll_object(args)
     
     -- Prepare pool
     local pool = args.pool or {}
-    local types = args.attributes or args.types or {args.type}
+    if args.type then args.types = {args.type} end
+    if args.types then args.type = args.types[1] end
+    local types = args.attributes or args.types
 
     -- Populate pool
     local types_used = {}
 
     if not args.pool then
         pool, types_used = SMODS.create_poll_pool(types, args)
+        -- pool is naturally empty, should only happen for pool types that allow nil to be returned
+        if #pool == 0 then return nil end
     end
     
     if args.filter then pool = args.filter(pool) end
@@ -210,7 +214,9 @@ end
 
 local function SMODS_WEIGHTS_poll_rarity(pool, args)
     local rarity_poll = pseudorandom(pseudoseed((args.seed or 'smods_cull_rarity')..'_cull' )) -- Generate the poll value
+    if not SMODS.ObjectTypes[args.type or 'Joker'] then return end
     local available_rarities = copy_table(SMODS.ObjectTypes[args.type or 'Joker'].rarities) -- Table containing a list of rarities and their rates
+    if not available_rarities then return end
     local vanilla_rarities = {["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4}
     local final_rarities = {}
     
@@ -282,8 +288,12 @@ function SMODS.create_poll_pool(labels, args)
         end
         return false
     end
-    
+
+    local sets = {}
     for _, label in ipairs(labels) do
+        if not SMODS.Attributes[label] then
+            sets[#sets+1] = label
+        end
         labels_used[label] = true
         local temp_pool = {}
         local join_func = (args.attributes and not args.union) and SMODS.intersect_lists or join_lists
@@ -313,9 +323,24 @@ function SMODS.create_poll_pool(labels, args)
         local temp = pool_exists(final_pool) and final_pool and join_func({final_pool, temp_pool}) or temp_pool
         final_pool = (args.closest_match and not pool_exists(temp)) and final_pool or temp
     end
+
+    if args.type == false then
+        args.types = nil
+    elseif not args.types then
+        args.types = {}
+        if #sets == 0 then
+            args.types = {'Joker'}
+        else
+            for _,v in ipairs(sets) do
+                args.types[#args.types+1] = v
+            end
+        end
+    end
     
     if args.attributes and not args.rarity and args.rarity ~= false then
         args.rarity = SMODS_WEIGHTS_poll_rarity(final_pool, args)
+        final_pool = SMODS.cull_pool(final_pool, args)
+    elseif args.types then
         final_pool = SMODS.cull_pool(final_pool, args)
     end
 
@@ -326,7 +351,27 @@ function SMODS.create_poll_pool(labels, args)
         table.insert(ret_pool, pool[k])
     end
 
-    if not pool_exists then ret_pool = {{key = 'j_joker', type = 'Joker'}} end
+    if not pool_exists then
+        local set = args.types and args.types[1] or 'Joker'
+        local default
+        if SMODS.ObjectTypes[set] and SMODS.ObjectTypes[set].default and G.P_CENTERS[SMODS.ObjectTypes[set].default] then default = SMODS.ObjectTypes[set].default
+        elseif set == 'Tarot' or set == 'Tarot_Planet' then default = "c_strength"
+        elseif set == 'Planet' then default = "c_pluto"
+        elseif set == 'Spectral' then default = "c_incantation"
+        elseif set == 'Voucher' then default = "v_blank"
+        elseif set == 'Tag' then default = "tag_handy"
+        elseif set == 'Edition' then default = nil
+        -- the following 3 are subjective choices i made, they can be changed later if needed
+        elseif set == 'Enhanced' then default = "c_base"
+        elseif set == 'Seal' then default = nil
+        elseif set == 'Blind' then default = "bl_hook"
+        else default = 'j_joker' end
+        if default then
+            ret_pool = {{key = default, type = set}}
+        else
+            ret_pool = {}
+        end
+    end
 
     return ret_pool, labels_used
 end
@@ -441,6 +486,12 @@ function SMODS.cull_pool(pool, args)
     
     local _rarity = args.rarity and args.rarity ~= true and args.rarity
 
+    if args.types then
+        for i, v in ipairs(args.types) do
+            args.types[v] = true
+        end
+    end
+
     for _, key in ipairs(pool) do
         local add = nil
         local v = G.P_CENTERS[key]
@@ -450,7 +501,7 @@ function SMODS.cull_pool(pool, args)
             if not (G.GAME.used_jokers[v.key] and not pool_opts.allow_duplicates and not SMODS.showman(v.key) and not args.allow_duplicates) and (v.unlocked ~= false or v.rarity == 4) and (v.rarity ~= 4 or args.allow_legendaries) and (not _rarity or _rarity == v.rarity) then
                 if v.enhancement_gate then
                     add = nil
-                    for kk, vv in pairs(G.playing_cards) do
+                    for kk, vv in pairs(G.playing_cards or {}) do
                         if SMODS.has_enhancement(vv, v.enhancement_gate) then
                             add = true
                         end
@@ -460,6 +511,7 @@ function SMODS.cull_pool(pool, args)
                 end
             end
 
+            if args.types and (not args.types[v.set] and not (args.types['Consumeables'] and SMODS.ConsumableTypes[v.set])) then add = nil end
             if v.no_pool_flag and G.GAME.pool_flags[v.no_pool_flag] then add = nil end
             if v.yes_pool_flag and not G.GAME.pool_flags[v.yes_pool_flag] then add = nil end
             
@@ -469,6 +521,24 @@ function SMODS.cull_pool(pool, args)
                 final_pool[#final_pool + 1] = v.key
             else
                 final_pool[#final_pool + 1] = 'UNAVAILABLE'
+            end
+        else
+            for set, _p in pairs(SMODS.game_table_from_type) do
+                v = G[_p][key]
+                if v then
+                    add = true
+                    break
+                end
+            end
+
+            if v then
+                if args.types and not args.types[v.set] then add = nil end
+                
+                if add and not G.GAME.banned_keys[v.key] then 
+                    final_pool[#final_pool + 1] = v.key
+                else
+                    final_pool[#final_pool + 1] = 'UNAVAILABLE'
+                end
             end
         end
     end
