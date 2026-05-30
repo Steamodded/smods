@@ -534,6 +534,20 @@ SMODS.DrawStep {
 }
 
 SMODS.DrawStep {
+    key = 'sprite_particles',
+    order = 95,
+    func = function(self)
+        for i, particle_sprite in ipairs(self.sprite_particles or {}) do
+            local sprite_particle_obj = SMODS.SpriteParticles[particle_sprite.sprite_particle_key]
+            if sprite_particle_obj and type(sprite_particle_obj.draw) == "function" then
+                sprite_particle_obj:draw(particle_sprite, self)
+            end
+        end
+    end,
+    conditions = { vortex = false },
+}
+
+SMODS.DrawStep {
     key = 'focused_ui_2',
     order = 100,
     func = function(self)
