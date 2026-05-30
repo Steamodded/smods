@@ -500,3 +500,24 @@ SMODS.Attribute({
         'j_hiker'
     }
 })
+
+SMODS.Attribute({
+    key = 'shop',
+    keys = {
+        'j_astronomer', 'j_chaos', 'j_flash'
+    }
+})
+
+SMODS.Attribute({
+    key = 'booster',
+    keys = {
+        'j_red_card', 'j_hallucination', 'j_astronomer'
+    }
+})
+
+SMODS.Attribute({
+    key = 'hand_level',
+    keys = {
+        'j_space', 'j_burnt'
+    }
+})
