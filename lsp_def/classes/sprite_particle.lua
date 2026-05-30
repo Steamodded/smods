@@ -16,7 +16,7 @@
 ---@field required_params? string[] Array of parameters required for objects created by this class. 
 ---@field set? string Important for objects wanting to follow vanilla logic that depends on `set`. For classes, this is used for logging purposes. 
 ---@field shader? string Key of a shader to use when this SpriteParticle draws its Sprite. If nil, Sprite:draw() is called instead.
----@field sound? string|table Key or table<key=key,per=per,vol=vol> for a Sound, played when the SpriteParticle is created.
+---@field sound? string|table|fun(self: SMODS.SpriteParticle|table, sprite: Sprite, args: table|nil): nil Key or table<key=key,per=per,vol=vol> for a Sound, played when the SpriteParticle instantiates a Sprite, or a function(self, sprite, args) also called when a Sprite is created. 
 ---@field remove_condition? fun(self: SMODS.SpriteParticle|table, sprite: Sprite, card: Card|nil, args: table|nil): boolean Checked in an Event, if true, the Sprite is removed.
 ---@field spawn? fun(self: SMODS.SpriteParticle|table, args: table|nil): Sprite Creates a new Sprite according to args; If args.card is set, attaches the Sprite to the card, else places it at args.x, args.y. If args.centered, centers the Sprite on the Card/its coords.
 ---@field draw? fun(self: SMODS.SpriteParticle|table, sprite: Sprite, card: Card|nil): nil Draws the Sprite.
