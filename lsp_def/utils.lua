@@ -544,14 +544,16 @@ function SMODS.debug_calculation() end
 
 ---@param card Card|table
 ---@param pack SMODS.Booster|table
----@return boolean|string
+---@return boolean|string, boolean?
 --- Controls if the card should be selectable from a Booster Pack.
+--- Additionally returns `true` as a second value if it can also be used.
 function Card.selectable_from_pack(card, pack) end
 
 ---@param card Card|table
 ---@param pack SMODS.Booster|table
----@return string|{[string]: string}
+---@return string|{[string]: string}, boolean?
 --- Controls the area a card should be after selection from a Booster Pack.
+--- Additionally returns `true` as a second value if it can also be used.
 function SMODS.card_select_area(card, pack) end
 
 ---@param pool (string|"UNAVAILABLE")[]

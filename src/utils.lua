@@ -2488,12 +2488,12 @@ function Card.selectable_from_pack(card, pack)
             if key == card.config.center_key then return false end
         end
     end
-    local select_area = SMODS.card_select_area(card, pack)
+    local select_area, can_also_use = SMODS.card_select_area(card, pack)
     if select_area then
         if type(select_area) == 'table' then
             if select_area[card.ability.set] then return select_area[card.ability.set] else return false end
         end
-        return select_area
+        return select_area, can_also_use
     end
 end
 
@@ -3523,27 +3523,27 @@ function UIElement:draw_pixellated_strikethough(_type, _parallax, _emboss, _prog
 end
 
 function SMODS.card_select_area(card, pack)
-    local select_area
+    local select_area, can_also_use
     if card.config.center.select_card then
         if type(card.config.center.select_card) == "function" then -- Card's value takes first priority
-            select_area = card.config.center:select_card(card, pack)
+            select_area, can_also_use = card.config.center:select_card(card, pack)
         else
             select_area = card.config.center.select_card
         end
     elseif SMODS.ConsumableTypes[card.ability.set] and SMODS.ConsumableTypes[card.ability.set].select_card then -- ConsumableType is second priority
         if type(SMODS.ConsumableTypes[card.ability.set].select_card) == "function" then
-            select_area = SMODS.ConsumableTypes[card.ability.set]:select_card(card, pack)
+            select_area, can_also_use = SMODS.ConsumableTypes[card.ability.set]:select_card(card, pack)
         else
             select_area = SMODS.ConsumableTypes[card.ability.set].select_card
         end
     elseif pack.select_card then -- Pack is third priority
         if type(pack.select_card) == "function" then
-            select_area = pack:select_card(card, pack)
+            select_area, can_also_use = pack:select_card(card, pack)
         else
             select_area = pack.select_card
         end
     end
-    return select_area
+    return select_area, can_also_use
 end
 
 function SMODS.get_select_text(card, pack)
