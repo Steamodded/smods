@@ -1,5 +1,11 @@
 SMODS.SPRITE_PARTICLES = {}
 
+local _sprite_update_hook = function (self, ...)
+    local obj = SMODS.SpriteParticles[self.sprite_particle_key]
+    Sprite.update(self, ...)
+    obj:update(self, self.particle_parent)
+end
+
 SMODS.SpriteParticles = {}
 SMODS.SpriteParticle = SMODS.GameObject:extend {
     obj_table = SMODS.SpriteParticles,
@@ -12,8 +18,14 @@ SMODS.SpriteParticle = SMODS.GameObject:extend {
     },
     shader = nil,
     sound = nil, -- sound code, table<key=key, per=per, vol=vol>, or func(self, sprite, args)
-    remove_condition = function (self, sprite, card, args)
-        return true
+    life_time = nil,
+    remove_condition = function (self, sprite, card)
+        if not self.life_time then return true end
+        local speed = sprite.game_speed_dependent and G.SETTINGS.GAMESPEED or 1
+        if G.TIMERS.REAL - sprite.spawn_time > self.life_time / speed  then
+            return true
+        end
+        return false
     end,
     spawn = function (self, args)
         args = args or {}
@@ -30,7 +42,11 @@ SMODS.SpriteParticle = SMODS.GameObject:extend {
         local sprite = SMODS.create_sprite(x, y, w, h, self.atlas, self.pos)
         sprite.sprite_particle_key = self.key
         sprite.custom_draw = true
+        sprite.update = _sprite_update_hook
+        sprite.spawn_time = G.TIMERS.REAL
+        sprite.game_speed_dependent = args.game_speed_dependent
         if card then
+            sprite.particle_parent = card
             card.sprite_particles = card.sprite_particles or {}
             table.insert(card.sprite_particles, sprite)
             card.children[sprite] = sprite
@@ -51,26 +67,18 @@ SMODS.SpriteParticle = SMODS.GameObject:extend {
                 self:sound(sprite, args)
             end
         end
-        G.E_MANAGER:add_event(Event({
-            trigger = self.lifetime and "after" or "immediate",
-            delay = self.lifetime,
-            blocking = false,
-            blockable = false,
-            func = function ()
-                local cond = self:remove_condition(sprite, card, args) 
-                if cond then
-                    if card then
-                        card.children[sprite] = nil
-                        table.remove(card.sprite_particles, SMODS.get_index(card.sprite_particles, sprite))
-                    else
-                        table.remove(SMODS.SPRITE_PARTICLES, SMODS.get_index(SMODS.SPRITE_PARTICLES, sprite))
-                    end
-                    sprite:remove()
-                end
-                return cond
-            end
-        }))
         return sprite
+    end,
+    update = function (self, sprite, card) 
+        if self:remove_condition(sprite, card) then
+            if card then
+                card.children[sprite] = nil
+                table.remove(card.sprite_particles, Unicard.table_find(card.sprite_particles, sprite))
+            else
+                table.remove(Unicard.SPRITE_PARTICLES, Unicard.table_find(Unicard.SPRITE_PARTICLES, sprite))
+            end
+            sprite:remove()
+        end
     end,
     draw = function (self, sprite, card)
         if self.shader then
