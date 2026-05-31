@@ -20,6 +20,7 @@
 ---@field life_time? number The amount of time a spawned Sprite should live. By default, this uses G.TIMERS.REAL, without G.SETTINGS.GAMESPEED. To use game speed, see spawn() below.
 ---@field remove_condition? fun(self: SMODS.SpriteParticle|table, sprite: Sprite, card: Card|nil, args: table|nil): boolean Checked in an Event, if true, the Sprite is removed.
 ---@field spawn? fun(self: SMODS.SpriteParticle|table, args: table|nil): Sprite Creates a new Sprite according to args; If args.card is set, attaches the Sprite to the card, else places it at args.x, args.y. If args.centered, centers the Sprite on the Card/its coords. If args.game_speed_dependent, the Sprite's life_time depends on G.SETTINGS.GAMESPEED.
+---@field remove_sprite? fun(self: SMODS.SpriteParticle|table, sprite: Sprite, card: Card|nil): nil `:remove()`s a spawned Sprite and clears it from card.children.
 ---@field update? fun(self: SMODS.SpriteParticle|table, sprite: Sprite, card: Card|nil): nil Upates the Sprite, by default this checks self:remove_condition() for whether the Sprite should be :removed().
 ---@field draw? fun(self: SMODS.SpriteParticle|table, sprite: Sprite, card: Card|nil): nil Draws the Sprite.
 ---@field __call? fun(self: SMODS.SpriteParticle|table, o: SMODS.SpriteParticle|table): nil|table|SMODS.SpriteParticle

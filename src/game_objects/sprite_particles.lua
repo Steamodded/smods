@@ -69,15 +69,18 @@ SMODS.SpriteParticle = SMODS.GameObject:extend {
         end
         return sprite
     end,
+    remove_sprite = function (self, sprite, card)
+        if card then
+            card.children[sprite] = nil
+            table.remove(card.sprite_particles, Unicard.table_find(card.sprite_particles, sprite))
+        else
+            table.remove(Unicard.SPRITE_PARTICLES, Unicard.table_find(Unicard.SPRITE_PARTICLES, sprite))
+        end
+        sprite:remove()
+    end,
     update = function (self, sprite, card) 
         if self:remove_condition(sprite, card) then
-            if card then
-                card.children[sprite] = nil
-                table.remove(card.sprite_particles, Unicard.table_find(card.sprite_particles, sprite))
-            else
-                table.remove(Unicard.SPRITE_PARTICLES, Unicard.table_find(Unicard.SPRITE_PARTICLES, sprite))
-            end
-            sprite:remove()
+            self:remove_sprite(sprite, card)
         end
     end,
     draw = function (self, sprite, card)
