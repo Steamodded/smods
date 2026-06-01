@@ -14,20 +14,6 @@ match_indent = true
 position = "at"
 payload = '''if SMODS.has_no_rank(self) and not self.vampired then'''
 
-# Card:get_chip_bonus()
-[[patches]]
-[patches.regex]
-target = "card.lua"
-pattern = '''
-(?<indent>[\t ]*)if self\.ability\.effect == 'Stone Card' then
-[\t ]*    return self\.ability\.bonus \+ \(self\.ability\.perma_bonus or 0\)
-[\t ]*end'''
-position = "at"
-payload = '''if self.ability.effect == 'Stone Card' or self.config.center.replace_base_card then
-    return self.ability.bonus + (self.ability.perma_bonus or 0)
-end'''
-line_prepend = '$indent'
-
 # Card:calculate_joker()
 # Raised Fist
 [[patches]]
@@ -158,45 +144,6 @@ match_indent = true
 position = "at"
 payload = "elseif specific_vars.playing_card then"
 
-
-## Allow cards to function as multiple enhancements (e.g. from jokers)
-# Calculate extra enhancements when held in hand at end of round
-[[patches]]
-[patches.pattern]
-target = "functions/state_events.lua"
-pattern = "local effects = {G.hand.cards[i]:get_end_of_round_effect()}"
-position = "at"
-payload = '''
-local effects = {[1] = {playing_card = G.hand.cards[i]:get_end_of_round_effect()}}
-local extra_enhancements = SMODS.get_enhancements(G.hand.cards[i], true)
-local old_ability = copy_table(G.hand.cards[i].ability)
-local old_center = G.hand.cards[i].config.center
-local old_center_key = G.hand.cards[i].config.center_key
-for k, _ in pairs(extra_enhancements) do
-    if G.P_CENTERS[k] then
-        G.hand.cards[i]:set_ability(G.P_CENTERS[k])
-        G.hand.cards[i].ability.extra_enhancement = k
-        effects[#effects+1] = {[1] = {playing_card = G.hand.cards[i]:get_end_of_round_effect()}}
-    end
-end
-G.hand.cards[i].ability = old_ability
-G.hand.cards[i].config.center = old_center
-G.hand.cards[i].config.center_key = old_center_key
-G.hand.cards[i]:set_sprites(old_center)
-'''
-match_indent = true
-
-# Prevent blue seal effect on extra enhancements at end of round
-[[patches]]
-[patches.pattern]
-target = "card.lua"
-pattern = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then"
-position = "before"
-payload = '''
-if self.extra_enhancement then return ret end
-'''
-match_indent = true
-
 # Use the has enhancement function for enhancement gates
 [[patches]]
 [patches.pattern]
@@ -239,22 +186,13 @@ position = "at"
 payload = "if cards_destroyed[i].shattered then"
 match_indent = true
 
-# Prevent blue seals from applying on quantum enhancement calc
+# card.lua : Card:calculate_end_of_round_effect() : update to use quantum check
 [[patches]]
 [patches.pattern]
 target = "card.lua"
 pattern = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then"
 position = "at"
-payload = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit and not self.ability.extra_enhancement then"
-match_indent = true
-
-# Reset enh cache on game update
-[[patches]]
-[patches.pattern]
-target = "game.lua"
-pattern = "modulate_sound(dt)"
-position = "after"
-payload = "SMODS.enh_cache:clear()"
+payload = "if self:has_seal('Blue') and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then"
 match_indent = true
 
 # Invalidate enhancement cache when card changes / replace_base_card fix pt1
@@ -264,7 +202,6 @@ target = "card.lua"
 pattern = "function Card:set_ability(center, initial, delay_sprites)"
 position = "after"
 payload = '''
-    SMODS.enh_cache:write(self, nil)
 
     if self.ability and not initial then
         self.ability.card_limit = self.ability.card_limit - (self.config.center.config.card_limit or 0)
@@ -298,13 +235,6 @@ payload = '''if self.ability and not initial and not delay_sprites then
   self.front_hidden = self:should_hide_front()
 end'''
 match_indent = true
-[[patches]]
-[patches.pattern]
-target = "card.lua"
-pattern = "function Card:set_base(card, initial)"
-position = "after"
-payload = "SMODS.enh_cache:write(self, nil)"
-match_indent = true
 
 [[patches]]
 [patches.pattern]
@@ -312,7 +242,6 @@ target = "card.lua"
 pattern = "function Card:set_seal(_seal, silent, immediate)"
 position = "after"
 payload = '''
-    SMODS.enh_cache:write(self, nil)
     if self.seal then
         self.ability.card_limit = self.ability.card_limit - (self.ability.seal.card_limit or 0)
         self.ability.extra_slots_used = self.ability.extra_slots_used - (self.ability.seal.extra_slots_used or 0)
