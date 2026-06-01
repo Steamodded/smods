@@ -3,6 +3,19 @@ version = "1.0.0"
 dump_lua = true
 priority = -10
 
+
+### Seal ###
+
+# functions/state_events.lua : G.FUNCS.discard_cards_from_highlighted() : Remove (now) duplicate Seal calc
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''G.hand.highlighted[i]:calculate_seal({discard = true})'''
+position = "at"
+match_indent = true
+payload = ''''''
+
+
 ### Suit ###
 
 # blind.lua : Blind:debuff_card() : update card:is_suit() check and add card:is_rank() check
