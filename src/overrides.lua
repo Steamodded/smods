@@ -531,7 +531,7 @@ function SMODS.applied_stakes_UI(i, stake_desc_rows, num_added)
 					local _stake_center = G.P_CENTER_POOLS.Stake[i]
 					local t, res = {}, {}
 					if _stake_center.loc_vars and type(_stake_center.loc_vars) == 'function' then
-						res = _stake_center:loc_vars() or {}
+						res = _stake_center:loc_vars({}) or {}
 					end
 					t.vars = res.vars or {}
 					t.key = res.key or _stake_center.key
@@ -2409,7 +2409,9 @@ end
 function Card:align_h_popup()
 	local focused_ui = self.children.focused_ui and true or false
 	local popup_direction = (self.children.buy_button or (self.area and self.area.config.view_deck) or (self.area and self.area.config.type == 'shop')) and 'cl' or
-							(self.T.y > G.CARD_H*0.8 and self.T.y < G.CARD_H*1.8) and ((self.T.x > G.ROOM.T.w*0.4) and "cl" or "cr") or
+							(self.params.run_select_stake_tower) and 'cl' or
+							(self.params.run_select_selection_choice and self.params.stake) and 'bm' or
+							((self.T.y > G.CARD_H*0.8 and self.T.y < G.CARD_H*1.8) or self.params.run_select_selection_choice ) and ((self.T.x > G.ROOM.T.w*0.4) and "cl" or "cr") or
 							(self.T.y < G.CARD_H*0.8) and 'bm' or
 							'tm'
 	local sign = 1
