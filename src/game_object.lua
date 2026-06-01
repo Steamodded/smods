@@ -425,6 +425,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     ----- API CODE GameObject.Atlas
     -------------------------------------------------------------------------------------------------
 
+    local atlas_table_map = {
+        ASSET_ATLAS = "ASSET_ATLAS",
+        ANIMATION_ATLAS = "ANIMATION_ATLAS",
+        STATE_ATLAS = "ANIMATION_ATLAS",
+    }
+
     SMODS.Atlases = {}
     SMODS.Atlas = SMODS.GameObject:extend {
         obj_table = SMODS.Atlases,
@@ -466,7 +472,11 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ('Failed to initialize image data for Atlas %s'):format(self.key))
             self.image = love.graphics.newImage(self.image_data,
                 { mipmaps = true, dpiscale = G.SETTINGS.GRAPHICS.texture_scaling })
-            G[self.atlas_table][self.key_noloc or self.key] = self
+
+            self.columns = self.image:getWidth() / self.px
+            self.rows = self.image:getHeight() / self.py
+
+            G[atlas_table_map[self.atlas_table]][self.key_noloc or self.key] = self
 
             local mipmap_level = SMODS.config.graphics_mipmap_level_options[SMODS.config.graphics_mipmap_level]
             if not self.disable_mipmap and mipmap_level and mipmap_level > 0 then
@@ -703,7 +713,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if not self.injected then
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
-                    G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos)
+                    G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos, self.sprite_args)
                     G.sticker_map[self.key] = self.key:sub(7)
                 else
                     G.sticker_map[self.key] = nil
@@ -1777,7 +1787,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
         inject = function(self)
             if self.overlay_pos then
-                self.overlay_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.overlay_pos)
+                self.overlay_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.overlay_pos, self.sprite_args)
                 self.no_overlay = true
             end
         end,
@@ -1894,7 +1904,7 @@ SMODS.UndiscoveredCompat = {
         },
         inject = function(self)
             G.P_SEALS[self.key] = self
-            G.shared_seals[self.key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas) or SMODS.get_atlas('centers'), self.pos)
+            G.shared_seals[self.key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas) or SMODS.get_atlas('centers'), self.pos, self.sprite_args)
             self.badge_to_key[self.key:lower() .. '_seal'] = self.key
             SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
             self.rng_buffer[#self.rng_buffer + 1] = self.key
@@ -3142,7 +3152,7 @@ SMODS.UndiscoveredCompat = {
             self.order = #self.obj_buffer
         end,
         inject = function(self)
-            self.sticker_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.pos)
+            self.sticker_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.pos, self.sprite_args)
             G.shared_stickers[self.key] = self.sticker_sprite
         end,
         -- relocating sticker checks to here, so if the sticker has different checks than default
@@ -3277,6 +3287,7 @@ SMODS.UndiscoveredCompat = {
         set = 'Enhanced',
         class_prefix = 'm',
         atlas = 'centers',
+        sprite_args = nil, -- Used by StateSprite (when the atlas' atlas_table == "STATE_ATLAS"), {states=..., states_offset=..., default_state=...}
         pos = { x = 0, y = 0 },
         required_params = {
             'key',
@@ -4013,6 +4024,12 @@ SMODS.UndiscoveredCompat = {
         text = '^'
     }
 
+
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT Object.Node.Moveable.Sprite.AnimatedSprite.StateSprite
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/game_objects/state_sprite.lua'), ('=[SMODS _ "src/game_objects/state_sprite.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
