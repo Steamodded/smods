@@ -4,6 +4,7 @@
 ---@field obj_table? table<string, SMODS.Font|table> Table of objects registered to this class. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field path? string Name of the font file, including the extension. 
+---@field path_mod? Mod|table The mod this object's `path` belongs to, if this is not the same mod it was created by.
 ---@field render_scale? number Set the size of the font. This is generally better as a higher value so it can be scaled down. The default value is `200`.
 ---@field TEXT_HEIGHT_SCALE? number Determines line spacing. The default value is `0.83`.
 ---@field TEXT_OFFSET? table|{x: number, y: number} Determines the offset that the font is rendered. You might need to adjust this if the font renders in unexpected places. The default value is `{x=0, y=0}`.
