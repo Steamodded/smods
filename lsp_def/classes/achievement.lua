@@ -4,7 +4,8 @@
 ---@field obj_table? table<string, SMODS.Achievement|table> Table of objects registered to this class. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field atlas? string Key to the achievement's atlas. 
----@field pos? table|{x: integer, y: integer} Position of the achievement's sprite. 
+---@field pos? table|{x: integer, y: integer} Position of the achievement's sprite.
+---@field hidden_pos? table|{x: integer, y: integer} Position of the achievement's sprite when it has not been earned.
 ---@field earned? boolean Sets whether the achievemnt is considered "earned" on profile load. To reset, set `reset_on_startup` to `true`. 
 ---@field reset_on_startup? boolean Sets whether the achievement is unearned on profile load. 
 ---@field bypass_all_unlocked? boolean Sets whether the achievement can be earned on profiles that pressed the "Unlock All" button. 

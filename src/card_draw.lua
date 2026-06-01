@@ -184,6 +184,7 @@ SMODS.DrawStep {
             end
         end
         if self.children.use_button and self.highlighted then self.children.use_button:draw() end
+        if self.children.select_button and self.highlighted then self.children.select_button:draw() end
     end,
 } 
 
