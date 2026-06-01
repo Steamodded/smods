@@ -1975,6 +1975,7 @@ SMODS.CONTEXT_RETRIGGER_BLACKLIST = {
     modify_scoring_hand = true,
     modify_weights = true,
     evaluate_poker_hand = true,
+    debuff_hand = true,
 }
 
 function SMODS.can_context_retrigger(context)
@@ -1994,6 +1995,7 @@ SMODS.CONTEXT_POST_TRIGGER_BLACKLIST = {
     modify_scoring_hand = true,
     modify_weights = true,
     evaluate_poker_hand = true,
+    debuff_hand = true,
 }
 
 function SMODS.can_context_post_trigger(context)
