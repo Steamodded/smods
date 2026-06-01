@@ -5,6 +5,7 @@
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field key string Unique string to reference this object. This, `path`, and shader name in the GLSL must be the same.
 ---@field path string Name of the shader file. This, `key`, and shader name in the GLSL must be the same. 
+---@field path_mod? Mod|table The mod this object's `path` belongs to, if this is not the same mod it was created by.
 ---@field __call? fun(self: SMODS.Shader|table, o: SMODS.Shader|table): nil|table|SMODS.Shader
 ---@field extend? fun(self: SMODS.Shader|table, o: SMODS.Shader|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Shader|table): boolean? Ensures objects already registered will not register. 
