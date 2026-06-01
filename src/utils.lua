@@ -1657,7 +1657,7 @@ SMODS.calculate_repetitions = function(card, context, reps)
                     for i = curr_size + 1, new_size do
                         if not first then
                             post = {}
-                            if not context.post_trigger and SMODS.optional_features.post_trigger then
+                            if SMODS.optional_features.post_trigger and SMODS.can_context_post_trigger(context) then
                                 SMODS.calculate_context({blueprint_card = context.blueprint_card, post_trigger = true, other_card = _card, other_context = context, other_ret = eval}, post)
                             end
                         end
@@ -1971,7 +1971,10 @@ end
 SMODS.CONTEXT_RETRIGGER_BLACKLIST = {
     mod_probability = true, fix_probability = true,
     check_enhancement = true,
-    retrigger_joker_check = true, retrigger_joker = true
+    retrigger_joker_check = true, retrigger_joker = true,
+    modify_scoring_hand = true,
+    modify_weights = true,
+    evaluate_poker_hand = true,
 }
 
 function SMODS.can_context_retrigger(context)
@@ -1987,7 +1990,10 @@ SMODS.CONTEXT_POST_TRIGGER_BLACKLIST = {
     mod_probability = true, fix_probability = true,
     check_enhancement = true,
     retrigger_joker_check = true, 
-    post_trigger = true
+    post_trigger = true,
+    modify_scoring_hand = true,
+    modify_weights = true,
+    evaluate_poker_hand = true,
 }
 
 function SMODS.can_context_post_trigger(context)
