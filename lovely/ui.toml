@@ -358,8 +358,9 @@ target = 'functions/common_events.lua'
 pattern = '''
 desc_nodes.name = localize{type = 'name_text', key = name_override or _c.key, set = name_override and 'Other' or _c.set} 
 '''
-position = "after"
+position = "at"
 payload = '''
+desc_nodes.name = localize{type = 'name_text', key = name_override or _c.key, set = name_override and 'Other' or _c.set, vars = specific_vars or _c.name_vars or _c.vars} 
 -- If statement guards against setting `name_styled` twice. This apparently happens
 -- when generating ui for Lucky Cards: smods takes ownership of vanilla, so
 -- this code is reached in both places it appears
@@ -372,7 +373,7 @@ if not desc_nodes.name_styled then
     if not G.localization.descriptions[set][_c.key] then set = "Other" end
   end
   desc_nodes.name_styled = {}
-  localize{type = 'name', key = key, set = set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars({}, _c:create_fake_card()) or {}).vars) or {colours = {}}} 
+  localize{type = 'name', key = key, set = set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars({}, _c:create_fake_card()) or {}).vars) or _c.name_vars or _c.vars or {colours = {}}} 
   desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
   desc_nodes.name_styled.config.align = "cm"
 end

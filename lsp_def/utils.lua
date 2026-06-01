@@ -48,10 +48,13 @@
 ---@field skipping_booster? true Check if `true` for effects after a Booster Pack is skipped.
 ---@field buying_card? true Check if `true` for effects after buying a card.
 ---@field selling_card? true Check if `true` for effects after selling a card.
+---@field buying_self? true Check if `true` for effects the calculating card is bought.
+---@field selling_self? true Check if `true` for effects the calculating card is sold.
 ---@field reroll_shop? true Check if `true` for effects after rerolling the shop.
 ---@field ending_shop? true Check if `true` for effects after leaving the shop.
 ---@field first_hand_drawn? true Check if `true` for effects after drawing the first hand.
----@field hand_drawn? true Check if `true` for effects after drawing a hand.
+---@field hand_drawn? Card[] List of cards that just got drawn during a blind
+---@field other_drawn? Card[] List of cards that just got drawn outside a blind
 ---@field using_consumeable? true Check if `true` for effects after using a Consumable.
 ---@field skip_blind? true Check if `true` for effects after skipping a blind.
 ---@field playing_card_added? true Check if `true` for effects after a playing card was added into the deck.
@@ -136,6 +139,7 @@ function SMODS.merge_lists(...) end
 ---@field quantum_enhancements? boolean Enables "Quantum Enhancement" contexts. Cards can count as having multiple enhancements at once.
 ---@field retrigger_joker? boolean Enables "Joker Retrigger" contexts. Jokers can be retriggered by other jokers or effects.
 ---@field post_trigger? boolean Enables "Post Trigger" contexts. Allows calculating effects after a Joker has been calculated.
+---@field object_weights? boolean Enables individual weights for object polling. 
 ---@field cardareas? SMODS.optional_features.cardareas Enables additional CardArea calculation.
 
 ---@class SMODS.optional_features.cardareas: table
@@ -383,9 +387,10 @@ function SMODS.juice_up_blind() end
 ---@param card Card|table
 ---@param suit? Suits|string Key to the suit.
 ---@param rank? Ranks|string Key to the rank.
+---@param manual_sprites? boolean Set to true to not update the front sprite
 ---@return Card|table? cardOrErr If successful the card. If it failed `nil`.
 ---@return string? msg If it failed, a message describing what went wrong.
-function SMODS.change_base(card, suit, rank) end
+function SMODS.change_base(card, suit, rank, manual_sprites) end
 
 --- Modify a card's rank by the specified amount.
 --- Increase rank if amount is positive, decrease rank if negative.
@@ -393,9 +398,10 @@ function SMODS.change_base(card, suit, rank) end
 ---@nodiscard
 ---@param card Card|table
 ---@param amount number
+---@param manual_sprites? boolean Set to true to not update the front sprite
 ---@return Card|table? cardOrErr If successful the card. If it failed `nil`.
 ---@return string? msg If it failed, a message describing what went wrong.
-function SMODS.modify_rank(card, amount) end
+function SMODS.modify_rank(card, amount, manual_sprites) end
 
 ---@param key string
 ---@param count_debuffed? true
@@ -432,7 +438,7 @@ function SMODS.find_card(key, count_debuffed) end
 ---@field enhancement? Enhancements|string Apply this enhancement.
 ---@field seal? Seals|string Apply this seal.
 ---@field stickers? Stickers[]|string[] Apply all stickers in this array.
----@field force_stickers? Stickers[]|string[] Forces the application of all stickers in this array that are also in stickers.
+---@field force_stickers? true|Stickers[]|string[] Forces the application of all stickers in this array that are also in stickers.
 ---@field allow_duplicates? boolean Allows duplicated cards to be created, even without Showman.
 ---@field rank? Ranks|string|integer Rank of the playing card.
 ---@field suit? Suits|string Suit of the playing card.
@@ -541,14 +547,16 @@ function SMODS.debug_calculation() end
 
 ---@param card Card|table
 ---@param pack SMODS.Booster|table
----@return boolean|string
+---@return boolean|string, boolean?
 --- Controls if the card should be selectable from a Booster Pack.
+--- Additionally returns `true` as a second value if it can also be used.
 function Card.selectable_from_pack(card, pack) end
 
 ---@param card Card|table
 ---@param pack SMODS.Booster|table
----@return string|{[string]: string}
+---@return string|{[string]: string}, boolean?
 --- Controls the area a card should be after selection from a Booster Pack.
+--- Additionally returns `true` as a second value if it can also be used.
 function SMODS.card_select_area(card, pack) end
 
 ---@param pool (string|"UNAVAILABLE")[]
@@ -656,6 +664,7 @@ function SMODS.seeing_double_check(hand, suit) end
 
 ---@param lines table
 ---@param args table
+---@return table
 --- Handles localization description boxes.
 function SMODS.localize_box(lines, args) end
 
