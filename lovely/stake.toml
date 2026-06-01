@@ -238,7 +238,7 @@ payload = '''
 local t, res = {}, {}
 if _stake_center then
   if _stake_center.loc_vars and type(_stake_center.loc_vars) == 'function' then
-    res = _stake_center:loc_vars() or {}
+    res = _stake_center:loc_vars({}) or {}
   end
   t.vars = res.vars or {}
   t.key = res.key or _stake_center.key
@@ -272,7 +272,7 @@ localize{type = 'descriptions', key = _stake_center.key, set = _stake_center.set
 payload = '''
 local t, res = {}, {}
 if _stake_center.loc_vars and type(_stake_center.loc_vars) == 'function' then
-  res = _stake_center:loc_vars() or {}
+  res = _stake_center:loc_vars({}) or {}
 end
 t.vars = res.vars or {}
 t.key = res.key or _stake_center.key
