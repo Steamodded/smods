@@ -267,6 +267,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             orig_o._discovered_unlocked_overwritten = false
         end
         for k, v in pairs(obj) do orig_o[k] = v end
+        if obj.path then orig_o.path_mod = SMODS.current_mod end
         SMODS._save_d_u(orig_o)
         orig_o.taken_ownership = true
         -- we don't want the warning here
@@ -327,7 +328,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             local file_path = self.path
             if file_path == 'DEFAULT' then return end
 
-            self.full_path = (self.mod and self.mod.path or SMODS.path) ..
+            self.full_path = (self.path_mod or self.mod or SMODS).path ..
                 'assets/fonts/' .. file_path
             local file_data = assert(NFS.newFileData(self.full_path),
                 ('Failed to collect file data for Font %s'):format(self.key))
@@ -457,7 +458,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             -- language specific sprites override fully defined sprites only if that language is set
             if self.language and G.SETTINGS.language ~= self.language and G.SETTINGS.real_language ~= self.language then return end
             if not self.language and (self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.language)] or self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.real_language)]) then return end
-            self.full_path = (self.mod and self.mod.path or SMODS.path) ..
+            self.full_path = (self.path_mod or self.mod or SMODS).path ..
                 'assets/' .. G.SETTINGS.GRAPHICS.texture_scaling .. 'x/' .. file_path
             local file_data = assert(NFS.newFileData(self.full_path),
                 ('Failed to collect file data for Atlas %s'):format(self.key))
@@ -537,7 +538,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ((G.SETTINGS.real_language and self.path[G.SETTINGS.real_language]) or self.path[G.SETTINGS.language] or self.path['default'] or self.path['en-us']) or self.path
             if file_path == 'DEFAULT' then return end
             local prev_path = self.full_path
-            self.full_path = (self.mod and self.mod.path or SMODS.path) ..
+            self.full_path = (self.path_mod or self.mod or SMODS).path ..
                 'assets/sounds/' .. file_path
             if prev_path == self.full_path then return end
             self.data = NFS.read('data', self.full_path)
@@ -2878,10 +2879,18 @@ SMODS.UndiscoveredCompat = {
                 self.obj_buffer,
                 function(a, b)
                     local x, y = self.obj_table[a], self.obj_table[b]
-                    local x_above = self.obj_table[x.above_hand or {}]
-                    local y_above = self.obj_table[y.above_hand or {}]
-                    local function eval(h) return h.mult*h.chips + (h.order_offset or 0) end
-                    return (x_above and (1e-6*eval(x) + eval(x_above)) or eval(x)) > (y_above and (1e-6*eval(y) + eval(y_above)) or eval(y))
+
+                    local function eval(h)
+                        local own_amt = h.mult*h.chips
+                        if h.above_hand and self.obj_table[h.above_hand] then
+                            local above_amt = eval(self.obj_table[h.above_hand])
+                            return above_amt + (own_amt * 1e-6) + (h.order_offset or 0)
+                        end
+
+                        return own_amt + (h.order_offset or 0)
+                    end
+
+                    return eval(x) > eval(y)
                 end
             )
             for i, v in ipairs(self.obj_buffer) do self.obj_table[v].order = i end
@@ -3381,7 +3390,7 @@ SMODS.UndiscoveredCompat = {
         set = 'Shader',
         send_vars = nil, -- function (sprite) - get custom externs to send to shader.
         inject = function(self)
-            self.full_path = (self.mod and self.mod.path or SMODS.path) ..
+            self.full_path = (self.path_mod or self.mod or SMODS).path ..
                 'assets/shaders/' .. self.path
 
             local file = assert(NFS.read(self.full_path),
@@ -3394,7 +3403,11 @@ SMODS.UndiscoveredCompat = {
                     file
                 ))
             end
-            
+
+            if love.graphics.getRendererInfo() ~= "OpenGL ES" and (self.mod and not self.mod.gles_alerted) and not love.graphics.validateShader(true, file) then
+                sendWarnMessage(("%s: Some shaders in this mod (first one found: '%s') are not compatible with OpenGL ES. Steamodded will try to repair these shaders if OpenGL ES is being used, e.g. on mobile devices. To test OpenGL ES results on desktop, run Balatro with 'LOVE_GRAPHICS_USE_OPENGLES=1' set as an environment variable."):format(self.mod and self.mod.name, self.key), "Shader")
+                self.mod.gles_alerted = true
+            end
             G.SHADERS[self.key] = love.graphics.newShader(file)
         end,
         process_loc_text = function() end

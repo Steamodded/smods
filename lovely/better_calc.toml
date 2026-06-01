@@ -1759,16 +1759,22 @@ G.E_MANAGER:add_event(Event({
 playing_card_joker_effects({true})
 '''
 payload = '''
+local context_blueprint_card = context.blueprint_card
+local front = pseudorandom_element(G.P_CARDS, pseudoseed('marb_fr'))
+G.playing_card = (G.playing_card and G.playing_card + 1) or 1
+local card = Card(G.play.T.x + G.play.T.w/2, G.play.T.y, G.CARD_W, G.CARD_H, front, G.P_CENTERS.m_stone, {playing_card = G.playing_card})
+card.states.visible = nil
 G.E_MANAGER:add_event(Event({
     func = function()
-        local card = create_playing_card({
-            front = pseudorandom_element(G.P_CARDS, pseudoseed('marb_fr')),
-            center = G.P_CENTERS.m_stone}, G.play, nil, nil, {G.C.SECONDARY_SET.Enhanced})
-        SMODS.calculate_effect({message = localize('k_plus_stone'), colour = G.C.SECONDARY_SET.Enhanced}, context.blueprint_card or self)
-        playing_card_joker_effects({card})
+        card:start_materialize({G.C.SECONDARY_SET.Enhanced})
+        card:add_to_deck()
+        G.play:emplace(card)
+        table.insert(G.playing_cards, card)
         return true
     end}))
+SMODS.calculate_effect({message = localize('k_plus_stone'), colour = G.C.SECONDARY_SET.Enhanced}, context_blueprint_card or self)
 draw_card(G.play,G.deck, 90,'up', nil)
+playing_card_joker_effects({card})
 '''
 # DNA
 [[patches]]
