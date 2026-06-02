@@ -2830,10 +2830,8 @@ end
 function SMODS.destroy_cards(cards, args, ...)
     local other_args = {...}
     if type(args) ~= "table" then
-        print(args)
         if args then args = {bypass_eternal = true}
         else args = {} end
-        print(args)
     end
     args.immediate = args.immediate or other_args[1]
     args.pinch_anim = args.pinch_anim or other_args[2]
