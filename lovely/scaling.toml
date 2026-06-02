@@ -275,7 +275,7 @@ if self.ability.name == 'Madness' and not context.blueprint and not context.blin
 position = 'at'
 match_indent = true
 payload = '''
-if self.ability.name == 'Madness' and not context.blueprint and not context.blind.boss then
+if self.ability.name == 'Madness' and not context.blueprint and not (context.blind:get_types() or {}).Boss then
 '''
 # Madness pt2
 [[patches]]

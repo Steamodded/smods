@@ -1817,6 +1817,8 @@ SMODS.UndiscoveredCompat = {
         debuff = {},
         vars = {},
         config = {},
+        blind_types = nil, -- Map of types, e.g. {Boss = true, Big = true}
+        -- [type] = {min=..., max=...} -> Per-type constraints for appearing.
         dollars = 5,
         mult = 2,
         atlas = 'blind_chips',
@@ -1838,8 +1840,134 @@ SMODS.UndiscoveredCompat = {
             end
             G.P_BLINDS[self.key] = self
             if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
+        end,
+        get_types = function(self)
+            return self.blind_types
         end
     }
+
+    function SMODS.get_blind_types(blind_obj)
+        local ret
+        if type(blind_obj.get_types) == "function" then
+            ret = blind_obj:get_types()
+        end
+        if not ret then
+            if blind_obj.boss then
+                if not blind_obj.boss.showdown then
+                    return {Boss = true}
+                else
+                    return {Showdown = true}
+                end
+            else
+                if blind_obj.name == "Small Blind" then
+                    return {Small = true}
+                else
+                    return {Big = true}
+                end
+            end
+        end
+        return ret
+    end
+
+    function get_new_boss()
+        -- sendWarnMessage("get_new_boss() is deprecated; Call SMODS.get_new_blind() instead.", "utils")
+        local b_types = SMODS.is_showdown_ante() and {Showdown = true} or {Boss = true}
+        local boss = SMODS.get_new_blind(b_types)
+        return boss
+    end
+
+    function SMODS.get_new_blind(blind_types)
+        -- Use SMODS object weight system when enabled
+        if SMODS.optional_features.object_weights then 
+            local ret = SMODS.poll_object({type = 'Blind', blind_types = blind_types}) 
+            G.GAME.bosses_used[ret] = G.GAME.bosses_used[ret] + 1
+            return ret
+        end
+        if not blind_types or (blind_types.Boss or blind_types.Showdown) then
+            G.GAME.perscribed_bosses = G.GAME.perscribed_bosses or {}
+            if G.GAME.perscribed_bosses and G.GAME.perscribed_bosses[G.GAME.round_resets.ante] then
+                local ret_boss = G.GAME.perscribed_bosses[G.GAME.round_resets.ante] 
+                G.GAME.perscribed_bosses[G.GAME.round_resets.ante] = nil
+                G.GAME.bosses_used[ret_boss] = G.GAME.bosses_used[ret_boss] + 1
+                return ret_boss
+            end
+            if G.FORCE_BOSS then return G.FORCE_BOSS end
+        end
+
+        local eligible_bosses = {}
+        for k, v in pairs(G.P_BLINDS) do
+            local res = SMODS.add_to_pool(v)
+            if res then
+                local b_types = SMODS.get_blind_types(v)
+                local blind_config = v.boss or (table_length(b_types) == 1 and next(b_types)) or {}
+                for b_type, _ in pairs(b_types) do
+                    if blind_types[b_type] then
+                        if v.in_pool or not (blind_config and (blind_config.min and blind_config.min > math.max(1, G.GAME.round_resets.ante) or blind_config.max and blind_config.max <= G.GAME.round_resets.ante)) then
+                            eligible_bosses[k] = true
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        for k, v in pairs(G.GAME.banned_keys) do
+            if eligible_bosses[k] then eligible_bosses[k] = nil end
+        end
+
+        local min_use = 100
+        for k, v in pairs(G.GAME.bosses_used) do
+            if eligible_bosses[k] then
+                eligible_bosses[k] = v
+                if eligible_bosses[k] <= min_use then 
+                    min_use = eligible_bosses[k]
+                end
+            end
+        end
+        for k, v in pairs(eligible_bosses) do
+            if eligible_bosses[k] then
+                if eligible_bosses[k] > min_use then 
+                    eligible_bosses[k] = nil
+                end
+            end
+        end
+        local _, boss = pseudorandom_element(eligible_bosses, pseudoseed('boss'))
+        G.GAME.bosses_used[boss] = G.GAME.bosses_used[boss] + 1
+        
+        return boss
+    end
+
+    function Blind:get_type()
+        return SMODS.get_blind_types(self.config.blind)
+    end
+
+    function Blind:is_type(b_type)
+        return self:is_types({[b_type] = true}, false)
+    end
+
+    function Blind:is_types(b_types_map, all)
+        for k, v in pairs(self:get_type()) do
+            if v and b_types_map[k] or (k == "Showdown" and b_types_map.Boss) then
+                if not all then
+                    return true
+                end
+            elseif all then
+                return false
+            end
+        end
+        return all
+    end
+
+    SMODS.Joker:take_ownership("j_matador", {
+        check_for_unlock = function (self, args)
+            return G.GAME.current_round.hands_played == 1 and G.GAME.current_round.discards_left == G.GAME.round_resets.discards and G.GAME.blind:is_type("Boss")
+        end
+    })
+
+    SMODS.Joker:take_ownership("j_hanging_chad", {
+        check_for_unlock = function (self, args)
+            return G.GAME.last_hand_played == self.unlock_condition.extra and G.GAME.blind:is_type("Boss")
+        end
+    })
     SMODS.Blind:take_ownership('eye', {
         set_blind = function(self, reset, silent)
             if not reset then
