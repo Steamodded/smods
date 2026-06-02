@@ -48,10 +48,13 @@
 ---@field skipping_booster? true Check if `true` for effects after a Booster Pack is skipped.
 ---@field buying_card? true Check if `true` for effects after buying a card.
 ---@field selling_card? true Check if `true` for effects after selling a card.
+---@field buying_self? true Check if `true` for effects the calculating card is bought.
+---@field selling_self? true Check if `true` for effects the calculating card is sold.
 ---@field reroll_shop? true Check if `true` for effects after rerolling the shop.
 ---@field ending_shop? true Check if `true` for effects after leaving the shop.
 ---@field first_hand_drawn? true Check if `true` for effects after drawing the first hand.
----@field hand_drawn? true Check if `true` for effects after drawing a hand.
+---@field hand_drawn? Card[] List of cards that just got drawn during a blind
+---@field other_drawn? Card[] List of cards that just got drawn outside a blind
 ---@field using_consumeable? true Check if `true` for effects after using a Consumable.
 ---@field skip_blind? true Check if `true` for effects after skipping a blind.
 ---@field playing_card_added? true Check if `true` for effects after a playing card was added into the deck.
@@ -123,6 +126,7 @@
 ---@field new_level? integer Level of the poker hand after the alteration, if it was changed.
 ---@field old_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand before the alteration.
 ---@field new_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand after the alteration.
+---@field modify_final_cashout? true Check if `true` for modifying the amount of money at the end of cashout.
 
 --- Util Functions
 
@@ -544,14 +548,16 @@ function SMODS.debug_calculation() end
 
 ---@param card Card|table
 ---@param pack SMODS.Booster|table
----@return boolean|string
+---@return boolean|string, boolean?
 --- Controls if the card should be selectable from a Booster Pack.
+--- Additionally returns `true` as a second value if it can also be used.
 function Card.selectable_from_pack(card, pack) end
 
 ---@param card Card|table
 ---@param pack SMODS.Booster|table
----@return string|{[string]: string}
+---@return string|{[string]: string}, boolean?
 --- Controls the area a card should be after selection from a Booster Pack.
+--- Additionally returns `true` as a second value if it can also be used.
 function SMODS.card_select_area(card, pack) end
 
 ---@param pool (string|"UNAVAILABLE")[]
@@ -668,13 +674,23 @@ function SMODS.localize_box(lines, args) end
 --- Returns all description boxes within `multi_box`.
 function SMODS.get_multi_boxes(multi_box) end
 
+---@param card Card
+---@return boolean is_playing_card
+-- Checks and returns whether a card is a playing card.
+function SMODS.is_playing_card(card) end
+
+---@param card Card 
+---@return boolean success
+-- Pinches and :removes() a card. (context.joker_type_destroyed is calculated, and may prevent destruction)
+function SMODS.pinch_and_remove(card) end
+
 ---@param cards Card|Card[]
----@param bypass_eternal boolean?
----@param immediate boolean?
----@param skip_anim boolean?
----@param colours table?
---- Destroys the cards passed to the function, handling calculation events that need to happen
-function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colours) end
+---@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], delay?: number, destroy_func?: fun(card: Card, args: table<>)}
+---@param ... ... Old signature arguments in the above order, up to and including colours
+---@return Card[] destroy_queued
+--- Destroys the cards passed to the function, handling calculation events that need to happen.
+--- Returns list of cards queued for destruction
+function SMODS.destroy_cards(cards, args, ...) end
 
 ---@param hand_space number
 --- Used to draw cards to hand outside of the normal card draw
