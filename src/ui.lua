@@ -453,6 +453,13 @@ function Game:update(dt)
 	else
 		SMODS.wheel_velocity.y = 0
 	end
+	if G.shared_stickers then
+        for k,v in pairs(G.shared_stickers) do
+            if v and v:is(AnimatedSprite) then
+                v:animate()
+            end
+        end
+    end
     gameUpdateRef(self, dt)
 end
 
