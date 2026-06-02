@@ -1,0 +1,26 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# insert font from attention text
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''{n=G.UIT.O, config={draw_layer = 1, object = DynaText({scale = args.scale, string = args.text, maxw = args.maxw, colours = {args.colour},float = true, shadow = true, silent = not args.noisy, args.scale, pop_in = 0, pop_in_rate = 6, rotate = args.rotate or nil})}},'''
+position = 'at'
+payload = '''{n=G.UIT.O, config={draw_layer = 1, object = DynaText({scale = args.scale, string = args.text, maxw = args.maxw, colours = {args.colour},float = true, shadow = true, silent = not args.noisy, args.scale, pop_in = 0, pop_in_rate = 6, rotate = args.rotate or nil, font = args.font})}},'''
+match_indent = true
+
+# insert font into attention text
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''offset = {x = 0, y = y_off}'''
+position = 'before'
+payload = '''
+font = extra and extra.font and (type(extra.font) == "table" and extra.font or G.FONTS[extra.font] or SMODS.Fonts[extra.font]),
+'''
+match_indent = true
+
+

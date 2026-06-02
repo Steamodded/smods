@@ -171,6 +171,11 @@ return {
 					'Riempie {C:dark_edition}#1#{} slot'
 				},
 			},
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{} fiche'
+                },
+            },
 		},
 		Edition = {
 			e_negative_playing_card = {
@@ -190,7 +195,7 @@ return {
 			m_gold={
 				name="Carta dorata",
 				text={
-					"{C:money}$#1#{} se hai",
+					"{C:money}#1#{} se hai",
 					"in mano questa carta",
 					"alla fine del round",
 				},
@@ -198,14 +203,14 @@ return {
 			m_stone={
 				name="Carta di pietra",
 				text={
-					"{C:chips}+#1#{} fiche",
+					"{C:chips}#1#{} fiche",
 					"nessun valore o seme",
 				},
 			},
 			m_mult={
 				name="Carta Molt",
 				text={
-					"{C:mult}+#1#{} Molt",
+					"{C:mult}#1#{} Molt",
 				},
 			},
 			m_lucky={
@@ -246,7 +251,7 @@ return {
 			b_authors = 'Autori',
 			b_unknown = 'Sconosciuto',
 			b_lovely_mod = '(Lovely Mod) ',
-			b_by = ' Di: ',
+			b_by = 'Di: ',
 			b_priority = 'Priorità: ',
 			b_config = "Configurazione",
 			b_additions = 'Aggiunte',

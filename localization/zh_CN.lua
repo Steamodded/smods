@@ -170,7 +170,12 @@ return {
                 text = {
                     '填充{C:dark_edition}#1#{}个槽位'
                 }
-            }
+            },
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{}筹码'
+                },
+            },
         },
         Edition = {
             e_negative_playing_card = {
@@ -213,7 +218,7 @@ return {
                 text={
                     "{C:green}#1#/#3#{}几率",
                     "{C:mult}+#2#{}倍率",
-                    "{C:green}#1#/#5#{}几率",
+                    "{C:green}#6#/#5#{}几率",
                     "获得{C:money}$#4#",
                 },
             },
@@ -246,7 +251,7 @@ return {
             b_authors = '作者',
             b_unknown = '未知',
             b_lovely_mod = '(依赖Lovely加载器的补丁模组)',
-            b_by = ' 作者：',
+            b_by = '作者：',
             b_priority = '优先级：',
             b_config = "配置",
             b_additions = '新增内容',

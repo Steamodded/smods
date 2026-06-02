@@ -8,6 +8,8 @@ function SMODS.CanvasSprite:init(args)
     self.canvasScale = 10
     self.text = ""
     self.text_offset = {x = 0, y = 0}
+	self.text_h_align = 'center'
+	self.text_v_align = 'middle'
     for k, v in pairs(args) do self[k] = v end
     self.canvas = love.graphics.newCanvas(self.canvasW * self.canvasScale, self.canvasH * self.canvasScale)
     self.font = (SMODS.Fonts[self.text_font] or G.FONTS[self.text_font] or G.FONTS[1]).FONT
@@ -36,6 +38,26 @@ function SMODS.CanvasSprite:draw_from(other_obj, ms, mr, mx, my)
     )
     self:draw_boundingrect()
     love.graphics.pop()
+end
+
+function SMODS.clean_up_canvas_text(t)
+	if t.canvas_text[1] then
+		SMODS.clean_up_children(t.canvas_text)
+		t.canvas_text = nil
+		return
+	end
+	t.canvas_text:remove()
+	t.canvas_text = nil
+end
+
+function SMODS.clean_up_children(t)
+	local ignore = {center = true, shadow = true, back = true, h_popup = true, front = true}
+    for k, v in pairs(t) do
+        if not ignore[k] then
+            if type(v) == 'table' and v.remove then v:remove() end
+            t[k] = nil
+        end
+	end
 end
 
 SMODS.DrawSteps = {}
@@ -162,6 +184,7 @@ SMODS.DrawStep {
             end
         end
         if self.children.use_button and self.highlighted then self.children.use_button:draw() end
+        if self.children.select_button and self.highlighted then self.children.select_button:draw() end
     end,
 } 
 
@@ -266,11 +289,11 @@ SMODS.DrawStep {
     order = 10,
     func = function(self)
         if (self.ability.set == 'Voucher' or self.config.center.demo) and (self.ability.name ~= 'Antimatter' or not (self.config.center.discovered or self.bypass_discovery_center)) then
-            if self:should_draw_base_shader() then
+            if self:should_draw_base_shader() and not self.config.center.disable_shine then
                 self.children.center:draw_shader('voucher', nil, self.ARGS.send_to_shader)
             end
         end
-        if (self.ability.set == 'Booster' or self.ability.set == 'Spectral') and self:should_draw_base_shader() then
+        if (self.ability.set == 'Booster' or self.ability.set == 'Spectral') and self:should_draw_base_shader() and not self.config.center.disable_shine then
             self.children.center:draw_shader('booster', nil, self.ARGS.send_to_shader)
         end
     end,
@@ -353,8 +376,8 @@ SMODS.DrawStep {
     key = 'canvas_text',
     order = 45,
     func = function(self, layer)
-        if self.children.canvas_text then
-            for _, sprite in ipairs(self.children.canvas_text[1] and self.children.canvas_text or {self.children.canvas_text}) do
+        if self.canvas_text and (self.config.center.discovered or self.bypass_discovery_center) then
+            for _, sprite in ipairs(self.canvas_text[1] and self.canvas_text or {self.canvas_text}) do
                 love.graphics.push()
                 love.graphics.origin()
                 sprite.canvas:renderTo(love.graphics.clear, 0, 0, 0, 0)
@@ -366,7 +389,8 @@ SMODS.DrawStep {
                             (0 + sprite.text_offset.y) * sprite.canvasScale,
                             0,
                             scale_fac, scale_fac,
-                            text:getWidth()/2, text:getHeight()/2
+							sprite.text_h_align == 'left' and 0 or (sprite.text_h_align == 'right' and text:getWidth() or text:getWidth()/2),
+							sprite.text_v_align == 'top' and 0 or (sprite.text_v_align == 'bottom' and text:getHeight() or text:getHeight()/2)
                         })
                     sprite.canvas:renderTo(love.graphics.draw,
                         text,
@@ -374,6 +398,7 @@ SMODS.DrawStep {
                     )
                 end
                 love.graphics.pop()
+                SMODS.reload_stencil_stack()
                 sprite.role.draw_major = self
                 sprite:draw_shader('dissolve', nil, nil, nil, self.children.center)
             end
@@ -497,7 +522,7 @@ SMODS.DrawStep {
 
 -- All keys in this table will not be automatically drawn with a default `draw()` call in the "others" DrawStep.
 SMODS.draw_ignore_keys = {
-    focused_ui = true, front = true, back = true, soul_parts = true, center = true, floating_sprite = true, shadow = true, use_button = true, buy_button = true, buy_and_use_button = true, debuff = true, price = true, particles = true, h_popup = true, canvas_text = true
+    focused_ui = true, front = true, back = true, soul_parts = true, center = true, floating_sprite = true, shadow = true, use_button = true, buy_button = true, buy_and_use_button = true, debuff = true, price = true, particles = true, h_popup = true,
 }
 SMODS.DrawStep {
     key = 'others',

@@ -36,22 +36,7 @@ NFS.setWorkingDirectory(love.filesystem.getSaveDirectory())
 
 JSON = json
 
-local function set_mods_dir()
-    local love_dirs = {
-        love.filesystem.getSaveDirectory(),
-        love.filesystem.getSourceBaseDirectory()
-    }
-    for _, love_dir in ipairs(love_dirs) do
-        if lovely_mod_dir:sub(1, #love_dir) == love_dir then
-            -- relative path from love_dir
-            SMODS.MODS_DIR = lovely_mod_dir:sub(#love_dir+2)
-            NFS.setWorkingDirectory(love_dir)
-            return
-        end
-    end
-    SMODS.MODS_DIR = lovely_mod_dir:gsub("\\", "/")
-end
-set_mods_dir()
+SMODS.MODS_DIR = lovely_mod_dir:gsub("\\", "/")
 
 local lovely_path = false -- This line is patched, don't edit it
 
@@ -171,9 +156,10 @@ local _, _, flags = love.window.getMode()
 local width, height = love.window.getDesktopDimensions(flags.display)
 -- local width, height = 1280, 720
 
-love.window.updateMode(width * 0.8, height * 0.8, {
-    resizable = true,
-})
+-- TODO: When restoring me, make sure the game doesn't make it smaller
+-- love.window.updateMode(width * 0.8, height * 0.8, {
+--     resizable = true,
+-- })
 
 -- We don't want the first frame's dt to include time taken by love.load.
 -- TODO: Properly hook this up

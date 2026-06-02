@@ -170,7 +170,12 @@ return {
                 text = {
                     '{C:dark_edition}#1#{} 슬롯 크기'
                 }
-            }
+            },
+            card_chips_minus = {
+                text = {
+                    '{C:chips}#1#{} 개의 칩'
+                },
+            },
 		},
 		Edition = {
 			e_negative_playing_card = {
@@ -213,7 +218,7 @@ return {
                 text = {
                     "{C:green}#1#/#3#{} 확률로",
                     "{C:mult}+#2#{} 배수를 획득합니다",
-                    "{C:green}#1#/#5#{} 확률로",
+                    "{C:green}#6#/#5#{} 확률로",
                     "{C:money}$#4#{}를 획득합니다",
                 },
             },
@@ -246,7 +251,7 @@ return {
 			b_authors = "제작자",
 			b_unknown = "불명",
 			b_lovely_mod = "(Lovely Mod)",
-			b_by = " By: ",
+			b_by = "By: ",
             b_priority = '우선도: ',
 			b_config = "설정",
 			b_additions = "추가",

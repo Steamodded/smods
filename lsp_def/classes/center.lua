@@ -5,10 +5,11 @@
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field atlas? string Key to the center's atlas. 
 ---@field pos? table|{x: integer, y: integer} Position of the center's sprite. 
+---@field soul_atlas? string Key to the center's soul atlas. 
 ---@field soul_pos? table|{x: integer, y: integer, draw?: fun(card: Card|table, scale_mod?: number, rotate_mod?: number)} Position of the "soul" sprite. Separate front layer sprite that hovers over the card. 
 ---@field unlocked? boolean Sets the unlock state of the center. 
 ---@field discovered? boolean Sets the discovery state of the center. 
----@field no_collection? boolean Sets whether the card shows up in the collections menu. 
+---@field no_collection? boolean|fun():boolean Sets whether the card shows up in the collections menu. 
 ---@field loc_txt? table|{name: string|string[], text: string[]|string[][]} Contains strings used for displaying text related to this object. 
 ---@field pools? string[] Array of keys to ObjectTypes this center will be added to.
 ---@field cost? number Sell cost of this center. 
@@ -17,7 +18,9 @@
 ---@field eternal_compat? boolean Sets whether the center can have "Eternal" sticker. 
 ---@field perishable_compat? boolean Sets whether the center can have "Perishable" sticker. 
 ---@field display_size? table|{w: integer, h: integer} Changes the display size of card. 
----@field pixel_size? table|{w: integer, h: integer} Change the size of the sprite drawn onto the card. 
+---@field pixel_size? table|{w: integer, h: integer} Change the size of the sprite drawn onto the card.
+---@field badge_text_colour? table Colour of the label for the badge (supersedes Rarities and ConsumableTypes).
+---@field badge_colour? table Colour of the badge (supersedes Rarities and ConsumableTypes).
 ---@field __call? fun(self: SMODS.Center|table, o: SMODS.Center|table): nil|table|SMODS.Center
 ---@field extend? fun(self: SMODS.Center|table, o: SMODS.Center|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Center|table): boolean? Ensures objects already registered will not register. 
@@ -50,6 +53,7 @@
 ---@field calculate? fun(self: SMODS.Center|table, card: Card|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
 ---@field create_fake_card? fun(self: SMODS.Center|table): table Creates a fake card representing this center. Used internally for `generate_ui` in cases where recieved `card` param is nil. 
 ---@field on_select? fun(self: SMODS.Center|table, card: Card|table) Called when the card is selected from a booster pack. 
+---@field select_card? string|{[string]: string}|(fun(self: SMODS.Center|table, card: Card|table, pack: SMODS.Booster|table): string|{[string]: string}, boolean?) Key to the CardArea (e.x. `G[SMODS.Center.select_card]`). As a table, each key-value pair is a card set as key and CardArea string as values. Or return either formers as a function. May also return a second value of boolean to indicate card can be selected and used at the same time. 
 ---@overload fun(self: SMODS.Center): SMODS.Center
 SMODS.Center = setmetatable({}, {
     __call = function(self)

@@ -93,18 +93,3 @@ pattern = '''label = "Collabs",'''
 position = "after"
 payload = '''chosen = SMODS.init_collab_credits,'''
 match_indent = true
-
-# Add note for overriden function
-[[patches]]
-[patches.pattern]
-target = 'functions/UI_definitions.lua'
-match_indent = true
-position = 'before'
-pattern = '''
-function G.UIDEF.custom_deck_tab(_suit)
-'''
-payload = '''
--- WARNING
--- This function is overriden by SMODS and can be found in src/ui.lua
--- WARNING
-'''

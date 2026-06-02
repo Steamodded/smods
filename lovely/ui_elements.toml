@@ -22,6 +22,60 @@ position = 'before'
 payload = '''love.graphics.setColor(self.config.colour)'''
 match_indent = true
 
+# Game:draw()
+# Draw dropdowns right before G.OVERLAY_MENU if the dropdown was created while G.OVERLAY_MENU didn't exist
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+if (self.OVERLAY_MENU) or (not self.F_HIDE_BG) then
+'''
+position = 'before'
+payload = '''
+for k, v in pairs(self.I.DROPDOWN) do
+    if v.parent == G.ROOM_ATTACH then
+        love.graphics.push()
+        v:translate_container()
+        v:draw()
+        love.graphics.pop()
+    end
+end
+'''
+match_indent = true
+
+# Draw dropdowns right before the drag target if the dropdown was created while G.OVERLAY_MENU exists
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+if self.CONTROLLER.dragging.target and self.CONTROLLER.dragging.target ~= self.CONTROLLER.focused.target then
+'''
+position = 'before'
+payload = '''
+for k, v in pairs(self.I.DROPDOWN) do
+    if v.parent == G.OVERLAY_MENU then
+        love.graphics.push()
+        v:translate_container()
+        v:draw()
+        love.graphics.pop()
+    end
+end
+'''
+match_indent = true
+
+# Game:set_globals()
+# Add G.I.DROPDOWN
+[[patches]]
+[patches.pattern]
+target = 'globals.lua'
+pattern = '''
+UIBOX = {},
+'''
+position = 'after'
+payload = '''
+DROPDOWN = {},
+'''
+match_indent = true
 
 ## multiple text input fix
 # create_text_input()
@@ -147,6 +201,108 @@ if deck_center.check_for_unlock and type(deck_center.check_for_unlock) == "funct
         key_override = res.key
     end
     localize{type = 'unlocks', key = key_override or deck_center.key, set = "Back", nodes = deck_criteria, vars = loc_args, default_col = G.C.WHITE, shadow = true}
+end
+"""
+match_indent = true
+
+# Cover drawing into function
+# UIElemennt:draw_self
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """if self.config.colour[4] > 0.01 then"""
+position = "before"
+payload = """
+self.ARGS.cached_draw = self.ARGS.cached_draw or function(self, shader, send, button_active, parallax_dist, button_being_pressed)
+if self.UIT ~= G.UIT.T then
+    self:set_element_shader(shader, send, false)
+end
+"""
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """--Draw the 'chosen triangle'
+    if self.config.chosen then """
+position = "before"
+payload = """
+if self.UIT ~= G.UIT.T then
+    self:set_element_shader()
+end
+end
+
+local element_shaders = SMODS.resolve_ui_shaders(self, self.states.visible and self.UIT ~= G.UIT.T and self.config.shader, nil)
+for _, v in ipairs(element_shaders) do
+    if v then
+        self.ARGS.cached_draw(self, v.shader, v.send, button_active, parallax_dist, button_being_pressed)
+    else
+        self.ARGS.cached_draw(self, nil, nil, button_active, parallax_dist, button_being_pressed)
+    end
+end
+"""
+match_indent = true
+
+# Apply shaders on text elements (shadow)
+# UIElement:draw_self
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """
+love.graphics.draw(
+    self.config.text_drawable,
+    (self.config.lang.font.TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    (self.config.lang.font.TEXT_OFFSET.y + (self.config.vert and self.ARGS.text_parallax.sx or self.ARGS.text_parallax.sy))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    0,
+    (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+)"""
+position = "at"
+payload = """
+local text_shaders = SMODS.resolve_ui_shaders(self, self.states.visible and self.config.shader, nil)
+for _, v in ipairs(text_shaders) do
+    if v then self:set_text_shader(v.shader, v.send, true) end
+    love.graphics.draw(
+        self.config.text_drawable,
+        (self.config.lang.font.TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        (self.config.lang.font.TEXT_OFFSET.y + (self.config.vert and self.ARGS.text_parallax.sx or self.ARGS.text_parallax.sy))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        0,
+        (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+    )
+    if v then self:set_text_shader() end
+end
+"""
+match_indent = true
+
+# Apply shaders on text elements
+# UIElement:draw_self
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+pattern = """
+love.graphics.draw(
+    self.config.text_drawable,
+    self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    self.config.lang.font.TEXT_OFFSET.y*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    0,
+    (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+    (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+)"""
+position = "at"
+payload = """
+local text_shaders = SMODS.resolve_ui_shaders(self, self.states.visible and self.config.shader, nil)
+for _, v in ipairs(text_shaders) do
+    if v then self:set_text_shader(v.shader, v.send, false) end
+    love.graphics.draw(
+        self.config.text_drawable,
+        self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        self.config.lang.font.TEXT_OFFSET.y*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        0,
+        (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
+    )
+    if v then self:set_text_shader() end
 end
 """
 match_indent = true

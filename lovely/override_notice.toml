@@ -1,0 +1,284 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+## Comments for functions that have been overridden by SMODS so they're easier to notice in the lovely dump
+
+# src/card_draw.lua
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:draw(layer)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/card_draw.lua"
+match_indent = true
+
+# src/overrides.lua
+
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "G.FUNCS.HUD_blind_debuff = function(e)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function create_UIBox_your_collection_blinds(exit)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function create_UIBox_your_collection_tags()"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function G.UIDEF.deck_stake_column(_deck_key)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function G.UIDEF.stake_option(_type)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "G.FUNCS.change_stake = function(args)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "function get_straight(hand)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function G.UIDEF.deck_preview(args)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function tally_sprite(pos, value, tooltip, suit)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function G.UIDEF.view_deck(unplayed_only)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "G.FUNCS.get_poker_hand_info = function(_cards)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function create_UIBox_current_hands(simple)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "function evaluate_poker_hand(hand)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:set_sprites(_center, _front)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "function get_front_spriteinfo(_front)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function create_UIBox_notify_alert(_achievement, _type)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:set_edition(edition, immediate, silent)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "function poll_edition(_key, _mod, _no_neg, _guaranteed)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "function get_joker_win_sticker(_center, index)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "function get_deck_win_stake(_deck_key)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "function get_deck_win_sticker(_center)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "function set_deck_win()"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:align_h_popup()"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = "function get_pack(_key, _type)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "function playing_card_joker_effects(cards)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "G.FUNCS.change_collab = function(args)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+# src/ui.lua
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function create_UIBox_your_collection_jokers()"
+position = "before"
+payload = "-- Function overridden by SMODS in src/ui.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function create_UIBox_your_collection_boosters()"
+position = "before"
+payload = "-- Function overridden by SMODS in src/ui.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function create_UIBox_your_collection_vouchers(exit)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/ui.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function create_UIBox_your_collection_seals(exit)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/ui.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function create_UIBox_your_collection_enhancements(exit)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/ui.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function create_UIBox_your_collection_editions()"
+position = "before"
+payload = "-- Function overridden by SMODS in src/ui.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "function G.UIDEF.custom_deck_tab(_suit)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/ui.lua"
+match_indent = true

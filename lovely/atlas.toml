@@ -46,10 +46,8 @@ pattern = '''
 local X, Y, W, H = self.T.x, self.T.y, self.T.w, self.T.h
 '''
 payload = '''
-if delay_sprites ~= 'quantum' then
-    for key, _ in pairs(self.T) do
-        self.T[key] = self.original_T[key]
-    end
+for key, _ in pairs(self.T) do
+    self.T[key] = self.original_T[key]
 end
 '''
 

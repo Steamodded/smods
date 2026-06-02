@@ -166,7 +166,6 @@ pattern = "self.config.center = center"
 position = 'at'
 match_indent = true
 payload = '''
-if delay_sprites == 'quantum' then self.from_quantum = true end
 local was_added_to_deck = false
 if self.added_to_deck and old_center and not self.debuff then
     self:remove_from_deck()
@@ -189,7 +188,19 @@ payload = '''
 if was_added_to_deck and not self.debuff then
     self:add_to_deck()
 end
-self.from_quantum = nil'''
+'''
+
+# The above introduces visual issues with The Pillar and effects that call set_ability during a hand
+# Removes early setting of ability.played_this_ante, replaced at end of scoring
+
+# G.FUNCS.play_cards_from_highlighted
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+pattern = 'G.hand.highlighted[i].ability.played_this_ante = true'
+position = 'at'
+match_indent = true
+payload = '-- removed by SMODS'
 
 
 ## set_ability() transfers over old fields
@@ -221,14 +232,7 @@ self.ability.extra_slots_used = self.ability.extra_slots_used + (center.config.e
 
 
 -- reset keys do not persist on ability change
-local reset_keys = {'name', 'effect', 'set', 'extra', 'played_this_ante', 'perma_debuff'}
-for _, mod in ipairs(SMODS.mod_list) do
-    if mod.set_ability_reset_keys then
-        local keys = mod.set_ability_reset_keys()
-        for _, v in pairs(keys) do table.insert(reset_keys, v) end
-    end
-end
-for _, k in ipairs(reset_keys) do
+for _, k in ipairs(SMODS.get_ability_reset_keys(self) or {}) do
     self.ability[k] = new_ability[k]
 end
 '''
@@ -437,7 +441,7 @@ match_indent = true
 target = "functions/state_events.lua"
 pattern = "if G.GAME.round_resets.ante == G.GAME.win_ante and G.GAME.blind:get_type() == 'Boss' then"
 position = "at"
-payload = "if not G.GAME.won and G.GAME.round_resets.ante >= G.GAME.win_ante and G.GAME.blind:get_type() == 'Boss' then"
+payload = "if not G.GAME.won and G.GAME.round_resets.ante >= G.GAME.win_ante and G.GAME.blind_on_deck == 'Boss' then"
 match_indent = true
 
 
@@ -603,7 +607,6 @@ position = "after"
 payload = """
 if G.SETTINGS.paused and key ~= 'to_do' then return math.random() end
 """
-overwrite = true
 match_indent = true
 
 # Fixes Steam API not loading on unix
@@ -632,7 +635,6 @@ target = "main.lua"
 pattern = '''if os == 'OS X' or os == 'Windows' then'''
 position = "at"
 payload = '''if os == 'OS X' or os == 'Windows' or os == 'Linux' then'''
-overwrite = true
 match_indent = true
 
 [[patches]]
@@ -641,7 +643,6 @@ target = "main.lua"
 pattern = '''if os == 'OS X' then'''
 position = "at"
 payload = '''if os == 'OS X' or os == 'Linux' then'''
-overwrite = true
 match_indent = true
 
 [[patches]]
@@ -651,24 +652,58 @@ pattern = "st = require 'luasteam'"
 position = "at"
 payload = """local success, _st = pcall(require, 'luasteam')
 if success then st = _st else sendWarnMessage(_st, "LuaSteam"); st = {} end"""
-overwrite = true
 match_indent = true
 
-# copy_card: Subtract from .ability.card_limit
+# copy_card: Reorder timings
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+for k, v in pairs(other.ability) do
+    if type(v) == 'table' then 
+        new_card.ability[k] = copy_table(v)
+    else
+        new_card.ability[k] = v
+    end
+end
+'''
+payload = '''
+'''
+
+# copy_card: Reorder timings
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+return new_card
+'''
+payload = '''
+for k, v in pairs(other.ability) do
+    if type(v) == 'table' then 
+        new_card.ability[k] = copy_table(v)
+    else
+        new_card.ability[k] = v
+    end
+end
+'''
+
+
+
+# copy_card: Subtract from .ability.card_limit when edition is stripped
 [[patches]]
 [patches.pattern]
 target = 'functions/common_events.lua'
 position = 'before'
 match_indent = true
-pattern = 'if not strip_edition then'
+pattern = 'return new_card'
 payload = '''
-if other.edition then
+if other.edition and strip_edition then
     new_card.ability.card_limit = new_card.ability.card_limit - (other.edition.card_limit or 0)
     new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.edition.extra_slots_used or 0)
-end
-if other.seal then
-    new_card.ability.card_limit = new_card.ability.card_limit - (other.ability.seal.card_limit or 0)
-    new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.ability.seal.extra_slots_used or 0)
 end'''
 
 # copy_card edition config
@@ -694,7 +729,6 @@ target = "card.lua"
 pattern = "if next(find_joker('Smeared Joker')) and (self.base.suit == 'Hearts' or self.base.suit == 'Diamonds') == (suit == 'Hearts' or suit == 'Diamonds') then"
 position = "at"
 payload = "if SMODS.smeared_check(self, suit) then"
-overwrite = true
 match_indent = true
 
 # fix Seeing Double compat issues with modded suits
@@ -739,7 +773,6 @@ payload = """if SMODS.seeing_double_check(context.scoring_hand, 'Clubs') then
         Xmult_mod = self.ability.extra
     }
 end"""
-overwrite = true
 match_indent = true
 
 # Card:get_end_of_round_effect
@@ -850,4 +883,49 @@ local card = Card(_area.T.x, _area.T.y, G.CARD_W, G.CARD_H, card_init.front, car
 '''
 payload = '''
 card:add_to_deck()
+'''
+
+
+# display negative chips from card's rank
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = 'nominal_chips = self.base.nominal > 0 and self.base.nominal or nil,'
+position = "at"
+payload = 'nominal_chips = self.base.nominal ~= 0 and self.base.nominal or nil,'
+match_indent = true
+
+# negative chips from card's rank proper localization
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''
+localize{type = 'other', key = 'card_chips', nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
+'''
+position = "at"
+payload = '''
+localize{type = 'other', key = 'card_chips'..(specific_vars.nominal_chips < 0 and '_minus' or ''), nodes = desc_nodes, vars = {specific_vars.nominal_chips}}
+'''
+match_indent = true
+
+# Fix Consumable unlock text saying "Joker unlocked" instead of specific consumable type
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''{n=G.UIT.O, config={object = DynaText({string = {card_center.set == 'Voucher' and localize('k_voucher') or localize('k_joker')}, colours = {G.C.BLUE},shadow = true, rotate = true, bump = true, pop_in = 0.3, pop_in_rate = 2, scale = 1.2})}}'''
+position = "at"
+payload = '''{n=G.UIT.O, config={object = DynaText({string = { SMODS.create_unlock_text(card_center) }, colours = { G.C.BLUE }, shadow = true, rotate = true, bump = true, pop_in = 0.3, pop_in_rate = 2, scale = 1.2})}}'''
+match_indent = true
+
+# Fix undiscovered cards having sets hard coded
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+(self.ability.set == 'Joker' or self.ability.set == 'Edition' or self.ability.consumeable or self.ability.set == 'Voucher' or self.ability.set == 'Booster') and
+'''
+payload = '''
+(self.ability.consumeable or SMODS.UndiscoveredCompat[self.ability.set]) and
 '''
