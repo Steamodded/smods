@@ -114,8 +114,6 @@ function SMODS.RunSelect.Functions.create_page(key)
         return {n=G.UIT.C, config = {padding = 0.1}, nodes = {
                 {n=G.UIT.R, config={align = "cm", minh = 0.5+G.CARD_H+G.CARD_H, minw = 8.7, colour = G.C.BLACK, padding = 0.15, r = 0.1, emboss = 0.05}, nodes = settings},
                 {n=G.UIT.R, config={minh=0.8}}
-            -- Galdur.generate_areas_ui(key, page_def.display_rows and {math.min(page_def.display_rows[1], math.ceil(#page_def.pool/page_def.display_rows[2])), page_def.display_rows[2]}), 
-                -- Galdur.create_page_cycle(key, page_def.amount)
             }}
         end
 
@@ -154,7 +152,7 @@ function SMODS.RunSelect.Functions.nav_bar()
                             create_text_input({id = 'run_select_seeded_input', w = 3, max_length = 2500, extended_corpus = true, ref_table = SMODS.RunSelect.Setup.choices, ref_value = 'seed', prompt_text = localize('k_enter_seed'), colour = SMODS.RunSelect.Colours.seed_input, hooked_colour = darken(SMODS.RunSelect.Colours.seed_input, 0.3)})
                         }},
                         {n=G.UIT.C, config={align = "cm", minw = 0.1}},
-                        UIBox_button({id = 'run_select_seeded_paste', label = localize('ml_paste_seed'), minw = 1, minh = 0.6, button = 'paste_seed', colour = SMODS.RunSelect.Colours.seed_input, scale = 0.3, col = true})
+                        UIBox_button({id = 'run_select_seeded_paste', label = localize('ml_paste_seed'), minw = 1, minh = 0.6, button = 'run_select_paste_seed', colour = SMODS.RunSelect.Colours.seed_input, scale = 0.3, col = true})
                     }}
                 }},
             }}},
@@ -273,6 +271,24 @@ G.FUNCS.random_type = function(e)
     local page_def = SMODS.RunSelect.Pages[e.config.page_key]
     page_def:choose_random()    
 end
+
+G.FUNCS.run_select_paste_seed = function(e)
+  G.CONTROLLER.text_input_hook = e.UIBox:get_UIE_by_ID('run_select_seeded_input').children[1].children[1]
+  G.CONTROLLER.text_input_id = 'run_select_seeded_input'
+  for i = 1, string.len(SMODS.RunSelect.Setup.choices.seed or '') do
+    G.FUNCS.text_input_key({key = 'right'})
+  end
+  for i = 1, string.len(SMODS.RunSelect.Setup.choices.seed or '') do
+      G.FUNCS.text_input_key({key = 'backspace'})
+  end
+  local clipboard = (G.F_LOCAL_CLIPBOARD and G.CLIPBOARD or love.system.getClipboardText()) or ''
+  for i = 1, #clipboard do
+    local c = clipboard:sub(i,i)
+    G.FUNCS.text_input_key({key = c})
+  end
+  G.FUNCS.text_input_key({key = 'return'})
+end
+
 
 function SMODS.RunSelect.Functions.start_run(_quick_start)
     local run_args = {}
