@@ -202,7 +202,10 @@ payload = '''
 target = 'functions/state_events.lua'
 match_indent = true
 position = 'at'
-pattern = '''G.STATE = G.STATES.ROUND_EVAL'''
+pattern = '''
+G.STATE = G.STATES.ROUND_EVAL
+G.STATE_COMPLETE = false
+'''
 payload = '''
 if #SMODS.state_queue == 0 then
     SMODS.queue_state(SMODS.STATES.ROUND_EVAL)

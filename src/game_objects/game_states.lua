@@ -461,7 +461,6 @@ SMODS.GameState {
                     G.shop = nil
                     G.SHOP_SIGN:remove()
                     G.SHOP_SIGN = nil
-                    G.STATE_COMPLETE = false
                     G.CONTROLLER.locks.toggle_shop = nil
                     return true
                 end
@@ -471,6 +470,12 @@ SMODS.GameState {
         end
     end,
 }
+
+local end_round_ref = end_round 
+function end_round()
+    if SMODS.STATE ~= SMODS.STATES.BLIND then return end
+    return end_round_ref()
+end
 
 SMODS.GameState {
     key = SMODS.STATES.ROUND_EVAL,
@@ -488,39 +493,33 @@ SMODS.GameState {
             end
             return
         end
+        stop_use()
+        G.STATE_COMPLETE = true
         G.E_MANAGER:add_event(Event({
-            trigger = "immediate",
-            func = function ()
-                stop_use()
-                G.STATE_COMPLETE = true
+            trigger = 'immediate',
+            func = function()
+                save_run()
+                ease_background_colour_blind(G.STATES.ROUND_EVAL)
+                G.round_eval = UIBox{
+                    definition = create_UIBox_round_evaluation(),
+                    config = {align="bm", offset = {x=0,y=G.ROOM.T.y + 19},major = G.hand, bond = 'Weak'}
+                }
+                G.round_eval.alignment.offset.x = 0
                 G.E_MANAGER:add_event(Event({
                     trigger = 'immediate',
                     func = function()
-                        save_run()
-                        ease_background_colour_blind(G.STATES.ROUND_EVAL)
-                        G.round_eval = UIBox{
-                            definition = create_UIBox_round_evaluation(),
-                            config = {align="bm", offset = {x=0,y=G.ROOM.T.y + 19},major = G.hand, bond = 'Weak'}
-                        }
-                        G.round_eval.alignment.offset.x = 0
-                        G.E_MANAGER:add_event(Event({
-                            trigger = 'immediate',
-                            func = function()
-                                if G.round_eval.alignment.offset.y ~= -7.8 then
-                                    G.round_eval.alignment.offset.y = -7.8
-                                else
-                                    if math.abs(G.round_eval.T.y - G.round_eval.VT.y) < 3 then
-                                        G.ROOM.jiggle = G.ROOM.jiggle + 3
-                                        play_sound('cardFan2')
-                                        delay(0.1)
-                                        G.FUNCS.evaluate_round()
-                                        return true
-                                    end
-                                end
-                            end}))
-                        return true
-                    end
-                }))
+                        if G.round_eval.alignment.offset.y ~= -7.8 then
+                            G.round_eval.alignment.offset.y = -7.8
+                        else
+                            if math.abs(G.round_eval.T.y - G.round_eval.VT.y) < 3 then
+                                G.ROOM.jiggle = G.ROOM.jiggle + 3
+                                play_sound('cardFan2')
+                                delay(0.1)
+                                G.FUNCS.evaluate_round()
+                                return true
+                            end
+                        end
+                    end}))
                 return true
             end
         }))
@@ -534,7 +533,6 @@ SMODS.GameState {
             end
             return
         end
-        stop_use()
         if G.round_eval then
             G.round_eval.alignment.offset.y = G.ROOM.T.y + 15
             G.round_eval.alignment.offset.x = 0
@@ -550,7 +548,6 @@ SMODS.GameState {
                         G.round_eval:remove()
                         G.round_eval = nil
                     end
-                    -- G.STATE_COMPLETE = false
                     return true
                 end
             }))

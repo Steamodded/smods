@@ -2892,7 +2892,6 @@ function G.FUNCS.cash_out(e)
 			SMODS.queue_state(SMODS.STATES.SHOP)
 		end
 		SMODS.advance_state_queue()
-		G.STATE_COMPLETE = false
 	end
 end
 
