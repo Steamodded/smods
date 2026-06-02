@@ -553,14 +553,6 @@ match_indent = true
 position = 'at'
 payload = '''elseif not nc then draw_card(G.hand, G.play, 1, 'up', true, card, nil, mute) end'''
 
-[[patches]]
-[patches.pattern]
-target = 'functions/button_callbacks.lua'
-pattern = "else draw_card(G.hand, G.play, 1, 'up', true, card, nil, mute) end"
-match_indent = true
-position = 'at'
-payload = '''elseif not nc then draw_card(G.hand, G.play, 1, 'up', true, card, nil, mute) end'''
-
 # Card:check_use - allow Ankh to be selectable from packs even if joker slots are full
 [[patches]]
 [patches.pattern]

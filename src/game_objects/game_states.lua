@@ -1,6 +1,7 @@
 SMODS.STATES = {
     BOOSTER_OPENED = "BOOSTER_OPENED",
     REDEEM_VOUCHER = "REDEEM_VOUCHER",
+    USE_CONSUMABLE = "USE_CONSUMABLE",
     SHOP = "SHOP",
     ROUND_EVAL = "ROUND_EVAL",
     BLIND = "BLIND",
@@ -42,16 +43,16 @@ function SMODS.get_next_held_state(allow_duplicate)
     return nil
 end
 
-function SMODS.is_state_in_stack(state, exclude_latest)
+function SMODS.get_state_stack_index(state, exclude_latest)
     for i, state_table in ipairs(SMODS.state_stack) do
         if exclude_latest and i == #SMODS.state_stack then
-            return false
+            return nil
         end
         if state_table.state == state then
-            return true
+            return i
         end
     end
-    return false
+    return nil
 end
 
 function SMODS.clear_state_stack()
@@ -64,14 +65,16 @@ function SMODS.enter_state(new_state, enter_args, exit_args)
     local next_held_state = SMODS.get_next_held_state()
     enter_args = enter_args or {}
     enter_args.old_state = current_state
-    if SMODS.is_state_in_stack(new_state) then
+    local new_state_index = SMODS.get_state_stack_index(new_state)
+    if new_state_index then
         if not enter_args.force_refresh then
             enter_args.from_hold = true
         end
     end 
     exit_args = exit_args or {}
     exit_args.new_state = exit_args.new_state or new_state
-    local exit_state_in_stack = not exit_args.from_hold and SMODS.is_state_in_stack(current_state, true) -- If exit_args.from_hold is already true, this is irrelevant
+    local current_state_index = SMODS.get_state_stack_index(current_state, true)
+    local exit_state_in_stack = not exit_args.from_hold and current_state_index -- If exit_args.from_hold is already true, this is irrelevant
     if exit_state_in_stack then
         exit_args.from_hold = true
     end
@@ -104,12 +107,12 @@ function SMODS.exit_state(exit_args, enter_args, default)
     end
     exit_args = exit_args or {}
     exit_args.new_state = exit_args.new_state or new_state
-    if SMODS.is_state_in_stack(current_state, true) then
+    if SMODS.get_state_stack_index(current_state, true) then
         exit_args.from_hold = true
     end
     enter_args = enter_args or {}
     enter_args.old_state = current_state
-    if SMODS.is_state_in_stack(new_state) then
+    if SMODS.get_state_stack_index(new_state) then
         if not enter_args.force_refresh then
             enter_args.from_hold = true
         end
@@ -202,9 +205,24 @@ SMODS.GameState {
     exit_after_end_consumable = true,
 }
 
+function SMODS.in_booster()
+    local held_state = SMODS.get_next_held_state()
+    return SMODS.STATE == SMODS.STATES.BOOSTER_OPENED or ((SMODS.GameStates[SMODS.STATE] or {}).holds_booster and held_state == SMODS.STATES.BOOSTER_OPENED)
+end
+
 SMODS.GameState {
     key = SMODS.STATES.REDEEM_VOUCHER,
     exit_after_use_card = true,
+    holds_booster = true,
+}
+
+SMODS.GameState {
+    key = SMODS.STATES.USE_CONSUMABLE,
+    on_enter = function (self, args)
+        if G.buttons then G.buttons:remove(); G.buttons = nil end
+    end,
+    exit_after_use_card = true,
+    holds_booster = true,
 }
 
 SMODS.GameState {
@@ -253,9 +271,10 @@ SMODS.GameState {
         end
     end,
     on_enter = function (self, args)
+        args = args or {}
         G.CONTROLLER.locks.toggle_shop = nil
         if args.force_refresh then
-            self:on_exit({})
+            self:on_exit()
         elseif args.from_hold then
             if G.shop then 
                 -- Extracted from G.FUNCS.use_card()
@@ -263,23 +282,24 @@ SMODS.GameState {
                 G.shop.alignment.offset.py = nil
                 G.SHOP_SIGN.alignment.offset.y = 0
 
-                G.E_MANAGER:add_event(Event({
-                    trigger = 'after',
-                    delay = 0.2,
-                    blockable = false,
-                    func = function()
-                        if math.abs(G.shop.T.y - G.shop.VT.y) < 3 then
-                            G.ROOM.jiggle = G.ROOM.jiggle + 3
-                            play_sound('cardFan2')
-                            for i = 1, #G.GAME.tags do
-                                G.GAME.tags[i]:apply_to_run({type = 'shop_start'})
+                if not args.no_shop_calc then
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'after',
+                        delay = 0.2,
+                        blockable = false,
+                        func = function()
+                            if math.abs(G.shop.T.y - G.shop.VT.y) < 3 then
+                                G.ROOM.jiggle = G.ROOM.jiggle + 3
+                                if not args.no_sound then play_sound('cardFan2') end
+                                for i = 1, #G.GAME.tags do
+                                    G.GAME.tags[i]:apply_to_run({type = 'shop_start'})
+                                end
+                                return true
                             end
-                            return true
                         end
-                    end
-                }))
-
-                SMODS.calculate_context({starting_shop = true, from_hold = true})
+                    }))
+                    SMODS.calculate_context({starting_shop = true, from_hold = true})
+                end
                 G.CONTROLLER:snap_to({node = G.shop:get_UIE_by_ID('next_round_button')})
                 G.E_MANAGER:add_event(Event({ func = function() save_run(); return true end}))
             else
@@ -288,119 +308,113 @@ SMODS.GameState {
             end
             return
         end
+        stop_use()
+        G.STATE_COMPLETE = true
+        ease_background_colour_blind(G.STATES.SHOP)
+        local shop_exists = not not G.shop
+        G.shop = G.shop or UIBox{
+            definition = G.UIDEF.shop(),
+            config = {align='tmi', offset = {x=0,y=G.ROOM.T.y+11},major = G.hand, bond = 'Weak'}
+        }
+        -- Moved here from G.FUNCS.cash_out()
+        G.GAME.current_round.jokers_purchased = 0
+        G.GAME.shop_free = nil
+        G.GAME.shop_d6ed = nil
+        -------
         G.E_MANAGER:add_event(Event({
-            trigger = "immediate",
-            func = function ()
-                stop_use()
-                G.STATE_COMPLETE = true
-                ease_background_colour_blind(G.STATES.SHOP)
-                local shop_exists = not not G.shop
-                G.shop = G.shop or UIBox{
-                    definition = G.UIDEF.shop(),
-                    config = {align='tmi', offset = {x=0,y=G.ROOM.T.y+11},major = G.hand, bond = 'Weak'}
-                }
-                -- Moved here from G.FUNCS.cash_out()
-                G.GAME.current_round.jokers_purchased = 0
-                G.GAME.shop_free = nil
-                G.GAME.shop_d6ed = nil
-                -------
+            func = function()
+                G.shop.alignment.offset.y = -5.3
+                G.shop.alignment.offset.x = 0
                 G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    delay = 0.2,
+                    blockable = false,
                     func = function()
-                        G.shop.alignment.offset.y = -5.3
-                        G.shop.alignment.offset.x = 0
-                        G.E_MANAGER:add_event(Event({
-                            trigger = 'after',
-                            delay = 0.2,
-                            blockable = false,
-                            func = function()
-                                if math.abs(G.shop.T.y - G.shop.VT.y) < 3 then
-                                    G.ROOM.jiggle = G.ROOM.jiggle + 3
-                                    play_sound('cardFan2')
+                        if math.abs(G.shop.T.y - G.shop.VT.y) < 3 then
+                            G.ROOM.jiggle = G.ROOM.jiggle + 3
+                            if not args.no_sound then play_sound('cardFan2') end
+                            for i = 1, #G.GAME.tags do
+                                G.GAME.tags[i]:apply_to_run({type = 'shop_start'})
+                            end
+                            local nosave_shop = nil
+                            if not shop_exists then
+                                if G.load_shop_jokers then 
+                                    nosave_shop = true
+                                    G.shop_jokers:load(G.load_shop_jokers)
+                                    for k, v in ipairs(G.shop_jokers.cards) do
+                                        create_shop_card_ui(v)
+                                        if v.ability.consumeable then v:start_materialize() end
+                                        for _kk, vvv in ipairs(G.GAME.tags) do
+                                            if vvv:apply_to_run({type = 'store_joker_modify', card = v}) then break end
+                                        end
+                                    end
+                                    G.load_shop_jokers = nil
+                                else
+                                    for i = 1, G.GAME.shop.joker_max - #G.shop_jokers.cards do
+                                        G.shop_jokers:emplace(create_card_for_shop(G.shop_jokers))
+                                    end
+                                end
+
+                                if G.load_shop_vouchers then
+                                    nosave_shop = true
+                                    G.shop_vouchers:load(G.load_shop_vouchers)
+                                    for k, v in ipairs(G.shop_vouchers.cards) do
+                                        create_shop_card_ui(v)
+                                        v:start_materialize()
+                                    end
+                                    G.load_shop_vouchers = nil
+                                else
+                                    local vouchers_to_spawn = 0
+                                    for _,_ in pairs(G.GAME.current_round.voucher.spawn) do vouchers_to_spawn = vouchers_to_spawn + 1 end
+                                    if vouchers_to_spawn < G.GAME.starting_params.vouchers_in_shop + (G.GAME.modifiers.extra_vouchers or 0) then
+                                        SMODS.get_next_vouchers(G.GAME.current_round.voucher)
+                                    end
+                                    for _, key in ipairs(G.GAME.current_round.voucher or {}) do
+                                        if G.P_CENTERS[key] and G.GAME.current_round.voucher.spawn[key] then
+                                            SMODS.add_voucher_to_shop(key)
+                                        end
+                                    end
+                                end
+
+                                if G.load_shop_booster then 
+                                    nosave_shop = true
+                                    G.shop_booster:load(G.load_shop_booster)
+                                    for k, v in ipairs(G.shop_booster.cards) do
+                                        create_shop_card_ui(v)
+                                        v:start_materialize()
+                                    end
+                                    G.load_shop_booster = nil
+                                else
+                                    for i=1, G.GAME.starting_params.boosters_in_shop + (G.GAME.modifiers.extra_boosters or 0) do
+                                        G.GAME.current_round.used_packs = G.GAME.current_round.used_packs or {}
+                                        if not G.GAME.current_round.used_packs[i] then
+                                            G.GAME.current_round.used_packs[i] = get_pack('shop_pack').key
+                                        end
+
+                                        if G.GAME.current_round.used_packs[i] ~= 'USED' then 
+                                            local card = Card(G.shop_booster.T.x + G.shop_booster.T.w/2,
+                                            G.shop_booster.T.y, G.CARD_W*1.27, G.CARD_H*1.27, G.P_CARDS.empty, G.P_CENTERS[G.GAME.current_round.used_packs[i]], {bypass_discovery_center = true, bypass_discovery_ui = true})
+                                            create_shop_card_ui(card, 'Booster', G.shop_booster)
+                                            card.ability.booster_pos = i
+                                            card:start_materialize()
+                                            G.shop_booster:emplace(card)
+                                        end
+                                    end
+
                                     for i = 1, #G.GAME.tags do
-                                        G.GAME.tags[i]:apply_to_run({type = 'shop_start'})
+                                        G.GAME.tags[i]:apply_to_run({type = 'voucher_add'})
                                     end
-                                    local nosave_shop = nil
-                                    if not shop_exists then
-                                        if G.load_shop_jokers then 
-                                            nosave_shop = true
-                                            G.shop_jokers:load(G.load_shop_jokers)
-                                            for k, v in ipairs(G.shop_jokers.cards) do
-                                                create_shop_card_ui(v)
-                                                if v.ability.consumeable then v:start_materialize() end
-                                                for _kk, vvv in ipairs(G.GAME.tags) do
-                                                    if vvv:apply_to_run({type = 'store_joker_modify', card = v}) then break end
-                                                end
-                                            end
-                                            G.load_shop_jokers = nil
-                                        else
-                                            for i = 1, G.GAME.shop.joker_max - #G.shop_jokers.cards do
-                                                G.shop_jokers:emplace(create_card_for_shop(G.shop_jokers))
-                                            end
-                                        end
-
-                                        if G.load_shop_vouchers then
-                                            nosave_shop = true
-                                            G.shop_vouchers:load(G.load_shop_vouchers)
-                                            for k, v in ipairs(G.shop_vouchers.cards) do
-                                                create_shop_card_ui(v)
-                                                v:start_materialize()
-                                            end
-                                            G.load_shop_vouchers = nil
-                                        else
-                                            local vouchers_to_spawn = 0
-                                            for _,_ in pairs(G.GAME.current_round.voucher.spawn) do vouchers_to_spawn = vouchers_to_spawn + 1 end
-                                            if vouchers_to_spawn < G.GAME.starting_params.vouchers_in_shop + (G.GAME.modifiers.extra_vouchers or 0) then
-                                                SMODS.get_next_vouchers(G.GAME.current_round.voucher)
-                                            end
-                                            for _, key in ipairs(G.GAME.current_round.voucher or {}) do
-                                                if G.P_CENTERS[key] and G.GAME.current_round.voucher.spawn[key] then
-                                                    SMODS.add_voucher_to_shop(key)
-                                                end
-                                            end
-                                        end
-
-                                        if G.load_shop_booster then 
-                                            nosave_shop = true
-                                            G.shop_booster:load(G.load_shop_booster)
-                                            for k, v in ipairs(G.shop_booster.cards) do
-                                                create_shop_card_ui(v)
-                                                v:start_materialize()
-                                            end
-                                            G.load_shop_booster = nil
-                                        else
-                                            for i=1, G.GAME.starting_params.boosters_in_shop + (G.GAME.modifiers.extra_boosters or 0) do
-                                                G.GAME.current_round.used_packs = G.GAME.current_round.used_packs or {}
-                                                if not G.GAME.current_round.used_packs[i] then
-                                                    G.GAME.current_round.used_packs[i] = get_pack('shop_pack').key
-                                                end
-
-                                                if G.GAME.current_round.used_packs[i] ~= 'USED' then 
-                                                    local card = Card(G.shop_booster.T.x + G.shop_booster.T.w/2,
-                                                    G.shop_booster.T.y, G.CARD_W*1.27, G.CARD_H*1.27, G.P_CARDS.empty, G.P_CENTERS[G.GAME.current_round.used_packs[i]], {bypass_discovery_center = true, bypass_discovery_ui = true})
-                                                    create_shop_card_ui(card, 'Booster', G.shop_booster)
-                                                    card.ability.booster_pos = i
-                                                    card:start_materialize()
-                                                    G.shop_booster:emplace(card)
-                                                end
-                                            end
-
-                                            for i = 1, #G.GAME.tags do
-                                                G.GAME.tags[i]:apply_to_run({type = 'voucher_add'})
-                                            end
-                                            for i = 1, #G.GAME.tags do
-                                                G.GAME.tags[i]:apply_to_run({type = 'shop_final_pass'})
-                                            end
-                                        end
+                                    for i = 1, #G.GAME.tags do
+                                        G.GAME.tags[i]:apply_to_run({type = 'shop_final_pass'})
                                     end
-
-                                    if not nosave_shop then SMODS.calculate_context({starting_shop = true}) end
-                                    G.CONTROLLER:snap_to({node = G.shop:get_UIE_by_ID('next_round_button')})
-                                    if not nosave_shop then G.E_MANAGER:add_event(Event({ func = function() save_run(); return true end})) end
-                                    return true
                                 end
                             end
-                        }))
-                        return true
+
+                            if not nosave_shop then SMODS.calculate_context({starting_shop = true}) end
+                            G.CONTROLLER:snap_to({node = G.shop:get_UIE_by_ID('next_round_button')})
+                            if not nosave_shop then G.E_MANAGER:add_event(Event({ func = function() save_run(); return true end})) end
+                            return true
+                        end
                     end
                 }))
                 return true
@@ -408,6 +422,7 @@ SMODS.GameState {
         }))
     end,
     on_exit = function (self, args)
+        args = args or {}
         G.CONTROLLER.locks.toggle_shop = true
         if args.from_hold then
             if G.shop and not G.shop.alignment.offset.py then
@@ -460,8 +475,9 @@ SMODS.GameState {
 SMODS.GameState {
     key = SMODS.STATES.ROUND_EVAL,
     on_enter = function (self, args)
+        args = args or {}
         if args.force_refresh then
-            self:on_exit({})
+            self:on_exit()
         elseif args.from_hold then
             if G.round_eval then
                 G.round_eval.alignment.offset.y = G.round_eval.alignment.offset.py
@@ -510,6 +526,7 @@ SMODS.GameState {
         }))
     end,
     on_exit = function (self, args)
+        args = args or {}
         if args.from_hold then
             if G.round_eval and not G.round_eval.alignment.offset.py then
                 G.round_eval.alignment.offset.py = G.round_eval.alignment.offset.y
@@ -562,10 +579,17 @@ SMODS.GameState {
 SMODS.GameState {
     key = SMODS.STATES.BLIND,
     on_enter = function (self, args)
+        args = args or {}
         if args.force_refresh then
-            self:on_exit({})
+            self:on_exit()
         elseif args.from_hold then
             G.GAME.facing_blind = true
+            if args.leave_data then
+                save_run()
+                G.STATE = G.STATES.SELECTING_HAND
+                G.CONTROLLER:recall_cardarea_focus('hand')
+                return
+            end
             local data = SMODS.state_stack[#SMODS.state_stack].data
             ease_chips(data.chips)
             G.GAME.blind:set_blind(G.P_BLINDS[data.blind_key], nil, true)
@@ -628,6 +652,7 @@ SMODS.GameState {
         }))
     end,
     on_exit = function (self, args)
+        args = args or {}
         G.GAME.facing_blind = nil
         if args.from_hold or args.no_defeat then
             if G.HUD_blind and not args.leave_HUD_blind then
@@ -658,23 +683,25 @@ SMODS.GameState {
                 end
                 SMODS.state_stack[#SMODS.state_stack].data = data
             end
-            G.FUNCS.draw_from_hand_to_discard()
-            G.FUNCS.draw_from_discard_to_deck()
-            G.E_MANAGER:add_event(Event({
-                trigger = "after",
-                blockable = false,
-                delay = 0.7,
-                func = function ()
-                    G.GAME.blind:disable()
-                    if G.buttons then G.buttons:remove(); G.buttons = nil end         
-                    return true
+            if not args.leave_data then
+                G.FUNCS.draw_from_hand_to_discard()
+                G.FUNCS.draw_from_discard_to_deck()
+                G.E_MANAGER:add_event(Event({
+                    trigger = "after",
+                    blockable = false,
+                    delay = 0.7,
+                    func = function ()
+                        G.GAME.blind:disable()
+                        if G.buttons then G.buttons:remove(); G.buttons = nil end         
+                        return true
+                    end
+                }))
+                for k, v in ipairs(G.playing_cards) do
+                    v.ability.discarded = nil
+                    v.ability.forced_selection = nil
                 end
-            }))
-            for k, v in ipairs(G.playing_cards) do
-                v.ability.discarded = nil
-                v.ability.forced_selection = nil
+                delay(0.4)
             end
-            delay(0.4)
             return
         end
         G.E_MANAGER:add_event(Event({
@@ -688,6 +715,7 @@ SMODS.GameState {
                             func = function ()
                                 G.E_MANAGER:add_event(Event({
                                     trigger = 'before',
+                                    blocking = false,
                                     delay = 1.3*math.min(G.GAME.blind.dollars+2, 7)/2*0.15 + 0.5,
                                     func = function()
                                         G.GAME.blind:defeat()
@@ -706,6 +734,7 @@ SMODS.GameState {
                     G.E_MANAGER:add_event(Event({
                         trigger = "after",
                         blockable = false,
+                        blocking = false,
                         delay = 0.7,
                         func = function ()
                             G.GAME.blind:defeat()
@@ -743,8 +772,9 @@ SMODS.GameState {
 SMODS.GameState {
     key = SMODS.STATES.BLIND_SELECT,
     on_enter = function (self, args)
+        args = args or {}
         if args.force_refresh then
-            self:on_exit({})
+            self:on_exit()
         elseif args.from_hold then
             if G.blind_select then
                 G.blind_select.alignment.offset.y = G.blind_select.alignment.offset.py
@@ -753,7 +783,7 @@ SMODS.GameState {
                     trigger = "after",
                     delay = 0.3,
                     func = function ()
-                        play_sound('cancel')
+                        if not args.no_sound then play_sound('cancel') end
                         return true
                     end
                 }))
@@ -799,6 +829,7 @@ SMODS.GameState {
         }))
     end,
     on_exit = function (self, args)
+        args = args or {}
         if args.from_hold then
             if G.blind_select and not G.blind_select.alignment.offset.py then
                 G.blind_select.alignment.offset.py = G.blind_select.alignment.offset.y

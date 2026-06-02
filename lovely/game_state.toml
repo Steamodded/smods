@@ -78,12 +78,8 @@ payload = '''(self.config.type == 'hand' and ({[SMODS.STATES.SHOP]=1, [G.STATES.
 target = 'functions/button_callbacks.lua'
 match_indent = true
 position = 'at'
-pattern = '''
-if card.ability.set == 'Booster' and not nosave and G.STATE == G.STATES.SHOP
-'''
-payload = '''
-if card.ability.set == 'Booster' and not nosave and G.STATE == SMODS.STATES.SHOP
-'''
+pattern = '''if card.ability.set == 'Booster' and not nosave and G.STATE == G.STATES.SHOP then'''
+payload = '''if card.ability.set == 'Booster' and not nosave and G.STATE == SMODS.STATES.SHOP then'''
 [[patches]]
 [patches.pattern]
 target = 'functions/button_callbacks.lua'
@@ -136,7 +132,7 @@ position = 'at'
 pattern = '''G.STATE = prev_state'''
 payload = '''
 if SMODS.GameStates[G.STATE] and SMODS.GameStates[G.STATE].exit_after_use_card then -- SMODS.STATES.BOOSTER_OPENED is handled by G.FUNCS.end_consumeable() below
-    SMODS.exit_state(nil, nil, {state_override=prev_state})
+    SMODS.exit_state(nil, {no_shop_calc = true, leave_data = true, no_sound = true}, {state_override=prev_state})
 elseif not SMODS.GameStates[G.STATE] then
     G.STATE = prev_state
 end
@@ -173,7 +169,7 @@ position = 'at'
 pattern = '''G.STATE = G.GAME.PACK_INTERRUPT'''
 payload = '''
 if SMODS.GameStates[G.STATE] and SMODS.GameStates[G.STATE].exit_after_end_consumable then
-    SMODS.exit_state(nil, nil, {state_override=G.GAME.PACK_INTERRUPT})
+    SMODS.exit_state(nil, {no_shop_calc = true, no_sound = true}, {state_override=G.GAME.PACK_INTERRUPT})
 elseif not SMODS.GameStates[G.STATE] then
     G.STATE = G.GAME.PACK_INTERRUPT
 end
@@ -230,3 +226,35 @@ win_game()
 G.GAME.won = true
 return true
 '''
+
+
+### SMODS.STATES.USE_CONSUMABLE
+
+# card.lua : Card:use_consumable() : inject SMODS.enter_state
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''local used_tarot = copier or self'''
+payload = '''
+SMODS.enter_state(SMODS.STATES.USE_CONSUMABLE, nil, {from_hold = true, leave_shop_sign = true, leave_HUD_blind = true, leave_data = true, no_sound = true})
+'''
+
+# card.lua : Card:can_use_consumeable() : update logic
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''if G.STATE ~= G.STATES.HAND_PLAYED and G.STATE ~= G.STATES.DRAW_TO_HAND and G.STATE ~= G.STATES.PLAY_TAROT or any_state then'''
+payload = '''if G.STATE ~= G.STATES.HAND_PLAYED and G.STATE ~= G.STATES.DRAW_TO_HAND and G.STATE ~= SMODS.STATES.USE_CONSUMABLE or any_state then'''
+
+# functions/button_callbacks.lua : G.FUNCS.use_card() : update logic
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''G.STATES.PLAY_TAROT'''
+payload = '''SMODS.STATES.USE_CONSUMABLE'''

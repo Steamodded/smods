@@ -2885,20 +2885,14 @@ function G.FUNCS.toggle_shop(e)
 end
 
 function G.FUNCS.cash_out(e)
-	stop_use()
+	--stop_use()
 	if G.round_eval then  
 		e.config.button = nil
-		G.E_MANAGER:add_event(Event({
-			trigger = 'immediate',
-			func = function()
-				if #SMODS.state_queue == 0 then
-					SMODS.queue_state(SMODS.STATES.SHOP)
-				end
-				SMODS.advance_state_queue()
-				G.STATE_COMPLETE = false
-			return true
-			end
-		}))
+		if #SMODS.state_queue == 0 then
+			SMODS.queue_state(SMODS.STATES.SHOP)
+		end
+		SMODS.advance_state_queue()
+		G.STATE_COMPLETE = false
 	end
 end
 

@@ -10,34 +10,53 @@ priority = -10
 [patches.pattern]
 target = "card.lua"
 pattern = '''
-if self.ability.name:find('Arcana') then
-            G.STATE = G.STATES.TAROT_PACK
-            G.GAME.pack_size = self.ability.extra
-        elseif self.ability.name:find('Celestial') then
-            G.STATE = G.STATES.PLANET_PACK
-            G.GAME.pack_size = self.ability.extra
-        elseif self.ability.name:find('Spectral') then
-            G.STATE = G.STATES.SPECTRAL_PACK
-            G.GAME.pack_size = self.ability.extra
-        elseif self.ability.name:find('Standard') then
-            G.STATE = G.STATES.STANDARD_PACK
-            G.GAME.pack_size = self.ability.extra
-        elseif self.ability.name:find('Buffoon') then
-            G.STATE = G.STATES.BUFFOON_PACK
-            G.GAME.pack_size = self.ability.extra
-        end
+if self.ability.name:find('Arcana') then 
+    G.STATE = G.STATES.TAROT_PACK
+    G.GAME.pack_size = self.ability.extra
+elseif self.ability.name:find('Celestial') then
+    G.STATE = G.STATES.PLANET_PACK
+    G.GAME.pack_size = self.ability.extra
+elseif self.ability.name:find('Spectral') then
+    G.STATE = G.STATES.SPECTRAL_PACK
+    G.GAME.pack_size = self.ability.extra
+elseif self.ability.name:find('Standard') then
+    G.STATE = G.STATES.STANDARD_PACK
+    G.GAME.pack_size = self.ability.extra
+elseif self.ability.name:find('Buffoon') then
+    G.STATE = G.STATES.BUFFOON_PACK
+    G.GAME.pack_size = self.ability.extra
+end
 
-        G.GAME.pack_choices = self.config.center.config.choose or 1'''
+G.GAME.pack_choices = self.config.center.config.choose or 1
+
+if self.cost > 0 then 
+    G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.2, func = function()
+        inc_career_stat('c_shop_dollars_spent', self.cost)
+        self:juice_up()
+    return true end }))
+    ease_dollars(-self.cost) 
+else
+    delay(0.2)
+end'''
 match_indent = true
 position = "at"
 payload = """
+G.GAME.pack_choices = math.min((self.ability.choose or self.config.center.config.choose or 1) + (G.GAME.modifiers.booster_choice_mod or 0), self.ability.extra and math.max(1, self.ability.extra + (G.GAME.modifiers.booster_size_mod or 0)) or self.config.center.extra and math.max(1, self.config.center.extra + (G.GAME.modifiers.booster_size_mod or 0)) or 1)
+if self.cost > 0 then 
+    G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.2, func = function()
+        inc_career_stat('c_shop_dollars_spent', self.cost)
+        self:juice_up()
+    return true end }))
+    ease_dollars(-self.cost) 
+else
+    delay(0.2)
+end
 booster_obj = self.config.center
 if booster_obj and SMODS.Centers[booster_obj.key] then
     SMODS.OPENED_BOOSTER = self
     SMODS.enter_state(SMODS.STATES.BOOSTER_OPENED, nil, {from_hold = true, leave_shop_sign = true, leave_HUD_blind = true})
 end
-G.GAME.pack_choices = math.min((self.ability.choose or self.config.center.config.choose or 1) + (G.GAME.modifiers.booster_choice_mod or 0), self.ability.extra and math.max(1, self.ability.extra + (G.GAME.modifiers.booster_size_mod or 0)) or self.config.center.extra and math.max(1, self.config.center.extra + (G.GAME.modifiers.booster_size_mod or 0)) or 1)
-"""
+""" # Reordered to maintain vanilla timing
 
 # Card:open
 # Adds modifier for size of booster
@@ -105,7 +124,7 @@ target = "cardarea.lua"
 pattern = "(self.config.type == 'deck' and self ~= G.deck) or"
 position = "before"
 payload = '''
-(self.config.type == 'hand' and state == SMODS.STATES.BOOSTER_OPENED) or'''
+(self.config.type == 'hand' and SMODS.in_booster()) or'''
 match_indent = true
 
 # G.FUNCS.use_card
@@ -124,7 +143,7 @@ match_indent = true
 target = "cardarea.lua"
 pattern = "if self.config.type == 'hand' and (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK  or G.STATE == G.STATES.PLANET_PACK) then"
 position = "at"
-payload = "if self.config.type == 'hand' and (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) then"
+payload = "if self.config.type == 'hand' and (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK or SMODS.in_booster()) then"
 match_indent = true
 
 # CardArea:align_cards()
@@ -133,7 +152,7 @@ match_indent = true
 target = "cardarea.lua"
 pattern = "if self.config.type == 'hand' and not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK) then"
 position = "at"
-payload = "if self.config.type == 'hand' and not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) then"
+payload = "if self.config.type == 'hand' and not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK or SMODS.in_booster()) then"
 match_indent = true
 
 # Card:can_use_consumable()
@@ -157,7 +176,7 @@ if nc then
     play_sound('cardSlide2', nil, 0.3)
     dont_dissolve = true
 end
-if (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) then"""
+if (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == G.STATES.SPECTRAL_PACK or SMODS.in_booster()) then"""
 match_indent = true
 
 # G.FUNC.use_card()
@@ -197,7 +216,7 @@ position = "before"
 payload = "(G.STATE == SMODS.STATES.BOOSTER_OPENED and SMODS.STATES.BOOSTER_OPENED) or"
 match_indent = true
 
-# G.FUNC.use_card()
+# G.FUNC.draw_from_deck_to_hand()
 [[patches]]
 [patches.pattern]
 target = "functions/state_events.lua"
@@ -213,8 +232,8 @@ target = "card.lua"
 pattern = '''(?<indent>[\t ]*)align = \(G\.STATE[\s\S]*and -0\.2 or 0},'''
 position = "at"
 payload = '''
-align = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) and 'tm' or 'cm',
-offset = {x = 0, y = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) and -0.2 or 0},'''
+align = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or SMODS.in_booster()) and 'tm' or 'cm',
+offset = {x = 0, y = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or SMODS.in_booster()) and -0.2 or 0},'''
 line_prepend = '$indent'
 
 # G.FUNCS.use_card()
@@ -436,7 +455,7 @@ target = 'card.lua'
 match_indent = true
 position = 'after'
 pattern = '''if self.shop_voucher then G.GAME.current_round.voucher = nil end'''
-payload = '''SMODS.enter_state(SMODS.STATES.REDEEM_VOUCHER, nil, {from_hold = true, leave_shop_sign = true, leave_HUD_blind = true})'''
+payload = '''SMODS.enter_state(SMODS.STATES.REDEEM_VOUCHER, nil, {from_hold = true, leave_shop_sign = true, leave_HUD_blind = true, leave_data = true, no_sound = true})'''
 
 # G.FUNCS.use_card()
 # Consumables in areas other than the consumable don't count
