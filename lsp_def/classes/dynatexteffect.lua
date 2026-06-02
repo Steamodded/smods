@@ -42,5 +42,6 @@ SMODS.DynaTextEffects = {}
 ---@field colour table The letter's colour. Ignored if prefix or suffix are set
 ---@field prefix table The letter's colour if it's part of the DynaText's prefix.
 ---@field suffix table The letter's colour if it's part of the DynaText's suffix. Ignored if prefix is set
+---@field shader UIShaderDeclaration The shader passes applied to this letter.
 
 ---@class love.graphics.Text

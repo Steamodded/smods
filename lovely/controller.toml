@@ -1,0 +1,69 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# G.UIDEF.card_focus_button
+# Add additional controller button options
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+elseif args.type == 'buy_and_use' then
+'''
+payload = '''
+elseif args.type == 'custom' then
+    button_contents = args.button_contents or {n=G.UIT.T, config={text = args.label or localize('b_use'), colour = args.text_colour or G.C.WHITE, scale = args.scale or 0.5, shadow = args.shadow}}
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{n=G.UIT.R, config={id = args.type == 'buy_and_use' and 'buy_and_use' or nil, ref_table = args.card, ref_parent = args.parent, align =  args.type == 'sell' and 'cl' or 'cr', colour = G.C.BLACK, shadow = true, r = 0.08, func = args.func, one_press = true, button = args.button, focus_args = {type = 'none'}, hover = true}, nodes={
+          {n=G.UIT.R, config={align = args.type == 'sell' and 'cl' or 'cr', minw = 1 + (args.type == 'select' and 0.1 or 0), minh = args.type == 'sell' and 1.5 or 1, padding = 0.08,
+              focus_args = {button = args.type == 'sell' and 'leftshoulder' or args.type == 'buy_and_use' and 'leftshoulder' or 'rightshoulder', scale = 0.55, orientation = args.type == 'sell' and 'tli' or 'tri', offset = {x = args.type == 'sell' and 0.1 or -0.1, y = 0}, type = 'none'},
+'''
+payload = '''
+{n=G.UIT.R, config={id = args.id or args.type == 'buy_and_use' and 'buy_and_use' or nil, ref_table = args.card, ref_parent = args.parent, align = args.align or args.type == 'sell' and 'cl' or 'cr', colour = args.colour or G.C.BLACK, shadow = true, r = 0.08, func = args.func, one_press = true, button = args.button, SMODS_use_card = args.SMODS_use_card, focus_args = {type = 'none'}, hover = true}, nodes={
+          {n=G.UIT.R, config={align = args.align or args.type == 'sell' and 'cl' or 'cr', minw = args.minw or (1 + (args.type == 'select' and 0.1 or 0)), minh = args.minh or (args.type == 'sell' and 1.5 or 1), padding = 0.08,
+              focus_args = {button = args.focus_button or args.type == 'sell' and 'leftshoulder' or args.type == 'buy_and_use' and 'leftshoulder' or 'rightshoulder', scale = 0.55, orientation = args.focus_button_orientation or args.type == 'sell' and 'tli' or 'tri', offset = {x = args.focus_button_x_offset or args.type == 'sell' and 0.1 or -0.1, y = 0}, type = 'none'},
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+args.type ~= 'sell' and {n=G.UIT.C, config={align = "cm",minw = 0.2, minh = 0.6}, nodes={}} or nil,
+{n=G.UIT.C, config={align = "cm", maxw = 1}, nodes={
+button_contents
+}},
+args.type == 'sell' and {n=G.UIT.C, config={align = "cm",minw = 0.2, minh = 0.6}, nodes={}} or nil,
+'''
+payload = '''
+not args.align_left and args.type ~= 'sell' and {n=G.UIT.C, config={align = "cm",minw = 0.2, minh = 0.6}, nodes={}} or nil,
+{n=G.UIT.C, config={align = "cm", maxw = 1}, nodes={
+button_contents
+}},
+(args.align_left or args.type == 'sell') and {n=G.UIT.C, config={align = "cm",minw = 0.2, minh = 0.6}, nodes={}} or nil,
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+align = args.type == 'sell' and 'cl' or 'cr',
+        offset = {x=(args.type == 'sell' and -1 or 1)*((args.card_width or 0) - 0.17 - args.card.T.w/2),y=args.type == 'buy_and_use' and 0.6 or (args.buy_and_use) and -0.6 or 0}, 
+'''
+payload = '''
+align = args.align or args.type == 'sell' and 'cl' or 'cr',
+        offset = {x=args.x_offset or (((args.align_left or args.type == 'sell') and -1 or 1)*((args.card_width or 0) - 0.17 - args.card.T.w/2)),y=args.y_offset or (args.type == 'buy_and_use' and 0.6 or (args.buy_and_use) and -0.6 or 0)}, 
+'''

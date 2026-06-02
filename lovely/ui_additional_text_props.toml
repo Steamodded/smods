@@ -253,6 +253,26 @@ if self.config.underline and self.config.underline[4] > 0.01 then
 end
 '''
 
+# Add strikethrough property for text
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+--Draw the 'chosen triangle'
+'''
+payload = '''
+if self.config.strikethrough and self.config.strikethrough[4] > 0.01 then 
+    prep_draw(self, 1)
+    love.graphics.scale(1/(G.TILESIZE))
+    love.graphics.setLineWidth(1)
+    love.graphics.setColor(self.config.strikethrough)
+    self:draw_pixellated_strikethough('line', parallax_dist)
+    love.graphics.pop()
+end
+'''
+
 # Add text_colour support for card_eval_status_text extra tables
 [[patches]]
 [patches.pattern]
@@ -265,3 +285,81 @@ backdrop_colour = colour,
 payload = '''
 colour = extra and extra.text_colour,
 '''
+
+# DynaText update_text: buffer font
+[[patches]]
+[patches.pattern]
+target = '''engine/text.lua'''
+pattern = '''for k, v in ipairs(self.config.string) do'''
+position = "before"
+payload = '''
+self.font_buffer = self.font
+'''
+match_indent = true
+
+# DynaText update_text: set font
+[[patches]]
+[patches.pattern]
+target = '''engine/text.lua'''
+pattern = '''if old_string ~= new_string or first_pass then'''
+position = "before"
+payload = '''
+self.font = self.config.string[k].font or self.font_buffer
+self.strings[k].font = self.config.string[k].font or self.font_buffer
+'''
+match_indent = true
+
+# DynaText update_text: revert font
+[[patches]]
+[patches.pattern]
+target = '''engine/text.lua'''
+pattern = '''for k, v in ipairs(self.strings) do'''
+position = "before"
+payload = '''
+if self.font_buffer then
+    self.font = self.font_buffer
+    self.font_buffer = nil
+end
+'''
+match_indent = true
+
+# DynaText draw: buffer + set font
+[[patches]]
+[patches.pattern]
+target = '''engine/text.lua'''
+pattern = '''if self.children.particle_effect then self.children.particle_effect:draw() end'''
+position = "after"
+payload = '''
+self.font_buffer = self.font
+self.font = self.strings[self.focused_string].font or self.font_buffer or G.LANG.font
+self.text_offset = {
+    x = self.font.TEXT_OFFSET.x*self.scale + (self.config.x_offset or 0),
+    y = self.font.TEXT_OFFSET.y*self.scale + (self.config.y_offset or 0),
+}
+'''
+match_indent = true
+
+# DynaText draw: revert font
+[[patches]]
+[patches.pattern]
+target = '''engine/text.lua'''
+pattern = '''self:draw_boundingrect()'''
+position = "after"
+payload = '''
+if self.font_buffer then
+    self.font = self.font_buffer
+    self.font_buffer = nil
+end
+'''
+match_indent = true
+
+# DynaText keep text colour when string changes
+[[patches]]
+[patches.pattern]
+target = '''engine/text.lua'''
+pattern = '''if first_pass then'''
+position = "before"
+payload = '''
+if v.colour then inner_colour = v.colour or nil end
+'''
+match_indent = true

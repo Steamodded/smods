@@ -180,6 +180,46 @@ return {
                     "{X:purple,C:white}X#1#{} puntuación extra mientras esté en tu mano",
                 },
             },
+            card_blind_size = {
+                text = {
+                    "{C:blind}#1#{} de tamaño de Ciega",
+                },
+            },
+            card_h_blind_size = {
+                text = {
+                    "{C:blind}#1#{} de tamaño de Ciega mientras esté en tu mano",
+                },
+            },
+            card_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} tamaño de Ciega",
+                },
+            },
+            card_h_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} tamaño de Ciega mientras esté en tu mano",
+                },
+            },
+            card_extra_blind_size = {
+                text = {
+                    "{C:blind}#1#{} de tamaño de Ciega extra",
+                },
+            },
+            card_extra_h_blind_size = {
+                text = {
+                    "{C:blind}#1#{} de tamaño de Ciega extra mientras esté en tu mano",
+                },
+            },
+            card_extra_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} tamaño de Ciega extra",
+                },
+            },
+            card_extra_h_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} de tamaño de Ciega extra mientras esté en tu mano",
+                },
+            },
             artist = {
                 text = {
                     "{C:inactive}Artista",

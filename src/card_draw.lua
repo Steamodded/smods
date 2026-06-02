@@ -8,6 +8,8 @@ function SMODS.CanvasSprite:init(args)
     self.canvasScale = 10
     self.text = ""
     self.text_offset = {x = 0, y = 0}
+	self.text_h_align = 'center'
+	self.text_v_align = 'middle'
     for k, v in pairs(args) do self[k] = v end
     self.canvas = love.graphics.newCanvas(self.canvasW * self.canvasScale, self.canvasH * self.canvasScale)
     self.font = (SMODS.Fonts[self.text_font] or G.FONTS[self.text_font] or G.FONTS[1]).FONT
@@ -182,6 +184,7 @@ SMODS.DrawStep {
             end
         end
         if self.children.use_button and self.highlighted then self.children.use_button:draw() end
+        if self.children.select_button and self.highlighted then self.children.select_button:draw() end
     end,
 } 
 
@@ -373,7 +376,7 @@ SMODS.DrawStep {
     key = 'canvas_text',
     order = 45,
     func = function(self, layer)
-        if self.canvas_text then
+        if self.canvas_text and (self.config.center.discovered or self.bypass_discovery_center) then
             for _, sprite in ipairs(self.canvas_text[1] and self.canvas_text or {self.canvas_text}) do
                 love.graphics.push()
                 love.graphics.origin()
@@ -386,7 +389,8 @@ SMODS.DrawStep {
                             (0 + sprite.text_offset.y) * sprite.canvasScale,
                             0,
                             scale_fac, scale_fac,
-                            text:getWidth()/2, text:getHeight()/2
+							sprite.text_h_align == 'left' and 0 or (sprite.text_h_align == 'right' and text:getWidth() or text:getWidth()/2),
+							sprite.text_v_align == 'top' and 0 or (sprite.text_v_align == 'bottom' and text:getHeight() or text:getHeight()/2)
                         })
                     sprite.canvas:renderTo(love.graphics.draw,
                         text,
@@ -394,6 +398,7 @@ SMODS.DrawStep {
                     )
                 end
                 love.graphics.pop()
+                SMODS.reload_stencil_stack()
                 sprite.role.draw_major = self
                 sprite:draw_shader('dissolve', nil, nil, nil, self.children.center)
             end

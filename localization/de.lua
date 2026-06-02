@@ -150,9 +150,148 @@ return {
                     "auf der Hand ist",
                 },
             },
+            card_extra_repetitions = {
+                text = {
+                    "Löse diese Karte",
+                    "{C:attention}#1#{} #2# aus",
+                },
+            },
+            card_score = {
+                text = {
+                    "{C:purple}#1#{} Punktzahl",
+                },
+            },
+            card_h_score = {
+                text = {
+                    "{C:purple}#1#{} Punktzahl",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
+                },
+            },
+            card_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} Punktzahl",
+                },
+            },
+            card_h_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} Punktzahl",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
+                },
+            },
+            card_extra_score = {
+                text = {
+                    "{C:purple}#1#{} Extra-Punktzahl",
+                },
+            },
+            card_extra_h_score = {
+                text = {
+                    "{C:purple}#1#{} Extra-Punktzahl",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
+                },
+            },
+            card_extra_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} Extra-Punktzahl",
+                },
+            },
+            card_extra_h_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{} Extra-Punktzahl",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
+                },
+            },
+            card_blind_size = {
+                text = {
+                    "{C:blind}#1#{} Blind-Größe",
+                },
+            },
+            card_h_blind_size = {
+                text = {
+                    "{C:blind}#1#{} Blind-Größe",
+                     "während sich diese Karte",
+                    "auf der Hand befindet",
+                },
+            },
+            card_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} Blind-Größe",
+                },
+            },
+            card_h_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} Blind-Größe",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
+                },
+            },
+            card_extra_blind_size = {
+                text = {
+                    "{C:blind}#1#{} Extra-Blind-Größe",
+                },
+            },
+            card_extra_h_blind_size = {
+                text = {
+                    "{C:blind}#1#{} Extra-Blind-Größe",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
+                },
+            },
+            card_extra_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} Extra-Blind-Größe",
+                },
+            },
+            card_extra_h_x_blind_size = {
+                text = {
+                    "{X:blind,C:white}X#1#{} Extra-Blind-Größe",
+                    "während sich diese Karte",
+                    "auf der Hand befindet",
+                },
+            },
+
             card_chips_minus = {
                 text = {
                     '{C:chips}#1#{} Chips'
+                }
+            },
+            generic_card_limit = {
+                name = "Kartenkapazität",
+                text = {
+                    '{C:dark_edition}#1#{} Slot im Bereich'
+                }
+            },
+            generic_card_limit_plural = {
+                name = "Kartenkapazität",
+                text = {
+                    '{C:dark_edition}#1#{} Slots im Bereich'
+                }
+            },
+            generic_card_limit_pc = {
+                name = "Hand Size",
+                text = {
+                    '{C:dark_edition}#1#{} Handgröße'
+                }
+            },
+            generic_card_limit_pc_plural = {
+                name = "Hand Size",
+                text = {
+                    '{C:dark_edition}#1#{} Handgröße'
+                }
+            },
+            generic_extra_slots = {
+                name = "Slot-Verbrauch",
+                text = {
+                    'Füllt {C:dark_edition}#1#{} Slots'
+                }
+            },
+            generic_extra_slots_pc = {
+                name = "Hand-Platz",
+                text = {
+                    'Füllt {C:dark_edition}#1#{} Slots in der Hand'
                 }
             },
             artist = {
@@ -179,9 +318,9 @@ return {
             m_gold={
                 name="Gold-Karte",
                 text={
-                    "{C:money}#1#{} wenn diese",
-                    "Karte in der Hand",
-                    "am Ende der Runde",
+                    "{C:money}#1#{}, wenn diese Karte",
+                    "zum Ende der Runde",
+                    "auf der Hand ist",
                 },
             },
             m_stone={
@@ -195,6 +334,15 @@ return {
                 name="Mult-Karte",
                 text={
                     "{C:mult}#1#{} Mult",
+                },
+            },
+            m_lucky={
+                name="Glückskarte",
+                text={
+                    "{C:green}#1#-zu-#3#{} Chance,",
+                    "{C:mult}+#2#{} Mult zu erhalten",
+                    "{C:green}#6#-zu-#5#{} Chance,",
+                    "{C:money}#4# ${} zu gewinnen",
                 },
             },
         }
@@ -248,13 +396,22 @@ return {
             b_deckskins_lc = 'Niedrigkontrast-Farben',
             b_deckskins_hc = 'Hochkontrast-Farben',
             b_deckskins_def = 'Standardfarben',
-            b_limit = 'Bis zu '
+            b_limit = 'Bis zu ',
+            b_retrigger_single = 'weiteres Mal',
+            b_retrigger_plural = 'weitere Male',
+            k_enhanced = 'Kartenverstärkung',
 		},
 		v_dictionary = {
 			c_types = '#1# Typen',
 			cashout_hidden = '...und #1# mehr',
             a_xchips = "X#1# Chips",
             a_xchips_minus = "-X#1# Chips",
+            a_score="#1# Punktzahl",
+            a_xscore="X#1# Punktzahl",
+            a_xscore_minus="-X#1# Punktzahl",
+            a_blind_size="#1# Blind-Größe",
+            a_xblind_size="X#1# Blind-Größe",
+            a_xblind_size_minus="-X#1# Blind-Größe",
             smods_version_mismatch = {
                 "Deine Version von Steamodded hat sich geändert",
                 "seit dieser Durchlauf gestartet wurde!",

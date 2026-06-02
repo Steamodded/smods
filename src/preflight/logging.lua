@@ -3,9 +3,14 @@
 
 function initializeSocketConnection()
     local socket = require("socket")
-    client = socket.connect("localhost", 53153)
-    if not client then
+    local tcp = assert(socket.tcp())
+    tcp:settimeout(1)
+    local succ = tcp:connect("localhost", 53153)
+    if not succ then
         print("Failed to connect to the debug server")
+    else
+        tcp:settimeout(5) -- Longer timeout for sending
+        client = tcp
     end
 end
 

@@ -733,7 +733,7 @@ function G.UIDEF.deck_preview(args)
 				if v.base.suit == kk and not v_ns then suit_counts[kk] = suit_counts[kk] + 1 end
 				if v:is_suit(kk) then mod_suit_counts[kk] = mod_suit_counts[kk] + 1 end
 			end
-			if SUITS[v.base.suit][v.base.value] and not v_nr and not v_ns then
+			if (SUITS[v.base.suit] or {})[v.base.value] and not v_nr and not v_ns then
 				table.insert(SUITS[v.base.suit][v.base.value], v)
 			end
 			if not v_nr then
@@ -795,7 +795,7 @@ function G.UIDEF.deck_preview(args)
 				local _colour = #SUITS[suit][rank] > 0 and flip_col or G.C.UI.TRANSPARENT_LIGHT
 
 				local _col = {n = G.UIT.C, config = {align = "cm", padding = 0.05, minw = _minw + 0.098, minh = _minh }, nodes = {
-					{n = G.UIT.T, config = {text = '' .. #SUITS[suit][rank], colour = _colour, scale = _tscale, shadow = true, lang = G.LANGUAGES['en-us'] } },}}
+					{n = G.UIT.T, config = {text = '' .. #((SUITS[suit] or {})[rank] or {}), colour = _colour, scale = _tscale, shadow = true, lang = G.LANGUAGES['en-us'] } },}}
 				if not hidden_ranks[rank] then table.insert(_row, _col) end
 			end
 			table.insert(deck_tables,
@@ -806,8 +806,8 @@ function G.UIDEF.deck_preview(args)
 
 	for k, v in ipairs(suit_map) do
 		if not hidden_suits[v] then
-			local deckskin = SMODS.DeckSkins[G.SETTINGS.CUSTOM_DECK.Collabs[v]]
-			local palette = deckskin.palette_map and deckskin.palette_map[G.SETTINGS.colour_palettes[v] or ''] or (deckskin.palettes or {})[1]
+			local deckskin = SMODS.DeckSkins[G.SETTINGS.CUSTOM_DECK.Collabs[v]] or {}
+			local palette = (deckskin.palette_map or {})[G.SETTINGS.colour_palettes[v] or ""] or (deckskin.palettes or {})[1]
 			local t_s
 			if palette and palette.suit_icon and palette.suit_icon.atlas then
 				local _x = (v == 'Spades' and 3) or (v == 'Hearts' and 0) or (v == 'Clubs' and 2) or (v == 'Diamonds' and 1)
@@ -1814,7 +1814,7 @@ function Card:set_sprites(_center, _front)
 				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Voucher", G.v_locked.pos)
 			elseif self.config.center.consumeable and self.config.center.demo then
 				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Tarot", G.c_locked.pos)
-			elseif not self.params.bypass_discovery_center and (_center.set == 'Edition' or _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' or _center.set == 'Booster') and not _center.discovered then
+			elseif not self.params.bypass_discovery_center and (_center.consumeable or SMODS.UndiscoveredCompat[_center.set]) and not _center.discovered then
 				local atlas = SMODS.get_atlas(
 					(_center.undiscovered and
 						(_center.undiscovered[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
@@ -1859,10 +1859,10 @@ function Card:set_sprites(_center, _front)
             end
         end
 
-        if _center.soul_pos then
+        if _center.soul_pos or _center[G.SETTINGS.colourblind_option and 'hc_soul_atlas' or 'lc_soul_atlas'] or _center.soul_atlas then
 			if self.children.floating_sprite then self.children.floating_sprite:remove() end
-			local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
-            self.children.floating_sprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.config.center.soul_pos)
+            local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_soul_atlas' or 'lc_soul_atlas'] or _center.soul_atlas or _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
+            self.children.floating_sprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, _center.soul_pos or { x = 0, y = 0 })
             self.children.floating_sprite.role.draw_major = self
             self.children.floating_sprite.states.hover.can = false
             self.children.floating_sprite.states.click.can = false
@@ -2066,6 +2066,8 @@ end
 function Card:set_edition(edition, immediate, silent, delay)
 	SMODS.enh_cache:write(self, nil)
 
+	silent = silent or SMODS.create_card_silent_edition
+
 	if self.edition then
 		self.ability.card_limit = self.ability.card_limit - (self.edition.card_limit or 0)
 		self.ability.extra_slots_used = self.ability.extra_slots_used - (self.edition.extra_slots_used or 0)
@@ -2223,6 +2225,14 @@ end
 -- _options = list of keys of editions to include in the poll
 -- OR list of tables { name = key, weight = number }
 function poll_edition(_key, _mod, _no_neg, _guaranteed, _options)
+	if not _options and (_key == "wheel_of_fortune" or _key == "aura") then -- set base game edition polling
+		_options = { 'e_negative', 'e_polychrome', 'e_holo', 'e_foil' }
+	end
+
+	-- Use SMODS object weight system when enabled
+	if SMODS.optional_features.object_weights then return SMODS.poll_object({type = 'Edition', seed = _key, guaranteed = _guaranteed, pool = _options, no_negative = _no_neg, mod = _mod}) end
+
+	
 	local _modifier = 1
 	local edition_poll = pseudorandom(pseudoseed(_key or 'edition_generic')) -- Generate the poll value
 	local available_editions = {}                                          -- Table containing a list of editions and their weights
@@ -2438,6 +2448,25 @@ function get_pack(_key, _type)
         G.GAME.first_shop_buffoon = true
         return G.P_CENTERS['p_buffoon_normal_'..(math.random(1, 2))]
     end
+
+	-- Use SMODS object weight system when enabled
+	if SMODS.optional_features.object_weights then
+		return G.P_CENTERS[SMODS.poll_object({type = 'Booster', seed = (_key or 'pack_generic')..G.GAME.round_resets.ante,
+            filter = _type and function(pool)
+				local all_unavailable = true
+                for _, v in ipairs(pool) do
+                    if not G.P_CENTERS[v.key] or G.P_CENTERS[v.key].kind ~= _type then
+                        v.key = "UNAVAILABLE"
+                    else
+                        all_unavailable = false
+                    end
+                end
+				if all_unavailable then
+					pool[#pool+1] = {key = 'p_buffoon_normal_1', type = "Booster"}
+				end
+				return pool
+			end})]
+	end
     local cume, it, center = 0, 0, nil
 	local temp_in_pool = {}
     for k, v in ipairs(G.P_CENTER_POOLS['Booster']) do
@@ -2670,11 +2699,13 @@ end
 
 local set_ability = Card.set_ability
 function Card:set_ability(center, initial, delay_sprites)
+    if delay_sprites == "quantum" then return self:quantum_set_ability(center) end
 	local old_center = self.config.center
 	set_ability(self, center, initial, delay_sprites)
 	if not initial and (G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT) then
 		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
 	end
+	self.front_hidden = self:should_hide_front()
 end
 
 local add_tag_ref = add_tag
@@ -2688,6 +2719,151 @@ function add_tag(_tag)
 	add_tag_ref(_tag)
 end
 
+function Card:quantum_set_ability(center)
+    SMODS.enh_cache:write(self, nil)
+
+    if self.ability then
+        self.ability.card_limit = self.ability.card_limit - (self.config.center.config.card_limit or 0)
+        self.ability.extra_slots_used = self.ability.extra_slots_used - (self.config.center.config.extra_slots_used or 0)
+    end
+
+    local old_center = self.config.center
+    self.from_quantum = true
+    if type(center) == 'string' then
+        assert(G.P_CENTERS[center], ("Could not find center \"%s\""):format(center))
+        center = G.P_CENTERS[center]
+    end
+    self.config.center = center
+    if self.config.center.key then
+        self.config.center_key = self.config.center.key
+    else
+        for k, v in pairs(G.P_CENTERS) do
+            if center == v then self.config.center_key = k end
+        end
+    end
+
+    if self.ability and old_center and old_center.config.bonus then
+        self.ability.bonus = self.ability.bonus - old_center.config.bonus
+    end
+
+    self.ARGS.smods_quantum_ability = self.ARGS.smods_quantum_ability or {}
+    local new_ability = self.ARGS.smods_quantum_ability
+
+    new_ability.name = center.name
+    new_ability.effect = center.effect
+    new_ability.set = center.set
+    new_ability.mult = center.config.mult or 0
+    new_ability.h_mult = center.config.h_mult or 0
+    new_ability.h_x_mult = center.config.h_x_mult or 0
+    new_ability.h_dollars = center.config.h_dollars or 0
+    new_ability.p_dollars = center.config.p_dollars or 0
+    new_ability.t_mult = center.config.t_mult or 0
+    new_ability.t_chips = center.config.t_chips or 0
+    new_ability.x_mult = center.config.Xmult or center.config.x_mult or 1
+    new_ability.h_chips = center.config.h_chips or 0
+    new_ability.x_chips = center.config.x_chips or 1
+    new_ability.h_x_chips = center.config.h_x_chips or 1
+    new_ability.repetitions = center.config.repetitions or 0
+    new_ability.h_size = center.config.h_size or 0
+    new_ability.d_size = center.config.d_size or 0
+    new_ability.extra = copy_table(center.config.extra) or nil
+    new_ability.extra_value = 0
+    new_ability.type = center.config.type or ''
+    new_ability.order = center.order or nil
+    new_ability.forced_selection = self.ability and self.ability.forced_selection or nil
+    new_ability.perma_bonus = self.ability and self.ability.perma_bonus or 0
+    new_ability.perma_x_chips = self.ability and self.ability.perma_x_chips or 0
+    new_ability.perma_mult = self.ability and self.ability.perma_mult or 0
+    new_ability.perma_x_mult = self.ability and self.ability.perma_x_mult or 0
+    new_ability.perma_h_chips = self.ability and self.ability.perma_h_chips or 0
+    new_ability.perma_h_x_chips = self.ability and self.ability.perma_h_x_chips or 0
+    new_ability.perma_h_mult = self.ability and self.ability.perma_h_mult or 0
+    new_ability.perma_h_x_mult = self.ability and self.ability.perma_h_x_mult or 0
+    new_ability.perma_p_dollars = self.ability and self.ability.perma_p_dollars or 0
+    new_ability.perma_h_dollars = self.ability and self.ability.perma_h_dollars or 0
+    new_ability.perma_repetitions = self.ability and self.ability.perma_repetitions or 0
+    new_ability.card_limit = self.ability and self.ability.card_limit or 0
+    new_ability.extra_slots_used = self.ability and self.ability.extra_slots_used or 0
+    new_ability.perma_score = self.ability and self.ability.perma_score or 0
+    new_ability.perma_h_score = self.ability and self.ability.perma_h_score or 0
+    new_ability.perma_x_score = self.ability and self.ability.perma_x_score or 0
+    new_ability.perma_h_x_score = self.ability and self.ability.perma_h_x_score or 0
+    new_ability.perma_blind_size = self.ability and self.ability.perma_blind_size or 0
+    new_ability.perma_h_blind_size = self.ability and self.ability.perma_h_blind_size or 0
+    new_ability.perma_x_blind_size = self.ability and self.ability.perma_x_blind_size or 0
+    new_ability.perma_h_x_blind_size = self.ability and self.ability.perma_h_x_blind_size or 0
+    
+    self.ability = self.ability or {}
+    new_ability.extra_value = nil
+    new_ability.debuff_sources = {}
+    self.ability.extra_value = self.ability.extra_value or 0
+    for k, v in pairs(new_ability) do
+        self.ability[k] = v
+    end
+
+    -- handles card_limit/extra_slots_used changes
+    self.ability.card_limit = self.ability.card_limit + (center.config.card_limit or 0)
+    self.ability.extra_slots_used = self.ability.extra_slots_used + (center.config.extra_slots_used or 0)
+
+
+    -- reset keys do not persist on ability change
+    for _, k in ipairs(SMODS.get_ability_reset_keys(self) or {}) do
+        self.ability[k] = new_ability[k]
+    end
+
+    self.ability.bonus = (self.ability.bonus or 0) + (center.config.bonus or 0)
+    if not self.ability.name then self.ability.name = center.key end
+    for k, v in pairs(center.config) do
+        if k ~= 'bonus' then
+            if type(v) == 'table' then
+                self.ability[k] = copy_table(v)
+            else
+                self.ability[k] = v
+            end
+        end
+    end
+
+    if center.consumeable then 
+        self.ability.consumeable = center.config
+    end
+
+    if self.ability.name == "Invisible Joker" then 
+        self.ability.invis_rounds = 0
+    end
+    if self.ability.name == 'To Do List' then
+        local _poker_hands = {}
+        for k, v in pairs(G.GAME.hands) do
+            if SMODS.is_poker_hand_visible(k) then _poker_hands[#_poker_hands+1] = k end
+        end
+        local old_hand = self.ability.to_do_poker_hand
+        self.ability.to_do_poker_hand = nil
+
+        while not self.ability.to_do_poker_hand do
+            self.ability.to_do_poker_hand = pseudorandom_element(_poker_hands, pseudoseed((self.area and self.area.config.type == 'title') and 'false_to_do' or 'to_do'))
+            if self.ability.to_do_poker_hand == old_hand then self.ability.to_do_poker_hand = nil end
+        end
+    end
+    if self.ability.name == 'Caino' then 
+        self.ability.caino_xmult = 1
+    end
+    if self.ability.name == 'Yorick' then 
+        self.ability.yorick_discards = self.ability.extra.discards
+    end
+    if self.ability.name == 'Loyalty Card' then 
+        self.ability.burnt_hand = 0
+        self.ability.loyalty_remaining = self.ability.extra.every
+    end
+
+    self.ability.hands_played_at_create = G.GAME and G.GAME.hands_played or 0
+
+    local obj = self.config.center
+    if obj.set_ability and type(obj.set_ability) == 'function' then
+        obj:set_ability(self, false, nil)
+    end
+
+    EMPTY(new_ability)
+    self.from_quantum = nil
+end
 -- Fix visual glitch in deck select
 local g_funcs_change_viewed_back_ref = G.FUNCS.change_viewed_back
 G.FUNCS.change_viewed_back = function(...)
@@ -2696,3 +2872,84 @@ G.FUNCS.change_viewed_back = function(...)
 	end
 	return g_funcs_change_viewed_back_ref(...)
 end
+
+--Patch to allow `type = "name_text"` to take vars
+local oldlocalize = localize
+function localize(args, misc_cat)
+    local ret = oldlocalize(args, misc_cat)
+
+    if type(args) == "table" and type(ret) == "string" and args.type == "name_text" and (args.vars) then
+        for k,v in pairs(args.vars) do
+            if type(k) == "number" then
+                ret = ret:gsub("#"..tostring(k).."#", tostring(v))
+            end
+        end
+    end
+
+    return ret
+end
+
+-- let's misuse this for blind size queue
+G.FUNCS.blind_chip_UI_scale = function(e)
+	if not (G.GAME.blind or {}).chips then return end
+	local blind_chips = G.GAME.blind.chips
+	if G.BLIND_SIZE_DISPLAY_QUEUE and G.BLIND_SIZE_DISPLAY_QUEUE[1] then
+		blind_chips = math.floor(G.BLIND_SIZE_DISPLAY_QUEUE[1])
+	end
+	G.GAME.blind.chip_text = number_format(blind_chips)
+    e.config.scale = scale_number(blind_chips, 0.7, 100000)
+end
+
+	-- patch all shaders on GLSL ES
+	-- stub shader
+    SMODS.shader_stub = love.graphics.newShader [[
+    vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _) {
+        return Texel(texture, tc);
+    }
+    ]]
+    local mt = getmetatable(SMODS.shader_stub)
+	local send = mt.send
+	local sendColor = mt.sendColor
+	function mt:send(...)
+		if self == SMODS.shader_stub then
+			return
+		end
+		send(self, ...)
+	end
+	function mt:sendColor(...)
+		if self == SMODS.shader_stub then
+			return
+		end
+		sendColor(self, ...)
+	end
+
+    -- this is where the patching happens
+	-- code that gets here is usually already patched with its own buffer name. here we patch it as a second catchall buffer name
+    local newShader = love.graphics.newShader
+    function love.graphics.newShader(code, other_code)
+		-- this only supports a single argument passed as code, file names are not supported
+		-- only when we're running GLSL ES do we need to patch
+        if other_code or not string.find(code,'\n') or love.graphics.getRendererInfo() ~= "OpenGL ES" then
+			return newShader(code,other_code)
+		end
+
+        -- we can't patch if lovely is too old
+        local lovely_success, lovely = pcall(require, "lovely")
+        if not lovely_success then return newShader(code) end
+
+        local patched_code = assert(lovely.apply_patches(
+            "GLSL_ES_PATCHES.fs",
+            code
+        ))
+        local success, shader = pcall(newShader, patched_code)
+        if success then return shader end
+
+		-- -- Couldn't compile with patches. Try the original
+		local old_success, old_shader = pcall(newShader, code)
+		if old_success then return old_shader end
+
+        -- Neither worked
+		sendWarnMessage(("Failed to compile or patch shader for GLSL ES! Replacing affected shader with a stub that does nothing. To test on desktop, set LOVE_GRAPHICS_USE_OPENGLES=1 in your environment variables to run GLSL ES if supported. Patched shader code:\n%s\nError:\n%s"):format(patched_code, shader), "Shader")
+
+        return SMODS.shader_stub
+    end
