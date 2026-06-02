@@ -477,7 +477,7 @@ pattern = '''
 position = "before"
 payload = '''
     for k, v in pairs(SMODS.ObjectTypes) do
-        if card.config.center.pools and card.config.center.pools[v.key] and type(v.set_badges) == "function" then
+        if card.config.center and card.config.center.pools and card.config.center.pools[v.key] and type(v.set_badges) == "function" then
             v:set_badges(card, badges)
         end
     end
