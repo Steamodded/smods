@@ -208,7 +208,7 @@ pattern = '''
 delay(0.3)
 '''
 payload = '''
-    SMODS.last_hand_oneshot = SMODS.calculate_round_score() > G.GAME.blind.chips
+    SMODS.last_hand_oneshot = SMODS.calculate_round_score() >= G.GAME.blind.chips
     SMODS.last_hand_score = SMODS.calculate_round_score()
     G.E_MANAGER:add_event(Event({
       trigger = 'immediate',
