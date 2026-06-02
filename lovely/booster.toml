@@ -33,8 +33,8 @@ position = "at"
 payload = """
 booster_obj = self.config.center
 if booster_obj and SMODS.Centers[booster_obj.key] then
-    G.STATE = G.STATES.SMODS_BOOSTER_OPENED
     SMODS.OPENED_BOOSTER = self
+    SMODS.enter_state(SMODS.STATES.BOOSTER_OPENED, nil, {from_hold = true, leave_shop_sign = true, leave_HUD_blind = true})
 end
 G.GAME.pack_choices = math.min((self.ability.choose or self.config.center.config.choose or 1) + (G.GAME.modifiers.booster_choice_mod or 0), self.ability.extra and math.max(1, self.ability.extra + (G.GAME.modifiers.booster_size_mod or 0)) or self.config.center.extra and math.max(1, self.config.center.extra + (G.GAME.modifiers.booster_size_mod or 0)) or 1)
 """
@@ -89,40 +89,14 @@ payload = '''
 SMODS.calculate_context({modify_booster_card = true, booster = self, card = card, index = i})
 '''
 
-# Game:set_globals
-[[patches]]
-[patches.regex]
-target = "globals.lua"
-pattern = '''(?<indent>[\t ]*)self\.STATES = \{'''
-position = "after"
-payload = '''
-
-    SMODS_BOOSTER_OPENED = 999,
-    SMODS_REDEEM_VOUCHER = 998,'''
-line_prepend = '$indent'
-
-# Game:update
-[[patches]]
-[patches.regex]
-target = "game.lua"
-pattern = '''(?<indent>[\t ]*)if self\.STATE == self\.STATES\.TAROT_PACK then'''
-position = "before"
-payload = '''
-if G.STATE == G.STATES.SMODS_BOOSTER_OPENED then
-    SMODS.OPENED_BOOSTER.config.center:update_pack(dt)
-end
-
-'''
-line_prepend = '$indent'
-
-# G.FUNC.can_skip_booster
+# G.FUNCS.can_skip_booster
 # TODO customize whether pack can be skipped
 [[patches]]
 [patches.regex]
 target = "functions/button_callbacks.lua"
 pattern = '''(?<indent>[\t ]*)\(G\.STATE == G\.STATES\.PLANET_PACK or G\.STATE == G\.STATES\.STANDARD_PACK'''
 position = "at"
-payload = '''(G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.PLANET_PACK or G.STATE == G.STATES.STANDARD_PACK'''
+payload = '''(G.STATE == SMODS.STATES.BOOSTER_OPENED or G.STATE == G.STATES.PLANET_PACK or G.STATE == G.STATES.STANDARD_PACK'''
 
 # CardArea:draw()
 [[patches]]
@@ -131,7 +105,7 @@ target = "cardarea.lua"
 pattern = "(self.config.type == 'deck' and self ~= G.deck) or"
 position = "before"
 payload = '''
-(self.config.type == 'hand' and state == G.STATES.SMODS_BOOSTER_OPENED) or'''
+(self.config.type == 'hand' and state == SMODS.STATES.BOOSTER_OPENED) or'''
 match_indent = true
 
 # G.FUNCS.use_card
@@ -141,7 +115,7 @@ target = "functions/button_callbacks.lua"
 pattern = "prev_state == G.STATES.SPECTRAL_PACK or prev_state == G.STATES.STANDARD_PACK or"
 position = "after"
 payload = '''
-prev_state == G.STATES.SMODS_BOOSTER_OPENED or'''
+prev_state == SMODS.STATES.BOOSTER_OPENED or'''
 match_indent = true
 
 # CardArea:align_cards()
@@ -150,7 +124,7 @@ match_indent = true
 target = "cardarea.lua"
 pattern = "if self.config.type == 'hand' and (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK  or G.STATE == G.STATES.PLANET_PACK) then"
 position = "at"
-payload = "if self.config.type == 'hand' and (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED) then"
+payload = "if self.config.type == 'hand' and (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) then"
 match_indent = true
 
 # CardArea:align_cards()
@@ -159,7 +133,7 @@ match_indent = true
 target = "cardarea.lua"
 pattern = "if self.config.type == 'hand' and not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK) then"
 position = "at"
-payload = "if self.config.type == 'hand' and not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED) then"
+payload = "if self.config.type == 'hand' and not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) then"
 match_indent = true
 
 # Card:can_use_consumable()
@@ -168,7 +142,7 @@ match_indent = true
 target = "card.lua"
 pattern = "if G.STATE == G.STATES.SELECTING_HAND or G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK then"
 position = "at"
-payload = "if G.STATE == G.STATES.SELECTING_HAND or G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED then"
+payload = "if G.STATE == G.STATES.SELECTING_HAND or G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED then"
 match_indent = true
 
 # G.FUNCS.use_card()
@@ -183,7 +157,7 @@ if nc then
     play_sound('cardSlide2', nil, 0.3)
     dont_dissolve = true
 end
-if (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED) then"""
+if (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) then"""
 match_indent = true
 
 # G.FUNC.use_card()
@@ -203,7 +177,7 @@ target = "functions/button_callbacks.lua"
 pattern = '''if prev_state == G.STATES.TAROT_PACK then inc_career_stat('c_tarot_reading_used', 1) end'''
 position = 'at'
 match_indent = true
-payload = '''if prev_state == G.STATES.SMODS_BOOSTER_OPENED and booster_obj.name:find('Arcana') then inc_career_stat('c_tarot_reading_used', 1) end'''
+payload = '''if prev_state == SMODS.STATES.BOOSTER_OPENED and booster_obj.name:find('Arcana') then inc_career_stat('c_tarot_reading_used', 1) end'''
 
 # G.FUNC.use_card()
 [[patches]]
@@ -212,7 +186,7 @@ target = "functions/button_callbacks.lua"
 pattern = '''if prev_state == G.STATES.PLANET_PACK then inc_career_stat('c_planetarium_used', 1) end'''
 position = 'at'
 match_indent = true
-payload = '''if prev_state == G.STATES.SMODS_BOOSTER_OPENED and booster_obj.name:find('Celestial') then inc_career_stat('c_planetarium_used', 1) end'''
+payload = '''if prev_state == SMODS.STATES.BOOSTER_OPENED and booster_obj.name:find('Celestial') then inc_career_stat('c_planetarium_used', 1) end'''
 
 # G.FUNC.use_card()
 [[patches]]
@@ -220,7 +194,7 @@ payload = '''if prev_state == G.STATES.SMODS_BOOSTER_OPENED and booster_obj.name
 target = "functions/button_callbacks.lua"
 pattern = "(G.STATE == G.STATES.BUFFOON_PACK and G.STATES.BUFFOON_PACK) or"
 position = "before"
-payload = "(G.STATE == G.STATES.SMODS_BOOSTER_OPENED and G.STATES.SMODS_BOOSTER_OPENED) or"
+payload = "(G.STATE == SMODS.STATES.BOOSTER_OPENED and SMODS.STATES.BOOSTER_OPENED) or"
 match_indent = true
 
 # G.FUNC.use_card()
@@ -229,7 +203,7 @@ match_indent = true
 target = "functions/state_events.lua"
 pattern = "if not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK) and"
 position = "at"
-payload = "if not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED) and"
+payload = "if not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) and"
 match_indent = true
 
 # Card:use_consumeable()
@@ -239,8 +213,8 @@ target = "card.lua"
 pattern = '''(?<indent>[\t ]*)align = \(G\.STATE[\s\S]*and -0\.2 or 0},'''
 position = "at"
 payload = '''
-align = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED) and 'tm' or 'cm',
-offset = {x = 0, y = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED) and -0.2 or 0},'''
+align = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) and 'tm' or 'cm',
+offset = {x = 0, y = (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) and -0.2 or 0},'''
 line_prepend = '$indent'
 
 # G.FUNCS.use_card()
@@ -462,7 +436,7 @@ target = 'card.lua'
 match_indent = true
 position = 'after'
 pattern = '''if self.shop_voucher then G.GAME.current_round.voucher = nil end'''
-payload = '''G.STATE = G.STATES.SMODS_REDEEM_VOUCHER'''
+payload = '''SMODS.enter_state(SMODS.STATES.REDEEM_VOUCHER, nil, {from_hold = true, leave_shop_sign = true, leave_HUD_blind = true})'''
 
 # G.FUNCS.use_card()
 # Consumables in areas other than the consumable don't count

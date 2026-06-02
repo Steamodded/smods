@@ -2139,7 +2139,7 @@ table.sort(G.playing_cards, function (a, b) return a.playing_card > b.playing_ca
 '''
 payload = '''
 if saveTable then
-    if saveTable.SMODS then
+    if saveTable.SMODS and saveTable.SMODS.last_hand then
         SMODS.last_hand = {scoring_hand = {}, full_hand = {}, scoring_name = saveTable.SMODS.last_hand.scoring_name}
         for _, v in ipairs({'scoring_hand','full_hand'}) do
             for _, card in ipairs(G.playing_cards) do

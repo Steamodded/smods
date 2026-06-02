@@ -1840,6 +1840,7 @@ SMODS.UndiscoveredCompat = {
             if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
         end
     }
+
     SMODS.Blind:take_ownership('eye', {
         set_blind = function(self, reset, silent)
             if not reset then
@@ -4013,6 +4014,11 @@ SMODS.UndiscoveredCompat = {
         text = '^'
     }
 
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.GameState
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/game_states.lua'), ('=[SMODS _ "src/game_objects/game_states.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep

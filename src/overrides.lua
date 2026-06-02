@@ -2705,7 +2705,7 @@ function Card:set_ability(center, initial, delay_sprites)
 		self.delay_center = old_center
 	end
 	set_ability(self, center, initial, delay_sprites)
-	if not initial and (G.STATE ~= G.STATES.SMODS_BOOSTER_OPENED and G.STATE ~= G.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT) then
+	if not initial and (G.STATE ~= SMODS.STATES.BOOSTER_OPENED and G.STATE ~= SMODS.STATES.SHOP and not G.SETTINGS.paused or G.TAROT_INTERRUPT) then
 		SMODS.calculate_context({setting_ability = true, old = old_center.key, new = self.config.center_key, other_card = self, unchanged = old_center.key == self.config.center.key})
 	end
 	self.front_hidden = self:should_hide_front()
@@ -2874,6 +2874,53 @@ G.FUNCS.change_viewed_back = function(...)
 		card.original_T = copy_table(card.T)
 	end
 	return g_funcs_change_viewed_back_ref(...)
+end
+
+
+
+-- SMODS.GameState related overrides
+
+function G.FUNCS.toggle_shop(e)
+	if #SMODS.state_queue == 0 then
+		SMODS.queue_state(SMODS.STATES.BLIND_SELECT)
+	end
+	SMODS.advance_state_queue()
+end
+
+function G.FUNCS.cash_out(e)
+	stop_use()
+	if G.round_eval then  
+		e.config.button = nil
+		G.E_MANAGER:add_event(Event({
+			trigger = 'immediate',
+			func = function()
+				if #SMODS.state_queue == 0 then
+					SMODS.queue_state(SMODS.STATES.SHOP)
+				end
+				SMODS.advance_state_queue()
+				G.STATE_COMPLETE = false
+			return true
+			end
+		}))
+	end
+end
+
+function G.FUNCS.select_blind(e)
+	stop_use()
+	if G.blind_select then
+		if #SMODS.state_queue == 0 then
+			SMODS.queue_state(SMODS.STATES.BLIND, {key = e.config.ref_table.key})
+		end
+		SMODS.advance_state_queue()
+	end
+end
+
+local ease_bg_col_bl_ref = ease_background_colour_blind
+function ease_background_colour_blind(state, blind_override)
+	if SMODS.GameStates[state] and SMODS.GameStates[state].ease_background_colour then
+		return SMODS.GameStates[state]:ease_background_colour(blind_override)
+	end
+	return ease_bg_col_bl_ref(state, blind_override)
 end
 
 --Patch to allow `type = "name_text"` to take vars
