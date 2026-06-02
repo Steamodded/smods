@@ -17,7 +17,15 @@ for k, v in ipairs(SMODS.Sticker.obj_buffer) do
 	if self.ability[v] and not SMODS.Stickers[v].hide_badge then
         badges[#badges+1] = v
     end
-end'''
+end
+for i, v in pairs(SMODS.CardModifiers) do
+	if self.ability[v.set] and not v.hide_badge then
+        for _, m in pairs(self.ability[v.set]) do
+            if i == m.key then badges[#badges+1] = i end
+        end
+    end
+end
+'''
 
 # generate_card_ui()
 [[patches]]
@@ -27,9 +35,9 @@ pattern = "if v == 'eternal' then*"
 match_indent = true
 position = "before"
 payload = '''
-local sticker = SMODS.Stickers[v]
+local sticker = SMODS.Stickers[v] or SMODS.CardModifiers[v]
 if sticker then
-    local t = { key = v, set = 'Other' }
+    local t = { key = v, set = SMODS.Stickers[v] and 'Other' or sticker.set }
     local res = {}
     if sticker.loc_vars and type(sticker.loc_vars) == 'function' then
         res = sticker:loc_vars(info_queue, card) or {}
@@ -98,7 +106,12 @@ match_indent = true
 payload = '''
 for k, v in pairs(SMODS.Stickers) do
     G.BADGE_COL[k] = v.badge_colour
-end'''
+end
+
+for k, v in pairs(SMODS.CardModifiers) do
+    G.BADGE_COL[k] = v.badge_colour
+end
+'''
 
 ## Remove Pinned effect when in Sticker collections
 # CardArea:aling_cards

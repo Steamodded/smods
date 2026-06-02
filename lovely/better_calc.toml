@@ -245,6 +245,13 @@ for _,k in ipairs(SMODS.Sticker.obj_buffer) do
         ret[v] = sticker
     end
 end
+for _,k in ipairs(SMODS.CardModifiers) do
+    local v = k
+    local mod = card:calculate_modifier(context, k)
+    if mod then
+        ret[k.key] = mod
+    end
+end
 
 -- TARGET: evaluate your own repetition effects
 if card.ability.repetitions and card.ability.repetitions > 0 then
@@ -287,6 +294,12 @@ for _,k in ipairs(SMODS.Sticker.obj_buffer) do
     local sticker = card:calculate_sticker(context, k)
     if sticker then
         ret[v] = sticker
+    end
+end
+for _,k in pairs(SMODS.CardModifiers) do
+    local mod = card:calculate_modifier(context, k.key)
+    if mod then
+        ret[k.key] = mod
     end
 end
 

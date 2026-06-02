@@ -827,6 +827,19 @@ function create_UIBox_Other_GameObjects()
         },
     }
 
+    for i, v in pairs(SMODS.ModifierTypes) do
+        local mods = {}
+        for i, m in pairs(SMODS.CardModifiers) do
+            if m.set == v.key then
+                mods[m.key] = m
+            end
+        end
+        smods_uibox_buttons[#smods_uibox_buttons+1] = {
+            count = G.ACTIVE_MOD_UI and modsCollectionTally(SMODS.PokerHands, nil, true),
+            button = UIBox_button({button = 'your_collection_'..(v.key:lower()), label = {localize('b_'..(v.key:lower()).."_collection")}, count = G.ACTIVE_MOD_UI and modsCollectionTally(mods, nil, true), minw = 5, id = 'your_collection_'..(v.key:lower())})
+        }
+    end
+
     if G.ACTIVE_MOD_UI then
         for _, tab in pairs(smods_uibox_buttons) do
             if tab.count.of > 0 then other_collections_tabs[#other_collections_tabs+1] = tab.button end
@@ -3202,4 +3215,35 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
             }
         }
     }
+end
+
+function SMODS.GUI.create_modifiertype_collections()
+    for i, v in pairs(SMODS.ModifierTypes) do
+        G.FUNCS["your_collection_"..(v.key:lower())] = function(e)
+            G.SETTINGS.paused = true
+            G.FUNCS.overlay_menu{
+            definition = _G["create_UIBox_your_collection_"..(v.key:lower())](),
+            }
+        end
+        _G["create_UIBox_your_collection_"..(v.key:lower())] = v.create_UIBox_your_collection or function()
+            local mods = {}
+            for i, m in pairs(SMODS.CardModifiers) do
+                if m.set == v.key then
+                    mods[m.key] = m
+                end
+            end
+            return SMODS.card_collection_UIBox(mods, v.collection_rows or { 5, 5 }, {
+                snap_back = true,
+                hide_single_page = true,
+                collapse_single_page = true,
+                center = 'c_base',
+                h_mod = 1.03,
+                back_func = 'your_collection_other_gameobjects',
+                modify_card = function(card, center)
+                    card.ignore_pinned = true
+                    center:apply(card, true)
+                end,
+            })
+        end
+    end
 end
