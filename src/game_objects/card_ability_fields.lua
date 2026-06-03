@@ -6,12 +6,12 @@ SMODS.CARD_VALUE_TYPES = {
 
 -- Helper function to get a card's qfield-cached abilities, or if uncached just card.ability
 function SMODS.get_card_abilities(card)
-    if (card._qfield_cache or {}).abilities then
-        return card._qfield_cache.abilities
+    if (SMODS.qfield_cache[card] or {}).abilities then
+        return SMODS.qfield_cache[card].abilities
     end
     local fallback = card.ability and {{t = card.ability}} or {}
     if not SMODS.set_quantum_cache(card) then return fallback end
-    return (card._qfield_cache or {}).abilities or fallback
+    return (SMODS.qfield_cache[card] or {}).abilities or fallback
 end
 
 

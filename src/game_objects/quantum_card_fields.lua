@@ -1,14 +1,23 @@
 -- General helpers
 local _default_enabled = false
 
--- Returns card._qfield_cache.get, sanitized to use only string keys
+-- Card QField Cache
+SMODS.qfield_cache = {}
+
+local game_update_ref = Game.update
+function Game:update(dt)
+    local ret = game_update_ref(self, dt)
+    SMODS.qfield_cache = {}
+    return ret
+end
+
+-- Returns SMODS.qfield_cache[card].get, sanitized to use only string keys
 local function _general_quantum_getter(card, args)
-    SMODS.clear_quantum_cache(card) -- Makes sure that card._qfield_cache gets cleared next frame
     args = args or {}
-    if (card._qfield_cache or {}).get then
+    if (SMODS.qfield_cache[card] or {}).get then
         if args.as_objs then
             local ret = {}
-            local eval = card._qfield_cache.get
+            local eval = SMODS.qfield_cache[card].get
             for key, q_field in pairs(SMODS.QuantumCardFields) do 
                 ret[q_field.return_flag] = {} 
                 for k, _ in pairs(eval[q_field.return_flag]) do
@@ -17,45 +26,45 @@ local function _general_quantum_getter(card, args)
             end
             return ret
         else
-            return card._qfield_cache.get 
+            return SMODS.qfield_cache[card].get 
         end
     end
-    card._qfield_cache = {
+    SMODS.qfield_cache[card] = {
         has = {},
         get = {}
     }
-    -- setup for card._qfield_cache.get and card._qfield_cache.has
+    -- setup for SMODS.qfield_cache[card].get and SMODS.qfield_cache[card].has
     local has_context = {card_has_check = true, card = card, no_mod = false}
     local flags = args.has_flags or args
     for key, q_field in pairs(SMODS.QuantumCardFields) do
-        card._qfield_cache.get[q_field.return_flag] = q_field:base_getter(card, args) or {}
-        card._qfield_cache.has[key] = {}
+        SMODS.qfield_cache[card].get[q_field.return_flag] = q_field:base_getter(card, args) or {}
+        SMODS.qfield_cache[card].has[key] = {}
         has_context[q_field.has_context_flag] = true
     end
     for key, flag in pairs(flags) do
         has_context[key] = flag
     end
     if next(SMODS.optional_features.quantum_fields) and not args._no_contexts then -- Only calculate the context if any quantum fields are toggled on
-        SMODS.calculate_context(has_context) -- Card._qfield_cache.has is updated directly
+        SMODS.calculate_context(has_context) -- SMODS.qfield_cache[card].has is updated directly
     end 
     for key, q_field in pairs(SMODS.QuantumCardFields) do
-        for k, v in pairs(card._qfield_cache.get[q_field.return_flag]) do -- For every value
+        for k, v in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do -- For every value
             local obj = q_field.g_obj_table[k] or {}
             for other_key, _ in pairs(SMODS.QuantumCardFields) do -- Check every has flag
-                if obj["no_" .. other_key] then card._qfield_cache.has[other_key].no = true end 
-                if obj["any_" .. other_key] then card._qfield_cache.has[other_key].any = true end
+                if obj["no_" .. other_key] then SMODS.qfield_cache[card].has[other_key].no = true end 
+                if obj["any_" .. other_key] then SMODS.qfield_cache[card].has[other_key].any = true end
             end
         end
     end
 
-    -- _quantum_getter context for card._qfield_cache.get
+    -- _quantum_getter context for SMODS.qfield_cache[card].get
     local get_context = {_quantum_getter = true, card = card, no_mod = false} -- _quantum_getter flag should not be referenced in practice (as it doesn't account for optional_features.quantum_fields), use specific "get_ranks" etc. flags instead
-    local has = card._qfield_cache.has
+    local has = SMODS.qfield_cache[card].has
     for key, q_field in pairs(SMODS.QuantumCardFields) do 
-        card._qfield_cache.get[q_field.return_flag] = (has[key].no and not has[key].any and {}) or (has[key].any and SMODS.shallow_copy(q_field.g_obj_table)) or card._qfield_cache.get[q_field.return_flag] -- If e.g. has.rank.no is true and .any not, default to no ranks, if any is true, default to all ranks, if neither, default to the values set by the above has_context
+        SMODS.qfield_cache[card].get[q_field.return_flag] = (has[key].no and not has[key].any and {}) or (has[key].any and SMODS.shallow_copy(q_field.g_obj_table)) or SMODS.qfield_cache[card].get[q_field.return_flag] -- If e.g. has.rank.no is true and .any not, default to no ranks, if any is true, default to all ranks, if neither, default to the values set by the above has_context
         if SMODS.optional_features.quantum_fields[key] then
             get_context[q_field.get_context_flag] = true
-            get_context[q_field.return_flag] = card._qfield_cache.get[q_field.return_flag]
+            get_context[q_field.return_flag] = SMODS.qfield_cache[card].get[q_field.return_flag]
         end
     end
     local flags = args.get_flags or args
@@ -63,10 +72,10 @@ local function _general_quantum_getter(card, args)
         get_context[key] = flag
     end
     if next(SMODS.optional_features.quantum_fields) and not args._no_contexts then -- Only calculate the context if any quantum fields are toggled on
-        SMODS.calculate_context(get_context) -- Card._qfield_cache.get is updated directly
+        SMODS.calculate_context(get_context) -- SMODS.qfield_cache[card].get is updated directly
     end
     -- Prepare ret
-    local eval = card._qfield_cache.get
+    local eval = SMODS.qfield_cache[card].get
     local ret = {}
     for key, q_field in pairs(SMODS.QuantumCardFields) do 
         ret[q_field.return_flag] = {} 
@@ -79,45 +88,30 @@ local function _general_quantum_getter(card, args)
                 if obj and q_field.cache_ability and not args._no_cache_ability then
                     local ability = type(obj.cache_ability) == "function" and obj:cache_ability(card) or SMODS.get_ability_from_obj(obj)
                     if ability then
-                        card._qfield_cache.abilities = card._qfield_cache.abilities or {}
-                        table.insert(card._qfield_cache.abilities, {t = ability, key = string_key, qfield_key = key})
+                        SMODS.qfield_cache[card].abilities = SMODS.qfield_cache[card].abilities or {}
+                        table.insert(SMODS.qfield_cache[card].abilities, {t = ability, key = string_key, qfield_key = key})
                     end
                 end
             else
-                card._qfield_cache.get[q_field.return_flag][k] = nil
+                SMODS.qfield_cache[card].get[q_field.return_flag][k] = nil
             end
         end
     end
     return ret
 end
 
--- Returns card._qfield_cache.has
+-- Returns SMODS.qfield_cache[card].has
 local function _general_quantum_has_func(card, ...)
-    if (card._qfield_cache or {}).has then
-        return card._qfield_cache.has -- e.g. {rank = {any = true}, enhancement = {no = true}} 
+    if (SMODS.qfield_cache[card] or {}).has then
+        return SMODS.qfield_cache[card].has -- e.g. {rank = {any = true}, enhancement = {no = true}} 
     end
     _general_quantum_getter(card, ...)
-    return card._qfield_cache.has
+    return SMODS.qfield_cache[card].has
 end
 
 function SMODS.set_quantum_cache(card)
     _general_quantum_getter(card)
-    return true
-end
-
-function SMODS.clear_quantum_cache(card)
-    if card._qfield_cache and not card._qfield_cache._clear_queued then
-        G.E_MANAGER:add_event(Event({
-            trigger = "immediate",
-            blocking = false,
-            blockable = false,
-            func = function ()
-                card._qfield_cache = nil
-                return true
-            end
-        })) 
-        card._qfield_cache._clear_queued = true
-    end
+    return SMODS.qfield_cache[card]
 end
 
 local function _general_quantum_singular_is_func(key, card, value, args, ...)
@@ -308,7 +302,7 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
     end,
     default_enabled = _default_enabled,
     calc_key = nil,
-    cache_ability = nil, -- Whether the _general_quantum_getter should cache the .config table of this qfield's object values into card._qfield_cache.abilities
+    cache_ability = nil, -- Whether the _general_quantum_getter should cache the .config table of this qfield's object values into SMODS.qfield_cache[card].abilities
     base_value_ref = nil, -- e.g. 'base.value' for Rank, 'config.center.key' for Enhancement, ...
     get_base_value = function (self, card) return table_get_subfield(card, self.base_value_ref) end,
     base_getter = function (self, card, _args) 

@@ -41,15 +41,12 @@ SMODS.QuantumCardField = setmetatable({}, {
 ---@type table<QuantumCardFields|string, SMODS.QuantumCardField|table>
 SMODS.QuantumCardFields = {}
 
----@param card Card Gets and sets card._qfield_cache, which has the subfields .get, .has and (maybe) .abilities; 
+---@param card Card Gets and sets SMODS.qfield_cache[card], which has the subfields .get, .has and (maybe) .abilities; 
 -- .get[qfield.return_flag] = [table map of values] 
 -- .has[qfield.key] = {any = [boolean?], no = [boolean?]} 
 -- (if cached) .abilities = [list of structs:] {{t = [ability table], key = [obj.key that cached the ability], qfield_key = [qfield the obj belongs to]}, ...}
----@return boolean success Whether caching was attempted (essentially whether [card] is a playing card)
+---@return table cache The cached values, {has = ..., get = ...} ^ see above.
 function SMODS.set_quantum_cache(card) end
-
----@param card Card Creates an immediate event to clear card._qfield_cache.
-function SMODS.clear_quantum_cache(card) end
 
 -------------------------------
 ----- Rank
@@ -57,19 +54,19 @@ function SMODS.clear_quantum_cache(card) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param args table|nil Args table, used flags: [as_objs: Whether to return objs or obj keys.] 
----@return table<string|table, boolean> get card._qfield_cache.get[qfield.return_flag]
+---@return table<string|table, boolean> get SMODS.qfield_cache[card].get[qfield.return_flag]
 function Card:get_ranks(args) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean any card._qfield_cache.has[qfield.key].any
+---@return boolean any SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_any_rank(card, ...) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean no card._qfield_cache.has[qfield.key].no and not card._qfield_cache.has[qfield.key].any
+---@return boolean no SMODS.qfield_cache[card].has[qfield.key].no and not SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_no_rank(card, ...) end
 
 --- ! Injected by QuantumCardField.inject
@@ -106,26 +103,26 @@ function Card:calculate_rank(context, ...) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param args table|nil Args table, used flags: [as_objs: Whether to return objs or obj keys.] 
----@return table<string|table, boolean> get card._qfield_cache.get[qfield.return_flag]
+---@return table<string|table, boolean> get SMODS.qfield_cache[card].get[qfield.return_flag]
 function Card:get_enhancements(args) end
 
 --- ! Injected by QuantumCardField.inject
 --- Both Card and SMODS are inject targets via `target_objects = {getter = {Card, SMODS}, is_funcs = {Card, SMODS}}` in obj definition.
 ---@param card Card The card to get the values for.
 ---@param args table|nil Args table, used flags: [as_objs: Whether to return objs or obj keys.] 
----@return table<string|table, boolean> get card._qfield_cache.get[qfield.return_flag]
+---@return table<string|table, boolean> get SMODS.qfield_cache[card].get[qfield.return_flag]
 function SMODS.get_enhancements(card, args) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean any card._qfield_cache.has[qfield.key].any
+---@return boolean any SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_any_enhancement(card, ...) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean no card._qfield_cache.has[qfield.key].no and not card._qfield_cache.has[qfield.key].any
+---@return boolean no SMODS.qfield_cache[card].has[qfield.key].no and not SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_no_enhancement(card, ...) end
 
 --- ! Injected by QuantumCardField.inject
@@ -184,19 +181,19 @@ function Card:calculate_enhancement(context, ...) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param args table|nil Args table, used flags: [as_objs: Whether to return objs or obj keys.] 
----@return table<string|table, boolean> get card._qfield_cache.get[qfield.return_flag]
+---@return table<string|table, boolean> get SMODS.qfield_cache[card].get[qfield.return_flag]
 function Card:get_seals(args) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean any card._qfield_cache.has[qfield.key].any
+---@return boolean any SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_any_seal(card, ...) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean no card._qfield_cache.has[qfield.key].no and not card._qfield_cache.has[qfield.key].any
+---@return boolean no SMODS.qfield_cache[card].has[qfield.key].no and not SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_no_seal(card, ...) end
 
 --- ! Injected by QuantumCardField.inject
@@ -235,19 +232,19 @@ function Card:calculate_seal(context, ...) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param args table|nil Args table, used flags: [as_objs: Whether to return objs or obj keys.] 
----@return table<string|table, boolean> get card._qfield_cache.get[qfield.return_flag]
+---@return table<string|table, boolean> get SMODS.qfield_cache[card].get[qfield.return_flag]
 function Card:get_editions(args) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean any card._qfield_cache.has[qfield.key].any
+---@return boolean any SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_any_edition(card, ...) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean no card._qfield_cache.has[qfield.key].no and not card._qfield_cache.has[qfield.key].any
+---@return boolean no SMODS.qfield_cache[card].has[qfield.key].no and not SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_no_edition(card, ...) end
 
 --- ! Injected by QuantumCardField.inject
@@ -284,19 +281,19 @@ function Card:calculate_edition(context, ...) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param args table|nil Args table, used flags: [as_objs: Whether to return objs or obj keys.] 
----@return table<string|table, boolean> get card._qfield_cache.get[qfield.return_flag]
+---@return table<string|table, boolean> get SMODS.qfield_cache[card].get[qfield.return_flag]
 function Card:get_suits(args) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean any card._qfield_cache.has[qfield.key].any
+---@return boolean any SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_any_suit(card, ...) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean no card._qfield_cache.has[qfield.key].no and not card._qfield_cache.has[qfield.key].any
+---@return boolean no SMODS.qfield_cache[card].has[qfield.key].no and not SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_no_suit(card, ...) end
 
 --- ! Injected by QuantumCardField.inject
@@ -333,19 +330,19 @@ function Card:calculate_suit(context, ...) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param args table|nil Args table, used flags: [as_objs: Whether to return objs or obj keys.] 
----@return table<string|table, boolean> get card._qfield_cache.get[qfield.return_flag]
+---@return table<string|table, boolean> get SMODS.qfield_cache[card].get[qfield.return_flag]
 function Card:get_stickers(args) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean any card._qfield_cache.has[qfield.key].any
+---@return boolean any SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_any_sticker(card, ...) end
 
 --- ! Injected by QuantumCardField.inject
 ---@param card Card The card to check.
 ---@param ... ... Passed to getter func.
----@return boolean no card._qfield_cache.has[qfield.key].no and not card._qfield_cache.has[qfield.key].any
+---@return boolean no SMODS.qfield_cache[card].has[qfield.key].no and not SMODS.qfield_cache[card].has[qfield.key].any
 function SMODS.has_no_sticker(card, ...) end
 
 --- ! Injected by QuantumCardField.inject

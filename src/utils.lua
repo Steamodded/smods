@@ -1001,7 +1001,7 @@ end
 function SMODS.shatters(card)
     if not SMODS.set_quantum_cache(card) then return end
     for key, q_field in pairs(SMODS.QuantumCardFields) do
-        for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
+        for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k] or {}
             if obj.shatters then return true end
         end
@@ -1022,7 +1022,7 @@ end
 function SMODS.always_scores(card)
     if not SMODS.set_quantum_cache(card) then return end
     for key, q_field in pairs(SMODS.QuantumCardFields) do
-        for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
+        for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k] or {}
             if obj.always_scores then return true end
         end
@@ -1032,7 +1032,7 @@ end
 function SMODS.never_scores(card)
     if not SMODS.set_quantum_cache(card) then return end
     for key, q_field in pairs(SMODS.QuantumCardFields) do
-        for k, _ in pairs(card._qfield_cache.get[q_field.return_flag]) do
+        for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k]
             if obj.never_scores then return true end
         end
@@ -1825,15 +1825,15 @@ function SMODS.update_context_flags(context, flags)
                 end
             end
             if context[q_field.return_flag] then
-                context.card._qfield_cache.get[q_field.return_flag] = context[q_field.return_flag]
+                SMODS.qfield_cache[context.card].get[q_field.return_flag] = context[q_field.return_flag]
             end
             flags[q_field.return_flag] = nil
         end
         if flags[has_no_flag] ~= nil then
-            context.card._qfield_cache.has[key].no = flags[has_no_flag]
+            SMODS.qfield_cache[context.card].has[key].no = flags[has_no_flag]
         end
         if flags[has_any_flag] ~= nil then
-            context.card._qfield_cache.has[key].any = flags[has_any_flag]
+            SMODS.qfield_cache[context.card].has[key].any = flags[has_any_flag]
         end
     end
 end
