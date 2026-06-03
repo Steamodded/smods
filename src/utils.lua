@@ -1457,7 +1457,7 @@ SMODS.other_calculation_keys = {
     'message',
     'level_up', 'func',
     'numerator', 'denominator',
-    'ranks', 'fixed',
+    'fixed',
     'modify', 'cashout_mod',
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
@@ -1472,7 +1472,7 @@ SMODS.silent_calculation = {
     cards_to_draw = true,
     func = true, extra = true,
     numerator = true, denominator = true,
-    ranks = true,
+    fixed = true,
     no_destroy = true, cashout_mod = true,
 }
 
@@ -1825,7 +1825,7 @@ function SMODS.update_context_flags(context, flags)
                 end
             end
             if context[q_field.return_flag] then
-                context.card._qfield_cache.get[key] = context[q_field.return_flag]
+                context.card._qfield_cache.get[q_field.return_flag] = context[q_field.return_flag]
             end
             flags[q_field.return_flag] = nil
         end
