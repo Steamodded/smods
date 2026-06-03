@@ -9,6 +9,7 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
     amount = 10,
     selection_limit = 1,
     stack_size = 1,
+    silent = false,
     register = function(self)
         if self.registered then
             sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
@@ -49,14 +50,14 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
             else
                 SMODS.RunSelect.Setup.choices[self.key] = choice.config.center.key
             end
-            if SMODS.RunSelect.Internals.preview_area then SMODS.RunSelect.Functions.populate_preview_ui(self.key, choice.config.center.key, nil) end
+            if SMODS.RunSelect.Internals.preview_area then SMODS.RunSelect.Functions.populate_preview_ui(self.key, choice.config.center.key, self.silent) end
         else
             if self.selection_limit == 1 then
                 SMODS.RunSelect.Setup.choices[self.key] = nil
             else
                 SMODS.RunSelect.Setup.choices[self.key][choice.config.center.key] = nil
             end
-            if SMODS.RunSelect.Internals.preview_area then SMODS.RunSelect.Functions.populate_preview_ui(self.key, choice, nil, true) end
+            if SMODS.RunSelect.Internals.preview_area then SMODS.RunSelect.Functions.populate_preview_ui(self.key, choice, self.silent, true) end
         end
     end,
     set_default = function(self, choice)
@@ -67,19 +68,27 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
         return localize({set = self.type, key = selection, type = 'name_text'})
     end,
     choose_random = function(self)
-        local selected = false
         local options = {}
         for i=1, #self.pool do
             if self.pool[i].unlocked then
                 options[#options + 1] = self.pool[i].key
             end
         end
-        while not selected do
-            selected = pseudorandom_element(options, pseudoseed(os.time()))
-            if selected == SMODS.RunSelect.Setup.choices[self.key] and #options > 1 then selected = false end
+        if self.selection_limit > 1 then
+            for k,_ in pairs(SMODS.RunSelect.Setup.choices[self.key]) do
+                SMODS.RunSelect.Setup.choices[self.key][k] = nil
+                SMODS.RunSelect.Functions.populate_preview_ui(self.key, SMODS.RunSelect.Internals.preview_area.cards[1], self.silent, true)
+            end
         end
-        play_sound('whoosh1', math.random()*0.2 + 0.99, 0.35)
-        self:handle_choice({config = {center = {key = selected}}})
+        for i=1, self.selection_limit do
+            local selected = false
+            while not selected do
+                selected = pseudorandom_element(options, pseudoseed(os.time()))
+                if (selected == SMODS.RunSelect.Setup.choices[self.key] or SMODS.RunSelect.Setup.choices[self.key][selected]) and #options > 1 then selected = false end
+            end
+            play_sound('whoosh1', math.random()*0.2 + 0.99, 0.35)
+            self:handle_choice({config = {center = {key = selected}}})
+        end
     end
 })
 

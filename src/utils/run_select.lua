@@ -373,7 +373,7 @@ function SMODS.RunSelect.Functions.build_selection_areas(key)
     SMODS.RunSelect.Internals.select_areas = {}
     for i=1, page_def.amount do
         SMODS.RunSelect.Internals.select_areas[i] = CardArea(G.ROOM.T.w, G.ROOM.T.h, dim.w, dim.h, 
-        {card_limit = 5, type = page_def.area_type or 'title_2', highlight_limit = 0, deck_height = 0.75, thin_draw = 1, run_select = key})
+        {card_limit = 5, type = page_def.area_type or 'title_2', highlight_limit = 0, deck_height = 0.75, thin_draw = 1, run_select = key, run_select_deck_preview = page_def.area_type == 'deck'})
     end
 end
 
@@ -514,8 +514,8 @@ function SMODS.RunSelect.Functions.build_preview_areas(key)
         end
     end
 
-    SMODS.RunSelect.Internals.preview_area = CardArea(15.475, 0, G.CARD_W * 1.5, G.CARD_H,
-    {card_limit = page_def.preview_size or page_def.selection_limit, type = page_def.area_type or 'title_2', highlight_limit = 0, run_select_deck_preview = page_def.key == 'deck_choice'})
+    SMODS.RunSelect.Internals.preview_area = CardArea(15.475, 0, G.CARD_W * (page_def.selection_limit > 1 and 1.5 or 1), G.CARD_H,
+    {card_limit = page_def.preview_size or page_def.selection_limit, type = page_def.area_type or 'title_2', highlight_limit = 0, run_select_deck_preview = page_def.area_type == 'deck'})
     SMODS.RunSelect.Internals.preview_area_holding = CardArea(15.475+2*G.CARD_W, -2*G.CARD_H, G.CARD_W, G.CARD_H,
     {card_limit = page_def.preview_size or page_def.selection_limit, type = page_def.area_type or 'title_2', highlight_limit = 0})
 end
@@ -525,6 +525,7 @@ function SMODS.RunSelect.Functions.update_preview_texts(page_def)
     for i, text in ipairs(preview_texts) do
         SMODS.RunSelect.Internals.preview_texts['preview_text_'..i] = text
         local dyna_text_container = G.OVERLAY_MENU:get_UIE_by_ID('preview_text_'..i)
+        if not dyna_text_container then return end
         dyna_text_container.config.object.scale = 0.7/math.max(1, string.len(text)/8)
     end
 end
@@ -538,7 +539,7 @@ function SMODS.RunSelect.Functions.build_preview_ui(key, deck_preview)
     end
 
     local preview_area_node = {n=G.UIT.R, config = {align = 'tm'}, nodes = {
-        {n=G.UIT.O, config = {object = SMODS.RunSelect.Internals.preview_area}}
+        {n=G.UIT.O, config = {align = 'cm', object = SMODS.RunSelect.Internals.preview_area}}
     }}
 
     return {n=G.UIT.C, config = {align = "tm", padding = 0.1}, nodes ={
@@ -547,18 +548,14 @@ function SMODS.RunSelect.Functions.build_preview_ui(key, deck_preview)
                 {n=G.UIT.O, config = {id = (deck_preview and 'deck_' or '')..'preview_text_1', object = DynaText({
                     string = {{ref_table = SMODS.RunSelect.Internals.preview_texts, ref_value = (deck_preview and 'deck_' or '')..'preview_text_1'}},
                     scale = 0.7/math.max(1, string.len(SMODS.RunSelect.Internals.preview_texts[(deck_preview and 'deck_' or '')..'preview_text_1'])/8),
-                    colours = {G.C.GREY},
-                    pop_in_rate = 5,
-                    silent = true
+                    colours = {G.C.GREY}, pop_in_rate = 5, silent = true, non_recalc = true
                 })}}
             }},
             {n = G.UIT.R, config = {align = "cm", minh = 0.6, maxw = 2.8}, nodes = {
                 {n=G.UIT.O, config = {id = (deck_preview and 'deck_' or '')..'preview_text_2', object = DynaText({
                     string = {{ref_table = SMODS.RunSelect.Internals.preview_texts, ref_value = (deck_preview and 'deck_' or '')..'preview_text_2'}},
                     scale = 0.7/math.max(1, string.len(SMODS.RunSelect.Internals.preview_texts[(deck_preview and 'deck_' or '')..'preview_text_2'])/8),
-                    colours = {G.C.GREY},
-                    pop_in_rate = 5,
-                    silent = true
+                    colours = {G.C.GREY}, pop_in_rate = 5, silent = true, non_recalc = true
                 })}}
             }},
             {n = G.UIT.R, config = {align = "cm", minh = 0.2}},
@@ -609,7 +606,6 @@ function SMODS.RunSelect.Functions.populate_preview_ui(key, to_add, silent, _rem
         local card = page_def.create_selection_card and page_def:create_selection_card(type(to_add) == 'table' and to_add[j] or to_add, j, preview_area) 
         or Card(preview_area.T.x, preview_area.T.y, card_size.w, card_size.h, nil, G.P_CENTERS[type(to_add) == 'table' and to_add[j] or to_add])
         card.params.run_select_preview_card = page_def.key
-
         if silent then
             preview_area:emplace(card)
         else
@@ -623,7 +619,7 @@ function SMODS.RunSelect.Functions.populate_preview_ui(key, to_add, silent, _rem
             }), 'run_select')
         end
     end
-    if not silent then SMODS.RunSelect.Functions.update_preview_texts(page_def) end
+    SMODS.RunSelect.Functions.update_preview_texts(page_def)
 end
 
 function SMODS.RunSelect.Functions.build_stake_tower()
@@ -913,7 +909,7 @@ function CardArea:align_cards()
         for k, card in ipairs(self.cards) do
             if not card.states.drag.is then
                 card.T.x = self.T.x + 0.5*(self.T.w - card.T.w)
-                card.T.y = self.T.y + 0.5*(self.T.h - card.T.h) + self.shadow_parrallax.y*0.25/52*(#self.cards/2 - k)
+                card.T.y = self.T.y + 0.5*(self.T.h - card.T.h) + (self.shadow_parrallax.y*(self.config.deck_height or 0.25)/52*(#self.cards/2 - k))
             end
         end
     else
