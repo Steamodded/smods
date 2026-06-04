@@ -66,7 +66,7 @@ end
 
 function SMODS.RunSelect.Functions.create_page(key)
     local page_def = SMODS.RunSelect.Pages[key]
-    SMODS.RunSelect.Setup.choices[key] = page_def:set_default(G.PROFILES[G.SETTINGS.profile].last_choices[key])
+    SMODS.RunSelect.Setup.choices[key] = SMODS.RunSelect.Setup.choices[key] or page_def:set_default(G.PROFILES[G.SETTINGS.profile].last_choices[key])
     SMODS.RunSelect.Functions.build_selection_areas(key)
     
     local deck_preview, stake_tower, other_preview
@@ -306,6 +306,7 @@ function SMODS.RunSelect.Functions.start_run(_quick_start)
     end
 
     G.PROFILES[G.SETTINGS.profile].last_choices = copy_table(run_args)
+    SMODS.RunSelect.Setup.choices = EMPTY(SMODS.RunSelect.Setup.choices)
     G:save_settings()
     
     run_args.deck_choice = {name = G.P_CENTERS[run_args.deck_choice].name}
@@ -485,7 +486,7 @@ function SMODS.RunSelect.Functions.create_page_cycle(key, count_per_page)
     end
 
     local switch_func = function(args)
-        SMODS.RunSelect.Functions.clean_up()
+        SMODS.RunSelect.Functions.clean_up(true)
         SMODS.RunSelect.Functions.populate_selection_ui(key, args.to)
     end
 
@@ -707,12 +708,25 @@ local function order_stake_chain(stake_chain, _stake)
     return ordered_chain
 end
 
-function SMODS.RunSelect.Functions.clean_up()
+function SMODS.RunSelect.Functions.clean_up(early)
     for j = 1, #SMODS.RunSelect.Internals.select_areas do
         if SMODS.RunSelect.Internals.select_areas[j].cards then
             remove_all(SMODS.RunSelect.Internals.select_areas[j].cards)
             SMODS.RunSelect.Internals.select_areas[j].cards = {}
         end
+    end
+    if early then return end
+    if SMODS.RunSelect.Internals.stake_tower and SMODS.RunSelect.Internals.stake_tower.cards then
+        remove_all(SMODS.RunSelect.Internals.stake_tower.cards)
+        SMODS.RunSelect.Internals.stake_tower.cards = {}
+        remove_all(SMODS.RunSelect.Internals.stake_tower_holding.cards)
+        SMODS.RunSelect.Internals.stake_tower_holding.cards = {}
+    end
+    if SMODS.RunSelect.Internals.preview_area and SMODS.RunSelect.Internals.preview_area.cards then
+        remove_all(SMODS.RunSelect.Internals.preview_area.cards)
+        SMODS.RunSelect.Internals.preview_area.cards = {}
+        remove_all(SMODS.RunSelect.Internals.preview_area_holding.cards)
+        SMODS.RunSelect.Internals.preview_area_holding.cards = {}
     end
 end
 

@@ -61,7 +61,15 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
         end
     end,
     set_default = function(self, choice)
-        return self.selection_limit > 1 and (type(choice) == 'table' and choice or {choice}) or choice
+        if self.selection_limit > 1 then
+            if type(choice) ~= 'table' then choice = {choice} end
+            local final = {}
+            for i, k in ipairs(choice) do
+                if G.P_CENTERS[k] then final[#final+1] = k end
+            end
+            return final
+        end
+        return G.P_CENTERS[choice] and choice
     end,
     selected_text = function(self, selection)
         if not selection then return end
@@ -110,10 +118,11 @@ SMODS.RunSelectPage({
     stack_size = 10,
     preview_size = 52,
     quick_start_text = function()
-        return localize({type = 'name_text', set = 'Back', key = G.PROFILES[G.SETTINGS.profile].last_choices.deck_choice or 'b_red'})
+        if not G.P_CENTERS[G.PROFILES[G.SETTINGS.profile].last_choices.deck_choice] then G.PROFILES[G.SETTINGS.profile].last_choices.deck_choice = 'b_red' end
+        return localize({type = 'name_text', set = 'Back', key = G.PROFILES[G.SETTINGS.profile].last_choices.deck_choice})
     end,
     set_default = function(self, choice)
-        return choice or 'b_red'
+        return G.P_CENTERS[choice] and choice or 'b_red'
     end,
     create_selection_card = function(self, card_key, card_number, area)
         local card = Card(area.T.x, area.T.y, G.CARD_W, G.CARD_H, nil, G.P_CENTERS[card_key] or G.P_CENTERS.b_red)
@@ -142,7 +151,8 @@ SMODS.RunSelectPage({
     end,
     sprite_size = {w = 0.99, h = 0.99},
     quick_start_text = function()
-        return localize({type = 'name_text', set = 'Stake', key = G.P_CENTER_POOLS.Stake[G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice or 1].key})
+        if G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice > #G.P_CENTER_POOLS.Stake then G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice = 1 end
+        return localize({type = 'name_text', set = 'Stake', key = G.P_CENTER_POOLS.Stake[G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice].key})
     end,
     set_default = function(self, choice)
         if not choice or choice > #G.P_CENTER_POOLS.Stake then return 1 else return self.is_stake_unlocked(G.P_CENTER_POOLS.Stake[choice]) and choice or 1 end
