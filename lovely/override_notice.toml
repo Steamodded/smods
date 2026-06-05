@@ -158,7 +158,15 @@ match_indent = true
 target = "card.lua"
 pattern = "function Card:set_edition(edition, immediate, silent)"
 position = "before"
-payload = "-- Function overridden by SMODS in src/overrides.lua"
+payload = "-- Function overridden by SMODS in src/game_objects/quantum_card_fields.lua (QField.inject)"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:set_seal(_seal, silent, immediate)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/game_objects/quantum_card_fields.lua (QField.inject)"
 match_indent = true
 
 [[patches]]

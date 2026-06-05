@@ -9,7 +9,7 @@ function SMODS.get_card_abilities(card)
     if (SMODS.qfield_cache[card] or {}).abilities then
         return SMODS.qfield_cache[card].abilities
     end
-    local fallback = card.ability and {{t = card.ability}} or {}
+    local fallback = card._base_ability and {{t = card._base_ability}} or card.ability and {{t = card.ability}} or {}
     if not SMODS.set_quantum_cache(card) then return fallback end
     return (SMODS.qfield_cache[card] or {}).abilities or fallback
 end
@@ -305,11 +305,14 @@ SMODS.CardAbilityField{
 
 
 -- Helper function to get a sanitized ability table
-function SMODS.get_ability_from_obj(obj)
+function SMODS.get_ability_from_obj(obj, card)
     local ability
+    if type(obj.cache_ability) == "function" then 
+        ability = obj:cache_ability(card) 
+    end 
     local config = obj.config
     if config then
-        ability = {}
+        ability = ability or {}
         for key, ca_field in pairs(SMODS.CardAbilityFields) do
             for _, variant in ipairs(ca_field.variant_refs) do
                 if config[variant] then
@@ -323,7 +326,7 @@ function SMODS.get_ability_from_obj(obj)
         ability.set = obj.set
         ability.h_size = config.h_size or 0
         ability.d_size = config.d_size or 0
-        ability.extra = copy_table(config.extra) or nil
+        ability.extra = ability.extra or copy_table(config.extra) or nil
         ability.extra_value = 0
         ability.type = config.type or ''
     end

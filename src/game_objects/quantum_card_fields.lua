@@ -86,7 +86,7 @@ local function _general_quantum_getter(card, args)
                 local ret_key = args.as_objs and obj or string_key
                 ret[q_field.return_flag][ret_key] = true
                 if obj and q_field.cache_ability and not args._no_cache_ability then
-                    local ability = type(obj.cache_ability) == "function" and obj:cache_ability(card) or SMODS.get_ability_from_obj(obj)
+                    local ability = v == "BASE" and card.ability or SMODS.get_ability_from_obj(obj, card)
                     if ability then
                         SMODS.qfield_cache[card].abilities = SMODS.qfield_cache[card].abilities or {}
                         table.insert(SMODS.qfield_cache[card].abilities, {t = ability, key = string_key, qfield_key = key})
@@ -97,7 +97,153 @@ local function _general_quantum_getter(card, args)
             end
         end
     end
+    if SMODS.qfield_cache[card].abilities then Card:quantum_ability_set_mt() end
     return ret
+end
+
+
+local function _general_quantum_setter(key, card, value, args, ...)
+    SMODS.clear_quantum_cache(card)
+    local qfield_obj = SMODS.QuantumCardFields[key]
+    local setter_defaults = qfield_obj.setter_defaults
+    local string_val = value
+
+    local other_args = {...}
+    if next(other_args) then
+        if key == "edition" then
+            args = {immediate = args}
+            args.silent = other_args[1]
+            args.delay = other_args[2]
+        elseif key == "seal" then
+            args = {silent = args}
+            args.immediate = other_args[1]
+        end
+    end
+    args = args or {}
+    args.silent = args.silent or (key == "edition" and SMODS.create_card_silent_edition)
+
+    if card[key] then
+        card.ability.card_limit = card.ability.card_limit - (card[key].card_limit or card.ability[key].card_limit or 0)
+        card.ability.extra_slots_used = card.ability.extra_slots_used - (card[key].card_limit or card.ability[key].extra_slots_used or 0)
+    end
+
+    local old_val = card[key]
+    local new_obj = qfield_obj.g_obj_table[value]
+    local old_obj = qfield_obj.g_obj_table[old_val] or qfield_obj.g_obj_table[old_val.key]
+    if old_obj then
+        card.ignore_base_shader[old_obj.key] = nil
+		card.ignore_shadow[old_obj.key] = nil
+
+		if type(old_obj.on_remove) == "function" then
+			old_obj.on_remove(card)
+		end
+    end
+
+    local delay_val, override_val, new_is_base
+    if new_obj then
+        delay_val, override_val, new_is_base = qfield_obj:get_setter_values(card, qfield_obj, args, old_val, string_val)
+        if override_val then value = override_val end
+    end
+    
+    card[key] = nil
+    if not new_is_base and new_obj then
+        card[key] = value
+        card.ability[key] = SMODS.get_ability_from_obj(new_obj, card)
+        card["delay_" .. key] = delay_val
+        if not args.silent then
+            G.CONTROLLER.locks[key] = true
+            local sound = new_obj.sound or setter_defaults.sound
+            if args.immediate then
+                card:juice_up(setter_defaults.juice_scale or 0.3, setter_defaults.juice_rot or 0.3)
+                card["delay_" .. key] = nil
+                if sound then play_sound(sound.sound, sound.per, sound.vol) end
+                G.CONTROLLER.locks[key] = nil
+            else
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    delay = setter_defaults.delay or 0.3,
+                    func = function()
+                        card:juice_up(setter_defaults.juice_scale or 0.3, setter_defaults.juice_rot or 0.3)
+                        card["delay_" .. key] = nil
+                        if sound then play_sound(sound.sound, sound.per, sound.vol) end
+                        return true
+                    end
+                }))
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    delay = setter_defaults.delay_lock or 0.15,
+                    func = function()
+                        G.CONTROLLER.locks[key] = nil
+                        return true
+                    end
+                }))
+            end
+        end
+        card.ability.card_limit = card.ability.card_limit + (card[key].card_limit or card.ability[key].card_limit or 0)
+        card.ability.extra_slots_used = card.ability.extra_slots_used + (card[key].extra_slots_used or card.ability[key].extra_slots_used or 0)
+
+        if new_obj.override_base_shader or new_obj.disable_base_shader then
+            card.ignore_base_shader[string_val] = true
+        end
+        if new_obj.no_shadow or new_obj.disable_shadow then
+            card.ignore_shadow[string_val] = true
+        end
+
+        if card.area and card.area == G.jokers and key == "edition" then
+            if card.edition then
+                if not G.P_CENTERS['e_' .. (card.edition.type)].discovered then
+                    discover_card(G.P_CENTERS['e_' .. (card.edition.type)])
+                end
+            else
+                if not G.P_CENTERS['e_base'].discovered then
+                    discover_card(G.P_CENTERS['e_base'])
+                end
+            end
+        end
+
+        if type(new_obj.on_apply) == "function" then
+            new_obj.on_apply(card)
+        end
+    else
+        if not old_obj then return end
+        local remove_sound = setter_defaults.remove_sound
+        if not args.silent and remove_sound then
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = not args.immediate and (setter_defaults.delay or 0.3) or 0,
+                blockable = not args.immediate,
+                func = function()
+                    card:juice_up(setter_defaults.juice_scale or 0.3, setter_defaults.juice_rot or 0.3)
+                    play_sound(remove_sound.sound, remove_sound.per, remove_sound.vol)
+                    return true
+                end
+            }))
+        end
+        if args.delay then
+            card["delay_" .. key] = old_val
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()
+                    card["delay_" .. key] = nil
+                    return true
+                end
+            }))
+        end
+        return
+    end
+
+    if card.ability.name == 'Gold Card' and card.seal == 'Gold' and card.playing_card then 
+        check_for_unlock({type = 'double_gold'})
+    end
+    if G.jokers and card.area == G.jokers then
+		check_for_unlock({ type = 'modify_jokers' })
+	end
+
+    card:set_cost()
+end
+
+local function _enhancement_setter_set_ability_redirect(card, ...)
+    card:set_ability(...)
 end
 
 -- Returns SMODS.qfield_cache[card].has
@@ -109,9 +255,49 @@ local function _general_quantum_has_func(card, ...)
     return SMODS.qfield_cache[card].has
 end
 
+function Card:quantum_ability_set_mt()
+    self._base_ability = self.ability
+    SMODS.qfield_cache[self].active_ability = self._base_ability
+    self.ability = setmetatable({}, {
+        __index = function (t, k)
+            local active_ability = (SMODS.qfield_cache[self] or {}).active_ability
+            if not active_ability then self:quantum_ability_remove_mt(); return self.ability[k] end
+            return active_ability[k]
+        end,
+        __newindex = function (t, k, v)
+            local active_ability = (SMODS.qfield_cache[self] or {}).active_ability
+            if active_ability then active_ability[k] = v
+            else self:quantum_ability_remove_mt(); self.ability[k] = v end
+        end,
+        __pairs = function (t)
+            local active_ability = (SMODS.qfield_cache[self] or {}).active_ability
+            if not active_ability then self:quantum_ability_remove_mt(); return next, self.ability, nil end
+            return next, active_ability, nil
+        end
+    })
+end
+
+function Card:quantum_ability_remove_mt()
+    if not next(self.ability) then self.ability = self._base_ability end
+    self._base_ability = nil
+end
+
+function SMODS.get_active_q_ability(abilities, qfield_key, obj_key)
+    for i, abili_t in ipairs(abilities) do
+        if abili_t.qfield_key == qfield_key and abili_t.key == obj_key then
+            return abili_t.t
+        end
+    end
+end
+
 function SMODS.set_quantum_cache(card)
     _general_quantum_getter(card)
     return SMODS.qfield_cache[card]
+end
+
+function SMODS.clear_quantum_cache(card)
+    if card._base_ability then card:quantum_ability_remove_mt() end
+    SMODS.qfield_cache[card] = nil
 end
 
 local function _general_quantum_singular_is_func(key, card, value, args, ...)
@@ -160,6 +346,7 @@ local function _general_quantum_calculate(key, card, context, args, ...)
         local obj = q_field.g_obj_table[c_key] or {} -- Due to Enhancements storing their key equivalently to Jokers (config.center.key), this {} is necessary to prevent a crash when quantum_calculating Jokers. 
         if obj.calculate and type(obj.calculate) == 'function' then
             SMODS.set_context_evaluee(obj)
+            if SMODS.qfield_cache[card].abilities then SMODS.qfield_cache[card].active_ability = SMODS.get_active_q_ability(SMODS.qfield_cache[card].abilities, key, c_key) end
             local o = obj:calculate(card, context)
             if o then
                 if not o.card then o.card = card end
@@ -167,6 +354,7 @@ local function _general_quantum_calculate(key, card, context, args, ...)
             end
         end
     end
+    SMODS.qfield_cache[card].active_ability = card._base_ability
     SMODS.set_context_evaluee(card)
     SMODS.pop_from_context_stack(context, "quantum_card_fields.lua : _general_quantum_calculate")
     return ret
@@ -184,6 +372,18 @@ local function _quantum_field_inject_getter(args, target_objects)
     end
     local field_object = SMODS.QuantumCardFields[args.key]
     field_object.getter = getter_func
+end
+
+local function _quantum_field_inject_setter(args, target_objects) 
+    local setter_func = args.override_setter or function (card, ...)
+        return _general_quantum_setter(args.key, card, ...)
+    end
+    local func_field = "set_" .. args.key
+    for _, target_obj in ipairs(target_objects) do
+        target_obj[func_field] = setter_func
+    end
+    local field_object = SMODS.QuantumCardFields[args.key]
+    field_object.setter = setter_func
 end
 
 local function _quantum_field_inject_has_funcs(args, target_objects) 
@@ -268,6 +468,10 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
             target_objects.getter = target_objects.getter or {Card}
             _quantum_field_inject_getter({key = self.key, override_getter = self.override_getter}, target_objects.getter)
         end
+        if not inject_args.no_setter then
+            target_objects.setter = target_objects.setter or {Card}
+            _quantum_field_inject_setter({key = self.key, override_setter = self.override_setter}, target_objects.setter)
+        end
         if not inject_args.no_has_funcs then
             target_objects.has_funcs = target_objects.has_funcs or {SMODS}
             _quantum_field_inject_has_funcs({key = self.key, override_has_no = self.override_has_no, override_has_any = self.override_has_any}, target_objects.has_funcs)
@@ -304,13 +508,18 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
     calc_key = nil,
     cache_ability = nil, -- Whether the _general_quantum_getter should cache the .config table of this qfield's object values into SMODS.qfield_cache[card].abilities
     base_value_ref = nil, -- e.g. 'base.value' for Rank, 'config.center.key' for Enhancement, ...
+    setter_defaults = {}, -- setter() default values
+    get_setter_values = function (self, card, qfield_obj, args, old_val, new_val)
+        return (not args.immediate or args.delay) and (old_val or true) or nil, nil, nil
+    end,
     get_base_value = function (self, card) return table_get_subfield(card, self.base_value_ref) end,
     base_getter = function (self, card, _args) 
         local base = self:get_base_value(card)
-        if base then return {[base] = "BASE"} end
+        if base then return {[base] = "BASE"} end -- "BASE" is essential for correctly accessing/writing to card.ability when quantum abilities are present.
         return {}
     end,
     getter = nil,       -- func defined by inject()
+    setter = nil,       -- func defined by inject()
     has_no = nil,       -- func defined by inject()
     has_any = nil,      -- func defined by inject()
     singular_is = nil,  -- func defined by inject()
@@ -321,7 +530,10 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
 SMODS.QuantumCardField{
     key = "rank",
     g_obj_table = SMODS.Ranks,
-    base_value_ref = "base.value"
+    base_value_ref = "base.value",
+    inject_args = {
+        no_setter = true
+    },
 }
 
 SMODS.QuantumCardField{
@@ -330,8 +542,9 @@ SMODS.QuantumCardField{
     cache_ability = true,
     get_context_flag = "check_enhancement",
     inject_args = {
-        is_func_prefix = "has"
+        is_func_prefix = "has",
     },
+    override_setter = _enhancement_setter_set_ability_redirect,
     target_objects = {
         getter = {Card, SMODS},
         is_funcs = {Card, SMODS}
@@ -348,13 +561,51 @@ SMODS.QuantumCardField{
         is_func_prefix = "has"
     },
     base_value_ref = "seal",
+    setter_defaults = {
+        sound = {sound = 'gold_seal', per = 1.2, vol = 0.4},
+    },
 }
 
 SMODS.QuantumCardField{
     key = "edition",
     cache_ability = true,
     g_obj_table = SMODS.Editions,
-    base_value_ref = "edition.key"
+    base_value_ref = "edition.key",
+    setter_defaults = {
+        remove_sound = {sound = 'whoosh2', per = 1.2, vol = 0.6},
+        juice_scale = 1.0,
+        juice_rot = 0.5,
+        delay = 0.2,
+        delay_lock = 0.1
+    },
+    get_setter_values = function (self, card, qfield_obj, args, old_val, new_val)
+        local new_obj = qfield_obj.g_obj_table[new_val]
+        local delay_val = (not args.immediate or args.delay) and (old_val or true) or nil
+        local edition_type
+        if delay_val then delay_val = old_val or {base = true} end
+        if type(new_val) == 'string' then
+            assert(string.sub(new_val, 1, 2) == 'e_', ("Edition \"%s\" is missing \"e_\" prefix."):format(new_val))
+            edition_type = string.sub(new_val, 3)
+        elseif type(new_val) == 'table' then
+            if new_val.type then
+                edition_type = new_val.type
+            else
+                for k, v in pairs(new_val) do
+                    if v then
+                        assert(not edition_type, "Tried to apply more than one edition.")
+                        edition_type = k
+                    end
+                end
+            end
+        end
+        local override_value = SMODS.get_ability_from_obj(new_obj, card)
+        if edition_type then
+            override_value[edition_type] = true
+            override_value.type = edition_type
+            override_value.key = 'e_'..edition_type
+        end
+        return delay_val, override_value, (not edition_type or edition_type == "base")
+    end
 }
 
 SMODS.QuantumCardField{
@@ -367,14 +618,18 @@ SMODS.QuantumCardField{
         if smeared then return smeared end
         if base then return {[base] = "BASE"} end
         return {}
-    end
+    end,
+    inject_args = {
+        no_setter = true
+    },
 }
 
 SMODS.QuantumCardField{
     key = "sticker",
     g_obj_table = SMODS.Stickers,
     inject_args = {
-        is_func_prefix = "has"
+        is_func_prefix = "has",
+        no_setter = true
     },
     base_getter = function (self, card, _args) 
         local stickers = {}
@@ -537,9 +792,7 @@ SMODS.Enhancement:take_ownership("m_wild", {
 -- Card rank functions
 function SMODS.get_rank_from_id(id)
     for _, rank in pairs(SMODS.Ranks) do
-        if rank.id == id then
-            return rank
-        end
+        if rank.id == id then return rank end
     end
     return nil
 end

@@ -425,7 +425,7 @@ function SMODS.create_card(t)
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
     if t.edition then _card:set_edition(t.edition, nil, t.silent.edition) end
-    if t.seal then _card:set_seal(t.seal, t.silent.seal); _card.ability.delay_seal = false end
+    if t.seal then _card:set_seal(t.seal, t.silent.seal); _card.delay_seal = nil end
     if t.stickers or type(t.force_stickers) == "table" then
         local applied_stickers = {}
         if type(t.force_stickers) == "table" then
@@ -1817,10 +1817,16 @@ function SMODS.update_context_flags(context, flags)
         if context[q_field.get_context_flag] and flags[q_field.return_flag] then
             if not context.no_mod or no_mod_changed then
                 if flags.fixed == q_field.return_flag or type(flags.fixed) == "table" and flags.fixed[q_field.return_flag] then
-                    context[q_field.return_flag] = flags[q_field.return_flag]
+                    for k, v in pairs(context[q_field.return_flag]) do
+                        if v ~= "BASE" or not flags[q_field.return_flag][k] then -- If it's a "BASE" value and it's not removed, keep it as "BASE" -> Required for correct quantum card.ability access
+                            context[q_field.return_flag][k] = flags[q_field.return_flag][k]
+                        end 
+                    end
                 else
                     for k, v in pairs(flags[q_field.return_flag]) do
-                        context[q_field.return_flag][k] = v
+                        if context[q_field.return_flag][k] ~= "BASE" or not v then
+                            context[q_field.return_flag][k] = v
+                        end
                     end
                 end
             end

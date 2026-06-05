@@ -136,43 +136,6 @@ Purple = {order = 4,  discovered = false, set = "Seal"},
 }
 '''
 
-# Card:set_seal()
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''G.CONTROLLER.locks.seal = true'''
-position = 'after'
-match_indent = true
-payload = '''local sound = G.P_SEALS[_seal].sound or {sound = 'gold_seal', per = 1.2, vol = 0.4}'''
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''play_sound('gold_seal', 1.2, 0.4)'''
-position = 'at'
-match_indent = true
-payload = '''
-self.ability.delay_seal = false
-play_sound(sound.sound, sound.per, sound.vol)'''
-## Populate Seal Ability Table
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''self.seal = _seal'''
-position = 'after'
-match_indent = true
-payload = '''
-self.ability.seal = {}
-for k, v in pairs(G.P_SEALS[_seal].config or {}) do
-    if type(v) == 'table' then
-        self.ability.seal[k] = copy_table(v)
-    else
-        self.ability.seal[k] = v
-    end
-end
-
-self.ability.delay_seal = not silent
-'''
-
 # card_limit support
 [[patches]]
 [patches.pattern]
