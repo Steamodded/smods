@@ -3,6 +3,8 @@ SMODS.CARD_VALUE_TYPES = {
     MULTIPLICATIVE = "multiplicative"
 }
 
+SMODS.CARD_VALUE_REFS = {} -- Unused, map for all the CardAbilityFields' variant refs. 
+
 
 -- Helper function to get a card's qfield-cached abilities, or if uncached just card.ability
 function SMODS.get_card_abilities(card)
@@ -13,7 +15,6 @@ function SMODS.get_card_abilities(card)
     if not SMODS.set_quantum_cache(card) then return fallback end
     return (SMODS.qfield_cache[card] or {}).abilities or fallback
 end
-
 
 SMODS.CardAbilityFields = {}
 SMODS.CardAbilityField = SMODS.GameObject:extend {
@@ -39,6 +40,9 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
         end
         if not self.variant_refs then -- This is used mostly instead of the singular value_ref
             self.variant_refs = {self.value_ref}
+        end
+        for _, v_ref in ipairs(self.variant_refs) do
+            SMODS.CARD_VALUE_REFS[v_ref] = true
         end
         if not self.default_value then
             if self.stacking_type == SMODS.CARD_VALUE_TYPES.ADDITIVE then self.default_value = 0
@@ -306,10 +310,11 @@ SMODS.CardAbilityField{
 
 -- Helper function to get a sanitized ability table
 function SMODS.get_ability_from_obj(obj, card)
-    local ability
+    local ability, skip
     if type(obj.cache_ability) == "function" then 
-        ability = obj:cache_ability(card) 
+        ability, skip = obj:cache_ability(card)
     end 
+    if skip then return ability end
     local config = obj.config
     if config then
         ability = ability or {}
@@ -329,7 +334,7 @@ function SMODS.get_ability_from_obj(obj, card)
         ability.card_limit = config.card_limit
         ability.extra = ability.extra or copy_table(config.extra) or nil
         ability.extra_value = 0
-        ability.type = config.type or ''
+        ability.type = ability.type or ''
     end
     return ability
 end

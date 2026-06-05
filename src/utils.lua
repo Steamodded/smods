@@ -1021,7 +1021,7 @@ function SMODS.get_ability_reset_keys(card)
 end
 function SMODS.always_scores(card)
     if not SMODS.set_quantum_cache(card) then return end
-    for key, q_field in pairs(SMODS.QuantumCardFields) do
+    for _, q_field in pairs(SMODS.QuantumCardFields) do
         for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k] or {}
             if obj.always_scores then return true end
@@ -1031,7 +1031,7 @@ function SMODS.always_scores(card)
 end
 function SMODS.never_scores(card)
     if not SMODS.set_quantum_cache(card) then return end
-    for key, q_field in pairs(SMODS.QuantumCardFields) do
+    for _, q_field in pairs(SMODS.QuantumCardFields) do
         for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k]
             if obj.never_scores then return true end
