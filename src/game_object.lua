@@ -724,6 +724,17 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             -- should only need to do this once per injection routine
         end,
         post_inject_class = function(self)
+            -- more sorting, to account for vanilla stakes going above modded stakes
+            for i, v in ipairs(G.P_CENTER_POOLS[self.set]) do
+                if v.above_stake and G.P_STAKES[v.above_stake] then
+                    v.order = G.P_STAKES[v.above_stake].order + 1
+                    end
+                for ii, vv in ipairs(G.P_CENTER_POOLS[self.set]) do
+                    if vv.key ~= v.key and vv.order >= v.order then
+                        vv.order = vv.order + 1
+                    end
+                end
+            end
             table.sort(G.P_CENTER_POOLS[self.set], function(a, b) return a.order < b.order end)
             for i,v in ipairs(G.P_CENTER_POOLS[self.set]) do
                 G.P_STAKES[v.key].order = i
