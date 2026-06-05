@@ -113,10 +113,17 @@ local function _general_quantum_setter(key, card, value, args, ...)
         if key == "edition" then
             args = {immediate = args}
             args.silent = other_args[1]
+            args.immediate = args.immediate or args.silent
             args.delay = other_args[2]
+            args.no_juice = args.silent
+            if type(value) == "table" then
+                string_val = value.key
+                value = string_val
+            end
         elseif key == "seal" then
             args = {silent = args}
-            args.immediate = other_args[1]
+            args.immediate = other_args[1] or args.silent
+            args.no_juice = args.silent
         end
     end
     args = args or {}
@@ -149,35 +156,42 @@ local function _general_quantum_setter(key, card, value, args, ...)
     if not new_is_base and new_obj then
         card[key] = value
         card.ability[key] = SMODS.get_ability_from_obj(new_obj, card)
-        if not args.silent then
-            card["delay_" .. key] = delay_val
-            G.CONTROLLER.locks[key] = true
-            local sound = new_obj.sound or setter_defaults.sound
-            if args.immediate then
-                card:juice_up(setter_defaults.juice_scale or 0.3, setter_defaults.juice_rot or 0.3)
-                card["delay_" .. key] = nil
-                if sound then play_sound(sound.sound, sound.per, sound.vol) end
-                G.CONTROLLER.locks[key] = nil
-            else
-                G.E_MANAGER:add_event(Event({
-                    trigger = 'after',
-                    delay = setter_defaults.delay or 0.3,
-                    func = function()
-                        card:juice_up(setter_defaults.juice_scale or 0.3, setter_defaults.juice_rot or 0.3)
-                        card["delay_" .. key] = nil
-                        if sound then play_sound(sound.sound, sound.per, sound.vol) end
-                        return true
-                    end
-                }))
-                G.E_MANAGER:add_event(Event({
-                    trigger = 'after',
-                    delay = setter_defaults.delay_lock or 0.15,
-                    func = function()
-                        G.CONTROLLER.locks[key] = nil
-                        return true
-                    end
-                }))
-            end
+        card["delay_" .. key] = delay_val
+        G.CONTROLLER.locks[key] = true
+        local sound = not args.silent and (new_obj.sound or setter_defaults.sound)
+        if args.immediate then
+            if not args.no_juice then card:juice_up(setter_defaults.juice_scale or 0.3, setter_defaults.juice_rot or 0.3) end
+            if not args.delay then card["delay_" .. key] = nil end
+            if sound then play_sound(sound.sound, sound.per, sound.vol) end
+            G.CONTROLLER.locks[key] = nil
+        else
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = setter_defaults.delay or 0.3,
+                func = function()
+                    if not args.no_juice then card:juice_up(setter_defaults.juice_scale or 0.3, setter_defaults.juice_rot or 0.3) end
+                    card["delay_" .. key] = nil
+                    if sound then play_sound(sound.sound, sound.per, sound.vol) end
+                    return true
+                end
+            }))
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = setter_defaults.delay_lock or 0.15,
+                func = function()
+                    G.CONTROLLER.locks[key] = nil
+                    return true
+                end
+            }))
+        end
+        if args.delay then
+            G.E_MANAGER:add_event(Event({
+                trigger = 'immediate',
+                func = function()
+                    card["delay_" .. key] = nil
+                    return true
+                end
+            }))
         end
         card.ability.card_limit = card.ability.card_limit + ((card[key] or {}).card_limit or (card.ability[key] or {}).card_limit or 0)
         card.ability.extra_slots_used = card.ability.extra_slots_used + ((card[key] or {}).extra_slots_used or (card.ability[key] or {}).extra_slots_used or 0)
@@ -213,7 +227,7 @@ local function _general_quantum_setter(key, card, value, args, ...)
                 delay = not args.immediate and (setter_defaults.delay or 0.3) or 0,
                 blockable = not args.immediate,
                 func = function()
-                    card:juice_up(setter_defaults.juice_scale or 0.3, setter_defaults.juice_rot or 0.3)
+                    if not args.no_juice then card:juice_up(setter_defaults.juice_scale or 0.3, setter_defaults.juice_rot or 0.3) end
                     play_sound(remove_sound.sound, remove_sound.per, remove_sound.vol)
                     return true
                 end
