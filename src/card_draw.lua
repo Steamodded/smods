@@ -335,8 +335,8 @@ SMODS.DrawStep {
         if type(seal.draw) == 'function' then
             seal:draw(self, layer)
         elseif type(key) == "string" then
-            G.shared_seals[seal].role.draw_major = self
-            G.shared_seals[seal]:draw_shader('dissolve', nil, nil, nil, self.children.center)
+            G.shared_seals[key].role.draw_major = self
+            G.shared_seals[key]:draw_shader('dissolve', nil, nil, nil, self.children.center)
             if key == 'Gold' then G.shared_seals[key]:draw_shader('voucher', nil, self.ARGS.send_to_shader, nil, self.children.center) end
         end
     end,

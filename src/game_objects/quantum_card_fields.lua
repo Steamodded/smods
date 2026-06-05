@@ -97,7 +97,7 @@ local function _general_quantum_getter(card, args)
             end
         end
     end
-    if SMODS.qfield_cache[card].abilities then Card:quantum_ability_set_mt() end
+    if SMODS.qfield_cache[card].abilities then card:quantum_ability_set_mt() end
     return ret
 end
 
@@ -109,7 +109,7 @@ local function _general_quantum_setter(key, card, value, args, ...)
     local string_val = value
 
     local other_args = {...}
-    if next(other_args) then
+    if next(other_args) or type(args) ~= "table" then
         if key == "edition" then
             args = {immediate = args}
             args.silent = other_args[1]
@@ -123,13 +123,13 @@ local function _general_quantum_setter(key, card, value, args, ...)
     args.silent = args.silent or (key == "edition" and SMODS.create_card_silent_edition)
 
     if card[key] then
-        card.ability.card_limit = card.ability.card_limit - (card[key].card_limit or card.ability[key].card_limit or 0)
-        card.ability.extra_slots_used = card.ability.extra_slots_used - (card[key].card_limit or card.ability[key].extra_slots_used or 0)
+        card.ability.card_limit = card.ability.card_limit - ((card[key] or {}).card_limit or (card.ability[key] or {}).card_limit or 0)
+        card.ability.extra_slots_used = card.ability.extra_slots_used - ((card[key] or {}).card_limit or (card.ability[key] or {}).extra_slots_used or 0)
     end
 
     local old_val = card[key]
     local new_obj = qfield_obj.g_obj_table[value]
-    local old_obj = qfield_obj.g_obj_table[old_val] or qfield_obj.g_obj_table[old_val.key]
+    local old_obj = qfield_obj.g_obj_table[old_val] or qfield_obj.g_obj_table[(old_val or {}).key]
     if old_obj then
         card.ignore_base_shader[old_obj.key] = nil
 		card.ignore_shadow[old_obj.key] = nil
@@ -149,8 +149,8 @@ local function _general_quantum_setter(key, card, value, args, ...)
     if not new_is_base and new_obj then
         card[key] = value
         card.ability[key] = SMODS.get_ability_from_obj(new_obj, card)
-        card["delay_" .. key] = delay_val
         if not args.silent then
+            card["delay_" .. key] = delay_val
             G.CONTROLLER.locks[key] = true
             local sound = new_obj.sound or setter_defaults.sound
             if args.immediate then
@@ -179,8 +179,8 @@ local function _general_quantum_setter(key, card, value, args, ...)
                 }))
             end
         end
-        card.ability.card_limit = card.ability.card_limit + (card[key].card_limit or card.ability[key].card_limit or 0)
-        card.ability.extra_slots_used = card.ability.extra_slots_used + (card[key].extra_slots_used or card.ability[key].extra_slots_used or 0)
+        card.ability.card_limit = card.ability.card_limit + ((card[key] or {}).card_limit or (card.ability[key] or {}).card_limit or 0)
+        card.ability.extra_slots_used = card.ability.extra_slots_used + ((card[key] or {}).extra_slots_used or (card.ability[key] or {}).extra_slots_used or 0)
 
         if new_obj.override_base_shader or new_obj.disable_base_shader then
             card.ignore_base_shader[string_val] = true
