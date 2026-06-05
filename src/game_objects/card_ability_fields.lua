@@ -326,6 +326,7 @@ function SMODS.get_ability_from_obj(obj, card)
         ability.set = obj.set
         ability.h_size = config.h_size or 0
         ability.d_size = config.d_size or 0
+        ability.card_limit = config.card_limit
         ability.extra = ability.extra or copy_table(config.extra) or nil
         ability.extra_value = 0
         ability.type = config.type or ''

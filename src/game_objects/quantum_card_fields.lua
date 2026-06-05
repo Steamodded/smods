@@ -131,7 +131,7 @@ local function _general_quantum_setter(key, card, value, args, ...)
 
     if card[key] then
         card.ability.card_limit = card.ability.card_limit - ((card[key] or {}).card_limit or (card.ability[key] or {}).card_limit or 0)
-        card.ability.extra_slots_used = card.ability.extra_slots_used - ((card[key] or {}).card_limit or (card.ability[key] or {}).extra_slots_used or 0)
+        card.ability.extra_slots_used = card.ability.extra_slots_used - ((card[key] or {}).extra_slots_used or (card.ability[key] or {}).extra_slots_used or 0)
     end
 
     local old_val = card[key]

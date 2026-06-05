@@ -2374,6 +2374,7 @@ end
 SMODS.optional_features = {
     cardareas = {},
     quantum_fields = {},
+    quantum_straight_min_return = true
 }
 SMODS.get_optional_features = function()
     for _,mod in ipairs(SMODS.mod_list) do
