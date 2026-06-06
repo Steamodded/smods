@@ -720,7 +720,7 @@ SMODS.Joker:take_ownership("drivers_license", {
         local tally = 0
         for _, pcard in ipairs(G.playing_cards) do
             local enhs = SMODS.get_enhancements(pcard)
-            if next(enhs) ~= "c_base" or table_length(enhs) > 1 then tally = tally + 1 end
+            if next(enhs) ~= "c_base" or next(enhs, "c_base") then tally = tally + 1 end
         end
         card.ability.driver_tally = tally
         return { vars = {card.ability.extra, card.ability.driver_tally or 0}}
@@ -730,7 +730,7 @@ SMODS.Joker:take_ownership("drivers_license", {
             local tally = 0
             for _, pcard in ipairs(G.playing_cards) do
                 local enhs = SMODS.get_enhancements(pcard)
-                if next(enhs) ~= "c_base" or table_length(enhs) > 1 then tally = tally + 1 end
+                if next(enhs) ~= "c_base" or next(enhs, "c_base") then tally = tally + 1 end
             end
             card.ability.driver_tally = tally
             if card.ability.driver_tally >= 16 then
