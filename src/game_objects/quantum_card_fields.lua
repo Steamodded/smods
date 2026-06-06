@@ -156,7 +156,7 @@ local function _general_quantum_setter(key, card, value, args, ...)
 
     local delay_val, override_val, new_is_base
     if new_obj then
-        delay_val, override_val, new_is_base = qfield_obj:get_setter_values(card, qfield_obj, args, old_val, string_val)
+        delay_val, override_val, new_is_base = qfield_obj:get_setter_values(card, args, old_val, string_val)
         if override_val then value = override_val end
     end
     
@@ -531,7 +531,7 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
     cache_ability = nil, -- Whether the _general_quantum_getter should cache the .config table of this qfield's object values into SMODS.qfield_cache[card].abilities
     base_value_ref = nil, -- e.g. 'base.value' for Rank, 'config.center.key' for Enhancement, ...
     setter_defaults = {}, -- setter() default values
-    get_setter_values = function (self, card, qfield_obj, args, old_val, new_val)
+    get_setter_values = function (self, card, args, old_val, new_val)
         return (not args.immediate or args.delay) and (old_val or true) or nil, nil, nil
     end,
     get_base_value = function (self, card) return table_get_subfield(card, self.base_value_ref) end,
@@ -600,8 +600,7 @@ SMODS.QuantumCardField{
         delay = 0.2,
         delay_lock = 0.1
     },
-    get_setter_values = function (self, card, qfield_obj, args, old_val, new_val)
-        local new_obj = qfield_obj.g_obj_table[new_val]
+    get_setter_values = function (self, card, args, old_val, new_val)
         local delay_val = (not args.immediate or args.delay) and (old_val or true) or nil
         local edition_type
         if delay_val then delay_val = old_val or {base = true} end
@@ -620,7 +619,7 @@ SMODS.QuantumCardField{
                 end
             end
         end
-        local override_value = SMODS.get_ability_from_obj(new_obj, card)
+        local override_value = SMODS.get_ability_from_obj(self.g_obj_table[new_val], card)
         if edition_type then
             override_value[edition_type] = true
             override_value.type = edition_type
