@@ -61,10 +61,18 @@ local function _general_quantum_getter(card, args)
     local get_context = {_quantum_getter = true, card = card, no_mod = false} -- _quantum_getter flag should not be referenced in practice (as it doesn't account for optional_features.quantum_fields), use specific "get_ranks" etc. flags instead
     local has = SMODS.qfield_cache[card].has
     for key, q_field in pairs(SMODS.QuantumCardFields) do 
-        SMODS.qfield_cache[card].get[q_field.return_flag] = (has[key].no and not has[key].any and {}) or (has[key].any and SMODS.shallow_copy(q_field.g_obj_table)) or SMODS.qfield_cache[card].get[q_field.return_flag] -- If e.g. has.rank.no is true and .any not, default to no ranks, if any is true, default to all ranks, if neither, default to the values set by the above has_context
+        local get = SMODS.qfield_cache[card].get[q_field.return_flag]
+        local override_get = (has[key].no and not has[key].any and {}) or (has[key].any and SMODS.shallow_copy(q_field.g_obj_table)) -- If e.g. has.rank.no is true and .any not, default to no ranks, if any is true, default to all ranks, if neither, default to the values set by the above has_context
+        if override_get then
+            for k, v in pairs(get) do
+                if v ~= "BASE" or not override_get[k] then -- If it's a "BASE" value and it's not removed, keep it as "BASE" -> Required for correct quantum card.ability access
+                    get[k] = not not override_get[k]
+                end 
+            end
+        end
         if SMODS.optional_features.quantum_fields[key] then
             get_context[q_field.get_context_flag] = true
-            get_context[q_field.return_flag] = SMODS.qfield_cache[card].get[q_field.return_flag]
+            get_context[q_field.return_flag] = get
         end
     end
     local flags = args.get_flags or args
