@@ -29,7 +29,18 @@ function SMODS.poll_object(args)
     for _, key in ipairs(pool) do
         local weight_table = {}
         
-        local w, m_w = SMODS.get_weight_of_object(G[SMODS.game_table_from_type[key.type] or 'P_CENTERS'][key.key or key], key.weight, args)
+        local obj_type = SMODS.game_table_from_type[key.type]
+        local obj_pool = G.P_CENTERS
+
+        if obj_type then
+            if type(obj_type) == "table" then
+                obj_pool = obj_type.ref_table[obj_type.ref_value]
+            else
+                obj_pool = G[obj_type]
+            end
+        end
+
+        local w, m_w = SMODS.get_weight_of_object(obj_pool[key.key or key], key.weight, args)
         weight_table = {key = key.key or key, weight = m_w}
         
         total_weight = total_weight + w

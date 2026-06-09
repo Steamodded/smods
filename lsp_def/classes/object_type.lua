@@ -21,7 +21,8 @@
 ---@field take_ownership? fun(self: SMODS.ObjectType|table, key: string, obj: SMODS.ObjectType|table, silent?: boolean): nil|table|SMODS.ObjectType Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.ObjectType|table, key: string): SMODS.ObjectType|table? Returns an object if one matches the `key`. 
 ---@field inject_card? fun(self: SMODS.ObjectType|table, center: table) Injects the center into the ObjectType pools.
----@field remove_card? fun(self: SMODS.ObjectType|table, center: table) Removes the center from ObjectType pools. 
+---@field remove_card? fun(self: SMODS.ObjectType|table, center: table) Removes the center from ObjectType pools.
+---@field set_badges? fun(self: SMODS.ObjectType|table, card: Card|table, badges: table) Append `badges` for additional badges on the UI display of the cards in the pool.
 ---@overload fun(self: SMODS.ObjectType): SMODS.ObjectType
 SMODS.ObjectType = setmetatable({}, {
     __call = function(self)
