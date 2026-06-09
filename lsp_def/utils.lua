@@ -781,6 +781,16 @@ function SMODS.update_context_flags(context, flags) end
 --- or false if the [context] isn't a getter context.
 function SMODS.is_getter_context(context) end
 
+---@param context CalcContext|table The context checked
+---@return boolean
+-- Returns whether or not the given context can retrigger (by checking SMODS.CONTEXT_RETRIGGER_BLACKLIST)
+function SMODS.can_context_retrigger(context) end
+
+---@param context CalcContext|table The context checked
+---@return boolean
+--- Returns whether or not the given context can post_trigger (by checking SMODS.CONTEXT_POST_TRIGGER_BLACKLIST)
+function SMODS.can_context_post_trigger(context) end
+
 ---@param eval_object SMODS.GameObject|table The object that will be evaluated next if this returns false
 ---@return boolean
 --- This functions checks whether a previous getter context of the same type
