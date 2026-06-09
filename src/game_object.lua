@@ -1528,7 +1528,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         --]]
         update_pack = function(self, dt)
             if G.buttons then G.buttons:remove(); G.buttons = nil end
-            if G.shop then G.shop.alignment.offset.y = G.ROOM.T.y+11 end
 
             if not G.STATE_COMPLETE then
                 G.STATE_COMPLETE = true
@@ -1846,6 +1845,7 @@ SMODS.UndiscoveredCompat = {
             if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
         end
     }
+
     SMODS.Blind:take_ownership('eye', {
         set_blind = function(self, reset, silent)
             if not reset then
@@ -4023,6 +4023,11 @@ SMODS.UndiscoveredCompat = {
         text = '^'
     }
 
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.GameState
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/game_states.lua'), ('=[SMODS _ "src/game_objects/game_states.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
