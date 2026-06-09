@@ -703,7 +703,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if not self.injected then
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
+                    G.STAGE_OBJECT_INTERRUPT = true
                     G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos)
+                    G.STAGE_OBJECT_INTERRUPT = false
                     G.sticker_map[self.key] = self.key:sub(7)
                 else
                     G.sticker_map[self.key] = nil
@@ -1309,8 +1311,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             -- call the parent function to ensure all pools are set
             SMODS.Center.inject(self)
             local vanilla_rarities = { ["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4 }
+            local rarity_key = self.rarity
             self.rarity = vanilla_rarities[self.rarity] or self.rarity
             local original_rarity = vanilla_rarities[self.rarity_original] or self.rarity_original
+            assert(G.P_JOKER_RARITY_POOLS[self.rarity], ("Joker \"%s\" has an invalid rarity \"%s\"."):format(self.key or "UNKNOWN", rarity_key))
             if self.taken_ownership and original_rarity and original_rarity ~= self.rarity then
                 SMODS.remove_pool(G.P_JOKER_RARITY_POOLS[original_rarity] or {}, self.key)
                 SMODS.insert_pool(G.P_JOKER_RARITY_POOLS[self.rarity], self, false)
@@ -1776,7 +1780,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
         inject = function(self)
             if self.overlay_pos then
+                G.STAGE_OBJECT_INTERRUPT = true
                 self.overlay_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.overlay_pos)
+                G.STAGE_OBJECT_INTERRUPT = false
                 self.no_overlay = true
             end
         end,
@@ -1894,7 +1900,9 @@ SMODS.UndiscoveredCompat = {
         },
         inject = function(self)
             G.P_SEALS[self.key] = self
+            G.STAGE_OBJECT_INTERRUPT = true
             G.shared_seals[self.key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas) or SMODS.get_atlas('centers'), self.pos)
+            G.STAGE_OBJECT_INTERRUPT = false
             self.badge_to_key[self.key:lower() .. '_seal'] = self.key
             SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
             self.rng_buffer[#self.rng_buffer + 1] = self.key
@@ -3142,7 +3150,9 @@ SMODS.UndiscoveredCompat = {
             self.order = #self.obj_buffer
         end,
         inject = function(self)
+            G.STAGE_OBJECT_INTERRUPT = true
             self.sticker_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.pos)
+            G.STAGE_OBJECT_INTERRUPT = false
             G.shared_stickers[self.key] = self.sticker_sprite
         end,
         -- relocating sticker checks to here, so if the sticker has different checks than default
