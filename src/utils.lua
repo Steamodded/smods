@@ -1347,14 +1347,23 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return key
     end
 
+    if key == 'modify' then
+        if SMODS.context_stack[#SMODS.context_stack].context.modify_final_cashout then
+            if effect.cashout_row then
+                effect.cashout_row.bonus = true
+                effect.cashout_row.pitch = SMODS.cashout_pitch
+                effect.cashout_row.dollars = effect.cashout_row.dollars or amount
+                add_round_eval_row(effect.cashout_row)
+            else
+                add_round_eval_row({dollars = amount, bonus = true, name='joker'..SMODS.cashout_index, pitch = SMODS.cashout_pitch, card = scored_card})
+            end
+        end
+    end
+
     if SMODS.amount_return_flags[key] then
         return { [key] = amount }
     end
 
-    if key == 'cashout_mod' then
-        add_round_eval_row({dollars = amount, bonus = true, name='joker'..SMODS.cashout_index, pitch = SMODS.cashout_pitch, card = scored_card})
-        return { [key] = amount }
-    end
 
     if key == 'debuff' then
         return { [key] = amount, debuff_source = scored_card }
@@ -1458,7 +1467,7 @@ SMODS.other_calculation_keys = {
     'level_up', 'func',
     'numerator', 'denominator',
     'fixed',
-    'modify', 'cashout_mod',
+    'modify',
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
     'shop_create_flags', 'booster_create_flags',
@@ -1473,7 +1482,7 @@ SMODS.silent_calculation = {
     func = true, extra = true,
     numerator = true, denominator = true,
     fixed = true,
-    no_destroy = true, cashout_mod = true,
+    no_destroy = true,
 }
 
 SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
@@ -1789,14 +1798,14 @@ function SMODS.update_context_flags(context, flags)
     if flags.modify then
         -- insert general modified value updating here
         if context.modify_ante then context.modify_ante = flags.modify end
-        if context.drawing_cards then context.amount = flags.modify end
         if context.drawing_cards then context.amount = math.max(flags.modify, 0) end
-    end
-    if flags.cashout_mod then
-        context.amount = context.amount + flags.cashout_mod
-        SMODS.cashout_dollars = context.amount
-        SMODS.cashout_index = SMODS.cashout_index + 1
-        SMODS.cashout_pitch = SMODS.cashout_pitch + 0.06
+        if context.modify_final_cashout then
+            context.amount = flags.modify + (not flags.override and context.amount)
+            SMODS.cashout_dollars = context.amount
+            SMODS.cashout_index = SMODS.cashout_index + 1
+            SMODS.cashout_pitch = SMODS.cashout_pitch + 0.06
+            flags.modify = nil
+        end
     end
     if context.evaluate_poker_hand then
         if flags.replace_scoring_name then

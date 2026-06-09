@@ -1311,8 +1311,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             -- call the parent function to ensure all pools are set
             SMODS.Center.inject(self)
             local vanilla_rarities = { ["Common"] = 1, ["Uncommon"] = 2, ["Rare"] = 3, ["Legendary"] = 4 }
+            local rarity_key = self.rarity
             self.rarity = vanilla_rarities[self.rarity] or self.rarity
             local original_rarity = vanilla_rarities[self.rarity_original] or self.rarity_original
+            assert(G.P_JOKER_RARITY_POOLS[self.rarity], ("Joker \"%s\" has an invalid rarity \"%s\"."):format(self.key or "UNKNOWN", rarity_key))
             if self.taken_ownership and original_rarity and original_rarity ~= self.rarity then
                 SMODS.remove_pool(G.P_JOKER_RARITY_POOLS[original_rarity] or {}, self.key)
                 SMODS.insert_pool(G.P_JOKER_RARITY_POOLS[self.rarity], self, false)

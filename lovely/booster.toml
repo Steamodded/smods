@@ -62,6 +62,7 @@ pattern = '''(?<indent>[\t ]*)if self\.ability\.name:find\('Arcana'\) then[\t\n 
 position = "at"
 payload = '''local flags = SMODS.calculate_context({create_booster_card = true, booster = self, index = i})
 if flags.booster_create_flags then
+    flags.booster_create_flags.skip_materialize = true
     card = SMODS.create_card(flags.booster_create_flags)
 end
 if card then

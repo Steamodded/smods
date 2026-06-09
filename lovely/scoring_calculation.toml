@@ -366,7 +366,7 @@ pattern = '''
 return _mult
 '''
 payload = '''
-SMODS.Scoring_Parameters.mult:modify(nil, _mult - (mult or 0))
+if _mult ~= mult then SMODS.Scoring_Parameters.mult:modify(nil, _mult - (mult or 0)) end
 '''
 [[patches]]
 [patches.pattern]
@@ -377,5 +377,5 @@ pattern = '''
 return _chips
 '''
 payload = '''
-SMODS.Scoring_Parameters.chips:modify(nil, _chips - (hand_chips or 0))
+if _chips ~= hand_chips then SMODS.Scoring_Parameters.chips:modify(nil, _chips - (hand_chips or 0)) end
 '''
