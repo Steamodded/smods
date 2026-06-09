@@ -4,6 +4,7 @@
 ---@field obj_table? table<string, SMODS.Sound|table> Table of objects registered to this class. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field path? string Name of the sound file, including extension. 
+---@field path_mod? Mod|table The mod this object's `path` belongs to, if this is not the same mod it was created by.
 ---@field pitch? number Pitch for music tracks. 
 ---@field volume? number Volume for music tracks. 
 ---@field replace? string|table Replaces specific sound with this sound whenever played. Behaves like `SMODS.Sound:create_replace_sound()`. 

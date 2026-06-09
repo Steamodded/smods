@@ -19,10 +19,16 @@
 ---@field calculate? fun(self: SMODS.Back|table, back: Back|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
 ---@field apply? fun(self: SMODS.Back|table, back: Back|table) Applied modifiers at the start of a run.
 ---@field quip_filter? fun(quip: SMODS.JimboQuip|table, quip_type: string): boolean?, table? Allows configuring a quip is allowed to appear. 
----@field calc_dollar_bonus? fun(self: SMODS.Back|table, back: Back|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money. 
+---@field calc_dollar_bonus? fun(self: SMODS.Back|table, back: Back|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money.
+---@field initial_deck? back_initial_deck_args Allows customization of the starting deck
 ---@overload fun(self: SMODS.Back): SMODS.Back
 SMODS.Back = setmetatable({}, {
     __call = function(self)
         return self
     end
 })
+
+---@class back_initial_deck_args
+---@field exclude? boolean Turns the lists into blacklists, rather than whitelists
+---@field suits? Suits[]|string[] A list of suits to include/exclude
+---@field ranks? Ranks[]|string[] A list of ranks to include/exclude
