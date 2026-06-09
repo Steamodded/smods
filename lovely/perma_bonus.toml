@@ -153,23 +153,3 @@ perma_x_blind_size = self.ability and self.ability.perma_x_blind_size or 0,
 perma_h_x_blind_size = self.ability and self.ability.perma_h_x_blind_size or 0,
 '''
 match_indent = true
-
-# Card:get_end_of_round_effect
-[[patches]]
-[patches.pattern]
-target = "card.lua"
-pattern = '''
-if self.ability.h_dollars > 0 then
-    ret.h_dollars = self.ability.h_dollars
-    ret.card = self
-end
-'''
-position = "at"
-match_indent = true
-payload = '''
-local h_dollars = self:get_h_dollars()
-if h_dollars ~= 0 then
-    ret.h_dollars = h_dollars
-    ret.card = self
-end
-'''

@@ -6,16 +6,6 @@ priority = -5
 [[patches]]
 [patches.pattern]
 target = "card.lua"
-pattern = '''function Card:get_end_of_round_effect(context)
-    if self.debuff then return {} end'''
-position = "at"
-match_indent = true
-payload = '''
-function Card:get_end_of_round_effect(context)'''
-
-[[patches]]
-[patches.pattern]
-target = "card.lua"
 pattern = '''function Card:calculate_dollar_bonus()
     if self.debuff then return end'''
 position = "at"

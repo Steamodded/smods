@@ -1010,7 +1010,7 @@ function SMODS.shatters(card)
 end
 
 function SMODS.get_ability_reset_keys(card)
-    local reset_keys = {'name', 'effect', 'set', 'extra', 'played_this_ante', 'perma_debuff'}
+    local reset_keys = {'name', 'effect', 'set', 'extra', 'played_this_ante', 'perma_debuff', 'Xmult'}
     for _, mod in ipairs(SMODS.mod_list) do
         if mod.set_ability_reset_keys then
             local keys = mod.set_ability_reset_keys()

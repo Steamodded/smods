@@ -3668,18 +3668,7 @@ SMODS.UndiscoveredCompat = {
 
     SMODS.Edition:take_ownership('foil', {
         shader = 'foil',
-        config = setmetatable({ chips = 50 }, {
-            __index = function(t, k)
-                if k == 'extra' then return t.chips end
-                return rawget(t, k)
-            end,
-            __newindex = function(t, k, v)
-                if k == 'extra' then
-                    t.chips = v; return
-                end
-                rawset(t, k, v)
-            end,
-        }),
+        config = { extra = { chips = 50 } },
         sound = { sound = "foil1", per = 1.2, vol = 0.4 },
         weight = 20,
         extra_cost = 2,
@@ -3689,30 +3678,19 @@ SMODS.UndiscoveredCompat = {
             return G.GAME.edition_rate * self.weight
         end,
         loc_vars = function(self, info_queue, card)
-            return { vars = { card.edition.chips } }
+            return { vars = { card.edition.extra.chips } }
         end,
         calculate = function(self, card, context)
             if context.pre_joker or (context.main_scoring and context.cardarea == G.play) then
                 return {
-                    chips = (card.edition or {}).chips
+                    chips = ((card.ability.edition or {}).extra or {}).chips
                 }
             end
         end
     })
     SMODS.Edition:take_ownership('holo', {
         shader = 'holo',
-        config = setmetatable({ mult = 10 }, {
-            __index = function(t, k)
-                if k == 'extra' then return t.mult end
-                return rawget(t, k)
-            end,
-            __newindex = function(t, k, v)
-                if k == 'extra' then
-                    t.mult = v; return
-                end
-                rawset(t, k, v)
-            end,
-        }),
+        config = { extra = { mult = 10 } },
         sound = { sound = "holo1", per = 1.2 * 1.58, vol = 0.4 },
         weight = 14,
         extra_cost = 3,
@@ -3722,30 +3700,19 @@ SMODS.UndiscoveredCompat = {
             return G.GAME.edition_rate * self.weight
         end,
         loc_vars = function(self, info_queue, card)
-            return { vars = { card.edition.mult } }
+            return { vars = { card.edition.extra.mult } }
         end,
         calculate = function(self, card, context)
             if context.pre_joker or (context.main_scoring and context.cardarea == G.play) then
                 return {
-                    mult = (card.edition or {}).mult
+                    mult = ((card.ability.edition or {}).extra or {}).mult
                 }
             end
         end
     })
     SMODS.Edition:take_ownership('polychrome', {
         shader = 'polychrome',
-        config = setmetatable({ x_mult = 1.5 }, {
-            __index = function(t, k)
-                if k == 'extra' then return t.x_mult end
-                return rawget(t, k)
-            end,
-            __newindex = function(t, k, v)
-                if k == 'extra' then
-                    t.x_mult = v; return
-                end
-                rawset(t, k, v)
-            end,
-        }),
+        config = { extra = { x_mult = 1.5 } },
         sound = { sound = "polychrome1", per = 1.2, vol = 0.7 },
         weight = 3,
         extra_cost = 5,
@@ -3755,12 +3722,12 @@ SMODS.UndiscoveredCompat = {
             return (G.GAME.edition_rate - 1) * G.P_CENTERS["e_negative"].weight + G.GAME.edition_rate * self.weight
         end,
         loc_vars = function(self, info_queue, card)
-            return { vars = { card.edition.x_mult } }
+            return { vars = { card.edition.extra.x_mult } }
         end,
         calculate = function(self, card, context)
             if context.post_joker or (context.main_scoring and context.cardarea == G.play) then
                 return {
-                    x_mult = (card.edition or {}).x_mult
+                    x_mult = ((card.ability.edition or {}).extra or {}).x_mult
                 }
             end
         end

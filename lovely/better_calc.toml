@@ -88,16 +88,6 @@ end
 match_indent = true
 position = "at"
 payload = """
-if context.cardarea == G.play and context.main_scoring then
-    for i, key in ipairs(SMODS.CardAbilityField.obj_buffer) do
-        local ca_field = SMODS.CardAbilityFields[key]
-        if ca_field:check_context_criteria(context) then
-            ca_field:insert_value(card, ret)
-        end
-    end
-    
-    -- TARGET: main scoring on played cards
-end
 if context.end_of_round and context.cardarea == G.hand and context.playing_card_end_of_round then
     local end_of_round = card:get_end_of_round_effect(context)
     if end_of_round then
@@ -128,14 +118,15 @@ if context.cardarea == G.hand then
 match_indent = true
 position = "at"
 payload = """
-if context.cardarea == G.hand and context.main_scoring then
+if context.main_scoring or context.end_of_round then
     for i, key in ipairs(SMODS.CardAbilityField.obj_buffer) do
         local ca_field = SMODS.CardAbilityFields[key]
         if ca_field:check_context_criteria(context) then
             ca_field:insert_value(card, ret)
         end
     end
-
+end
+if context.cardarea == G.hand and context.main_scoring then
     -- TARGET: main scoring on held cards
 """
 # functions/common_events.lua : eval_card() : replace vanilla card field calc with CardAbilityFields and QuantumCardFields

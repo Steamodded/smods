@@ -92,12 +92,13 @@ SMODS.CardAbilityField = SMODS.GameObject:extend {
         end
         return ret - self.value_offset
     end,
+    ret_table_key = "playing_card",
     insert_value = function (self, card, ret_table, ...)
         local abilities = SMODS.get_card_abilities(card)
         local value = self:getter(abilities, card, ...)
         if self.max_value >= value and value >= self.min_value and value ~= self.default_value then
-            ret_table.playing_card = ret_table.playing_card or {}
-            ret_table.playing_card[self.calc_key] = value
+            ret_table[self.ret_table_key] = ret_table[self.ret_table_key] or {}
+            ret_table[self.ret_table_key][self.calc_key] = value
         end
     end,
     context_criteria = nil,
@@ -218,7 +219,7 @@ SMODS.CardAbilityField{
     key = "h_dollars",
     calc_key = "h_dollars",
     scoring_card_areas = {hand = true},
-    context_criteria = {playing_card_end_of_round = true}
+    context_criteria = {playing_card_end_of_round = true},
 }
 
 SMODS.CardAbilityField{

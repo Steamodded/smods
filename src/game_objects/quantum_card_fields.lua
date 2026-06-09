@@ -94,7 +94,7 @@ local function _general_quantum_getter(card, args)
                 local ret_key = args.as_objs and obj or string_key
                 ret[q_field.return_flag][ret_key] = true
                 if obj and q_field.cache_ability and not args._no_cache_ability then
-                    local ability = v == "BASE" and card.ability or SMODS.get_ability_from_obj(obj, card)
+                    local ability = v == "BASE" and q_field:get_base_ability(card) or SMODS.get_ability_from_obj(obj, card)
                     if ability then
                         SMODS.qfield_cache[card].abilities = SMODS.qfield_cache[card].abilities or {}
                         table.insert(SMODS.qfield_cache[card].abilities, {t = ability, key = string_key, qfield_key = key})
@@ -163,7 +163,7 @@ local function _general_quantum_setter(key, card, value, args, ...)
     card[key] = nil
     if not new_is_base and new_obj then
         card[key] = value
-        card.ability[key] = SMODS.get_ability_from_obj(new_obj, card)
+        card.ability[key] = override_val or SMODS.get_ability_from_obj(new_obj, card)
         card["delay_" .. key] = delay_val
         G.CONTROLLER.locks[key] = true
         local sound = not args.silent and (new_obj.sound or setter_defaults.sound)
@@ -283,13 +283,18 @@ function Card:quantum_ability_set_mt()
     self.ability = setmetatable({}, {
         __index = function (t, k)
             local active_ability = (SMODS.qfield_cache[self] or {}).active_ability
+            local active_field = (SMODS.qfield_cache[self] or {}).active_field
             if not active_ability then self:quantum_ability_remove_mt(); return self.ability[k] end
-            return active_ability[k]
+            if active_field == k then return active_ability end
+            if active_field == "enhancement" then return active_ability[k] end
+            return self._base_ability[k]
         end,
         __newindex = function (t, k, v)
             local active_ability = (SMODS.qfield_cache[self] or {}).active_ability
-            if active_ability then active_ability[k] = v
-            else self:quantum_ability_remove_mt(); self.ability[k] = v end
+            local active_field = (SMODS.qfield_cache[self] or {}).active_field
+            if not active_ability then self:quantum_ability_remove_mt(); self.ability[k] = v; return end
+            if active_field == "enhancement" then active_ability[k] = v 
+            else self._base_ability[k] = v end
         end,
         __pairs = function (t)
             local active_ability = (SMODS.qfield_cache[self] or {}).active_ability
@@ -362,13 +367,16 @@ end
 local function _general_quantum_calculate(key, card, context, args, ...)
     SMODS.push_to_context_stack(context, "quantum_card_fields.lua : _general_quantum_calculate")
     local q_field = SMODS.QuantumCardFields[key]
+    SMODS.qfield_cache[card].active_field = key
     local values = q_field.getter(card, args, ...)
     local ret = {}
     for c_key, v in pairs(values) do
         local obj = q_field.g_obj_table[c_key] or {} -- Due to Enhancements storing their key equivalently to Jokers (config.center.key), this {} is necessary to prevent a crash when quantum_calculating Jokers. 
         if obj.calculate and type(obj.calculate) == 'function' then
             SMODS.set_context_evaluee(obj)
-            if SMODS.qfield_cache[card].abilities then SMODS.qfield_cache[card].active_ability = SMODS.get_active_q_ability(SMODS.qfield_cache[card].abilities, key, c_key) end
+            if SMODS.qfield_cache[card].abilities then 
+                SMODS.qfield_cache[card].active_ability = SMODS.get_active_q_ability(SMODS.qfield_cache[card].abilities, key, c_key) 
+            end
             local o = obj:calculate(card, context)
             if o then
                 if not o.card then o.card = card end
@@ -377,6 +385,7 @@ local function _general_quantum_calculate(key, card, context, args, ...)
         end
     end
     SMODS.qfield_cache[card].active_ability = card._base_ability
+    SMODS.qfield_cache[card].active_field = nil
     SMODS.set_context_evaluee(card)
     SMODS.pop_from_context_stack(context, "quantum_card_fields.lua : _general_quantum_calculate")
     return ret
@@ -534,6 +543,8 @@ SMODS.QuantumCardField = SMODS.GameObject:extend {
     get_setter_values = function (self, card, args, old_val, new_val)
         return (not args.immediate or args.delay) and (old_val or true) or nil, nil, nil
     end,
+    base_ability_ref = "ability",
+    get_base_ability = function (self, card) return table_get_subfield(card, self.base_ability_ref) end,
     get_base_value = function (self, card) return table_get_subfield(card, self.base_value_ref) end,
     base_getter = function (self, card, _args) 
         local base = self:get_base_value(card)
@@ -583,6 +594,7 @@ SMODS.QuantumCardField{
         is_func_prefix = "has"
     },
     base_value_ref = "seal",
+    base_ability_ref = "ability.seal",
     setter_defaults = {
         sound = {sound = 'gold_seal', per = 1.2, vol = 0.4},
     },
@@ -593,6 +605,7 @@ SMODS.QuantumCardField{
     cache_ability = true,
     g_obj_table = SMODS.Editions,
     base_value_ref = "edition.key",
+    base_ability_ref = "ability.edition",
     setter_defaults = {
         remove_sound = {sound = 'whoosh2', per = 1.2, vol = 0.6},
         juice_scale = 1.0,
@@ -693,6 +706,36 @@ SMODS.Seal:take_ownership("Purple", {
                     return true
                 end)}))
             card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_plus_tarot'), colour = G.C.PURPLE})
+            return nil, true
+        end
+    end
+})
+
+SMODS.Seal:take_ownership("Blue", {
+    calculate = function (self, card, context)
+        if context.end_of_round and context.playing_card_end_of_round and context.cardarea == G.hand and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit then
+            local card_type = 'Planet'
+            G.GAME.consumeable_buffer = G.GAME.consumeable_buffer + 1
+            G.E_MANAGER:add_event(Event({
+                trigger = 'before',
+                delay = 0.0,
+                func = (function()
+                    if G.GAME.last_hand_played then
+                        local _planet = 0
+                        for k, v in pairs(G.P_CENTER_POOLS.Planet) do
+                            if v.config.hand_type == G.GAME.last_hand_played then
+                                _planet = v.key
+                            end
+                        end
+                        if _planet == 0 then _planet = nil end
+                        local card = create_card(card_type,G.consumeables, nil, nil, nil, nil, _planet, 'blusl')
+                        card:add_to_deck()
+                        G.consumeables:emplace(card)
+                        G.GAME.consumeable_buffer = 0
+                    end
+                    return true
+                end)}))
+            card_eval_status_text(card, 'extra', nil, nil, nil, {message = localize('k_plus_planet'), colour = G.C.SECONDARY_SET.Planet})
             return nil, true
         end
     end

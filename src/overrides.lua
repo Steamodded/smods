@@ -2969,3 +2969,9 @@ end
 
         return SMODS.shader_stub
     end
+
+
+function Card:get_end_of_round_effect(context)
+	local ret = {}
+	return ret
+end
