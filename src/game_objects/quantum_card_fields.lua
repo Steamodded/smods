@@ -374,7 +374,7 @@ local function _general_quantum_calculate(key, card, context, args, ...)
         local obj = q_field.g_obj_table[c_key] or {} -- Due to Enhancements storing their key equivalently to Jokers (config.center.key), this {} is necessary to prevent a crash when quantum_calculating Jokers. 
         if obj.calculate and type(obj.calculate) == 'function' then
             SMODS.set_context_evaluee(obj)
-            if SMODS.qfield_cache[card].abilities then 
+            if SMODS.qfield_cache[card].abilities and q_field.cache_ability then 
                 SMODS.qfield_cache[card].active_ability = SMODS.get_active_q_ability(SMODS.qfield_cache[card].abilities, key, c_key) 
             end
             local o = obj:calculate(card, context)
