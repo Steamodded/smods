@@ -62,6 +62,7 @@ pattern = '''(?<indent>[\t ]*)if self\.ability\.name:find\('Arcana'\) then[\t\n 
 position = "at"
 payload = '''local flags = SMODS.calculate_context({create_booster_card = true, booster = self, index = i})
 if flags.booster_create_flags then
+    flags.booster_create_flags.skip_materialize = true
     card = SMODS.create_card(flags.booster_create_flags)
 end
 if card then
@@ -278,16 +279,111 @@ if card.ability.consumeable then
     if (card.area == G.pack_cards and G.pack_cards) then
 '''
 payload = '''
-if card.ability.consumeable and card.area == G.pack_cards and G.pack_cards and booster_obj and SMODS.card_select_area(card, booster_obj) and card:selectable_from_pack(booster_obj) then
-    if (card.area == G.pack_cards and G.pack_cards) then
+if card.ability.consumeable and card.area == G.pack_cards and G.pack_cards and booster_obj then
+    local select_area, can_also_use = card:selectable_from_pack(booster_obj)
+    if (card.area == G.pack_cards and G.pack_cards) and select_area then
         local select_button_text = SMODS.get_select_text(card, booster_obj) or localize('b_select')
-        return {n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
-                {n=G.UIT.R, config={ref_table = card, r = 0.08, padding = 0.1, align = "bm", minw = 0.5*card.T.w - 0.15, maxw = 0.9*card.T.w - 0.15, minh = 0.3*card.T.h, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'use_card', func = 'can_select_from_booster'}, nodes={
-                {n=G.UIT.T, config={text = select_button_text, colour = G.C.UI.TEXT_LIGHT, scale = 0.45, shadow = true}}
+        if can_also_use then
+            card.children.select_button = UIBox{
+                definition = {n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+                    {n=G.UIT.R, config = {padding = 0, align = "cl"}, nodes={
+                        {n=G.UIT.R, config={ref_table = card, r = 0.08, padding = 0.1, align = "cl", minw = 0.8*card.T.w, minh = 0.4 * card.T.h, maxh = 0.6 * card.T.h, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'use_card', func = 'can_select_from_booster'}, nodes={
+                            {n=G.UIT.T, config={text = select_button_text, colour = G.C.UI.TEXT_LIGHT, scale = 0.45, shadow = true}}
+                        }},
+                    }}
                 }},
-            }}
+                config = {align = "cl", offset = { x=(card.ability.consumeable and 0.1 or 0) + 0.4, y=0}, parent = card}
+            }
+            return {n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+                    {n=G.UIT.R, config = {padding = 0, align = "bm"}, nodes={
+                        {n=G.UIT.R, config={ref_table = card, r = 0.08, padding = 0.1, align = "bm", minw = 0.5*card.T.w - 0.15, minh = 0.45*card.T.h, maxw = 0.7*card.T.w - 0.15, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'use_card', func = 'can_use_consumeable', SMODS_use_card = true}, nodes={
+                            {n=G.UIT.T, config={text = localize('b_use'),colour = G.C.UI.TEXT_LIGHT, scale = 0.55, shadow = true}}
+                        }},
+                    }},
+                }}
+        else
+            return {n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+                    {n=G.UIT.R, config={ref_table = card, r = 0.08, padding = 0.1, align = "bm", minw = 0.5*card.T.w - 0.15, maxw = 0.9*card.T.w - 0.15, minh = 0.3*card.T.h, hover = true, shadow = true, colour = G.C.UI.BACKGROUND_INACTIVE, one_press = true, button = 'use_card', func = 'can_select_from_booster'}, nodes={
+                    {n=G.UIT.T, config={text = select_button_text, colour = G.C.UI.TEXT_LIGHT, scale = 0.45, shadow = true}}
+                    }},
+                }}
+        end
     end
 end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if ((card.area == G.consumeables and G.consumeables) or (card.area == G.pack_cards and G.pack_cards)) and
+'''
+payload = '''
+if (card.area == G.pack_cards and G.pack_cards) and card.ability.consumeable and booster_obj and card:selectable_from_pack(booster_obj) then
+    local select_area, can_also_use = card:selectable_from_pack(booster_obj)
+    local select_button_text = SMODS.get_select_text(card, booster_obj) or localize('b_select')
+    if can_also_use then
+        base_attach.children.use = G.UIDEF.card_focus_button{
+            card = card, parent = base_attach, type = 'use',
+            func = 'can_use_consumeable', button = 'use_card', card_width = card_width,
+            SMODS_use_card = true
+        }
+        base_attach.children.select = G.UIDEF.card_focus_button{
+            card = card, parent = base_attach, type = 'custom',
+            func = 'can_select_from_booster', button = 'use_card', card_width = card_width,
+            label = select_button_text, align = 'cl', minw = 1.1, 
+            focus_button = 'leftshoulder', focus_button_orientation = 'tli',
+            focus_button_x_offset = 0.1, align_left = true, 
+        }
+    else
+        base_attach.children.use = G.UIDEF.card_focus_button{
+            card = card, parent = base_attach, type = 'select',
+            func = 'can_select_from_booster', button = 'use_card', card_width = card_width,
+        }
+    end
+elseif ((card.area == G.consumeables and G.consumeables) or (card.area == G.pack_cards and G.pack_cards)) and
+'''
+
+# Remove select button
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if self.children.use_button then self.children.use_button:remove(); self.children.use_button = nil end
+'''
+payload = '''
+if self.children.select_button then self.children.select_button:remove(); self.children.select_button = nil end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+elseif self.children.use_button then
+    self.children.use_button:remove()
+    self.children.use_button = nil
+end
+'''
+payload = '''
+if self.children.select_button and not (self.highlighted and self.area and self.area.config.type ~= 'shop') then self.children.select_button:remove(); self.children.select_button = nil end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if card.children.use_button then card.children.use_button:remove(); card.children.use_button = nil end
+'''
+payload = '''
+if card.children.select_button then card.children.select_button:remove(); card.children.select_button = nil end
 '''
 
 # G.FUNCS.use_card()
@@ -370,7 +466,7 @@ pattern = '''if self.shop_voucher then G.GAME.current_round.voucher = nil end'''
 payload = '''G.STATE = G.STATES.SMODS_REDEEM_VOUCHER'''
 
 # G.FUNCS.use_card()
-# Consumables in areas other than the consumable don't count 
+# Consumables in areas other than the consumable don't count
 # as picking an item in boosters when used
 [[patches]]
 [patches.pattern]
