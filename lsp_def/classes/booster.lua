@@ -7,7 +7,7 @@
 ---@field draw_hand? boolean Sets if playing cards are drawn when booster pack is opened. 
 ---@field kind? string Groups pack types together. For example, this can be used in `get_pack()` to generate a booster pack of a specific type. 
 ---@field weight? number Weight of the booster pack. 
----@field select_card? string|{[string]: string}|fun(self: SMODS.Booster|table, card: Card|table, pack: SMODS.Booster|table): string|{[string]: string} Key to the CardArea (e.x. `G[SMODS.Booster.select_card]`). Consumables inside this booster pack will be "selected" and emplaced into a CardArea instead of used. As a table, each key-value pair is a card set as key and CardArea string as values. Or return either formers as a function. 
+---@field select_card? string|{[string]: string}|(fun(self: SMODS.Booster|table, card: Card|table, pack: SMODS.Booster|table): string|{[string]: string}, boolean?) Key to the CardArea (e.x. `G[SMODS.Booster.select_card]`). Consumables inside this booster pack will be "selected" and emplaced into a CardArea instead of used. As a table, each key-value pair is a card set as key and CardArea string as values. Or return either formers as a function. May also return a second value of boolean to indicate card can be selected and used at the same time. 
 ---@field select_exclusions? string[] List of card sets to exclude from being "Selected".
 ---@field disable_shine? boolean If true, disables the default shine shader.
 ---@field __call? fun(self: SMODS.Booster|table, o: SMODS.Booster|table): nil|table|SMODS.Booster

@@ -68,3 +68,8 @@ function Card:set_edition(edition, immediate, silent, delay) end
 ---@return Editions|string?
 --- Polls editions. Returns the key of the edition if successful. 
 function poll_edition(_key, _mod, _no_neg, _guaranteed, _options) end
+
+---@param args table|{key?: string, mod?: number, guaranteed?: boolean, options?: table, no_negative?: boolean}
+---@return Editions|string?
+--- Polls editions. Returns the key of the edition if successful. 
+function SMODS.poll_edition(args) end
