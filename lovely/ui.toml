@@ -467,6 +467,26 @@ if not v.no_ui then
 end
 '''
 
+# Pool badges 
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''
+    if AUT.info then
+'''
+position = "before"
+payload = '''
+    local prototype_obj = card.config.center or card.config.tag
+    if prototype_obj and prototype_obj.pools then
+        for k, v in pairs(SMODS.ObjectTypes) do
+            if prototype_obj.pools[v.key] and type(v.set_badges) == "function" then
+                v:set_badges(card, badges)
+            end
+        end
+    end
+'''
+match_indent = true
+
 # Allow tilt_shadow in define_draw_steps
 [[patches]]
 [patches.pattern]
