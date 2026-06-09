@@ -126,6 +126,7 @@
 ---@field new_level? integer Level of the poker hand after the alteration, if it was changed.
 ---@field old_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand before the alteration.
 ---@field new_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand after the alteration.
+---@field modify_final_cashout? true Check if `true` for modifying the amount of money at the end of cashout.
 
 --- Util Functions
 
@@ -673,13 +674,23 @@ function SMODS.localize_box(lines, args) end
 --- Returns all description boxes within `multi_box`.
 function SMODS.get_multi_boxes(multi_box) end
 
+---@param card Card
+---@return boolean is_playing_card
+-- Checks and returns whether a card is a playing card.
+function SMODS.is_playing_card(card) end
+
+---@param card Card 
+---@return boolean success
+-- Pinches and :removes() a card. (context.joker_type_destroyed is calculated, and may prevent destruction)
+function SMODS.pinch_and_remove(card) end
+
 ---@param cards Card|Card[]
----@param bypass_eternal boolean?
----@param immediate boolean?
----@param skip_anim boolean?
----@param colours table?
---- Destroys the cards passed to the function, handling calculation events that need to happen
-function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colours) end
+---@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], delay?: number, destroy_func?: fun(card: Card, args: table<>)}
+---@param ... ... Old signature arguments in the above order, up to and including colours
+---@return Card[] destroy_queued
+--- Destroys the cards passed to the function, handling calculation events that need to happen.
+--- Returns list of cards queued for destruction
+function SMODS.destroy_cards(cards, args, ...) end
 
 ---@param hand_space number
 --- Used to draw cards to hand outside of the normal card draw
