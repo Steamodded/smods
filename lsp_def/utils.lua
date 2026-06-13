@@ -742,9 +742,12 @@ function SMODS.is_poker_hand_visible(handname) end
 function SMODS.is_eternal(card, trigger) end
 
 ---@param card Card|table
----@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: '+'|'X'|'-'|string|fun(ref_table: table, ref_value: string, initial: number, change: number)?, block_overrides: {value: boolean?, scalar: boolean?, message: boolean?}?, scaling_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
---- Tells Jokers that this card is scaling allowing for scaling detection
---- Args must contain `ref_table`, `ref_value`, and `scalar_value`. It may optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
+---@param args? table|{ref_table: table, ref_value: string, scalar_value: string?, scalar_table: table?, scalar_factor:number?, operation: '+'|'X'|'-'|string|fun(ref_table: table, ref_value: string, initial: number, change: number)?, block_overrides: {value: boolean?, scalar: boolean?, message: boolean?}?, scaling_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
+---@return number, number
+--- Tells Jokers that this card is scaling allowing for scaling detection.
+--- Args must contain `ref_table` and `ref_value`. If `scalar_value` is not defined, it is automatically created.
+--- It may also optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
+--- Returns the final scaled value, and what it had been scaled by
 function SMODS.scale_card(card, args) end
 
 ---@param prototype_obj SMODS.GameObject|table

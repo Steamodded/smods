@@ -27,9 +27,7 @@ SMODS.scale_card(self, {
     ref_value = "mult",
     scalar_table = sliced_card,
     scalar_value = "sell_cost",
-    operation = function(ref_table, ref_value, initial, scaling)
-        ref_table[ref_value] = initial + 2*scaling
-    end,
+    scalar_factor = 2,
     scaling_message = {
         message = localize{type = 'variable', key = 'a_mult', vars = {self.ability.mult+2*sliced_card.sell_cost}},
         colour = G.C.RED,
@@ -492,11 +490,9 @@ SMODS.scale_card(self, {
     ref_table = self.ability,
     ref_value = "x_mult",
     scalar_value = "extra",
+    scalar_factor = #enhanced,
     message_key = 'a_xmult',
-    message_colour = G.C.MULT,
-    operation = function(ref_table, ref_value, initial, scaling)
-        ref_table[ref_value] = initial + scaling*#enhanced
-    end
+    message_colour = G.C.MULT
 })
 return nil, true
 '''
@@ -516,10 +512,8 @@ SMODS.scale_card(self, {
     ref_table = self.ability,
     ref_value = "x_mult",
     scalar_value = "extra",
-    message_key = 'a_xmult',
-    operation = function(ref_table, ref_value, initial, scaling)
-        ref_table[ref_value] = initial + scaling*#context.cards
-    end
+    scalar_factor = #context.cards,
+    message_key = 'a_xmult'
 })
 '''
 
@@ -672,9 +666,7 @@ SMODS.scale_card(self, {
     ref_table = self.ability,
     ref_value = 'caino_xmult',
     scalar_value = 'extra',
-    operation = function(ref_table, ref_value, initial, change)
-        ref_table[ref_value] = initial + face_cards*change
-    end,
+    scalar_factor = face_cards,
     message_key = 'a_xmult'
 })
 return nil, true
@@ -700,9 +692,7 @@ SMODS.scale_card(self, {
     ref_table = self.ability,
     ref_value = 'x_mult',
     scalar_value = 'extra',
-    operation = function(ref_table, ref_value, initial, change)
-        ref_table[ref_value] = initial + glass_cards*change
-    end,
+    scalar_factor = glass_cards,
     message_key = 'a_xmult'
 })
 '''
