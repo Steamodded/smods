@@ -3,6 +3,7 @@ for _, path in ipairs {
     "src/ui.lua",
     "src/index.lua",
     "src/utils.lua",
+    "src/sui.lua",
     "src/overrides.lua",
     "src/game_object.lua",
     "src/compat_0_9_8.lua",
