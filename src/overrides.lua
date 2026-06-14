@@ -563,9 +563,9 @@ function G.UIDEF.deck_stake_column(_deck_key)
 	local stake_col = {}
 	local num_stakes = #G.P_CENTER_POOLS['Stake']
 	for i = #G.P_CENTER_POOLS['Stake'], 1, -1 do
-		local _wins = deck_usage and deck_usage.wins[i] or 0
+		local _wins = deck_usage and deck_usage.wins_by_key[SMODS.stake_from_index(i)] or 0
 		local valid_option = nil
-		if (deck_usage and deck_usage.wins[i - 1]) or (not next(G.P_CENTER_POOLS.Stake[i].applied_stakes or {})) or G.PROFILES[G.SETTINGS.profile].all_unlocked then valid_option = true end
+		if (SMODS.stake_is_unlocked(SMODS.stake_from_index(i), _deck_key)) or (not next(G.P_CENTER_POOLS.Stake[i].applied_stakes or {})) or G.PROFILES[G.SETTINGS.profile].all_unlocked then valid_option = true end
 		stake_col[#stake_col + 1] = {n = G.UIT.R, config = {id = i, align = "cm", colour = _wins > 0 and G.C.GREY or G.C.CLEAR, outline = 0, outline_colour = G.C.WHITE, r = 0.1, minh = 2 / num_stakes, minw = valid_option and 0.45 or 0.25, func = 'RUN_SETUP_check_back_stake_highlight'}, nodes = {
 			{n = G.UIT.R, config = {align = "cm", minh = valid_option and 1.36 / num_stakes or 1.04 / num_stakes, minw = valid_option and 0.37 or 0.13, colour = _wins > 0 and get_stake_col(i) or G.C.UI.TRANSPARENT_LIGHT, r = 0.1}, nodes = {}}}}
 		if i > 1 then stake_col[#stake_col + 1] = {n = G.UIT.R, config = {align = "cm", minh = 0.8 / num_stakes, minw = 0.04 }, nodes = {} } end
@@ -2321,8 +2321,10 @@ function get_joker_win_sticker(_center, index)
 		local applied = {}
 		local _count = 0
 		local _stake = nil
-		for k, v in pairs(joker_usage.wins_by_key or {}) do
-			SMODS.build_stake_chain(G.P_STAKES[k], applied)
+		for k, stake in pairs(G.P_STAKES) do
+			if (joker_usage.wins_by_key or {})[k] then
+				SMODS.build_stake_chain(stake, applied)
+			end
 		end
 		for i, v in ipairs(G.P_CENTER_POOLS.Stake) do
 			if applied[v.order] then
@@ -2344,10 +2346,12 @@ function get_deck_win_stake(_deck_key)
 		local deck_count = 0
 		for _, deck in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
 			local deck_won_with = false
-			for key, _ in pairs(deck.wins_by_key or {}) do
-				deck_won_with = true
-				if (G.P_STAKES[key] and G.P_STAKES[key].stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
-					_stake = key
+			for key, stake in pairs(G.P_STAKES) do
+				if (deck.wins_by_key or {})[key] then
+					deck_won_with = true
+					if (stake.stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
+						_stake = key
+					end
 				end
 			end
 			if deck_won_with then deck_count = deck_count + 1 end
@@ -2360,9 +2364,11 @@ function get_deck_win_stake(_deck_key)
 	end
 	if G.PROFILES[G.SETTINGS.profile].deck_usage[_deck_key] and G.PROFILES[G.SETTINGS.profile].deck_usage[_deck_key].wins_by_key then
 		local _stake = nil
-		for key, _ in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage[_deck_key].wins_by_key) do
-			if (G.P_STAKES[key] and G.P_STAKES[key].stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
-				_stake = key
+		for key, stake in pairs(G.P_STAKES) do
+			if G.PROFILES[G.SETTINGS.profile].deck_usage[_deck_key].wins_by_key[key] then
+				if (stake.stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
+					_stake = key
+				end
 			end
 		end
 		if _stake then return G.P_STAKES[_stake].order end
@@ -2374,9 +2380,11 @@ function get_deck_win_sticker(_center)
 	if G.PROFILES[G.SETTINGS.profile].deck_usage[_center.key] and
 	G.PROFILES[G.SETTINGS.profile].deck_usage[_center.key].wins_by_key then
 		local _stake = nil
-		for key, _ in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage[_center.key].wins_by_key) do
-			if (G.P_STAKES[key] and G.P_STAKES[key].stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
-				_stake = G.sticker_map[key] and key or _stake
+		for key, stake in pairs(G.P_STAKES) do
+			if G.PROFILES[G.SETTINGS.profile].deck_usage[_center.key].wins_by_key[key] then
+				if (stake.stake_level or 0) > (_stake and G.P_STAKES[_stake].stake_level or 0) then
+					_stake = G.sticker_map[key] and key or _stake
+				end
 			end
 		end
 		if _stake then return G.sticker_map[_stake] end
@@ -2387,16 +2395,14 @@ function set_deck_win()
 	if G.GAME.selected_back and G.GAME.selected_back.effect and G.GAME.selected_back.effect.center and G.GAME.selected_back.effect.center.key then
 		local deck_key = G.GAME.selected_back.effect.center.key
 		local deck_usage = G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key]
-		if not deck_usage then deck_usage = { count = 1, order =
+		if not deck_usage then deck_usage = convert_usage_entry{ count = 1, order =
 			G.GAME.selected_back.effect.center.order, wins = {}, losses = {}, wins_by_key = {}, losses_by_key = {} } end
 		if deck_usage then
-			deck_usage.wins[G.GAME.stake] = (deck_usage.wins[G.GAME.stake] or 0) + 1
 			deck_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] = (deck_usage.wins_by_key[SMODS.stake_from_index(G.GAME.stake)] or 0) + 1
 			local applied = SMODS.build_stake_chain(G.P_STAKES[SMODS.stake_from_index(G.GAME.stake)]) or {}
 			for i, v in ipairs(G.P_CENTER_POOLS.Stake) do
 				if applied[i] then
-					deck_usage.wins[i] = math.max(deck_usage.wins[i] or 0, 1)
-					deck_usage.wins_by_key[SMODS.stake_from_index(i)] = math.max(deck_usage.wins_by_key[SMODS.stake_from_index(i)] or 0, 1)
+					deck_usage.wins_by_key[v.key] = math.max(deck_usage.wins_by_key[v.key] or 0, 1)
 				end
 			end
 		end
