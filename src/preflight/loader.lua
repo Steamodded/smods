@@ -844,6 +844,7 @@ local function initializeModUIFunctions()
             })
         end
     end
+    SMODS.GUI.create_modifiertype_collections()
 end
 
 local function checkForLoadFailure()
