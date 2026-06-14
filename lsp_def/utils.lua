@@ -892,5 +892,6 @@ function SMODS.add_to_deck(card, args) end
 
 ---Returns a copy of SMODS.Suit.obj_buffer
 ---Hook this function and edit the return if you want the game to see suits that don't exist, or not see suits that do exist
+---Intended for calculation purposes; to get suits that can actually appear on cards you still want the obj_buffer
 ---@return string[]
 function SMODS.get_virtual_suits() end
