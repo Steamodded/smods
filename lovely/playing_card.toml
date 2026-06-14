@@ -134,7 +134,7 @@ local suits = {
   }
 '''
 position = 'at'
-payload = 'local suits = SMODS.Suit.obj_buffer'
+payload = 'local suits = SMODS.get_virtual_suits()'
 match_indent = true
 
 [[patches]]
