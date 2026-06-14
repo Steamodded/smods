@@ -72,9 +72,9 @@ SMODS.SpriteParticle = SMODS.GameObject:extend {
     remove_sprite = function (self, sprite, card)
         if card then
             card.children[sprite] = nil
-            table.remove(card.sprite_particles, Unicard.table_find(card.sprite_particles, sprite))
+            table.remove(card.sprite_particles, SMODS.get_index(card.sprite_particles, sprite))
         else
-            table.remove(Unicard.SPRITE_PARTICLES, Unicard.table_find(Unicard.SPRITE_PARTICLES, sprite))
+            table.remove(SMODS.SPRITE_PARTICLES, SMODS.get_index(SMODS.SPRITE_PARTICLES, sprite))
         end
         sprite:remove()
     end,
