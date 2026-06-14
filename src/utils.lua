@@ -315,35 +315,33 @@ function SMODS.modify_rank(card, amount, manual_sprites)
     local rank_data = SMODS.Ranks[card.base.value]
     if amount > 0 then
         for _ = 1, amount do
-            local behavior = rank_data.strength_effect or { fixed = 1, ignore = false, random = false }
+            local behavior = rank_data.strength_effect or { fixed_next = false, ignore = false, random = false }
             if behavior.ignore or not next(rank_data.next) then
                 break
             elseif behavior.random then
                 rank_key = pseudorandom_element(
-                    rank_data.next,
+                    SMODS.get_keys(rank_data.next),
                     pseudoseed('strength'),
                     { in_pool = function(key) return SMODS.add_to_pool(SMODS.Ranks[key], { suit = card.base.suit }) end }
                 )
             else
-                local i = (behavior.fixed and rank_data.next[behavior.fixed]) and behavior.fixed or 1
-                rank_key = rank_data.next[i]
+                rank_key = behavior.fixed_next or SMODS.get_keys(rank_data.next)[1]
             end
             rank_data = SMODS.Ranks[rank_key]
         end
     else
         for _ = 1, -amount do
-            local behavior = rank_data.prev_behavior or { fixed = 1, ignore = false, random = false }
+            local behavior = rank_data.prev_behavior or { fixed_prev = false, ignore = false, random = false }
             if not next(rank_data.prev) or behavior.ignore then
                 break
             elseif behavior.random then
                 rank_key = pseudorandom_element(
-                    rank_data.prev,
+                    SMODS.get_keys(rank_data.prev),
                     pseudoseed('weakness'),
                     { in_pool = function(key) return SMODS.add_to_pool(SMODS.Ranks[key], { suit = card.base.suit }) end }
                 )
             else
-                local i = (behavior.fixed and rank_data.prev[behavior.fixed]) and behavior.fixed or 1
-                rank_key = rank_data.prev[i]
+                rank_key = behavior.fixed_prev or SMODS.get_keys(rank_data.prev)[1]
             end
             rank_data = SMODS.Ranks[rank_key]
         end
@@ -427,7 +425,7 @@ function SMODS.create_card(t)
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
     if t.edition then _card:set_edition(t.edition, nil, t.silent.edition) end
-    if t.seal then _card:set_seal(t.seal, t.silent.seal); _card.ability.delay_seal = false end
+    if t.seal then _card:set_seal(t.seal, t.silent.seal); _card.delay_seal = nil end
     if t.stickers or type(t.force_stickers) == "table" then
         local applied_stickers = {}
         if type(t.force_stickers) == "table" then
@@ -985,26 +983,12 @@ function Card:add_sticker(sticker, bypass_check)
     local sticker = SMODS.Stickers[sticker]
     if bypass_check or (sticker and sticker.should_apply and type(sticker.should_apply) == 'function' and sticker:should_apply(self, self.config.center, self.area, true)) then
         sticker:apply(self, true)
-        SMODS.enh_cache:write(self, nil)
     end
 end
 
 function Card:remove_sticker(sticker)
     if (sticker == 'pinned' and self.pinned) or self.ability[sticker] then
         SMODS.Stickers[sticker]:apply(self, false)
-        SMODS.enh_cache:write(self, nil)
-    end
-end
-
-
-function Card:calculate_sticker(context, key)
-    local sticker = SMODS.Stickers[key]
-    if self.ability[key] and type(sticker.calculate) == 'function' then
-        local o = sticker:calculate(self, context)
-        if o then
-            if not o.card then o.card = self end
-            return o
-        end
     end
 end
 
@@ -1014,78 +998,19 @@ function Card:can_calculate(ignore_debuff, ignore_sliced)
     return is_available
 end
 
-function Card:calculate_enhancement(context)
-    if self.ability.set ~= 'Enhanced' then return nil end
-    local center = self.config.center
-    if center.calculate and type(center.calculate) == 'function' then
-        local o = center:calculate(self, context)
-        if o then
-            if not o.card then o.card = self end
-            return o
+function SMODS.shatters(card)
+    if not SMODS.set_quantum_cache(card) then return end
+    for key, q_field in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
+            local obj = q_field.g_obj_table[k] or {}
+            if obj.shatters then return true end
         end
     end
-end
-
-function SMODS.get_enhancements(card, extra_only)
-    if not SMODS.optional_features.quantum_enhancements or not G.hand then
-        return not extra_only and card.ability.set == 'Enhanced' and { [card.config.center.key] = true } or {}
-    end
-    if not SMODS.enh_cache:read(card, extra_only) then
-
-        local enhancements = {}
-        if card.config.center.key ~= "c_base" then
-            enhancements[card.config.center.key] = true
-        end
-        local calc_return = {}
-        SMODS.calculate_context({other_card = card, check_enhancement = true, no_blueprint = true}, calc_return)
-        for _, eval in pairs(calc_return) do
-            for key, eval2 in pairs(eval) do
-                if type(eval2) == 'table' then
-                    for key2, _ in pairs(eval2) do
-                        if G.P_CENTERS[key2] then enhancements[key2] = true end
-                    end
-                else
-                    if G.P_CENTERS[key] then enhancements[key] = true end
-                end
-            end
-        end
-        SMODS.enh_cache:write(card, enhancements)
-    end
-    return SMODS.enh_cache:read(card, extra_only)
-end
-
-SMODS.enh_cache = {
-    write = function(self, key, value)
-        self.data[key] = value
-    end,
-    read = function(self, key, extra_only)
-        if not self.data[key] then return end
-        local ret = copy_table(self.data[key])
-        if extra_only then ret[key.config.center.key] = nil end
-        return ret
-    end,
-    clear = function(self)
-        self.data = setmetatable({}, { __mode = 'k' })
-    end,
-}
-SMODS.enh_cache:clear()
-
-function SMODS.has_enhancement(card, key)
-    if card.config.center.key == key then return true end
-    local enhancements = SMODS.get_enhancements(card)
-    if enhancements[key] then return true end
     return false
 end
 
-function SMODS.shatters(card)
-    local enhancements = SMODS.get_enhancements(card)
-    for key, _ in pairs(enhancements) do
-        if G.P_CENTERS[key].shatters or key == 'm_glass' then return true end
-    end
-end
-
 function SMODS.get_ability_reset_keys(card)
-    local reset_keys = {'name', 'effect', 'set', 'extra', 'played_this_ante', 'perma_debuff'}
+    local reset_keys = {'name', 'effect', 'set', 'extra', 'played_this_ante', 'perma_debuff', 'Xmult'}
     for _, mod in ipairs(SMODS.mod_list) do
         if mod.set_ability_reset_keys then
             local keys = mod.set_ability_reset_keys()
@@ -1094,79 +1019,25 @@ function SMODS.get_ability_reset_keys(card)
     end
     return reset_keys
 end
-
-function SMODS.calculate_quantum_enhancements(card, effects, context)
-    if not SMODS.optional_features.quantum_enhancements then return end
-    if context.extra_enhancement or context.check_enhancement or SMODS.extra_enhancement_calc_in_progress then return end
-    context.extra_enhancement = true
-    SMODS.extra_enhancement_calc_in_progress = true
-    local extra_enhancements = SMODS.get_enhancements(card, true)
-    local old_ability = copy_table(card.ability)
-    local old_center = card.config.center
-    local old_center_key = card.config.center_key
-    -- Note: For now, just trigger extra enhancements in order.
-    -- Future work: combine enhancements during
-    -- playing card scoring (ex. Mult comes before Glass because +_mult
-    -- naturally comes before x_mult)
-    local extra_enhancements_list = {}
-    for k, _ in pairs(extra_enhancements) do
-        if G.P_CENTERS[k] then
-            table.insert(extra_enhancements_list, k)
+function SMODS.always_scores(card)
+    if not SMODS.set_quantum_cache(card) then return end
+    for _, q_field in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
+            local obj = q_field.g_obj_table[k] or {}
+            if obj.always_scores then return true end
         end
     end
-    table.sort(extra_enhancements_list, function(a, b) return G.P_CENTERS[a].order < G.P_CENTERS[b].order end)
-
-    for _, k in ipairs(extra_enhancements_list) do
-        card:quantum_set_ability(G.P_CENTERS[k])
-        card.ability.extra_enhancement = k
-        local eval = eval_card(card, context)
-        table.insert(effects, eval)
-    end
-    card.ability = old_ability
-    card.config.center = old_center
-    card.config.center_key = old_center_key
-    context.extra_enhancement = nil
-    SMODS.extra_enhancement_calc_in_progress = nil
-end
-
-function SMODS.has_no_suit(card)
-    local is_stone = false
-    local is_wild = false
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].no_suit then is_stone = true end
-        if k == 'm_wild' or G.P_CENTERS[k].any_suit then is_wild = true end
-    end
-    return is_stone and not is_wild
-end
-function SMODS.has_any_suit(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_wild' or G.P_CENTERS[k].any_suit then return true end
-    end
-end
-function SMODS.has_no_rank(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].no_rank then return true end
-    end
-end
-function SMODS.always_scores(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].always_scores then return true end
-    end
-    if (G.P_CENTERS[(card.edition or {}).key] or {}).always_scores then return true end
-    if (G.P_SEALS[card.seal or {}] or {}).always_scores then return true end
-    for k, v in pairs(SMODS.Stickers) do
-        if v.always_scores and card.ability[k] then return true end
-    end
+    return false
 end
 function SMODS.never_scores(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if G.P_CENTERS[k].never_scores then return true end
+    if not SMODS.set_quantum_cache(card) then return end
+    for _, q_field in pairs(SMODS.QuantumCardFields) do
+        for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
+            local obj = q_field.g_obj_table[k]
+            if obj.never_scores then return true end
+        end
     end
-    if (G.P_CENTERS[(card.edition or {}).key] or {}).never_scores then return true end
-    if (G.P_SEALS[card.seal or {}] or {}).never_scores then return true end
-    for k, v in pairs(SMODS.Stickers) do
-        if v.never_scores and card.ability[k] then return true end
-    end
+    return false
 end
 
 SMODS.collection_pool = function(_base_pool)
@@ -1296,6 +1167,23 @@ SMODS.smart_level_up_hand = function(card, hand, instant, amount, statustext)
     -- Level ups outside anything -> always update to empty chips/mult
     level_up_hand(card, hand, instant, (type(amount) == 'number' or type(amount) == 'table') and amount or 1, statustext)
 end
+
+
+SMODS.amount_return_flags = {
+    remove = true,
+    debuff_text = true,
+    cards_to_draw = true,
+    numerator = true,
+    denominator = true,
+    no_destroy = true,
+    replace_scoring_name = true,
+    replace_display_name = true,
+    replace_poker_hands = true,
+    no_mod = true, fixed = true,
+    modify = true,
+    shop_create_flags = true,
+    booster_create_flags = true
+}
 
 -- This function handles the calculation of each effect returned to evaluate play.
 -- Can easily be hooked to add more calculation effects ala Talisman
@@ -1459,22 +1347,6 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return key
     end
 
-    local amount_return_flags = {
-        remove = true,
-        debuff_text = true,
-        cards_to_draw = true,
-        numerator = true,
-        denominator = true,
-        no_destroy = true,
-        replace_scoring_name = true,
-        replace_display_name = true,
-        replace_poker_hands = true,
-        modify = true,
-        override = true,
-        shop_create_flags = true,
-        booster_create_flags = true
-    }
-
     if key == 'modify' then
         if SMODS.context_stack[#SMODS.context_stack].context.modify_final_cashout then
             if effect.cashout_row then
@@ -1488,7 +1360,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         end
     end
 
-    if amount_return_flags[key] then
+    if SMODS.amount_return_flags[key] then
         return { [key] = amount }
     end
 
@@ -1496,7 +1368,6 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'debuff' then
         return { [key] = amount, debuff_source = scored_card }
     end
-
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1595,6 +1466,7 @@ SMODS.other_calculation_keys = {
     'message',
     'level_up', 'func',
     'numerator', 'denominator',
+    'fixed',
     'modify',
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
@@ -1609,6 +1481,7 @@ SMODS.silent_calculation = {
     cards_to_draw = true,
     func = true, extra = true,
     numerator = true, denominator = true,
+    fixed = true,
     no_destroy = true,
 }
 
@@ -1647,14 +1520,6 @@ SMODS.calculate_repetitions = function(card, context, reps)
     local eval = eval_card(card, context)
     for _, value in pairs(eval) do
         SMODS.insert_repetitions(reps, value, card)
-    end
-    -- Quantum enhancement support :cat_owl:
-    local quantum_eval = {}
-    SMODS.calculate_quantum_enhancements(card, quantum_eval, context)
-    for _, eval in ipairs(quantum_eval) do
-        for _, value in pairs(eval) do
-            SMODS.insert_repetitions(reps, value, card)
-        end
     end
     context.repetition_only = nil
     --From jokers
@@ -1771,19 +1636,6 @@ SMODS.calculate_retriggers = function(card, context, _ret)
     return retriggers
 end
 
-function Card:calculate_edition(context)
-    if self.edition then
-        local edition = G.P_CENTERS[self.edition.key]
-        if edition.calculate and type(edition.calculate) == 'function' then
-            local o = edition:calculate(self, context)
-            if o then
-                if not o.card then o.card = self end
-                return o
-            end
-        end
-    end
-end
-
 function SMODS.calculate_card_areas(_type, context, return_table, args)
     local flags = {}
     if _type == 'jokers' then
@@ -1794,7 +1646,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 if SMODS.check_looping_context(_card) then
                     goto skip
                 end
-                SMODS.current_evaluated_object = _card
                 local eval, post = eval_card(_card, context)
                 if args and args.main_scoring and eval.jokers then
                     eval.jokers.juice_card = eval.jokers.juice_card or eval.jokers.card or _card
@@ -1835,7 +1686,7 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                         return_table[#return_table+1] = v
                     end
                 else
-                    local f = SMODS.trigger_effects(effects, _card)
+                    local f = SMODS.trigger_effects(effects, _card) or {}
                     for k,v in pairs(f) do flags[k] = v end
                     SMODS.update_context_flags(context, flags)
                 end
@@ -1850,27 +1701,25 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             for _,v in ipairs(context.scoring_hand) do scoring_map[v] = true end
         end
         for _, area in ipairs(SMODS.get_card_areas('playing_cards')) do
+            if not args or not args.has_area then context.cardarea = area end
             if area == G.play and not context.scoring_hand then
-                -- If context is for probability, eval_card() anyway
-                -- This allows Seals, etc. to affect Joker probabilities during individual scoring:
-                -- For example; A seal can double the probability of Blood Stone hitting for the playing card it is applied to.
-                if context.mod_probability or context.fix_probability then
+                -- If context is a getter context (quantum/probability), eval_card() anyway
+                -- This allows Seals/etc. to affect Joker probabilities / card quantum values during individual scoring:
+                -- For example; A seal can double the probability of Blood Stone hitting for the playing card it is applied to, or make the card count as a lucky card.
+                if SMODS.is_getter_context(context) then
                     for _, card in ipairs(area.cards) do
                         if SMODS.check_looping_context(card) then
                             goto skip
                         end
-                        SMODS.current_evaluated_object = card
                         local effects = {eval_card(card, context)}
                         local f = SMODS.trigger_effects(effects, card)
                         for k,v in pairs(f) do flags[k] = v end
-
                         SMODS.update_context_flags(context, flags)
                         ::skip::
                     end
                 end
                 goto continue
             end
-            if not args or not args.has_area then context.cardarea = area end
             for _, card in ipairs(area.cards) do
                 if SMODS.check_looping_context(card) then
                     goto skip
@@ -1886,13 +1735,9 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 end
                 --calculate the played card effects
                 if return_table then
-                    SMODS.current_evaluated_object = card
                     return_table[#return_table+1] = eval_card(card, context)
-                    SMODS.calculate_quantum_enhancements(card, return_table, context)
                 else
-                    SMODS.current_evaluated_object = card
                     local effects = {eval_card(card, context)}
-                    SMODS.calculate_quantum_enhancements(card, effects, context)
                     local f = SMODS.trigger_effects(effects, card)
                     for k,v in pairs(f) do flags[k] = v end
                     SMODS.update_context_flags(context, flags)
@@ -1908,7 +1753,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             if SMODS.check_looping_context(area.object) then
                 goto skip
             end
-            SMODS.current_evaluated_object = area.object
             local eval, post = SMODS.eval_individual(area, context)
             if args and args.main_scoring and eval.individual then
                 eval.individual.juice_card = eval.individual.juice_card or eval.individual.card or area.scored_card
@@ -1941,7 +1785,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             ::skip::
         end
     end
-    SMODS.current_evaluated_object = nil
     return flags
 end
 
@@ -1972,34 +1815,88 @@ function SMODS.update_context_flags(context, flags)
         if flags.replace_display_name then context.display_name = flags.replace_display_name end
         if flags.replace_poker_hands then context.poker_hands = flags.replace_poker_hands end
     end
+    local no_mod_changed = false
+    if flags.no_mod ~= nil then
+        context.no_mod = flags.no_mod
+        no_mod_changed = true
+    end
+    for key, q_field in pairs(SMODS.QuantumCardFields) do
+        local has_no_flag = "no_" .. key 
+        local has_any_flag = "any_" .. key 
+        if context[q_field.get_context_flag] and flags[q_field.return_flag] then
+            if not context.no_mod or no_mod_changed then
+                if flags.fixed == q_field.return_flag or type(flags.fixed) == "table" and flags.fixed[q_field.return_flag] then
+                    for k, v in pairs(context[q_field.return_flag]) do
+                        if v ~= "BASE" or not flags[q_field.return_flag][k] then -- If it's a "BASE" value and it's not removed, keep it as "BASE" -> Required for correct quantum card.ability access
+                            context[q_field.return_flag][k] = flags[q_field.return_flag][k]
+                        end 
+                    end
+                else
+                    for k, v in pairs(flags[q_field.return_flag]) do
+                        if context[q_field.return_flag][k] ~= "BASE" or not v then
+                            context[q_field.return_flag][k] = v
+                        end
+                    end
+                end
+            end
+            if context[q_field.return_flag] then
+                SMODS.qfield_cache[context.card].get[q_field.return_flag] = context[q_field.return_flag]
+            end
+            flags[q_field.return_flag] = nil
+        end
+        if flags[has_no_flag] ~= nil then
+            SMODS.qfield_cache[context.card].has[key].no = flags[has_no_flag]
+        end
+        if flags[has_any_flag] ~= nil then
+            SMODS.qfield_cache[context.card].has[key].any = flags[has_any_flag]
+        end
+    end
 end
 
-SMODS.current_evaluated_object = nil
-
--- Used to avoid looping getter context calls. Example;
+-- Enum, used for/with the below SMODS.get_context_type()
+SMODS.CONTEXT_TYPES = {
+    PROBABILITY = "probability",
+    POST_TRIGGER = "post_trigger",
+    QUANTUM_GETTER = "quantum_getter"
+}
+-- Used to avoid looping context calls. Example;
 -- Joker A: Doubles lucky card probabilities
 -- Joker B: 1 in 3 chance that a card counts as a lucky card
 -- Joker A calls SMODS.has_enhancement() during a probability context to check whether it should double the numerator
 -- Joker B calls SMODS.pseudorandom_probability() to check whether it should trigger
--- A loop is caused (ignore the fact that Joker B would be the trigger_obj and not a playing card) (I'd write a Quantum Ranks example, If I had any!!)
--- To avoid this; Check before evaluating any object, whether the current getter context type (if it's a getter context) has previously caused said object to create a getter context,
+-- A loop is caused (ignore the fact that Joker B would be the trigger_obj and not a playing card)
+-- To avoid this; Check before evaluating any object, whether the current context type has previously caused said object to create a context of a previous type,
 -- if yes, don't evaluate the object.
-function SMODS.is_getter_context(context)
-    if context.mod_probability or context.fix_probability then return "probability" end
-    if context.check_enhancement then return "enhancement" end
-    return false
+function SMODS.get_context_type(context)
+    if not context then return end
+    if context.mod_probability or context.fix_probability then return SMODS.CONTEXT_TYPES.PROBABILITY end
+    if context.post_trigger then return SMODS.CONTEXT_TYPES.POST_TRIGGER end
+    if context._quantum_getter then return SMODS.CONTEXT_TYPES.QUANTUM_GETTER end
 end
 
+SMODS.GETTER_CONTEXT_TYPES = {
+    [SMODS.CONTEXT_TYPES.PROBABILITY] = true,
+    [SMODS.CONTEXT_TYPES.QUANTUM_GETTER] = true,
+}
+
+function SMODS.is_getter_context(context)
+    return SMODS.GETTER_CONTEXT_TYPES[SMODS.get_context_type(context)]
+end
+
+function SMODS.is_loopable_context(context)
+    return SMODS.get_context_type(context) ~= SMODS.CONTEXT_TYPES.QUANTUM_GETTER
+end
 
 function SMODS.check_looping_context(eval_object)
     if #SMODS.context_stack < 2 then return false end
-    local getter_type = SMODS.is_getter_context(SMODS.context_stack[#SMODS.context_stack].context)
-    if not getter_type then return end
+    local context_type = SMODS.get_context_type(SMODS.context_stack[#SMODS.context_stack].context)
+    if not context_type then return false end
     for i, t in ipairs(SMODS.context_stack) do
-        local other_type = SMODS.is_getter_context(t.context)
-        local next_context = SMODS.context_stack[i+1]
-        -- If the current kind of getter context has caused the eval_object to incite a getter context before, dont evaluate the object again
-        if other_type == getter_type and next_context and SMODS.is_getter_context(next_context.context) and next_context.caller == eval_object then
+        local other_type = SMODS.get_context_type(t.context)
+        local next_context_t = SMODS.context_stack[i+1] or {}
+        -- If the current kind of context has caused the eval_object to incite another context before, dont evaluate the object again
+        if other_type == context_type and SMODS.is_loopable_context(next_context_t.context) and next_context_t.caller == eval_object then
+            sendWarnMessage(("SMODS.check_looping_context prevented loop; context type '%s', caller '%s'"):format(context_type, eval_object), "Utils")
             return true
         end
     end
@@ -2007,7 +1904,7 @@ function SMODS.check_looping_context(eval_object)
 end
 
 -- The context stack list, structured like so;
--- SMODS.context_stack = {1: {context = [unique context 1], count = [number of times it was added consecutively], caller = [the SMODS.current_evaluated_object when the context was added]}, ...}
+-- SMODS.context_stack = {1: {context = [unique context 1], count = [number of times it was added consecutively], caller = [the previous_context.evaluee when the context was added], evaluee = [continously updated to be the object that is currently getting evaluated]}, ...}
 -- (Contexts may repeat non-consecutively, though I don't think they ever should..)
 -- Allows some advanced effects, like:
 -- Individual playing cards modifying probabilities checked during individual scoring, only when they're the context.other_card
@@ -2020,7 +1917,7 @@ function SMODS.push_to_context_stack(context, func)
     end
     local len = #SMODS.context_stack
     if len <= 0 or SMODS.context_stack[len].context ~= context then
-        SMODS.context_stack[len+1] = {context = context, count = 1, caller = SMODS.current_evaluated_object}
+        SMODS.context_stack[len+1] = {context = context, count = 1, caller = (SMODS.context_stack[len] or {}).evaluee}
     else
         SMODS.context_stack[len].count = SMODS.context_stack[len].count + 1
     end
@@ -2040,6 +1937,12 @@ end
 
 function SMODS.get_previous_context()
     return (SMODS.context_stack[#SMODS.context_stack-1] or {}).context
+end
+
+function SMODS.set_context_evaluee(obj)
+    if #SMODS.context_stack > 0 then
+        SMODS.context_stack[#SMODS.context_stack].evaluee = obj
+    end
 end
 
 -- Used to calculate contexts across G.jokers, scoring_hand (if present), G.play and G.GAME.selected_back
@@ -2097,7 +2000,6 @@ function SMODS.score_card(card, context)
 
         context.main_scoring = true
         local effects = { eval_card(card, context) }
-        SMODS.calculate_quantum_enhancements(card, effects, context)
         context.main_scoring = nil
         context.individual = true
         context.other_card = card
@@ -2169,7 +2071,6 @@ function SMODS.calculate_end_of_round_effects(context)
             context.playing_card_end_of_round = true
             --calculate the hand effects
             local effects = {eval_card(card, context)}
-            SMODS.calculate_quantum_enhancements(card, effects, context)
 
             context.playing_card_end_of_round = nil
             context.individual = true
@@ -2361,6 +2262,7 @@ end
 
 function SMODS.eval_individual(individual, context)
     SMODS.push_to_context_stack(context, "utils.lua : SMODS.eval_individual")
+    SMODS.set_context_evaluee(individual.object)
     local ret = {}
     local post_trig = {}
 
@@ -2381,6 +2283,7 @@ function SMODS.eval_individual(individual, context)
             SMODS.calculate_context({blueprint_card = context.blueprint_card, post_trigger = true, other_card = individual.object, other_context = context, other_ret = ret}, post_trig)
         end
     end
+    SMODS.set_context_evaluee(nil)
     SMODS.pop_from_context_stack(context, "utils.lua : SMODS.eval_individual")
     return ret, post_trig
 end
@@ -2479,6 +2382,8 @@ local function insert(t, res)
 end
 SMODS.optional_features = {
     cardareas = {},
+    quantum_fields = {},
+    quantum_straight_min_return = true
 }
 SMODS.get_optional_features = function()
     for _,mod in ipairs(SMODS.mod_list) do
@@ -2625,50 +2530,23 @@ function SMODS.smeared_check(card, suit)
         return false
     end
 
-    if ((card.base.suit == 'Hearts' or card.base.suit == 'Diamonds') and (suit == 'Hearts' or suit == 'Diamonds')) then
-        return true
-    elseif (card.base.suit == 'Spades' or card.base.suit == 'Clubs') and (suit == 'Spades' or suit == 'Clubs') then
-        return true
+    if (card.base.suit == 'Hearts' or card.base.suit == 'Diamonds') and (not suit or (suit == 'Hearts' or suit == 'Diamonds')) then
+        return not suit and {Hearts = true, Diamonds = true} or true    -- Modified to return the suits -> useful in SMODS.QuantumCardField.suit.base_getter
+    elseif (card.base.suit == 'Spades' or card.base.suit == 'Clubs') and (not suit or (suit == 'Spades' or suit == 'Clubs')) then
+        return not suit and {Spades = true, Clubs = true} or true       -- Modified to return the suits -> useful in SMODS.QuantumCardField.suit.base_getter
     end
     return false
-end
-
-local function has_any_other_suit(count, suit)
-    for k, v in pairs(count) do
-        if k ~= suit then
-            if v > 0 then
-                return true
-            end
-        end
-    end
-    return false
-end
-
-local function saw_double(count, suit)
-    if count[suit] > 0 and has_any_other_suit(count, suit) then return true else return false end
 end
 
 function SMODS.seeing_double_check(hand, suit)
-    local suit_tally = {}
-    for i = #SMODS.Suit.obj_buffer, 1, -1 do
-        suit_tally[SMODS.Suit.obj_buffer[i]] = 0
+    if #hand < 2 then return false end
+    local suit_tally = SMODS.get_suit_tally(hand)
+    if (suit_tally[suit] or 0) < 1 then return false end
+    for v, tally in pairs(suit_tally) do
+        -- If any other suit has cards and there's more than two cards. (tally > 0 is implicit, as else v wouldn't be indexed at all)
+        if v ~= suit then return true end
     end
-    for i = 1, #hand do
-        if not SMODS.has_any_suit(hand[i]) then
-            for k, v in pairs(suit_tally) do
-                if hand[i]:is_suit(k) then suit_tally[k] = suit_tally[k] + 1 end
-            end
-        end
-    end
-    for i = 1, #hand do
-        if SMODS.has_any_suit(hand[i]) then
-            if hand[i]:is_suit(suit) and suit_tally[suit] == 0 then suit_tally[suit] = suit_tally[suit] + 1 end
-            for k, v in pairs(suit_tally) do
-                if hand[i]:is_suit(k) and suit_tally[k] == 0  then suit_tally[k] = suit_tally[k] + 1 end
-            end
-        end
-    end
-    if saw_double(suit_tally, suit) then return true else return false end
+    return false 
 end
 
 local function parse_tooltip_vars(str, separator)
@@ -3005,6 +2883,28 @@ function SMODS.wrap_around_straight()
     return false
 end
 
+function SMODS.get_straight_ranks(t, objectified)
+    t = t or SMODS.Ranks
+    local ret = {}
+    for k, rank in pairs(t) do
+        local key = k
+        if type(k) == "table" then
+            rank = k
+            key = k.key
+        end
+        if rank and next(rank.virtual.ranks) then
+            for _, v_rank in ipairs(rank.virtual.ranks) do
+                if SMODS.VirtualRanks[v_rank] then
+                    ret[objectified and SMODS.VirtualRanks[v_rank] or v_rank] = objectified or {}
+                end
+            end
+        else
+            ret[objectified and SMODS.Ranks[key] or key] = objectified or {}
+        end
+    end
+    return ret
+end
+
 function SMODS.merge_effects(...)
     local t = {}
     for _, v in ipairs({...}) do
@@ -3087,7 +2987,7 @@ function SMODS.is_eternal(card, trigger)
             end
         end
     end
-    if card.ability.eternal then ret = true end
+    if card:has_sticker("eternal", {bypass_debuff = true}) then ret = true end
     if card.config.center.eternal_compat == false and not ovr_compat then ret = false end
     return ret
 end
@@ -3698,6 +3598,25 @@ function CardArea:handle_card_limit()
 end
 
 
+function SMODS.to_map(t)
+    if type(t) ~= "table" then return {} end
+    local ret = {}
+    for _, v in ipairs(t) do
+        ret[v] = true
+    end
+    return ret
+end
+
+function SMODS.get_keys(t)
+    if type(t) ~= "table" then return {} end
+    local ret = {}
+    for k, _ in pairs(t) do
+        ret[#ret + 1] = k
+    end
+    table.sort(ret, function (a, b) return a < b end)
+    return ret
+end
+
 function SMODS.get_atlas(atlas_key)
     return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key]
 end
@@ -4191,6 +4110,59 @@ end
 -- Simple unlock text function, created to give mod authors an option to hook rather than patch for their use cases.
 function SMODS.create_unlock_text(center)
 	return localize('k_'..string.lower(center and center.set or 'unknown'))
+end
+
+-- Takes a key_string of this form 'subfield.subfield.subfield ...'
+function table_get_subfield(_table, key_string)
+    if type(_table) ~= "table" then sendWarnMessage("table_get_subfield called with invalid table argument", "utils"); return end 
+    if type(key_string) ~= "string" then sendWarnMessage(string.format("table_get_subfield called with invalid key_string '%s'.", key_string), "utils"); return end 
+    local _t = _table
+    for field in string.gmatch(key_string, "[^.]+") do
+        _t = _t[field]
+        if not _t then return end
+    end
+    return _t
+end
+
+-- Recursive bipartite matching function
+-- obj is one of the "jobs" (cards are "people") (lmao)
+-- obj_to_cards is a map of "jobs" to all its "people" candidates
+-- card_to_obj is a map of "people" to their current assigned "job"
+-- used_c is a map of cards that have been assigned a "job"
+function SMODS.recursive_bipartite_matching(obj, obj_to_cards, card_to_obj, used_c)
+    for pcard, _ in pairs(obj_to_cards[obj]) do
+        if not used_c[pcard] then
+            used_c[pcard] = true
+            if not card_to_obj[pcard] or SMODS.recursive_bipartite_matching(card_to_obj[pcard], obj_to_cards, card_to_obj, used_c) then
+                card_to_obj[pcard] = obj
+                return true
+            end
+        end
+    end
+end
+
+-- Returns the number of "people" that can get a "job" (-> cards that can be assigned to a unique object), and the map of "person" to "job" (-> card to obj)
+function SMODS.count_bipartite_matching(obj_to_cards)
+    local used_cards = {}
+    local card_to_obj = {}
+    local count = 0
+    for obj, _ in pairs(obj_to_cards) do
+        used_cards = {}
+        if SMODS.recursive_bipartite_matching(obj, obj_to_cards, card_to_obj, used_cards) then
+            count = count + 1
+        end
+    end
+    return count, card_to_obj
+end
+
+-- Returns a list of card sorted by their position in their cardarea
+function SMODS.get_sorted_card_list(card_map)
+    local ret = {}
+    for pcard, v in pairs(card_map) do
+        ret[#ret+1] = pcard
+    end
+    table.sort(ret, function (a, b) return a.rank < b.rank end)
+    return ret
 end
 
 function SMODS.copy_card(card, args)

@@ -330,14 +330,14 @@ SMODS.DrawStep {
     key = 'seal',
     order = 30,
     func = function(self, layer)
-        local seal = G.P_SEALS[self.seal] or {}
-        if self.ability.delay_seal then return end
+        local key = self.delay_seal or self.seal
+        local seal = G.P_SEALS[key] or {}
         if type(seal.draw) == 'function' then
             seal:draw(self, layer)
-        elseif self.seal then
-            G.shared_seals[self.seal].role.draw_major = self
-            G.shared_seals[self.seal]:draw_shader('dissolve', nil, nil, nil, self.children.center)
-            if self.seal == 'Gold' then G.shared_seals[self.seal]:draw_shader('voucher', nil, self.ARGS.send_to_shader, nil, self.children.center) end
+        elseif type(key) == "string" then
+            G.shared_seals[key].role.draw_major = self
+            G.shared_seals[key]:draw_shader('dissolve', nil, nil, nil, self.children.center)
+            if key == 'Gold' then G.shared_seals[key]:draw_shader('voucher', nil, self.ARGS.send_to_shader, nil, self.children.center) end
         end
     end,
     conditions = { vortex = false, facing = 'front' },

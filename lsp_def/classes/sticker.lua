@@ -55,9 +55,3 @@ function Card:add_sticker(sticker, bypass_check) end
 ---@param sticker Stickers|string Key to the sticker to remove. 
 --- Removes the sticker from the card, if it has the sticker. 
 function Card:remove_sticker(sticker) end
-
----@param self Card|table
----@param key string
----@return table?
---- Calculates Stickers on cards. 
-function Card:calculate_sticker(context, key) end
