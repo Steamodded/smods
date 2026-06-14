@@ -7,6 +7,7 @@
 ---@field shader? string Key of the shader to apply to the screen, shader must already exist to use this. Either this or `path` must be used
 ---@field order? number Sets the order. `ScreenShader` objects are rendered in order from lowest to highest. Defaults to 0 if not provided. 
 ---@field path? string Name of the shader file to use if `shader` is not provided.
+---@field path_mod? Mod|table The mod this object's `path` belongs to, if this is not the same mod it was created by.
 ---@field __call? fun(self: SMODS.ScreenShader|table, o: SMODS.ScreenShader|table): nil|table|SMODS.ScreenShader
 ---@field extend? fun(self: SMODS.ScreenShader|table, o: SMODS.ScreenShader|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.ScreenShader|table): boolean? Ensures objects already registered will not register. 

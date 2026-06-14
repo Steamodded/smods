@@ -1,0 +1,13 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -11
+
+# we have to do this twice because lovely doesn't have lookarounds and we might miss things if we only do it once
+[[patches]]
+[patches.regex]
+target = "GLSL_ES_PATCHES.fs"
+pattern = '''([^\w\d.]\d+)([^\w\d.])'''
+payload = '$1.$2'
+position = 'at'
+

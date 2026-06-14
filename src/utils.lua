@@ -428,9 +428,18 @@ function SMODS.create_card(t)
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
     if t.edition then _card:set_edition(t.edition, nil, t.silent.edition) end
     if t.seal then _card:set_seal(t.seal, t.silent.seal); _card.ability.delay_seal = false end
-    if t.stickers then
-        for i, v in ipairs(t.stickers) do
-            _card:add_sticker(v, t.force_stickers)
+    if t.stickers or type(t.force_stickers) == "table" then
+        local applied_stickers = {}
+        if type(t.force_stickers) == "table" then
+            for i, v in ipairs(t.force_stickers) do
+                _card:add_sticker(v, true)
+                applied_stickers[v] = true
+            end
+        end
+        for i, v in ipairs(t.stickers or {}) do
+            if not applied_stickers[v] then
+                _card:add_sticker(v, t.force_stickers == true)
+            end
         end
     end
 
@@ -439,15 +448,7 @@ end
 
 function SMODS.add_card(t)
     local card = SMODS.create_card(t)
-    if t.set == "Base" or t.set == "Enhanced" then
-        G.playing_card = (G.playing_card and G.playing_card + 1) or 1
-        card.playing_card = G.playing_card
-        table.insert(G.playing_cards, card)
-    end
-    card:add_to_deck()
-    local area = t.area or G.jokers
-    area:emplace(card)
-    return card
+    return SMODS.add_to_deck(card, t)
 end
 
 function SMODS.debuff_card(card, debuff, source)
@@ -1311,7 +1312,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if (key == 'p_dollars' or key == 'dollars' or key == 'h_dollars') and amount then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         SMODS.ease_dollars_calc = true
-        ease_dollars(amount)
+        ease_dollars(amount, effect.instant)
         SMODS.ease_dollars_calc = nil
         if not effect.remove_default_message then
             if effect.dollar_message then
@@ -1469,13 +1470,28 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         replace_display_name = true,
         replace_poker_hands = true,
         modify = true,
+        override = true,
         shop_create_flags = true,
         booster_create_flags = true
     }
 
+    if key == 'modify' then
+        if SMODS.context_stack[#SMODS.context_stack].context.modify_final_cashout then
+            if effect.cashout_row then
+                effect.cashout_row.bonus = true
+                effect.cashout_row.pitch = SMODS.cashout_pitch
+                effect.cashout_row.dollars = effect.cashout_row.dollars or amount
+                add_round_eval_row(effect.cashout_row)
+            else
+                add_round_eval_row({dollars = amount, bonus = true, name='joker'..SMODS.cashout_index, pitch = SMODS.cashout_pitch, card = scored_card})
+            end
+        end
+    end
+
     if amount_return_flags[key] then
         return { [key] = amount }
     end
+
 
     if key == 'debuff' then
         return { [key] = amount, debuff_source = scored_card }
@@ -1593,7 +1609,7 @@ SMODS.silent_calculation = {
     cards_to_draw = true,
     func = true, extra = true,
     numerator = true, denominator = true,
-    no_destroy = true
+    no_destroy = true,
 }
 
 SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
@@ -1939,7 +1955,22 @@ function SMODS.update_context_flags(context, flags)
     if flags.modify then
         -- insert general modified value updating here
         if context.modify_ante then context.modify_ante = flags.modify end
-        if context.drawing_cards then context.amount = flags.modify end
+        if context.drawing_cards then context.amount = math.max(flags.modify, 0) end
+        if context.modify_final_cashout then
+            context.amount = flags.modify + (not flags.override and context.amount)
+            SMODS.cashout_dollars = context.amount
+            SMODS.cashout_index = SMODS.cashout_index + 1
+            SMODS.cashout_pitch = SMODS.cashout_pitch + 0.06
+            flags.modify = nil
+        end
+    end
+    if context.evaluate_poker_hand then
+        if flags.replace_scoring_name then
+            context.scoring_name = flags.replace_scoring_name
+            context.display_name = flags.replace_scoring_name
+        end
+        if flags.replace_display_name then context.display_name = flags.replace_display_name end
+        if flags.replace_poker_hands then context.poker_hands = flags.replace_poker_hands end
     end
 end
 
@@ -2479,12 +2510,12 @@ function Card.selectable_from_pack(card, pack)
             if key == card.config.center_key then return false end
         end
     end
-    local select_area = SMODS.card_select_area(card, pack)
+    local select_area, can_also_use = SMODS.card_select_area(card, pack)
     if select_area then
         if type(select_area) == 'table' then
             if select_area[card.ability.set] then return select_area[card.ability.set] else return false end
         end
-        return select_area
+        return select_area, can_also_use
     end
 end
 
@@ -2640,6 +2671,16 @@ function SMODS.seeing_double_check(hand, suit)
     if saw_double(suit_tally, suit) then return true else return false end
 end
 
+local function parse_tooltip_vars(str, separator)
+    separator = separator or ";"
+
+    local vars = {}
+    for res in string.gmatch(str, "([^"..separator.."]+)") do
+        table.insert(vars, res)
+    end
+    return vars
+end
+
 function SMODS.localize_box(lines, args)
     local final_line = {}
     for _, part in ipairs(lines) do
@@ -2738,7 +2779,15 @@ function SMODS.localize_box(lines, args)
         else
             final_line[#final_line+1] = {n=G.UIT.T, config={
                 button = part.control.button,
-                detailed_tooltip = part.control.T and (G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T]) or nil,
+                detailed_tooltip = part.control.T and (
+                    G.P_CENTERS[part.control.T]
+                    or G.P_TAGS[part.control.T]
+                    or {
+                        set = part.control.T_set or 'Other',
+                        key = part.control.T,
+                        vars = part.control.T_vars and parse_tooltip_vars(part.control.T_vars) or {}
+                    }
+                  ) or nil,
                 text = assembled_string,
                 shadow = args.shadow,
                 colour = thunk.text_col or args.text_colour or loc_colour(nil, args.default_col),
@@ -2774,7 +2823,42 @@ function SMODS.info_queue_desc_from_rows(desc_nodes, empty, maxw)
   }}
 end
 
-function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
+function SMODS.is_playing_card(card) 
+    if not type(card) == "table" then return false end
+	local set = (card.ability or {}).set or ((card.config or {}).center or {}).set
+	return card.playing_card or set == "Default" or set == "Enhanced"
+end
+
+function SMODS.pinch_and_remove(card)
+    if not SMODS.is_playing_card(card) then
+        local flags = SMODS.calculate_context({joker_type_destroyed = true, card = card})
+        if flags.no_destroy then card.getting_sliced = nil; return false end
+    end
+    play_sound('tarot1')
+    card.T.r = -0.2
+    card:juice_up(0.3, 0.4)
+    card.states.drag.is = true
+    card.children.center.pinch.x = true
+    G.E_MANAGER:add_event(Event({
+        trigger = 'after', delay = 0.3, blockable = false,
+        func = function()
+            card:remove()
+            return true; 
+        end
+    }))
+    return true
+end
+
+function SMODS.destroy_cards(cards, args, ...)
+    local other_args = {...}
+    if type(args) ~= "table" then
+        if args then args = {bypass_eternal = true}
+        else args = {} end
+    end
+    args.immediate = args.immediate or other_args[1]
+    args.pinch_anim = args.pinch_anim or other_args[2]
+    args.colours = args.colours or other_args[3]
+
     if not cards[1] then
         if Object.is(cards, Card) then
             cards = {cards}
@@ -2784,9 +2868,11 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
     end
     local glass_shattered = {}
     local playing_cards = {}
+    local queued_for_destruction = {}
     for _, card in ipairs(cards) do
-        if bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
+        if args.bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
             card.getting_sliced = true
+            table.insert(queued_for_destruction, card)
             if SMODS.shatters(card) then
                 card.shattered = true
                 glass_shattered[#glass_shattered + 1] = card
@@ -2796,7 +2882,6 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
             if card.base.name then
                 playing_cards[#playing_cards + 1] = card
             end
-            card.skip_destroy_animation = skip_anim
         end
     end
 
@@ -2804,26 +2889,35 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim)
 
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
-    for i = 1, #cards do
-        if immediate or skip_anim then
-            if cards[i].shattered then
-                cards[i]:shatter()
-            elseif cards[i].destroyed then
-                cards[i]:start_dissolve()
-            end
+    local destroy_func = function (card, args)
+        if not card.getting_sliced then return false end
+        if args.destroy_func then 
+            return args.destroy_func(card, args) ~= false
+        elseif args.pinch_anim then
+            return SMODS.pinch_and_remove(card)
+        elseif card.shattered then
+            return card:shatter() ~= false
+        elseif card.destroyed then
+            return card:start_dissolve(args.colours) ~= false
+        end
+        return false
+    end
+
+    for i, card in ipairs(queued_for_destruction) do
+        if args.immediate then
+            destroy_func(card, args)
         else
             G.E_MANAGER:add_event(Event({
+                trigger = args.delay and "after" or "immediate",
+                delay = args.delay,
                 func = function()
-                    if cards[i].shattered then
-                        cards[i]:shatter()
-                    elseif cards[i].destroyed then
-                        cards[i]:start_dissolve(nil, i == #cards)
-                    end
+                    destroy_func(card, args)
                     return true
                 end
             }))
         end
     end
+    return queued_for_destruction
 end
 
 -- Hand Limit API
@@ -2858,7 +2952,7 @@ function SMODS.draw_cards(hand_space)
         return true
     end
 
-    local flags = SMODS.calculate_context({drawing_cards = true, amount = hand_space})
+    local flags = SMODS.calculate_context({drawing_cards = true, amount = math.max(hand_space, 0)})
     hand_space = math.min(#G.deck.cards, flags.cards_to_draw or flags.modify or hand_space)
     delay(0.3)
     SMODS.drawn_cards = {}
@@ -2973,7 +3067,8 @@ G.FUNCS.update_blind_debuff_text = function(e)
 end
 
 function Card:should_hide_front()
-  return self.ability.effect == 'Stone Card' or self.config.center.replace_base_card
+    local center = self.delay_center or self.config.center
+    return center.effect == "Stone Card" or center.replace_base_card
 end
 
 function SMODS.is_eternal(card, trigger)
@@ -3496,27 +3591,27 @@ function UIElement:draw_pixellated_strikethough(_type, _parallax, _emboss, _prog
 end
 
 function SMODS.card_select_area(card, pack)
-    local select_area
+    local select_area, can_also_use
     if card.config.center.select_card then
         if type(card.config.center.select_card) == "function" then -- Card's value takes first priority
-            select_area = card.config.center:select_card(card, pack)
+            select_area, can_also_use = card.config.center:select_card(card, pack)
         else
             select_area = card.config.center.select_card
         end
     elseif SMODS.ConsumableTypes[card.ability.set] and SMODS.ConsumableTypes[card.ability.set].select_card then -- ConsumableType is second priority
         if type(SMODS.ConsumableTypes[card.ability.set].select_card) == "function" then
-            select_area = SMODS.ConsumableTypes[card.ability.set]:select_card(card, pack)
+            select_area, can_also_use = SMODS.ConsumableTypes[card.ability.set]:select_card(card, pack)
         else
             select_area = SMODS.ConsumableTypes[card.ability.set].select_card
         end
     elseif pack.select_card then -- Pack is third priority
         if type(pack.select_card) == "function" then
-            select_area = pack:select_card(card, pack)
+            select_area, can_also_use = pack:select_card(card, pack)
         else
             select_area = pack.select_card
         end
     end
-    return select_area
+    return select_area, can_also_use
 end
 
 function SMODS.get_select_text(card, pack)
@@ -3630,7 +3725,7 @@ function AnimatedSprite:animate()
 end
 
 function SMODS.is_active_blind(key, ignore_disabled)
-    return G.GAME and G.GAME.blind and G.GAME.facing_blind and (G.GAME.blind.name == key or G.GAME.blind.config.key == key) and (not G.GAME.blind.disabled or ignore_disabled)
+    return G.GAME and G.GAME.blind and G.GAME.facing_blind and (G.GAME.blind.name == key or G.GAME.blind.config.blind.key == key) and (not G.GAME.blind.disabled or ignore_disabled)
 end
 
 -- Function used to determine whether the current blind modifies the number of cards drawn
@@ -4096,4 +4191,40 @@ end
 -- Simple unlock text function, created to give mod authors an option to hook rather than patch for their use cases.
 function SMODS.create_unlock_text(center)
 	return localize('k_'..string.lower(center and center.set or 'unknown'))
+end
+
+function SMODS.copy_card(card, args)
+    args = args or {}
+    local playing_card
+    if args.playing_card ~= false then
+        playing_card = args.playing_card or card.playing_card and G.playing_card or nil
+    end
+    local copy = copy_card(card, args.new_card, args.card_scale, playing_card, args.strip_edition)
+
+    if args.new_card or args.no_add then return copy end
+
+    return SMODS.add_to_deck(copy, {area = args.area or card.area, playing_card = playing_card})
+end
+
+function SMODS.add_to_deck(card, args)
+    args = args or {}
+    local is_playing_card = SMODS.is_playing_card(card) or args.playing_card or args.set == "Base" or args.set == "Enhanced"
+    if is_playing_card then
+        if not card.playing_card and not args.playing_card then
+            G.playing_card = (G.playing_card and G.playing_card + 1) or 1
+        end
+        card.playing_card = args.playing_card or card.playing_card or G.playing_card
+        args.area = args.area or G.hand
+    end
+    if not args.area and SMODS.ConsumableTypes[card.ability.set] then
+        args.area = G.consumeables
+    end
+    card:add_to_deck()
+    if is_playing_card then
+        G.deck.config.card_limit = G.deck.config.card_limit + 1
+        table.insert(G.playing_cards, card)
+    end
+    local area = args.area or G.jokers
+    area:emplace(card)
+    return card
 end
