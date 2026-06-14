@@ -4228,3 +4228,12 @@ function SMODS.add_to_deck(card, args)
     area:emplace(card)
     return card
 end
+
+-- get_index() but with an early return
+function SMODS.get_index(t, value)
+	if not type(t) == "table" then return end
+	for k, v in pairs(t) do
+		if v == value then return k end
+	end
+	return nil
+end
