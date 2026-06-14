@@ -4228,3 +4228,43 @@ function SMODS.add_to_deck(card, args)
     area:emplace(card)
     return card
 end
+
+-------------------------------------------------------------------------------------------------
+----- API IMPORT RunSelect
+-------------------------------------------------------------------------------------------------
+
+assert(load(SMODS.NFS.read(SMODS.path..'src/utils/run_select.lua'), ('=[SMODS _ "src/utils/run_select.lua"]')))()
+
+function SMODS.table_size(t)
+    local size = 0
+    for _,_ in pairs(t) do
+        size = size + 1
+    end
+    return size
+end
+
+function SMODS.split_string(_string, parts)
+    local length = string.len(_string)
+    local words = {}
+    for i in string.gmatch(_string, "%S+") do
+        table.insert(words, i)
+    end
+    local spaces = #words - 1
+    local line_break = math.floor(length/(parts or 2))
+    
+    local text_output = {}
+    for i=1, (parts or 2) do text_output[i] = '' end
+
+    local line = 1
+    for i, v in ipairs(words) do
+        if string.len(text_output[line]) > line_break or i > spaces+1 or (i == 2 and spaces == 1) then
+            line = line + 1
+        end
+        text_output[line] = text_output[line] .. v .. " "
+    end
+    for i, v in ipairs(text_output) do
+        text_output[i] = string.sub(v, 1, string.len(v)-1)
+    end
+
+    return text_output
+end

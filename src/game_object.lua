@@ -844,6 +844,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         modifiers = function()
             G.GAME.modifiers.enable_eternals_in_shop = true
         end,
+        loc_vars = function(self, info_queue, card)
+            info_queue[#info_queue+1] = {set = 'Other', key = 'eternal'}
+        end,
         colour = G.C.BLACK,
         loc_txt = {}
     }
@@ -883,6 +886,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         modifiers = function()
             G.GAME.modifiers.enable_perishables_in_shop = true
         end,
+        loc_vars = function(self, info_queue, card)
+            info_queue[#info_queue+1] = {set = 'Other', key = 'perishable', vars = {5, 5}}
+        end,
         colour = G.C.ORANGE,
         loc_txt = {},
     }
@@ -894,6 +900,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sticker_pos = { x = 3, y = 1 },
         modifiers = function()
             G.GAME.modifiers.enable_rentals_in_shop = true
+        end,
+        loc_vars = function(self, info_queue, card)
+            info_queue[#info_queue+1] = {set = 'Other', key = 'rental', vars = {G.GAME.rental_rate or 1}}
         end,
         colour = G.C.GOLD,
         shiny = true,
@@ -4029,6 +4038,12 @@ SMODS.UndiscoveredCompat = {
     -------------------------------------------------------------------------------------------------
 
     assert(load(NFS.read(SMODS.path..'src/card_draw.lua'), ('=[SMODS _ "src/card_draw.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.RunSelectPage
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/runselectpage.lua'), ('=[SMODS _ "src/game_objects/runselectpage.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- INTERNAL API CODE GameObject._Loc_Post
