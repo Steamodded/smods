@@ -889,3 +889,8 @@ function SMODS.copy_card(card, args) end
 ---@param args {set: string?, area: CardArea|table?, playing_card: integer?}?
 ---@return Card|table
 function SMODS.add_to_deck(card, args) end
+
+---Returns a copy of SMODS.Suit.obj_buffer
+---Hook this function and edit the return if you want the game to see suits that don't exist, or not see suits that do exist
+---@return string[]
+function SMODS.get_virtual_suits() end
