@@ -161,10 +161,18 @@ end
 function SMODS.create_blind_pool(blind_type, skip_cull)
     assert(type(blind_type) == 'string', "SMODS.create_blind_pool called with a non-string type argument."..SMODS.log_crash_info(debug.getinfo(2)))
     local eligible_bosses = {}
+
+    local boss_already_chosen = function(key)
+        for _, k in pairs(G.GAME.round_resets.blind_choices) do
+            if k == key then return true end
+        end
+    end
+
     for k, v in pairs(G.P_BLINDS) do
         local res, options = SMODS.add_to_pool(v)
         options = options or {}
         if not v[blind_type] then
+        elseif boss_already_chosen(k) then
         elseif options.ignore_showdown_check then
             eligible_bosses[k] = res and true or nil
         elseif blind_type == 'boss' then
@@ -192,7 +200,7 @@ function SMODS.create_blind_pool(blind_type, skip_cull)
     end
 
     local min_use = 100
-    for k, v in pairs(G.GAME.bosses_used) do
+    for k, v in pairs(G.GAME.bosses_used[blind_type] or G.GAME.bosses_used) do
         if eligible_bosses[k] then
             eligible_bosses[k] = v
             if eligible_bosses[k] <= min_use then 
@@ -203,7 +211,7 @@ function SMODS.create_blind_pool(blind_type, skip_cull)
     local final_pool = {}
     for k, v in pairs(eligible_bosses) do
         if eligible_bosses[k] then
-            if eligible_bosses[k] > min_use then 
+            if eligible_bosses[k] > min_use and not G.P_BLINDS[k][blind_type].allow_duplicates then 
                 eligible_bosses[k] = nil
             else
                 final_pool[#final_pool + 1] = k
