@@ -158,25 +158,26 @@ function SMODS.get_poll_key(type, infill)
     return t.str .. (t.block_infill and "" or infill or "") .. (t.ante and G.GAME.round_resets.ante or "")
 end
 
-function SMODS.create_blind_pool(blind_type, skip_cull)
-    assert(type(blind_type) == 'string', "SMODS.create_blind_pool called with a non-string type argument."..SMODS.log_crash_info(debug.getinfo(2)))
+function SMODS.create_blind_pool(_blind_type, skip_cull)
+    assert(type(_blind_type) == 'string' or type(_blind_type) == 'table', "SMODS.create_blind_pool called with an invalid argument."..SMODS.log_crash_info(debug.getinfo(2)))
+    local blind_types
+    if type(_blind_type) == "string" then
+        blind_types = {[_blind_type] = true}
+    else
+        blind_types = _blind_type
+    end
     local eligible_bosses = {}
+    _blind_type = (table_length(blind_types) == 1 and next(blind_types)) or "" -- If a string was passed, remains unchanged.
     for k, v in pairs(G.P_BLINDS) do
         local res, options = SMODS.add_to_pool(v)
         options = options or {}
-        if not v[blind_type] then
-        elseif options.ignore_showdown_check then
+        local blind_config = v.boss or v[_blind_type] or {}
+        if v:is_types(blind_types) and (
+            v.in_pool or blind_config and ((blind_config.min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante) and 
+            (blind_config.max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante)
+        ) 
+        then
             eligible_bosses[k] = res and true or nil
-        elseif blind_type == 'boss' then
-            if
-                ((SMODS.is_showdown_ante()) == (v.boss.showdown or false)) and ((v[blind_type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante)) and ((v[blind_type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante)
-            then
-                eligible_bosses[k] = res and true or nil
-            end
-        else
-            if (v[blind_type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante) and (v[blind_type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante then
-                eligible_bosses[k] = res and true or nil
-            end
         end
     end
     for k, v in pairs(G.GAME.banned_keys) do
@@ -300,7 +301,7 @@ function SMODS.create_poll_pool(labels, args)
         local join_func = (args.attributes and not args.union) and SMODS.intersect_lists or join_lists
         for i=1, #(args.rarities or {true}) do
             if label == "Booster" then SMODS.poll_object_allow_duplicates = true end
-            local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or SMODS.Attributes[label] and SMODS.get_attribute_pool(label) or get_current_pool(label, args.rarities and args.rarities[i], nil, args.append)
+            local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_types or {Boss = true}) or SMODS.Attributes[label] and SMODS.get_attribute_pool(label) or get_current_pool(label, args.rarities and args.rarities[i], nil, args.append)
             SMODS.poll_object_allow_duplicates = nil
             if SMODS.Attributes[label] then
                 _p = SMODS.cull_pool(_p, args)
