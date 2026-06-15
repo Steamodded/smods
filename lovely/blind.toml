@@ -698,21 +698,6 @@ position = "at"
 payload = '''if v.boss and v.boss.showdown then '''
 match_indent = true
 
-# # Fix boss colour not resetting properly
-# [[patches]]
-# [patches.pattern]
-# target = 'blind.lua'
-# match_indent = true
-# position = 'at'
-# pattern = '''
-# if not self.boss and self.name then 
-# '''
-# payload = '''
-# if not self.boss and not self.in_blind then
-# '''
-
-
-
 # These patches prepare vanilla blinds for polling with weights and differing slots
 [[patches]]
 [patches.pattern]
@@ -747,4 +732,17 @@ extras = create_UIBox_blind_tag(type, run_info)
 '''
 payload = '''
 if not blind_choice.config.unskippable then extras = create_UIBox_blind_tag(type, run_info) end
+'''
+
+# Small/Big blinds when using vanilla polling
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+for k, v in pairs(G.GAME.bosses_used) do
+'''
+payload = '''
+for k, v in pairs(G.GAME.bosses_used.boss) do
 '''
