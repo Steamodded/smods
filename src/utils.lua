@@ -1820,35 +1820,37 @@ function SMODS.update_context_flags(context, flags)
         context.no_mod = flags.no_mod
         no_mod_changed = true
     end
-    for key, q_field in pairs(SMODS.QuantumCardFields) do
-        local has_no_flag = "no_" .. key 
-        local has_any_flag = "any_" .. key 
-        if context[q_field.get_context_flag] and flags[q_field.return_flag] then
-            if not context.no_mod or no_mod_changed then
-                if flags.fixed == q_field.return_flag or type(flags.fixed) == "table" and flags.fixed[q_field.return_flag] then
-                    for k, v in pairs(context[q_field.return_flag]) do
-                        if v ~= "BASE" or not flags[q_field.return_flag][k] then -- If it's a "BASE" value and it's not removed, keep it as "BASE" -> Required for correct quantum card.ability access
-                            context[q_field.return_flag][k] = flags[q_field.return_flag][k]
-                        end 
-                    end
-                else
-                    for k, v in pairs(flags[q_field.return_flag]) do
-                        if context[q_field.return_flag][k] ~= "BASE" or not v then
-                            context[q_field.return_flag][k] = v
+    if context._quantum_getter or context.card_has_check then
+        for key, q_field in pairs(SMODS.QuantumCardFields) do
+            if SMODS.optional_features.quantum_fields[key] then
+                local has_no_flag = "no_" .. key 
+                local has_any_flag = "any_" .. key 
+                if context[q_field.get_context_flag] and flags[q_field.return_flag] then
+                    if not context.no_mod or no_mod_changed then
+                        if flags.fixed == q_field.return_flag or type(flags.fixed) == "table" and flags.fixed[q_field.return_flag] then
+                            local new_get = {}
+                            for k, v in pairs(flags[q_field.return_flag]) do
+                                new_get[k] = (context[q_field.return_flag][k] ~= "BASE" or not v) and not not v or "BASE" -- If it's a "BASE" value and it's not removed, keep it as "BASE" -> Required for correct quantum card.ability access
+                            end
+                            context[q_field.return_flag] = new_get
+                        else
+                            for k, v in pairs(flags[q_field.return_flag]) do
+                                if context[q_field.return_flag][k] ~= "BASE" or not v then
+                                    context[q_field.return_flag][k] = v
+                                end
+                            end
                         end
                     end
+                    SMODS.qfield_cache[context.card].get[q_field.return_flag] = context[q_field.return_flag]
+                    flags[q_field.return_flag] = nil
+                end
+                if flags[has_no_flag] ~= nil then
+                    SMODS.qfield_cache[context.card].has[key].no = not not flags[has_no_flag]
+                end
+                if flags[has_any_flag] ~= nil then
+                    SMODS.qfield_cache[context.card].has[key].any = not not flags[has_any_flag]
                 end
             end
-            if context[q_field.return_flag] then
-                SMODS.qfield_cache[context.card].get[q_field.return_flag] = context[q_field.return_flag]
-            end
-            flags[q_field.return_flag] = nil
-        end
-        if flags[has_no_flag] ~= nil then
-            SMODS.qfield_cache[context.card].has[key].no = flags[has_no_flag]
-        end
-        if flags[has_any_flag] ~= nil then
-            SMODS.qfield_cache[context.card].has[key].any = flags[has_any_flag]
         end
     end
 end

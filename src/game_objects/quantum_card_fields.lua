@@ -45,7 +45,7 @@ local function _general_quantum_getter(card, args)
         has_context[key] = flag
     end
     if next(SMODS.optional_features.quantum_fields) and not args._no_contexts then -- Only calculate the context if any quantum fields are toggled on
-        SMODS.calculate_context(has_context) -- SMODS.qfield_cache[card].has is updated directly
+        SMODS.calculate_context(has_context) -- SMODS.qfield_cache[card].has is updated directly in SMODS.update_context_flags()
     end 
     for key, q_field in pairs(SMODS.QuantumCardFields) do
         for k, v in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do -- For every value
@@ -60,27 +60,30 @@ local function _general_quantum_getter(card, args)
     -- _quantum_getter context for SMODS.qfield_cache[card].get
     local get_context = {_quantum_getter = true, card = card, no_mod = false} -- _quantum_getter flag should not be referenced in practice (as it doesn't account for optional_features.quantum_fields), use specific "get_ranks" etc. flags instead
     local has = SMODS.qfield_cache[card].has
+    local do_calculate_getter = false
     for key, q_field in pairs(SMODS.QuantumCardFields) do 
         local get = SMODS.qfield_cache[card].get[q_field.return_flag]
         local override_get = (has[key].no and not has[key].any and {}) or (has[key].any and SMODS.shallow_copy(q_field.g_obj_table)) -- If e.g. has.rank.no is true and .any not, default to no ranks, if any is true, default to all ranks, if neither, default to the values set by the above has_context
         if override_get then
-            for k, v in pairs(get) do
-                if v ~= "BASE" or not override_get[k] then -- If it's a "BASE" value and it's not removed, keep it as "BASE" -> Required for correct quantum card.ability access
-                    get[k] = not not override_get[k]
-                end 
+            local new_get = {}
+            for k, v in pairs(override_get) do
+                new_get[k] = (get[k] ~= "BASE" or not v) and not not v or "BASE" -- If it's a "BASE" value and it's not removed, keep it as "BASE" -> Required for correct quantum card.ability access
             end
+            get = new_get
+            SMODS.qfield_cache[card].get[q_field.return_flag] = new_get
         end
-        if SMODS.optional_features.quantum_fields[key] then
+        if SMODS.optional_features.quantum_fields[key] and not has[key].any then -- Todo : Discuss whether `any = true` should be stronger or weaker than (getter) quantum effects. Currently this check makes it stronger.
             get_context[q_field.get_context_flag] = true
             get_context[q_field.return_flag] = get
+            do_calculate_getter = true
         end
     end
     local flags = args.get_flags or args
     for key, flag in pairs(flags) do
         get_context[key] = flag
     end
-    if next(SMODS.optional_features.quantum_fields) and not args._no_contexts then -- Only calculate the context if any quantum fields are toggled on
-        SMODS.calculate_context(get_context) -- SMODS.qfield_cache[card].get is updated directly
+    if do_calculate_getter and not args._no_contexts then
+        SMODS.calculate_context(get_context) -- SMODS.qfield_cache[card].get is updated directly in SMODS.update_context_flags()
     end
     -- Prepare ret
     local eval = SMODS.qfield_cache[card].get
