@@ -109,6 +109,7 @@
 ---@field get_seals? true Check if `true` for modifying the seal(s) of the context.card. ^
 ---@field get_editions? true Check if `true` for modifying the edition(s) of the context.card. ^
 ---@field get_stickers? true Check if `true` for modifying the sticker(s) of the context.card. ^
+---@field get_suits? true Check if `true` for modifying the suit(s) of the context.card. ^
 ---@field no_mod? boolean Check if `true` to decide whether an effect should modify context.get_ranks' ranks field. (If you want to override and block other effects, return `no_mod=true` alongside ranks=[only your ranks] and fixed=true)
 ---@field money_altered? true Check if `true` for effects when the amount of money the player has changes.
 ---@field from_shop? true Check if `true` if money changed during the shop.
