@@ -7,7 +7,7 @@
 ---@field atlas? string Key to the center's atlas. 
 ---@field pos? table|{x: integer, y: integer} Position of the center's sprite. 
 ---@field order? number Position of the sticker in collections menu. 
----@field rate? number Change of this sticker applying onto an eligible card. 
+---@field rate? number Chance of this sticker applying onto an eligible card. 
 ---@field hide_badge? boolean Sets if the sticker badge shows up on the card. 
 ---@field text_colour? table Colour of the label for the badge.
 ---@field badge_colour? table HEX color the sticker badge uses. 

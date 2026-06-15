@@ -3952,6 +3952,7 @@ function SMODS.get_badge_text_colour(key)
     if not key then return end
     if (SMODS.Rarities[key] or {}).text_colour then return SMODS.Rarities[key].text_colour end
     if (SMODS.Stickers[key] or {}).text_colour then return SMODS.Stickers[key].text_colour end
+    if (SMODS.CardModifiers[key] or {}).text_colour then return SMODS.CardModifiers[key].text_colour end
     for _, v in ipairs(G.P_CENTER_POOLS.Edition) do
         if v.key:sub(3) == key and v.text_colour then return v.text_colour end
     end
