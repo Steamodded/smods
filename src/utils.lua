@@ -2650,8 +2650,9 @@ end
 
 function SMODS.seeing_double_check(hand, suit)
     local suit_tally = {}
-    for i = #SMODS.Suit.obj_buffer, 1, -1 do
-        suit_tally[SMODS.Suit.obj_buffer[i]] = 0
+    local suitlist = SMODS.get_virtual_suits()
+    for i = #suitlist, 1, -1 do
+        suit_tally[suitlist[i]] = 0
     end
     for i = 1, #hand do
         if not SMODS.has_any_suit(hand[i]) then
@@ -2669,6 +2670,14 @@ function SMODS.seeing_double_check(hand, suit)
         end
     end
     if saw_double(suit_tally, suit) then return true else return false end
+end
+
+function SMODS.get_virtual_suits()
+    local ret = {}
+    for i,v in ipairs(SMODS.Suit.obj_buffer) do
+        ret[i] = v
+    end
+    return ret
 end
 
 local function parse_tooltip_vars(str, separator)
