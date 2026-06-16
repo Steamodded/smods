@@ -4263,7 +4263,7 @@ end
 function SMODS.card_to_image(card, scale, filename)
 	if not type(card) == "table" then return end
     local key = ((card.config or {}).center or {}).key or "card_to_image"
-    scale = scale or 2.0
+    scale = scale or G.SETTINGS.GRAPHICS.texture_scaling
 	filename = (filename or key == "j_joker" and "jimbo" or key) .. ".png"
     
 	local canvas = love.graphics.newCanvas(71 * scale, 95 * scale, {type = '2d', readable = true})
@@ -4273,11 +4273,9 @@ function SMODS.card_to_image(card, scale, filename)
 	local old_shadow = card.no_shadow
     local old_rm = G.SETTINGS.reduced_motion
     card.T.r = 0
-    local w = card.T.w/G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 * 763/768 -- Don't ask me why I had to multiply by 1.5 * 763/768 here, I do not know,,, (this may have been brute-tinkered)
-    local h = card.T.h/G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 * 763/768 -- (well the times 763/768 is to remove an extra pixel in height for scales == 2.0 -> 16.0 (at least))
     local old_scale = card.T.scale 
-    card.T.scale = scale
-    card:hard_set_T(w/2*(scale-1), h/2*(scale-1), w, h)
+    card.T.scale = scale / G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 * 763/768 -- Don't ask me why I had to multiply by 1.5 * 763/768 here, I do not know,,, (this may have been brute-tinkered) (well the times 763/768 is to remove an extra pixel in height for scales == 2.0 -> 16.0 (at least))
+    card:hard_set_T(card.T.w/2*(card.T.scale-1), card.T.h/2*(card.T.scale-1))
 	card.no_shadow = true
     G.SETTINGS.reduced_motion = true
     SMODS.texture_filter_override = "nearest"
