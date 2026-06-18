@@ -662,8 +662,9 @@ self.boss = blind and not not blind.boss
 '''
 payload = '''
 self[self.current_slot or ''] = nil
-self[string.lower(G.GAME.blind_on_deck or '')] = blind and true or nil
-self.current_slot = string.lower(G.GAME.blind_on_deck or '')
+local current_type = string.lower(G.GAME.blind_on_deck or '')
+self[current_type] = blind and true or nil
+self.current_slot = current_type
 '''
 # Handle 'Defeated' tagging
 [[patches]]
