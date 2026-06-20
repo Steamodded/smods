@@ -1197,12 +1197,12 @@ pattern = '''
 draw_card(G.deck,G.hand, i*100/hand_space,'up', true)
 '''
 payload = '''
-if cards_to_draw[i] and cards_to_draw[i].ability and cards_to_draw[i].ability.extra_slots_used then
-    SMODS.cards_to_draw = SMODS.cards_to_draw + cards_to_draw[i].ability.extra_slots_used
+if cards_to_draw[i] and cards_to_draw[i].ability and (cards_to_draw[i].ability.extra_slots_used or cards_to_draw[i].ability.card_limit) then
+    SMODS.cards_to_draw = SMODS.cards_to_draw + (cards_to_draw[i].ability.extra_slots_used or 0) - (cards_to_draw[i].ability.card_limit or 0)
     G.E_MANAGER:add_event(Event({
         trigger = 'immediate',
         func = function()                
-            SMODS.cards_to_draw = SMODS.cards_to_draw - cards_to_draw[i].ability.extra_slots_used
+            SMODS.cards_to_draw = SMODS.cards_to_draw - (cards_to_draw[i].ability.extra_slots_used or 0) + (cards_to_draw[i].ability.card_limit or 0)
             return true
         end
     }))
@@ -1903,26 +1903,7 @@ function Card:start_dissolve(dissolve_colours, silent, dissolve_time_fac, no_jui
 payload = '''
     if self.getting_sliced and not (self.ability.set == 'Default' or self.ability.set == 'Enhanced') then
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self})
-        if flags.no_destroy then self.getting_sliced = nil; return end
-    end
-    if self.skip_destroy_animation then
-        G.E_MANAGER:add_event(Event({
-            func = function()
-                play_sound('tarot1')
-                self.T.r = -0.2
-                self:juice_up(0.3, 0.4)
-                self.states.drag.is = true
-                self.children.center.pinch.x = true
-                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
-                    func = function()
-                            G.jokers:remove_card(self)
-                            self:remove()
-                            self = nil
-                        return true; end})) 
-                return true
-            end
-        })) 
-        return
+        if flags.no_destroy then self.getting_sliced = nil; return false end
     end
 '''
 [[patches]]
@@ -1936,26 +1917,7 @@ function Card:shatter()
 payload = '''
     if self.getting_sliced and not (self.ability.set == 'Default' or self.ability.set == 'Enhanced') then
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self, shatters = true})
-        if flags.no_destroy then self.getting_sliced = nil; return end
-    end
-    if self.skip_destroy_animation then
-        G.E_MANAGER:add_event(Event({
-            func = function()
-                play_sound('tarot1')
-                self.T.r = -0.2
-                self:juice_up(0.3, 0.4)
-                self.states.drag.is = true
-                self.children.center.pinch.x = true
-                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
-                    func = function()
-                            G.jokers:remove_card(self)
-                            self:remove()
-                            self = nil
-                        return true; end})) 
-                return true
-            end
-        })) 
-        return
+        if flags.no_destroy then self.getting_sliced = nil; return false end
     end
 '''
 
@@ -2009,7 +1971,7 @@ if v ~= eligible_card and (not v.ability.eternal) then v:start_dissolve(nil, _fi
 payload = '''
 if v ~= eligible_card and (not SMODS.is_eternal(v, self)) then v.getting_sliced = true; v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
 '''
-# Card:can_sell()
+# Card:can_sell(), Add can_sell API method
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -2020,6 +1982,11 @@ not self.ability.eternal then
 '''
 payload = '''
 not SMODS.is_eternal(self, {from_sell = true}) then
+
+local obj = self.config.center
+if self.ability.set ~= "Enhanced" and obj.can_sell and type(obj.can_sell) == 'function' then
+	return obj:can_sell(self, context)
+end
 '''
 
 # Adds tag_added context
@@ -2142,6 +2109,24 @@ if ret then
     return ret
 end
 '''
+
+# Add context.modify_final_cashout
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''
+    dollars = dollars + G.GAME.interest_amount*math.min(math.floor(G.GAME.dollars/5), G.GAME.interest_cap/5)
+end
+'''
+position = "after"
+payload = '''
+
+    SMODS.cashout_pitch = pitch; SMODS.cashout_index = i; SMODS.cashout_dollars = dollars
+    SMODS.calculate_context({modify_final_cashout = true, amount = dollars})
+    dollars = SMODS.cashout_dollars
+    SMODS.cashout_pitch = nil; SMODS.cashout_index = nil; SMODS.cashout_dollars = nil
+'''
+match_indent = false
 
 # Reload SMODS.last_hand
 [[patches]]

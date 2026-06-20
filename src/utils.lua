@@ -548,7 +548,7 @@ function SMODS.create_mod_badges(obj, badges)
             badges[#badges + 1] = {n=G.UIT.R, config={align = "cm"}, nodes={
                 {n=G.UIT.R, config={align = "cm", colour = mod.badge_colour or G.C.GREEN, r = 0.1, minw = 2, minh = 0.36, emboss = 0.05, padding = 0.03*size}, nodes={
                   {n=G.UIT.B, config={h=0.1,w=0.03}},
-                  {n=G.UIT.O, config={object=badge_scroll}},
+                  {n=G.UIT.O, config={id = 'smods_mod_badge_text', object=badge_scroll}},
                   {n=G.UIT.B, config={h=0.1,w=0.03}},
                 }}
               }}
@@ -817,57 +817,42 @@ function SMODS.stake_from_index(index)
     return stake.key
 end
 
-function convert_save_data()
-    local stakecount = #G.P_CENTER_POOLS.Stake
-    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
-        if v.wins_by_key then
-            v.wins = {}
-            for kk,vv in pairs(v.wins_by_key) do
-                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
-                if index then v.wins[index] = vv end
-            end
-        else
-            v.wins_by_key = {}
-            for index=1,stakecount do
-                v.wins_by_key[SMODS.stake_from_index(index)] = v.wins[index]
-            end
-        end
-        if v.losses_by_key then
-            for kk,vv in pairs(v.losses_by_key) do
-                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
-                if index then v.losses[index] = vv end
-            end
-        else
-            v.losses_by_key = {}
-            for index=1,stakecount do
-                v.losses_by_key[SMODS.stake_from_index(index)] = v.losses[index]
+function convert_usage_entry(entry)
+    for _,keys in ipairs{ {"wins","wins_by_key"},{"losses","losses_by_key"}} do
+        entry[keys[1]] = entry[keys[1]] or {}
+        entry[keys[2]] = entry[keys[2]] or {}
+        local data = entry[keys[1]]
+        local data_by_key = entry[keys[2]]
+        setmetatable(data_by_key, {
+            __index = function(t, k) 
+                if (G.P_STAKES[k] or {}).vanilla_index then
+                    return data[G.P_STAKES[k].vanilla_index]
+                end
+                return rawget(t,k)
+            end,
+            __newindex = function(t,k,w)
+                if (G.P_STAKES[k] or {}).vanilla_index then
+                    data[G.P_STAKES[k].vanilla_index] = w
+                end
+                rawset(t,k,w)
+            end,
+        })
+        for k,w in pairs(data_by_key) do
+            if (G.P_STAKES[k] or {}).vanilla_index then
+                data[G.P_STAKES[k].vanilla_index] = math.max(data[G.P_STAKES[k].vanilla_index] or 0, w)
+                rawset(data_by_key, k, nil)
             end
         end
     end
+    return entry
+end
+
+function convert_save_data()
+    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
+        convert_usage_entry(v)
+    end
     for _, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
-        if v.wins_by_key then
-            v.wins = {}
-            for kk,vv in pairs(v.wins_by_key) do
-                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
-                if index then v.wins[index] = vv end
-            end
-        else
-            v.wins_by_key = {}
-            for index=1,stakecount do
-                v.wins_by_key[SMODS.stake_from_index(index)] = v.wins[index]
-            end
-        end
-        if v.losses_by_key then
-            for kk,vv in pairs(v.losses_by_key) do
-                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
-                if index then v.losses[index] = vv end
-            end
-        else
-            v.losses_by_key = {}
-            for index=1,stakecount do
-                v.losses_by_key[SMODS.stake_from_index(index)] = v.losses[index]
-            end
-        end
+        convert_usage_entry(v)
     end
     G:save_settings()
 end
@@ -1470,13 +1455,28 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         replace_display_name = true,
         replace_poker_hands = true,
         modify = true,
+        override = true,
         shop_create_flags = true,
         booster_create_flags = true
     }
 
+    if key == 'modify' then
+        if SMODS.context_stack[#SMODS.context_stack].context.modify_final_cashout then
+            if effect.cashout_row then
+                effect.cashout_row.bonus = true
+                effect.cashout_row.pitch = SMODS.cashout_pitch
+                effect.cashout_row.dollars = effect.cashout_row.dollars or amount
+                add_round_eval_row(effect.cashout_row)
+            else
+                add_round_eval_row({dollars = amount, bonus = true, name='joker'..SMODS.cashout_index, pitch = SMODS.cashout_pitch, card = scored_card})
+            end
+        end
+    end
+
     if amount_return_flags[key] then
         return { [key] = amount }
     end
+
 
     if key == 'debuff' then
         return { [key] = amount, debuff_source = scored_card }
@@ -1594,7 +1594,7 @@ SMODS.silent_calculation = {
     cards_to_draw = true,
     func = true, extra = true,
     numerator = true, denominator = true,
-    no_destroy = true
+    no_destroy = true,
 }
 
 SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
@@ -1941,6 +1941,13 @@ function SMODS.update_context_flags(context, flags)
         -- insert general modified value updating here
         if context.modify_ante then context.modify_ante = flags.modify end
         if context.drawing_cards then context.amount = math.max(flags.modify, 0) end
+        if context.modify_final_cashout then
+            context.amount = flags.modify + (not flags.override and context.amount)
+            SMODS.cashout_dollars = context.amount
+            SMODS.cashout_index = SMODS.cashout_index + 1
+            SMODS.cashout_pitch = SMODS.cashout_pitch + 0.06
+            flags.modify = nil
+        end
     end
     if context.evaluate_poker_hand then
         if flags.replace_scoring_name then
@@ -2801,7 +2808,42 @@ function SMODS.info_queue_desc_from_rows(desc_nodes, empty, maxw)
   }}
 end
 
-function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colours)
+function SMODS.is_playing_card(card) 
+    if not type(card) == "table" then return false end
+	local set = (card.ability or {}).set or ((card.config or {}).center or {}).set
+	return card.playing_card or set == "Default" or set == "Enhanced"
+end
+
+function SMODS.pinch_and_remove(card)
+    if not SMODS.is_playing_card(card) then
+        local flags = SMODS.calculate_context({joker_type_destroyed = true, card = card})
+        if flags.no_destroy then card.getting_sliced = nil; return false end
+    end
+    play_sound('tarot1')
+    card.T.r = -0.2
+    card:juice_up(0.3, 0.4)
+    card.states.drag.is = true
+    card.children.center.pinch.x = true
+    G.E_MANAGER:add_event(Event({
+        trigger = 'after', delay = 0.3, blockable = false,
+        func = function()
+            card:remove()
+            return true; 
+        end
+    }))
+    return true
+end
+
+function SMODS.destroy_cards(cards, args, ...)
+    local other_args = {...}
+    if type(args) ~= "table" then
+        if args then args = {bypass_eternal = true}
+        else args = {} end
+    end
+    args.immediate = args.immediate or other_args[1]
+    args.pinch_anim = args.pinch_anim or other_args[2]
+    args.colours = args.colours or other_args[3]
+
     if not cards[1] then
         if Object.is(cards, Card) then
             cards = {cards}
@@ -2811,9 +2853,11 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colour
     end
     local glass_shattered = {}
     local playing_cards = {}
+    local queued_for_destruction = {}
     for _, card in ipairs(cards) do
-        if bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
+        if args.bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
             card.getting_sliced = true
+            table.insert(queued_for_destruction, card)
             if SMODS.shatters(card) then
                 card.shattered = true
                 glass_shattered[#glass_shattered + 1] = card
@@ -2823,7 +2867,6 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colour
             if card.base.name then
                 playing_cards[#playing_cards + 1] = card
             end
-            card.skip_destroy_animation = skip_anim
         end
     end
 
@@ -2831,26 +2874,35 @@ function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colour
 
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
-    for i = 1, #cards do
-        if immediate or skip_anim then
-            if cards[i].shattered then
-                cards[i]:shatter()
-            elseif cards[i].destroyed then
-                cards[i]:start_dissolve(colours)
-            end
+    local destroy_func = function (card, args)
+        if not card.getting_sliced then return false end
+        if args.destroy_func then 
+            return args.destroy_func(card, args) ~= false
+        elseif args.pinch_anim then
+            return SMODS.pinch_and_remove(card)
+        elseif card.shattered then
+            return card:shatter() ~= false
+        elseif card.destroyed then
+            return card:start_dissolve(args.colours) ~= false
+        end
+        return false
+    end
+
+    for i, card in ipairs(queued_for_destruction) do
+        if args.immediate then
+            destroy_func(card, args)
         else
             G.E_MANAGER:add_event(Event({
+                trigger = args.delay and "after" or "immediate",
+                delay = args.delay,
                 func = function()
-                    if cards[i].shattered then
-                        cards[i]:shatter()
-                    elseif cards[i].destroyed then
-                        cards[i]:start_dissolve(colours, i == #cards)
-                    end
+                    destroy_func(card, args)
                     return true
                 end
             }))
         end
     end
+    return queued_for_destruction
 end
 
 -- Hand Limit API
@@ -3000,7 +3052,8 @@ G.FUNCS.update_blind_debuff_text = function(e)
 end
 
 function Card:should_hide_front()
-  return self.ability.effect == 'Stone Card' or self.config.center.replace_base_card
+    local center = self.delay_center or self.config.center
+    return center.effect == "Stone Card" or center.replace_base_card
 end
 
 function SMODS.is_eternal(card, trigger)
@@ -3112,7 +3165,12 @@ function SMODS.scale_card(card, args)
     args.ref_table = args.ref_table or card.ability.extra
     args.scalar_table = args.scalar_table or args.ref_table
     local initial = args.ref_table[args.ref_value]
+    if not args.scalar_value then
+        args.scalar_value = "SMODS_scalar_"..args.ref_value
+        args.scalar_table[args.scalar_value] = 1
+    end
     local scalar_value = args.scalar_table[args.scalar_value]
+    local scalar_factor = args.scalar_factor or 1
     if args.operation == '-' and scalar_value < 0 then scalar_value = scalar_value * -1 end
     local scaling_message = args.scaling_message
     local scaling_responses = {}
@@ -3146,17 +3204,17 @@ function SMODS.scale_card(card, args)
     end
 
     if type(args.operation) == 'function' then
-        args.operation(args.ref_table, args.ref_value, initial, scalar_value)
+        args.operation(args.ref_table, args.ref_value, initial, scalar_value * scalar_factor)
     elseif args.operation == 'X' then
-        SMODS.multiplicative_scaling(args.ref_table, args.ref_value, initial, scalar_value)
+        SMODS.multiplicative_scaling(args.ref_table, args.ref_value, initial, scalar_value * scalar_factor)
     elseif args.operation == '-' then
-        SMODS.additive_scaling(args.ref_table, args.ref_value, initial, -1 * scalar_value)
+        SMODS.additive_scaling(args.ref_table, args.ref_value, initial, -1 * scalar_value * scalar_factor)
     else
-        SMODS.additive_scaling(args.ref_table, args.ref_value, initial, scalar_value)
+        SMODS.additive_scaling(args.ref_table, args.ref_value, initial, scalar_value * scalar_factor)
     end
 
     scaling_message = scaling_message or {
-        message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or scalar_value}} or 'k_upgrade_ex'),
+        message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or scalar_value * scalar_factor}} or 'k_upgrade_ex'),
         colour = args.message_colour or G.C.FILTER,
         delay = args.message_delay,
     }
@@ -3166,6 +3224,7 @@ function SMODS.scale_card(card, args)
     for _, ret in ipairs(scaling_responses) do
         SMODS.calculate_effect(ret, ret.source)
     end
+    return args.ref_table[args.ref_value], scalar_value * scalar_factor
 end
 
 function SMODS.additive_scaling(ref_table, ref_value, initial, modifier)
@@ -3174,6 +3233,60 @@ end
 
 function SMODS.multiplicative_scaling(ref_table, ref_value, initial, modifier)
     ref_table[ref_value] = initial * modifier
+end
+
+function SMODS.reset_card(card, args)
+    if not G.deck then return end
+    args.block_overrides = args.block_overrides or {}
+    args.ref_table = args.ref_table or card.ability.extra
+    local initial = args.ref_table[args.ref_value]
+    local reset_value = args.reset_value or 0
+    local reset_message = args.reset_message
+    local reset_responses = {}
+    for _, area in ipairs(SMODS.get_card_areas('jokers')) do
+        for _, _card in ipairs(area.cards) do
+            local obj = _card.config.center
+            if obj.calc_resetting and type(obj.calc_resetting) == "function" then
+                local ret = obj:calc_resetting(_card, card, initial, reset_value, args)
+                if ret then
+                    if ret.override_value and not args.block_overrides.value then reset_value = ret.override_value.value; SMODS.calculate_effect(ret.override_value, _card) end
+                    if ret.override_message and not args.block_overrides.message then reset_message = SMODS.merge_defaults(ret.override_message, reset_message) end
+                    if ret.post then ret.post.source = _card; reset_responses[#reset_responses + 1] = ret.post end
+                    SMODS.calculate_effect(ret, _card)
+                end
+            end
+        end
+    end
+    if card.edition then
+        local edition = G.P_CENTERS[card.edition.key]
+        if edition.calc_resetting and type(edition.calc_resetting) == 'function' then
+            local ret = edition:calc_resetting(card, card, initial, reset_value, args)
+            if ret then
+                if ret.override_value and not args.block_overrides.value then reset_value = ret.override_value.value; SMODS.calculate_effect(ret.override_value, card) end
+                if ret.override_message and not args.block_overrides.message then reset_message = SMODS.merge_defaults(ret.override_message, reset_message) end
+                if ret.post then ret.post.source = card; reset_responses[#reset_responses + 1] = ret.post end
+                SMODS.calculate_effect(ret, card)
+            end
+        end
+    end
+
+    if type(args.operation) == 'function' then
+        args.operation(args.ref_table, args.ref_value, initial, reset_value)
+    else
+        args.ref_table[args.ref_value] = reset_value
+    end
+
+    reset_message = reset_message or {
+        message = localize(args.message_key or 'k_reset'),
+        colour = args.message_colour or G.C.FILTER,
+        delay = args.message_delay,
+    }
+    if next(reset_message) and not args.no_message then
+        SMODS.calculate_effect(reset_message, card)
+    end
+    for _, ret in ipairs(reset_responses) do
+        SMODS.calculate_effect(ret, ret.source)
+    end
 end
 
 function SMODS.quip(quip_type)
@@ -3267,13 +3380,16 @@ function SMODS.challenge_is_unlocked(challenge, k)
 end
 
 function SMODS.stake_is_unlocked(stake_key, deck_key)
-    if not (SMODS.Stakes[stake_key] and G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key]) then return stake_key == SMODS.stake_from_index(1) end
     if G.PROFILES[G.SETTINGS.profile].all_unlocked then return true end
     local stake = SMODS.Stakes[stake_key]
+    if not stake then return false end
     if stake.unlocked then return true end
+    if not G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key] then
+        return not next(stake.applied_stakes)
+    end
     local unlocked = true
     local wins = G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key].wins_by_key
-    for i,v in ipairs(stake.applied_stakes) do
+    for _,v in ipairs(stake.applied_stakes) do
         if not (wins[v] and wins[v] > 0) then
             unlocked = false
         end
@@ -4140,8 +4256,7 @@ end
 
 function SMODS.add_to_deck(card, args)
     args = args or {}
-    local is_playing_card = card.playing_card or args.playing_card or
-        args.set == "Base" or args.set == "Enhanced" or card.ability.set == "Default" or card.ability.set == "Enhanced"
+    local is_playing_card = SMODS.is_playing_card(card) or args.playing_card or args.set == "Base" or args.set == "Enhanced"
     if is_playing_card then
         if not card.playing_card and not args.playing_card then
             G.playing_card = (G.playing_card and G.playing_card + 1) or 1
@@ -4161,6 +4276,20 @@ function SMODS.add_to_deck(card, args)
     area:emplace(card)
     return card
 end
+
+function Card:is_suit_shade(shade, bypass_debuff)
+    if self.debuff and not bypass_debuff then return end
+    if SMODS.has_no_suit(self) then
+        return false
+    end
+    for i, v in pairs(SMODS.Suits) do
+        if self:is_suit(i, bypass_debuff) and shade == v.shade then
+            return true
+        end
+    end
+    return false
+end
+
 
 -------------------------------------------------------------------------------------------------
 ----- API IMPORT RunSelect

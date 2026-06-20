@@ -8,7 +8,8 @@
 ---@field pos? table|{x: integer, y: integer} Position of the undiscovered sprite. 
 ---@field lc_atlas? string Low constrast atlas. Used when `G.SETTINGS.colourblind_option` is `false`. 
 ---@field hc_atlas? string High contrast atlas. Used when `G.SETTINGS.colourblind_option` is `true`.
----@field no_overlay? boolean Sets whether the floating "?" is drawn or not. 
+---@field no_overlay? boolean Sets whether the floating "?" is drawn or not.
+---@field overlay_pos? table|{x: integer, y: integer} Position of the undiscovered floating "?" sprite. 
 ---@field __call? fun(self: SMODS.UndiscoveredSprite|table, o: SMODS.UndiscoveredSprite|table): nil|table|SMODS.UndiscoveredSprite
 ---@field extend? fun(self: SMODS.UndiscoveredSprite|table, o: SMODS.UndiscoveredSprite|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.UndiscoveredSprite|table): boolean? Ensures objects already registered will not register. 

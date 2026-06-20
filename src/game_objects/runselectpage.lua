@@ -151,8 +151,8 @@ SMODS.RunSelectPage({
     end,
     sprite_size = {w = 0.99, h = 0.99},
     quick_start_text = function()
-        if G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice > #G.P_CENTER_POOLS.Stake then G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice = 1 end
-        return localize({type = 'name_text', set = 'Stake', key = G.P_CENTER_POOLS.Stake[G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice].key})
+        if (G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice or 1) > #G.P_CENTER_POOLS.Stake then G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice = 1 end
+        return localize({type = 'name_text', set = 'Stake', key = G.P_CENTER_POOLS.Stake[(G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice or 1)].key})
     end,
     set_default = function(self, choice)
         if not choice or choice > #G.P_CENTER_POOLS.Stake then return 1 else return self.is_stake_unlocked(G.P_CENTER_POOLS.Stake[choice]) and choice or 1 end

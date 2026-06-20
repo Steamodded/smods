@@ -30,6 +30,7 @@ SMODS.RunSelect = {
 
 -- Replaces the New Run tab in the Play menu
 function G.UIDEF.run_select_galdur(type)
+    SMODS.RunSelect.Setup.choices = EMPTY(SMODS.RunSelect.Setup.choices)
     if not G.E_MANAGER.queues.run_select then
         G.E_MANAGER.queues.run_select = {}
     end
@@ -306,7 +307,6 @@ function SMODS.RunSelect.Functions.start_run(_quick_start)
     end
 
     G.PROFILES[G.SETTINGS.profile].last_choices = copy_table(run_args)
-    SMODS.RunSelect.Setup.choices = EMPTY(SMODS.RunSelect.Setup.choices)
     G:save_settings()
     
     run_args.deck_choice = {name = G.P_CENTERS[run_args.deck_choice].name}

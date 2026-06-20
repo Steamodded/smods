@@ -15,7 +15,7 @@ position = "after"
 line_prepend = "$indent"
 payload = '''
 if not from_debuff and G.hand then
-    local is_playing_card = self.ability.set == 'Default' or self.ability.set == 'Enhanced'
+    local is_playing_card = SMODS.is_playing_card(self)
     
     -- TARGET: calculate card_added
 

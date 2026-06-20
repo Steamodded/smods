@@ -126,6 +126,7 @@
 ---@field new_level? integer Level of the poker hand after the alteration, if it was changed.
 ---@field old_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand before the alteration.
 ---@field new_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand after the alteration.
+---@field modify_final_cashout? true Check if `true` for modifying the amount of money at the end of cashout.
 
 --- Util Functions
 
@@ -526,6 +527,11 @@ function format_ui_value(value) end
 --- Returns the blind amount.
 function SMODS.get_blind_amount(ante) end
 
+--- Converts save data for a single vanilla object.
+---@param entry {count?:number,[("wins"|"losses")]?: table<number,number>, [("wins_by_key"|"losses_by_key")]?:table<string,number>}|table A deck/joker usage entry.
+---@return table
+function convert_usage_entry(entry) end
+
 --- Converts save data for vanilla objects.
 function convert_save_data() end
 
@@ -673,13 +679,23 @@ function SMODS.localize_box(lines, args) end
 --- Returns all description boxes within `multi_box`.
 function SMODS.get_multi_boxes(multi_box) end
 
+---@param card Card
+---@return boolean is_playing_card
+-- Checks and returns whether a card is a playing card.
+function SMODS.is_playing_card(card) end
+
+---@param card Card 
+---@return boolean success
+-- Pinches and :removes() a card. (context.joker_type_destroyed is calculated, and may prevent destruction)
+function SMODS.pinch_and_remove(card) end
+
 ---@param cards Card|Card[]
----@param bypass_eternal boolean?
----@param immediate boolean?
----@param skip_anim boolean?
----@param colours table?
---- Destroys the cards passed to the function, handling calculation events that need to happen
-function SMODS.destroy_cards(cards, bypass_eternal, immediate, skip_anim, colours) end
+---@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], delay?: number, destroy_func?: fun(card: Card, args: table<>)}
+---@param ... ... Old signature arguments in the above order, up to and including colours
+---@return Card[] destroy_queued
+--- Destroys the cards passed to the function, handling calculation events that need to happen.
+--- Returns list of cards queued for destruction
+function SMODS.destroy_cards(cards, args, ...) end
 
 ---@param hand_space number
 --- Used to draw cards to hand outside of the normal card draw
@@ -731,10 +747,19 @@ function SMODS.is_poker_hand_visible(handname) end
 function SMODS.is_eternal(card, trigger) end
 
 ---@param card Card|table
----@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: '+'|'X'|'-'|string|fun(ref_table: table, ref_value: string, initial: number, change: number)?, block_overrides: {value: boolean?, scalar: boolean?, message: boolean?}?, scaling_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
---- Tells Jokers that this card is scaling allowing for scaling detection
---- Args must contain `ref_table`, `ref_value`, and `scalar_value`. It may optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
+---@param args? table|{ref_table: table, ref_value: string, scalar_value: string?, scalar_table: table?, scalar_factor:number?, operation: '+'|'X'|'-'|string|fun(ref_table: table, ref_value: string, initial: number, change: number)?, block_overrides: {value: boolean?, scalar: boolean?, message: boolean?}?, scaling_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
+---@return number, number
+--- Tells Jokers that this card is scaling allowing for scaling detection.
+--- Args must contain `ref_table` and `ref_value`. If `scalar_value` is not defined, it is automatically created.
+--- It may also optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
+--- Returns the final scaled value, and what it had been scaled by
 function SMODS.scale_card(card, args) end
+
+---@param card Card|table
+---@param args? table|{ref_table: table, ref_value: string, reset_value: number, operation: fun(ref_table: table, ref_value: string, initial: number, reset: number)?, block_override: boolean?, reset_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
+--- Tells Jokers that this card is resetting allowing for resetting detection
+--- Args must contain `ref_table`, `ref_value`, and `reset_value`. It may optionally contain an `operation` function to define the behavior of resetting
+function SMODS.reset_card(card, args) end
 
 ---@param prototype_obj SMODS.GameObject|table
 ---@param args table?
@@ -878,3 +903,10 @@ function SMODS.copy_card(card, args) end
 ---@param args {set: string?, area: CardArea|table?, playing_card: integer?}?
 ---@return Card|table
 function SMODS.add_to_deck(card, args) end
+
+---Checks if a card counts as at least one suit that matches the provided suit shade
+---@param card Card|table Card to check
+---@param shade string Suit shade to check for
+---@param bypass_debuff boolean? Whether to ignore the card's debuff status
+---@return boolean
+function Card.is_suit_shade(card, shade, bypass_debuff) end
