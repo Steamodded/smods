@@ -234,7 +234,8 @@ line_prepend = '$indent'
 payload = '''
 local suit = SMODS.Suits[self.base.suit] or {}
 self.base.suit_nominal = suit.suit_nominal or 0
-self.base.suit_nominal_original = suit_base_nominal_original or suit.suit_nominal or 0'''
+self.base.suit_nominal_original = suit_base_nominal_original or suit.suit_nominal or 0
+self.base.shade = suit.shade'''
 
 # Card:change_suit()
 [[patches]]
