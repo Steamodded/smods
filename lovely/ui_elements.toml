@@ -306,3 +306,33 @@ for _, v in ipairs(text_shaders) do
 end
 """
 match_indent = true
+
+
+# Slider adjustments
+# Sliders now round their values
+# side effect: sliders with a smaller range of options may "slide" in a blocky way
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+rt.ref_table[rt.ref_value] = math.min(rt.max,math.max(rt.min, rt.min + (rt.max - rt.min)*(G.CURSOR.T.x - e.parent.T.x - G.ROOM.T.x)/e.T.w))
+'''
+payload = '''
+    local modifier = 10^(rt.decimal_places or 0)
+    rt.ref_table[rt.ref_value] = math.floor(rt.ref_table[rt.ref_value] * modifier + 0.5)/modifier
+'''
+
+# Customise background colour of sliders
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{n=G.UIT.C, config={align = "cl", minw = args.w, r = 0.1,min_h = args.h,collideable = true, hover = true, colour = G.C.BLACK,emboss = 0.05,func = 'slider', refresh_movement = true}, nodes={
+'''
+payload = '''
+{n=G.UIT.C, config={align = "cl", minw = args.w, r = 0.1,min_h = args.h,collideable = true, hover = true, colour = args.background_colour or G.C.BLACK,emboss = 0.05,func = 'slider', refresh_movement = true}, nodes={
+'''

@@ -511,3 +511,48 @@ self.draw_steps[#self.draw_steps+1] = {
 payload = '''
   tilt_shadow = v.tilt_shadow,
 '''
+
+# Blind mod badge display during run
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+{n=G.UIT.R, config={align = "cm",padding = 0.15}, nodes={
+    {n=G.UIT.O, config={object = G.GAME.blind, draw_layer = 1}},
+    {n=G.UIT.C, config={align = "cm",r = 0.1, padding = 0.05, emboss = 0.05, minw = 2.9, colour = G.C.BLACK}, nodes={
+      {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes={
+        {n=G.UIT.T, config={text = localize('ph_blind_score_at_least'), scale = 0.3, colour = G.C.WHITE, shadow = true}}
+      }},
+      {n=G.UIT.R, config={align = "cm", minh = 0.6}, nodes={
+        {n=G.UIT.O, config={w=0.5,h=0.5, colour = G.C.BLUE, object = stake_sprite, hover = true, can_collide = false}},
+        {n=G.UIT.B, config={h=0.1,w=0.1}},
+        {n=G.UIT.T, config={ref_table = G.GAME.blind, ref_value = 'chip_text', scale = 0.001, colour = G.C.RED, shadow = true, id = 'HUD_blind_count', func = 'blind_chip_UI_scale'}}
+      }},
+      {n=G.UIT.R, config={align = "cm", minh = 0.45, maxw = 2.8, func = 'HUD_blind_reward'}, nodes={
+        {n=G.UIT.T, config={text = localize('ph_blind_reward'), scale = 0.3, colour = G.C.WHITE}},
+        {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME.current_round, ref_value = 'dollars_to_be_earned'}}, colours = {G.C.MONEY},shadow = true, rotate = true, bump = true, silent = true, scale = 0.45}),id = 'dollars_to_be_earned'}},
+      }},
+    }},
+  }},
+}},
+'''
+payload = '''
+{n=G.UIT.R, config = {align = "cm", r = 0.1, id = 'HUD_blind_badge', func = 'HUD_blind_badge'}, nodes = {
+  SMODS.create_blind_mod_badge()
+}},
+'''
+
+# adjust placement of G.HUD
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+config = {align=('cli'), offset = {x=-0.7,y=0},major = G.ROOM_ATTACH}
+'''
+payload = '''
+config = {align=('cli'), offset = {x=-0.7,y=0.4},major = G.ROOM_ATTACH}
+'''

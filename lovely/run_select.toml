@@ -1,0 +1,68 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Use the modified run select page system
+# G.UIDEF.run_setup()
+[[patches]]
+[patches.regex]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+(?<indent>[\t ]*)tab_definition_function = G.UIDEF.run_setup_option,[\n\t ]*tab_definition_function_args = 'New Run'
+'''
+position = 'at'
+line_prepend = "$indent"
+payload = '''
+tab_definition_function = G.UIDEF.run_select_galdur,
+tab_definition_function_args = 'New Run'
+
+'''
+
+# Game:start_run()
+# Allow run_select deck_choice to work
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = "local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (self.GAME.viewed_back and self.GAME.viewed_back.name) or self.GAME.selected_back and self.GAME.selected_back.name or 'Red Deck'"
+position = 'at'
+match_indent = true
+payload = '''
+local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (args.deck_choice and args.deck_choice.name) or (self.GAME.viewed_back and self.GAME.viewed_back.name) or self.GAME.selected_back and self.GAME.selected_back.name or 'Red Deck'
+'''
+# Allow run_select stake_choice to work
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.GAME.stake = args.stake or self.GAME.stake or 1
+'''
+payload = '''
+self.GAME.stake = args.stake_choice or args.stake or self.GAME.stake or 1
+'''
+
+# Allows hovering of chips in stake chip tower
+# Controller:update()
+[[patches]]
+[patches.pattern]
+target = 'engine/controller.lua'
+pattern = '''if self.hovering.target and self.hovering.target == self.dragging.target and not self.HID.touch then'''
+position = 'before'
+match_indent = true
+payload = '''
+if self.hovering.prev_target and self.hovering.prev_target.role and self.hovering.prev_target.role.major and self.hovering.prev_target.role.major.params and self.hovering.prev_target.role.major.params.stake and self.hovering.target ~= self.hovering.prev_target then self.hovering.prev_target.role.major:stop_hover() end
+if self.hovering.target and self.hovering.target.role and self.hovering.target.role.major and self.hovering.target.role.major.params and self.hovering.target.role.major.params.stake and self.hovering.target ~= self.hovering.prev_target then self.hovering.target.role.major:hover() end
+'''
+
+# Pressing b restarts properly
+[[patches]]
+[patches.pattern]
+target = 'engine/controller.lua'
+pattern = '''G:start_run({})'''
+position = 'at'
+match_indent = true
+payload = '''
+G.FUNCS.run_select_quick_start()
+'''
