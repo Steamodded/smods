@@ -588,3 +588,162 @@ position = "after"
 payload = '''
 effect = self.effect,
 '''
+
+## Custom Small/Big Blinds Support
+
+# Add custom small/big blinds to `G.GAME.bosses_used`
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+local bosses_used = {}
+'''
+payload = '''
+local bosses_used = setmetatable({boss = {}, small = {}, big = {}},{
+    __index = function(t, key)
+        return t.boss[key] or t.big[key] or t.small[key]
+    end,
+    __newindex = function(t, key, value)
+        rawset(t.boss, key, value)
+    end
+})
+'''
+
+# Prepare bosses_used
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if v.boss then bosses_used[k] = 0 end
+'''
+payload = '''
+if v.boss then bosses_used.boss[k] = 0 end
+if v.small then bosses_used.small[k] = 0 end
+if v.big then bosses_used.big[k] = 0 end
+'''
+
+
+## Custom Small/Big Blinds
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''G.GAME.round_resets.blind_choices.Boss = get_new_boss()'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.reset_blind_choices(G.GAME.round_resets.blind_choices)
+'''
+
+# Add Custom Small/Big Blinds
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.GAME.round_resets.blind_choices.Boss = get_new_boss()
+'''
+payload = '''
+SMODS.reset_blind_choices(self.GAME.round_resets.blind_choices)
+'''
+
+# Handle setting new blinds
+[[patches]]
+[patches.pattern]
+target = 'blind.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.boss = blind and not not blind.boss
+'''
+payload = '''
+self[self.current_slot or ''] = nil
+local current_type = string.lower(G.GAME.blind_on_deck or '')
+self[current_type] = blind and true or nil
+self.current_slot = current_type
+'''
+# Handle 'Defeated' tagging
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if G.GAME.round_resets.blind == G.P_BLINDS.bl_small then
+'''
+payload = '''
+if G.GAME.round_resets.blind_states.Small == 'Current' then
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+elseif G.GAME.round_resets.blind == G.P_BLINDS.bl_big then
+'''
+payload = '''
+elseif G.GAME.round_resets.blind_states.Big == 'Current' then
+'''
+
+# Ensure boss table exists
+[[patches]]
+[patches.pattern]
+target = "functions/common_events.lua"
+pattern = '''if v.boss.showdown then '''
+position = "at"
+payload = '''if v.boss and v.boss.showdown then '''
+match_indent = true
+
+# These patches prepare vanilla blinds for polling with weights and differing slots
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+self.b_undiscovered = {name = 'Undiscovered', debuff_text = 'Defeat this blind to discover', pos = {x=0,y=30}}
+'''
+payload = '''
+for key, blind in pairs(self.P_BLINDS) do
+    if blind.boss and blind.boss.max then
+        blind.boss.max = nil
+        if blind.boss.showdown then
+            blind.boss.min = nil
+        end
+        blind.blind_types = {'boss'}
+    end
+    if key == 'bl_small' then blind.small = {min = 1, allow_duplicates = true}; blind.blind_types = {'small'} end
+    if key == 'bl_big' then blind.big = {min = 1, allow_duplicates = true}; blind.blind_types = {'big'} end
+end
+'''
+
+# Allow small and big blinds to block skipping
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+extras = create_UIBox_blind_tag(type, run_info)
+'''
+payload = '''
+if not blind_choice.config.unskippable then extras = create_UIBox_blind_tag(type, run_info) end
+'''
+
+# Small/Big blinds when using vanilla polling
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+for k, v in pairs(G.GAME.bosses_used) do
+'''
+payload = '''
+for k, v in pairs(G.GAME.bosses_used.boss) do
+'''

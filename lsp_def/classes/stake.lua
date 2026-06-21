@@ -14,6 +14,7 @@
 ---@field unlocked? boolean Sets if the stake is unlocked by default. 
 ---@field shiny? boolean Draws the shiny shader on State sticker.
 ---@field hide_from_run_info? boolean If true it hides the stake description on the Run Info screen
+---@field vanilla_index? integer Only present on vanilla stakes. Stores original index for keeping save data compatible with an unmodified game state.
 ---@field __call? fun(self: SMODS.Stake|table, o: SMODS.Stake|table): nil|table|SMODS.Stake
 ---@field extend? fun(self: SMODS.Stake|table, o: SMODS.Stake|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Stake|table): boolean? Ensures objects already registered will not register. 

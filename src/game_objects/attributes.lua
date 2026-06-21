@@ -55,12 +55,15 @@ function SMODS.populate_attributes()
 end
 
 function Card:has_attribute(attribute)
-    if not SMODS.Attributes[attribute] or not self.config.center.attributes then return false end
-    if self.config.center.attributes[attribute] then return true end
-    for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
-        if self.config.center.attributes[att] then return true end
-    end
-    return false
+    return self.config.center:has_attribute(attribute)
+end
+
+function Blind:has_attribute(attribute)
+    return self.config.center:has_attribute(attribute)
+end
+
+function Tag:has_attribute(attribute)
+    return self.config.center:has_attribute(attribute)
 end
 
 SMODS.Attribute({
@@ -72,7 +75,11 @@ SMODS.Attribute({
         'j_fibonacci', 'j_abstract', 'j_gros_michel', 'j_even_steven', 'j_scholar', 'j_supernova',
         'j_ride_the_bus', 'j_green_joker', 'j_red_card', 'j_erosion', 'j_fortune_teller',
         'j_flash', 'j_popcorn', 'j_trousers', 'j_walkie_talkie', 'j_smiley',
-        'j_swashbuckler', 'j_onyx_agate', 'j_shoot_the_moon', 'j_bootstraps'
+        'j_swashbuckler', 'j_onyx_agate', 'j_shoot_the_moon', 'j_bootstraps',
+
+        'm_mult', 'm_lucky',
+
+        'e_holo'
     }
 })
 
@@ -83,7 +90,11 @@ SMODS.Attribute({
         'j_banner', 'j_scary_face', 'j_odd_todd', 'j_scholar', 'j_runner',
         'j_ice_cream', 'j_blue_joker', 'j_hiker', 'j_square', 'j_stone',
         'j_bull', 'j_walkie_talkie', 'j_castle', 'j_arrowhead', 'j_wee',
-        'j_stuntman'
+        'j_stuntman',
+
+        'm_bonus', 'm_stone',
+
+        'e_foil'
     }
 })
 
@@ -96,7 +107,13 @@ SMODS.Attribute({
         'j_ancient', 'j_ramen', 'j_campfire', 'j_acrobat', 'j_throwback',
         'j_bloodstone', 'j_glass', 'j_flower_pot', 'j_idol', 'j_seeing_double',
         'j_hit_the_road', 'j_duo', 'j_trio', 'j_family', 'j_order', 'j_tribe',
-        'j_drivers_license', 'j_caino', 'j_triboulet', 'j_yorick'
+        'j_drivers_license', 'j_caino', 'j_triboulet', 'j_yorick',
+
+        'm_glass', 'm_steel',
+
+        'v_observatory',
+
+        'e_polychrome'
     }
 })
 
@@ -131,7 +148,9 @@ SMODS.Attribute({
 SMODS.Attribute({
     key = 'retrigger',
     keys = {
-        'j_mime', 'j_dusk', 'j_hack', 'j_selzer', 'j_sock_and_buskin', 'j_hanging_chad'
+        'j_mime', 'j_dusk', 'j_hack', 'j_selzer', 'j_sock_and_buskin', 'j_hanging_chad',
+
+        'Red' -- seal
     }
 })
 
@@ -152,7 +171,14 @@ SMODS.Attribute({
     keys = {
         'j_marble', 'j_8_ball', 'j_dna', 'j_sixth_sense', 'j_superposition',
         'j_seance', 'j_riff_raff', 'j_vagabond', 'j_hallucination', 'j_diet_cola',
-        'j_certificate', 'j_invisible', 'j_cartomancer', 'j_perkeo'
+        'j_certificate', 'j_invisible', 'j_cartomancer', 'j_perkeo',
+
+        'c_fool', 'c_high_priestess', 'c_emperor', 'c_judgement',
+        'c_familiar', 'c_grim', 'c_incantation', 'c_wraith', 'c_ankh','c_cryptid',
+
+        'tag_uncommon', 'tag_rare', 'tag_double', 'tag_top_up',
+
+        'Blue', 'Purple' -- seal
     }
 })
 
@@ -162,34 +188,56 @@ SMODS.Attribute({
         'j_greedy_joker', 'j_lusty_joker', 'j_wrathful_joker', 'j_gluttenous_joker',
         'j_smeared', 'j_castle', 'j_ancient', 'j_seeing_double', 'j_blackboard', 'j_flower_pot', 'j_idol',
         'j_rough_gem', 'j_bloodstone', 'j_arrowhead', 'j_onyx_agate',
+
+        'c_star', 'c_moon', 'c_sun', 'c_world', 'c_sigil',
+
+        'm_wild',
+
+        'bl_club', 'bl_goad', 'bl_head', 'bl_window'
     }
 })
 
 SMODS.Attribute({
     key = 'diamonds',
     keys = {
-        'j_greedy_joker', 'j_smeared', 'j_rough_gem'
+        'j_greedy_joker', 'j_smeared', 'j_rough_gem',
+
+        'c_star',
+
+        'bl_window'
     }
 })
 
 SMODS.Attribute({
     key = 'hearts',
     keys = {
-        'j_lusty_joker', 'j_smeared', 'j_bloodstone'
+        'j_lusty_joker', 'j_smeared', 'j_bloodstone',
+
+        'c_sun',
+
+        'bl_head'
     }
 })
 
 SMODS.Attribute({
     key = 'spades',
     keys = {
-        'j_wrathful_joker', 'j_smeared', 'j_arrowhead', 'j_blackboard'
+        'j_wrathful_joker', 'j_smeared', 'j_arrowhead', 'j_blackboard',
+
+        'c_world',
+
+        'bl_goad'
     }
 })
 
 SMODS.Attribute({
     key = 'clubs',
     keys = {
-        'j_gluttenous_joker', 'j_smeared', 'j_onyx_agate', 'j_seeing_double', 'j_blackboard'
+        'j_gluttenous_joker', 'j_smeared', 'j_onyx_agate', 'j_seeing_double', 'j_blackboard',
+
+        'c_moon',
+
+        'bl_club'
     }
 })
 
@@ -201,7 +249,14 @@ SMODS.Attribute({
         'j_four_fingers', 'j_supernova', 'j_runner', 'j_superposition',
         'j_todo_list', 'j_seance', 'j_shortcut', 'j_obelisk', 'j_trousers',
         'j_duo', 'j_trio', 'j_family', 'j_order', 'j_tribe',
-        'j_burnt', 'j_card_sharp', 'j_space'
+        'j_burnt', 'j_card_sharp', 'j_space',
+
+        'c_mercury', 'c_venus', 'c_earth', 'c_mars', 'c_jupiter', 'c_saturn',
+        'c_uranus', 'c_neptune', 'c_pluto', 'c_planet_x', 'c_ceres', 'c_eris',
+
+        'v_telescope', 'v_observatory',
+
+        'bl_ox', 'bl_mouth', 'bl_eye'
     }
 })
 
@@ -211,98 +266,126 @@ SMODS.Attribute({
         'j_8_ball', 'j_raised_fist', 'j_fibonacci', 'j_hack', 'j_even_steven',
         'j_odd_todd', 'j_scholar', 'j_sixth_sense', 'j_superposition', 'j_cloud_9',
         'j_mail', 'j_walkie_talkie', 'j_wee', 'j_idol', 'j_hit_the_road', 'j_baron',
-        'j_shoot_the_moon', 'j_triboulet'
+        'j_shoot_the_moon', 'j_triboulet',
+
+        'c_strength', 'c_familiar', 'c_grim', 'c_incantation', 'c_ouija'
     }
 })
 
 SMODS.Attribute({
     key = 'ace',
     keys = {
-        'j_fibonacci', 'j_odd_todd', 'j_scholar', 'j_superposition'
+        'j_fibonacci', 'j_odd_todd', 'j_scholar', 'j_superposition',
+
+        'c_grim'
     }
 })
 
 SMODS.Attribute({
     key = 'two',
     keys = {
-        'j_fibonacci', 'j_hack', 'j_even_steven', 'j_wee'
+        'j_fibonacci', 'j_hack', 'j_even_steven', 'j_wee',
+
+        'c_incantation'
     }
 })
 
 SMODS.Attribute({
     key = 'three',
     keys = {
-        'j_fibonacci', 'j_hack', 'j_odd_todd'
+        'j_fibonacci', 'j_hack', 'j_odd_todd',
+
+        'c_incantation'
     }
 })
 
 SMODS.Attribute({
     key = 'four',
     keys = {
-        'j_hack', 'j_even_steven', 'j_walkie_talkie'
+        'j_hack', 'j_even_steven', 'j_walkie_talkie',
+
+        'c_incantation'
     }
 })
 
 SMODS.Attribute({
     key = 'five',
     keys = {
-        'j_fibonacci', 'j_hack', 'j_odd_todd'
+        'j_fibonacci', 'j_hack', 'j_odd_todd',
+
+        'c_incantation'
     }
 })
 
 SMODS.Attribute({
     key = 'six',
     keys = {
-        'j_even_steven', 'j_sixth_sense'
+        'j_even_steven', 'j_sixth_sense',
+
+        'c_incantation'
     }
 })
 
 SMODS.Attribute({
     key = 'seven',
     keys = {
-        'j_odd_todd'
+        'j_odd_todd',
+
+        'c_incantation'
     }
 })
 
 SMODS.Attribute({
     key = 'eight',
     keys = {
-        'j_8_ball', 'j_even_steven', 'j_fibonacci'
+        'j_8_ball', 'j_even_steven', 'j_fibonacci',
+
+        'c_incantation'
     }
 })
 
 SMODS.Attribute({
     key = 'nine',
     keys = {
-        'j_odd_todd', 'j_cloud_9'
+        'j_odd_todd', 'j_cloud_9',
+
+        'c_incantation'
     }
 })
 
 SMODS.Attribute({
     key = 'ten',
     keys = {
-        'j_even_steven', 'j_walkie_talkie'
+        'j_even_steven', 'j_walkie_talkie',
+
+        'c_incantation'
     }
 })
 
 SMODS.Attribute({
     key = 'jack',
     keys = {
-        'j_hit_the_road'
+        'j_hit_the_road',
+
+        'c_familiar'
     }
 })
 
 SMODS.Attribute({
     key = 'queen',
     keys = {
-        'j_shoot_the_moon', 'j_triboulet'
+        'j_shoot_the_moon', 'j_triboulet',
+
+        'c_familiar'
     }
 })
 
 SMODS.Attribute({
     key = 'king',
     keys = {
-        'j_baron', 'j_triboulet'
+        'j_baron', 'j_triboulet',
+
+        'c_familiar'
     }
 })
 
@@ -311,7 +394,11 @@ SMODS.Attribute({
     keys = {
         'j_scary_face', 'j_pareidolia', 'j_business', 'j_ride_the_bus',
         'j_faceless', 'j_midas_mask', 'j_photograph', 'j_reserved_parking',
-        'j_smiley', 'j_sock_and_buskin', 'j_caino'
+        'j_smiley', 'j_sock_and_buskin', 'j_caino',
+
+        'c_familiar',
+
+        'bl_mark', 'bl_plant'
     }
 })
 
@@ -333,7 +420,10 @@ SMODS.Attribute({
 SMODS.Attribute({
     key = 'space',
     keys = {
-        'j_supernova', 'j_space', 'j_constellation', 'j_rocket', 'j_satellite', 'j_astronomer'
+        'j_supernova', 'j_space', 'j_constellation', 'j_rocket', 'j_satellite', 'j_astronomer',
+
+        'c_mercury', 'c_venus', 'c_earth', 'c_mars', 'c_jupiter', 'c_saturn',
+        'c_uranus', 'c_neptune', 'c_pluto', 'c_planet_x', 'c_ceres', 'c_eris'
     }
 })
 
@@ -342,7 +432,15 @@ SMODS.Attribute({
     keys = {
         'j_banner', 'j_mystic_summit', 'j_delayed_grat', 'j_burglar', 'j_faceless',
         'j_green_joker', 'j_mail', 'j_drunkard', 'j_trading', 'j_ramen', 'j_castle',
-        'j_merry_andy', 'j_hit_the_road', 'j_burnt', 'j_yorick'
+        'j_merry_andy', 'j_hit_the_road', 'j_burnt', 'j_yorick',
+
+        'v_wasteful', 'v_recyclomancy', 'v_petroglyph',
+
+        'tag_garbage',
+
+        'bl_hook', 'bl_water',
+
+        'Purple' -- seal
     }
 })
 
@@ -352,7 +450,26 @@ SMODS.Attribute({
         'j_credit_card', 'j_chaos', 'j_delayed_grat', 'j_business', 'j_egg',
         'j_faceless', 'j_todo_list', 'j_cloud_9', 'j_rocket', 'j_gift',
         'j_reserved_parking', 'j_mail', 'j_to_the_moon', 'j_golden',
-        'j_trading', 'j_ticket', 'j_rough_gem', 'j_matador', 'j_satellite'
+        'j_trading', 'j_ticket', 'j_rough_gem', 'j_matador', 'j_satellite', 'j_astronomer',
+
+        'c_hermit', 'c_temperance', 'c_immolate',
+
+        'v_clearance_sale', 'v_liquidation', 'v_reroll_surplus', 'v_reroll_glut', 'v_seed_money', 'v_money_tree',
+
+        'm_gold', 'm_lucky',
+
+        'tag_investment', 'tag_handy', 'tag_garbage', 'tag_coupon', 'tag_d_six', 'tag_skip', 'tag_economy',
+
+        'Gold' -- seal
+    }
+})
+
+SMODS.Attribute({
+    key = 'lose_economy',
+    keys = {
+        'c_wraith',
+
+        'bl_ox', 'bl_tooth'
     }
 })
 
@@ -361,6 +478,12 @@ SMODS.Attribute({
     keys = {
         'j_8_ball', 'j_gros_michel', 'j_business', 'j_space', 'j_cavendish',
         'j_hallucination', 'j_reserved_parking', 'j_bloodstone', 
+
+        'c_wheel_of_fortune',
+
+        'm_glass', 'm_lucky',
+
+        'bl_wheel'
     }
 })
 
@@ -374,37 +497,137 @@ SMODS.Attribute({
 SMODS.Attribute({
     key = 'tarot',
     keys = {
-        'j_8_ball', 'j_superposition', 'j_vagabond', 'j_hallucination', 'j_fortune_teller', 'j_cartomancer'
+        'j_8_ball', 'j_superposition', 'j_vagabond', 'j_hallucination', 'j_fortune_teller', 'j_cartomancer',
+
+        'c_fool', 'c_emperor',
+
+        'v_tarot_merchant', 'v_tarot_tycoon',
+
+        'p_arcana_normal_1', 'p_arcana_normal_2', 'p_arcana_normal_3', 'p_arcana_normal_4',
+        'p_arcana_jumbo_1', 'p_arcana_jumbo_2', 'p_arcana_mega_1', 'p_arcana_mega_2',
+
+        'Purple' -- seal
     }
 })
 
 SMODS.Attribute({
     key = 'planet',
     keys = {
-        'j_astronomer', 'j_constellation', 'j_satellite'
+        'j_astronomer', 'j_constellation', 'j_satellite',
+
+        'c_fool', 'c_high_priestess',
+
+        'v_telescope', 'v_observatory', 'v_planet_merchant', 'v_planet_tycoon',
+
+        'p_celestial_normal_1', 'p_celestial_normal_2', 'p_celestial_normal_3', 'p_celestial_normal_4',
+        'p_celestial_jumbo_1', 'p_celestial_jumbo_2', 'p_celestial_mega_1', 'p_celestial_mega_2',
+
+        'Blue' -- seal
     }
 })
 
 SMODS.Attribute({
     key = 'spectral',
     keys = {
-        'j_sixth_sense', 'j_seance'
+        'j_sixth_sense', 'j_seance',
+
+        'v_omen_globe',
+
+        'p_spectral_normal_1', 'p_spectral_normal_2', 'p_spectral_jumbo_1', 'p_spectral_mega_1'
+    }
+})
+
+SMODS.Attribute({
+    key = 'consumable',
+    alias = {'consumeable'},
+    keys = {
+        'j_perkeo', 'j_astronomer', 'j_constellation', 'j_satellite', 'j_8_ball', 'j_superposition', 
+        'j_vagabond', 'j_gift', 'j_hallucination', 'j_fortune_teller', 'j_cartomancer', 'j_sixth_sense', 'j_seance',
+
+        'c_fool', 'c_high_priestess', 'c_emperor',
+
+        'v_tarot_merchant', 'v_tarot_tycoon', 'v_planet_merchant', 'v_planet_tycoon',
+
+        'p_arcana_normal_1', 'p_arcana_normal_2', 'p_arcana_normal_3', 'p_arcana_normal_4',
+        'p_arcana_jumbo_1', 'p_arcana_jumbo_2', 'p_arcana_mega_1', 'p_arcana_mega_2',
+        'p_celestial_normal_1', 'p_celestial_normal_2', 'p_celestial_normal_3', 'p_celestial_normal_4',
+        'p_celestial_jumbo_1', 'p_celestial_jumbo_2', 'p_celestial_mega_1', 'p_celestial_mega_2',
+        'p_spectral_normal_1', 'p_spectral_normal_2', 'p_spectral_jumbo_1', 'p_spectral_mega_1',
+
+        'Blue', 'Purple' -- seal
+    }
+})
+
+SMODS.Attribute({
+    key = 'consumable_slot',
+    alias = {'consumeable_slot'},
+    keys = {
+        'v_crystal_ball',
+
+        'e_negative'
+    }
+})
+
+SMODS.Attribute({
+    key = 'playing_card',
+    keys = {
+        'j_marble', 'j_dna', 'j_certificate',
+
+        'c_familiar', 'c_grim', 'c_incantation', 'c_cryptid',
+
+        'v_magic_trick', 'v_illusion',
+
+        'p_standard_normal_1', 'p_standard_normal_2', 'p_standard_normal_3', 'p_standard_normal_4',
+        'p_standard_jumbo_1', 'p_standard_jumbo_2', 'p_standard_mega_1', 'p_standard_mega_2'
     }
 })
 
 SMODS.Attribute({
     key = 'joker',
-    keys = { "j_abstract", "j_riff_raff", "j_swashbuckler", 'j_invisible' }
+    keys = {
+        "j_abstract", "j_riff_raff", "j_baseball", "j_swashbuckler", 'j_invisible', 'j_gift',
+
+        'c_wheel_of_fortune', 'c_temperance', 'c_judgement', 'c_wraith', 'c_ectoplasm', 'c_ankh', 'c_hex',
+
+        'p_buffoon_normal_1', 'p_buffoon_normal_2', 'p_buffoon_jumbo_1', 'p_buffoon_mega_1',
+
+        'tag_uncommon', 'tag_rare', 'tag_negative', 'tag_foil', 'tag_holo', 'tag_polychrome', 'tag_top_up',
+
+        'bl_final_heart'
+    }
 })
 
 SMODS.Attribute({
     key = 'joker_slot',
-    keys = { "j_stencil" }
+    keys = {
+        "j_stencil",
+
+        'v_antimatter',
+
+        'e_negative'
+    }
+})
+
+SMODS.Attribute({
+    key = 'rarity',
+    keys = {
+        'j_riff_raff', 'j_baseball',
+
+        'c_wraith',
+
+        'tag_uncommon', 'tag_rare', 'tag_top_up'
+    }
 })
 
 SMODS.Attribute({
     key = 'destroy_card',
-    keys = { "j_ceremonial", "j_madness", "j_trading" }
+    keys = {
+        "j_ceremonial", "j_madness", "j_trading",
+
+        'c_hanged_man', 'c_familiar', 'c_grim', 'c_incantation', 'c_immolate', 'c_ankh', 'c_hex',
+
+        'm_glass'
+    }
 })
 
 SMODS.Attribute({
@@ -418,7 +641,15 @@ SMODS.Attribute({
 
 SMODS.Attribute({
     key = 'hands',
-    keys = { "j_loyalty_card", "j_burglar", "j_troubadour", "j_dusk", "j_acrobat", "j_dna", "j_vagabond" }
+    keys = {
+        "j_loyalty_card", "j_burglar", "j_troubadour", "j_dusk", "j_acrobat", "j_dna", "j_vagabond",
+
+        'v_grabber', 'v_nacho_tong', 'v_hieroglyph',
+
+        'tag_handy',
+        
+        'bl_needle'
+    }
 })
 
 SMODS.Attribute({
@@ -428,12 +659,24 @@ SMODS.Attribute({
 
 SMODS.Attribute({
     key = 'enhancements',
-    keys = { "j_ticket", "j_marble", "j_steel_joker", "j_vampire", "j_midas_mask", "j_stone", "j_lucky_cat", "j_glass", "j_drivers_license" }
+    keys = {
+        "j_ticket", "j_marble", "j_steel_joker", "j_vampire", "j_midas_mask", "j_stone", "j_lucky_cat", "j_glass", "j_drivers_license",
+
+        'c_magician', 'c_empress', 'c_heirophant', 'c_lovers', 'c_chariot', 'c_justice', 'c_devil', 'c_tower',
+        'c_familiar', 'c_grim', 'c_incantation',
+
+        'v_illusion'
+    }
 })
 
 SMODS.Attribute({
     key = 'modify_card',
-    keys = { "j_pareidolia", "j_hiker", "j_vampire", "j_midas_mask" }
+    keys = {
+        "j_pareidolia", "j_hiker", "j_vampire", "j_midas_mask",
+
+        'c_magician', 'c_empress', 'c_heirophant', 'c_lovers', 'c_chariot', 'c_justice', 'c_strength', 'c_death', 'c_devil', 'c_tower',
+        'c_star', 'c_moon', 'c_sun', 'c_world', 'c_talisman', 'c_aura', 'c_sigil', 'c_ouija', 'c_deja_vu', 'c_trance', 'c_medium'
+    }
 })
 
 SMODS.Attribute({
@@ -443,36 +686,79 @@ SMODS.Attribute({
 
 SMODS.Attribute({
     key = 'seals',
-    keys = { "j_certificate" }
+    keys = {
+        "j_certificate",
+
+        'c_talisman', 'c_deja_vu', 'c_trance', 'c_medium',
+
+        'v_illusion' -- lol
+    }
 })
 
 SMODS.Attribute({
-    key = 'editions'
+    key = 'editions',
+    keys = {
+        'c_wheel_of_fortune', 'c_aura', 'c_ectoplasm', 'c_hex',
+
+        'v_hone', 'v_glow_up', 'v_illusion',
+
+        'tag_negative', 'tag_foil', 'tag_holo', 'tag_polychrome'
+    }
 })
 
 SMODS.Attribute({
     key = 'tag',
-    keys = { 'j_diet_cola' }
+    keys = {
+        'j_diet_cola',
+
+        'tag_double'
+    }
 })
 
 SMODS.Attribute({
     key = 'skip',
-    keys = { 'j_throwback' }
+    keys = {
+        'j_throwback',
+        
+        'tag_skip'
+    }
 })
 
 SMODS.Attribute({
     key = 'hand_size',
-    keys = { "j_juggler", "j_turtle_bean", "j_troubadour", "j_merry_andy", "j_stuntman" }
+    keys = {
+        "j_juggler", "j_turtle_bean", "j_troubadour", "j_merry_andy", "j_stuntman",
+
+        'c_ouija', 'c_ectoplasm',
+
+        'v_paint_brush', 'v_palette',
+
+        'tag_juggle',
+
+        'bl_manacle'
+    }
 })
 
 SMODS.Attribute({
     key = 'reroll',
-    keys = { "j_chaos", "j_flash" }
+    keys = {
+        "j_chaos", "j_flash",
+
+        'v_reroll_surplus', 'v_reroll_glut',
+
+        'tag_d_six'
+    }
 })
 
 SMODS.Attribute({
     key = 'sell_value',
-    keys = { "j_egg", "j_swashbuckler", "j_ceremonial", "j_gift" }
+    keys = {
+        "j_egg", "j_swashbuckler", "j_ceremonial", "j_gift",
+
+        'c_temperance',
+        
+        'v_clearance_sale', 'v_liquidation'
+    }
 })
 
 SMODS.Attribute({
@@ -483,14 +769,20 @@ SMODS.Attribute({
 SMODS.Attribute({
     key = 'on_sell',
     keys = {
-        'j_luchador', 'j_diet_cola', 'j_invisible'
+        'j_luchador', 'j_diet_cola', 'j_invisible',
+
+        'bl_final_leaf'
     }
 })
 
 SMODS.Attribute({
     key = 'boss_blind',
     keys = {
-        'j_rocket', 'j_luchador', 'j_campfire', 'j_matador', 'j_chicot'
+        'j_rocket', 'j_luchador', 'j_campfire', 'j_matador', 'j_chicot',
+
+        'v_directors_cut', 'v_retcon',
+
+        'tag_investment', 'tag_boss'
     }
 })
 
@@ -498,5 +790,73 @@ SMODS.Attribute({
     key = 'perma_bonus',
     keys = {
         'j_hiker'
+    }
+})
+
+SMODS.Attribute({
+    key = 'debuff',
+    keys = { 'bl_club', 'bl_goad', 'bl_plant', 'bl_head', 'bl_final_leaf', 'bl_window', 'bl_pillar', 'bl_final_heart' }
+})
+
+SMODS.Attribute({
+    key = 'face_down',
+    keys = { 'bl_fish', 'bl_house', 'bl_mark', 'bl_wheel', 'bl_final_acorn' }
+})
+
+SMODS.Attribute({
+    key = 'large_blind',
+    keys = { 'bl_wall', 'bl_final_vessel' }
+})
+
+SMODS.Attribute({
+    key = 'position',
+    keys = {
+        'j_blueprint', 'j_ceremonial', 'j_brainstorm', 'j_hanging_chad', 'j_photograph',
+
+        'c_death'
+    }
+})
+
+SMODS.Attribute({
+    key = 'shop',
+    keys = {
+        'j_astronomer', 'j_chaos', 'j_flash',
+
+        'v_overstock_norm', 'v_overstock_plus', 'v_clearance_sale', 'v_liquidation', 'v_reroll_surplus', 'v_reroll_glut',
+        'v_tarot_merchant', 'v_tarot_tycoon', 'v_planet_merchant', 'v_planet_tycoon', 'v_magic_trick', 'v_illusion',
+
+        'tag_uncommon', 'tag_rare', 'tag_negative', 'tag_foil', 'tag_holo', 'tag_polychrome', 'tag_voucher', 'tag_coupon', 'tag_d_six'
+    }
+})
+
+SMODS.Attribute({
+    key = 'booster',
+    keys = {
+        'j_red_card', 'j_hallucination', 'j_astronomer',
+
+        'v_omen_globe', 'v_telescope',
+
+        'tag_standard', 'tag_charm', 'tag_meteor', 'tag_buffoon', 'tag_ethereal'
+    }
+})
+
+SMODS.Attribute({
+    key = 'hand_level',
+    keys = {
+        'j_space', 'j_burnt',
+
+        'c_mercury', 'c_venus', 'c_earth', 'c_mars', 'c_jupiter', 'c_saturn',
+        'c_uranus', 'c_neptune', 'c_pluto', 'c_planet_x', 'c_ceres', 'c_eris',
+
+        'tag_orbital',
+
+        'bl_arm'
+    }
+})
+
+SMODS.Attribute({
+    key = 'ante',
+    keys = {
+        'v_hieroglyph', 'v_petroglyph'
     }
 })
