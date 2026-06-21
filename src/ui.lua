@@ -2540,6 +2540,9 @@ local igo = Game.init_game_object
 function Game:init_game_object()
     local t = igo(self)
     t.smods_version = SMODS.version
+    t.blind_badge = {
+        name = 'temp'
+    }
     return t
 end
 
@@ -3203,3 +3206,108 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
         }
     }
 end
+
+-- #region blind tooltips
+
+local old_blind_popup = create_UIBox_blind_popup
+function create_UIBox_blind_popup(blind, discovered, vars)
+    local popup = old_blind_popup(blind, discovered, vars)
+    popup.config.colour = darken(G.C.BLACK, 0.1)
+    popup.config.align = 'cm'
+    if blind.mod then
+        local badges = {}
+        SMODS.create_mod_badges(blind, badges)
+        for i=1, #badges do
+            table.insert(popup.nodes, badges[i])
+        end
+    end
+    popup = {n=G.UIT.R, config={colour=lighten(G.C.JOKER_GREY, 0.5), align='cm', padding=0.05, emboss=0.07, r=0.12}, nodes = {
+        {n=G.UIT.R, config={align = "cm", padding = 0.07, r = 0.1, colour = adjust_alpha(darken(G.C.BLACK, 0.1), 0.8), id = 'blind_popup_container'}, nodes=
+            popup.nodes
+        }}
+    }
+    return popup
+  end 
+
+local old_blind_choice_UI = create_UIBox_blind_choice
+function create_UIBox_blind_choice(type, run_info)
+    local box = old_blind_choice_UI(type, run_info)
+    local blind = G.P_BLINDS[G.GAME.round_resets.blind_choices[type]]
+    if blind.mod then
+        local badges = {}
+        SMODS.create_mod_badges(blind, badges)
+        for i=1, #badges do
+            badges[i].nodes[1].config.minw = 2.7
+            local text = SMODS.deepfind(badges[i], 'smods_mod_badge_text')
+            if next(text) and text[1].table.object then text[1].table.object.scroll_args.overflow.definition.config.maxw = text[1].table.object.scroll_args.overflow.definition.config.maxw * 2.7/2 end
+            table.insert(box.nodes[1].nodes[2].nodes, badges[i])
+        end
+        box.nodes[1].nodes[3].config.padding = 0.1
+    end
+    return box
+end
+
+function SMODS.create_blind_mod_badge()
+    if G.GAME.blind and G.GAME.blind.config.blind and G.GAME.blind.config.blind.mod then
+        local mod = G.GAME.blind.config.blind.mod
+        local text = DynaText({string = {{ref_table = G.GAME.blind_badge, ref_value = 'name'}}, colours = {mod.badge_text_colour or G.C.WHITE}, shadow = true, silent = true, float = true, scale = 0.36})
+        local text_scroll = SMODS.UIScrollBox({
+                content = text,
+                container = {
+                    config = {
+                        can_collide = false,
+                    }
+                },
+                overflow = {
+                    node_config = {
+                        no_overflow = not mod.no_marquee and "h" or false,
+                        maxw = not mod.no_marquee and 4.4 or nil,
+                    },
+                    config = {
+                        can_collide = false,
+                    }
+                },
+                sync_mode = "offset",
+                scroll_move = function(self, dt)
+                    local dx = self:get_scroll_distance()
+                    if dx == 0 or mod.no_marquee then return end
+                    if not self.scroll_start_pause then
+                        self.scroll_start_pause = 1.5
+                    end
+                    if self.scroll_start_pause > 0 and self.scroll_offset.x >= 0 then
+                        self.scroll_start_pause = self.scroll_start_pause - G.real_dt
+                    else
+                        self.scroll_offset.x = (self.scroll_offset.x or 0) + G.real_dt / 1.5
+                        if self.scroll_offset.x > self.content_container.T.w then
+                            self.scroll_start_pause = 1.5
+                            self.scroll_offset.x = -self.T.w - 0.1
+                        end
+                    end
+                end,
+            })
+        return {n=G.UIT.R, config={align = "cm", padding = 0.03*0.9, minh = 0.4}, nodes={
+            {n=G.UIT.O, config={object = text_scroll}},
+        }}
+    end
+end
+
+G.FUNCS.HUD_blind_badge = function(e)
+    if G.GAME.blind.in_blind then
+        if G.GAME.blind.config.blind.mod then
+            if not e.children[1] then 
+                local mod = G.GAME.blind.config.blind.mod
+                G.GAME.blind_badge.name = mod.display_name
+                e.UIBox:add_child(SMODS.create_blind_mod_badge(), e)
+                e.config.colour = mod.badge_colour or G.C.DYN_UI.MAIN
+                e.config.emboss = 0.05
+                e.states.visible = true
+            end
+        elseif e.children[1] then
+            e.states.visible = false
+            e.children[1]:remove()
+            e.children[1] = nil
+        end
+    end
+end
+
+-- #endregion

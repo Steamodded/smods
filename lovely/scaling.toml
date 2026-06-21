@@ -3,6 +3,8 @@ version = "1.0.0"
 dump_lua = true
 priority = -10
 
+# SCALING VALUES
+
 # Ceremonial Dagger
 [[patches]]
 [patches.pattern]
@@ -27,9 +29,7 @@ SMODS.scale_card(self, {
     ref_value = "mult",
     scalar_table = sliced_card,
     scalar_value = "sell_cost",
-    operation = function(ref_table, ref_value, initial, scaling)
-        ref_table[ref_value] = initial + 2*scaling
-    end,
+    scalar_factor = 2,
     scaling_message = {
         message = localize{type = 'variable', key = 'a_mult', vars = {self.ability.mult+2*sliced_card.sell_cost}},
         colour = G.C.RED,
@@ -492,11 +492,9 @@ SMODS.scale_card(self, {
     ref_table = self.ability,
     ref_value = "x_mult",
     scalar_value = "extra",
+    scalar_factor = #enhanced,
     message_key = 'a_xmult',
-    message_colour = G.C.MULT,
-    operation = function(ref_table, ref_value, initial, scaling)
-        ref_table[ref_value] = initial + scaling*#enhanced
-    end
+    message_colour = G.C.MULT
 })
 return nil, true
 '''
@@ -516,10 +514,8 @@ SMODS.scale_card(self, {
     ref_table = self.ability,
     ref_value = "x_mult",
     scalar_value = "extra",
-    message_key = 'a_xmult',
-    operation = function(ref_table, ref_value, initial, scaling)
-        ref_table[ref_value] = initial + scaling*#context.cards
-    end
+    scalar_factor = #context.cards,
+    message_key = 'a_xmult'
 })
 '''
 
@@ -672,9 +668,7 @@ SMODS.scale_card(self, {
     ref_table = self.ability,
     ref_value = 'caino_xmult',
     scalar_value = 'extra',
-    operation = function(ref_table, ref_value, initial, change)
-        ref_table[ref_value] = initial + face_cards*change
-    end,
+    scalar_factor = face_cards,
     message_key = 'a_xmult'
 })
 return nil, true
@@ -700,9 +694,85 @@ SMODS.scale_card(self, {
     ref_table = self.ability,
     ref_value = 'x_mult',
     scalar_value = 'extra',
-    operation = function(ref_table, ref_value, initial, change)
-        ref_table[ref_value] = initial + glass_cards*change
-    end,
+    scalar_factor = glass_cards,
     message_key = 'a_xmult'
 })
+'''
+
+# RESETTING VALUES
+
+# Campfire / Hit the Road
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.ability.x_mult = 1
+return {
+    message = localize('k_reset'),
+    colour = G.C.RED
+}
+'''
+payload = '''
+SMODS.reset_card(self, {
+    ref_table = self.ability,
+    ref_value = 'x_mult',
+    reset_value = 1,
+    message_colour = G.C.RED
+})
+return nil, true
+'''
+
+# Ride the Bus
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+local last_mult = self.ability.mult
+self.ability.mult = 0
+if last_mult > 0 then 
+    return {
+        card = self,
+        message = localize('k_reset')
+    }
+end
+'''
+payload = '''
+if self.ability.mult > 0 then
+    SMODS.reset_card(self, {
+        ref_table = self.ability,
+        ref_value = 'mult',
+        reset_value = 0
+    })
+    return nil, true
+end
+'''
+
+# Obelisk
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if self.ability.x_mult > 1 then
+    self.ability.x_mult = 1
+    return {
+        card = self,
+        message = localize('k_reset')
+    }
+end
+'''
+payload = '''
+if self.ability.x_mult > 1 then
+    SMODS.reset_card(self, {
+        ref_table = self.ability,
+        ref_value = 'x_mult',
+        reset_value = 1
+    })
+    return nil, true
+end
 '''
