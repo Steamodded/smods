@@ -1197,12 +1197,12 @@ pattern = '''
 draw_card(G.deck,G.hand, i*100/hand_space,'up', true)
 '''
 payload = '''
-if cards_to_draw[i] and cards_to_draw[i].ability and cards_to_draw[i].ability.extra_slots_used then
-    SMODS.cards_to_draw = SMODS.cards_to_draw + cards_to_draw[i].ability.extra_slots_used
+if cards_to_draw[i] and cards_to_draw[i].ability and (cards_to_draw[i].ability.extra_slots_used or cards_to_draw[i].ability.card_limit) then
+    SMODS.cards_to_draw = SMODS.cards_to_draw + (cards_to_draw[i].ability.extra_slots_used or 0) - (cards_to_draw[i].ability.card_limit or 0)
     G.E_MANAGER:add_event(Event({
         trigger = 'immediate',
         func = function()                
-            SMODS.cards_to_draw = SMODS.cards_to_draw - cards_to_draw[i].ability.extra_slots_used
+            SMODS.cards_to_draw = SMODS.cards_to_draw - (cards_to_draw[i].ability.extra_slots_used or 0) + (cards_to_draw[i].ability.card_limit or 0)
             return true
         end
     }))

@@ -74,7 +74,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         local atlas_cfg = obj.prefix_config.atlas
         if atlas_cfg ~= false then
             if type(atlas_cfg) ~= 'table' then atlas_cfg = {} end
-            for _, v in ipairs({ 'atlas', 'hc_atlas', 'lc_atlas', 'hc_ui_atlas', 'lc_ui_atlas', 'soul_atlas', 'hc_soul_atlas', 'lc_soul_atlas', 'sticker_atlas' }) do
+            for _, v in ipairs({ 'atlas', 'hc_atlas', 'lc_atlas', 'hc_ui_atlas', 'lc_ui_atlas', 'soul_atlas', 'hc_soul_atlas', 'lc_soul_atlas', 'sticker_atlas', 'locked_atlas' }) do
                 if rawget(obj, v) then SMODS.modify_key(obj, mod and mod.prefix, atlas_cfg, v) end
             end
         end
@@ -739,7 +739,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             for i = 1, #G.P_CENTER_POOLS[self.set] do
                 G.C.STAKES[i] = G.P_CENTER_POOLS[self.set][i].colour or G.C.WHITE
             end
-            convert_save_data()
+            --convert_save_data()
         end,
         process_loc_text = function(self)
             -- empty loc_txt indicates there are existing values that shouldn't be changed or it isn't necessary
@@ -805,7 +805,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         sticker_pos = { x = 1, y = 0 },
         colour = G.C.WHITE,
         loc_txt = {},
-        hide_from_run_info = true
+        hide_from_run_info = true,
+        vanilla_index = 1,
     }
     SMODS.Stake {
         name = "Red Stake",
@@ -819,7 +820,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.GAME.modifiers.no_blind_reward.Small = true
         end,
         colour = G.C.RED,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 2,
     }
     SMODS.Stake {
         name = "Green Stake",
@@ -832,7 +834,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.GAME.modifiers.scaling = (G.GAME.modifiers.scaling or 1) + 1
         end,
         colour = G.C.GREEN,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 3,
     }
     SMODS.Stake {
         name = "Black Stake",
@@ -844,8 +847,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         modifiers = function()
             G.GAME.modifiers.enable_eternals_in_shop = true
         end,
+        loc_vars = function(self, info_queue, card)
+            info_queue[#info_queue+1] = {set = 'Other', key = 'eternal'}
+        end,
         colour = G.C.BLACK,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 4,
     }
     SMODS.Stake {
         name = "Blue Stake",
@@ -858,7 +865,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.GAME.starting_params.discards = G.GAME.starting_params.discards - 1
         end,
         colour = G.C.BLUE,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 5,
     }
     SMODS.Stake {
         name = "Purple Stake",
@@ -871,7 +879,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             G.GAME.modifiers.scaling = (G.GAME.modifiers.scaling or 1) + 1
         end,
         colour = G.C.PURPLE,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 6,
     }
     SMODS.Stake {
         name = "Orange Stake",
@@ -883,8 +892,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         modifiers = function()
             G.GAME.modifiers.enable_perishables_in_shop = true
         end,
+        loc_vars = function(self, info_queue, card)
+            info_queue[#info_queue+1] = {set = 'Other', key = 'perishable', vars = {5, 5}}
+        end,
         colour = G.C.ORANGE,
         loc_txt = {},
+        vanilla_index = 7,
     }
     SMODS.Stake {
         name = "Gold Stake",
@@ -895,9 +908,13 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         modifiers = function()
             G.GAME.modifiers.enable_rentals_in_shop = true
         end,
+        loc_vars = function(self, info_queue, card)
+            info_queue[#info_queue+1] = {set = 'Other', key = 'rental', vars = {G.GAME.rental_rate or 1}}
+        end,
         colour = G.C.GOLD,
         shiny = true,
-        loc_txt = {}
+        loc_txt = {},
+        vanilla_index = 8,
     }
 
     -------------------------------------------------------------------------------------------------
@@ -1284,6 +1301,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
             desc_nodes.background_colour = res.background_colour
+        end,
+        has_attribute = function(self, attribute)
+            if not SMODS.Attributes[attribute] or not self.attributes then return false end
+            if self.attributes[attribute] then return true end
+            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
+                if self.attributes[att] then return true end
+            end
+            return false
         end
     }
 
@@ -1815,69 +1840,7 @@ SMODS.UndiscoveredCompat = {
     ----- API CODE GameObject.Blind
     -------------------------------------------------------------------------------------------------
 
-    SMODS.Blinds = {}
-    SMODS.Blind = SMODS.GameObject:extend {
-        obj_table = SMODS.Blinds,
-        obj_buffer = {},
-        class_prefix = 'bl',
-        debuff = {},
-        vars = {},
-        config = {},
-        dollars = 5,
-        mult = 2,
-        atlas = 'blind_chips',
-        discovered = false,
-        pos = { x = 0, y = 0 },
-        required_params = {
-            'key',
-        },
-        set = 'Blind',
-        get_obj = function(self, key) return G.P_BLINDS[key] end,
-        register = function(self)
-            self.name = self.name or self.key
-            SMODS.Blind.super.register(self)
-        end,
-        inject = function(self, i)
-            -- no pools to query length of, so we assign order manually
-            if not self.taken_ownership then
-                self.order = 30 + i
-            end
-            G.P_BLINDS[self.key] = self
-            if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
-        end
-    }
-    SMODS.Blind:take_ownership('eye', {
-        set_blind = function(self, reset, silent)
-            if not reset then
-                G.GAME.blind.hands = {}
-                for _, v in ipairs(G.handlist) do
-                    G.GAME.blind.hands[v] = false
-                end
-            end
-        end
-    })
-    SMODS.Blind:take_ownership('wheel', {
-        loc_vars = function(self)
-            return { vars = { SMODS.get_probability_vars(self, 1, 7, 'wheel') } }
-        end,
-        collection_loc_vars = function(self)
-            return { vars = { '1', '7' }}
-        end,
-        process_loc_text = function(self)
-            local text = G.localization.descriptions.Blind[self.key].text[1]
-            if string.sub(text, 1, 3) ~= '#1#' then
-                G.localization.descriptions.Blind[self.key].text[1] = "#1#"..text
-            end
-            -- Is this too much hacky?
-            G.localization.descriptions.Blind[self.key].text[1] = string.gsub(G.localization.descriptions.Blind[self.key].text[1], "7", "#2#")
-            SMODS.Blind.process_loc_text(self)
-        end,
-        get_loc_debuff_text = function() return G.GAME.blind.loc_debuff_text end,
-    })
-
-    SMODS.Blinds.modifies_draw = {
-        bl_serpent = true
-    }
+    assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/blind.lua'), ('=[SMODS _ "src/game_objects/blind.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Seal
@@ -1906,6 +1869,14 @@ SMODS.UndiscoveredCompat = {
             self.badge_to_key[self.key:lower() .. '_seal'] = self.key
             SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
             self.rng_buffer[#self.rng_buffer + 1] = self.key
+            if self.attributes then
+                for _, attribute in ipairs(self.attributes) do
+                    if SMODS.Attributes[attribute] then
+                        self.attributes[attribute] = true
+                        SMODS.Attributes[attribute].keys = SMODS.merge_lists({SMODS.Attributes[attribute].keys or {}, {self.key}})
+                    end
+                end
+            end
         end,
         process_loc_text = function(self)
             SMODS.process_loc_text(G.localization.descriptions.Other, self.key:lower() .. '_seal', self.loc_txt)
@@ -1959,6 +1930,14 @@ SMODS.UndiscoveredCompat = {
         create_fake_card = function(self)
 	        return { ability = { seal = copy_table(self.config) }, fake_card = self.key }
         end,
+        has_attribute = function(self, attribute)
+            if not SMODS.Attributes[attribute] or not self.attributes then return false end
+            if self.attributes[attribute] then return true end
+            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
+                if self.attributes[att] then return true end
+            end
+            return false
+        end
     }
     for _,v in ipairs { 'Purple', 'Gold', 'Blue', 'Red' } do
         SMODS.Seal:take_ownership(v, { badge_colour = G.C[v:upper()], pos = G.shared_seals[v].sprite_pos, generate_ui = SMODS.Seal.generate_ui })
@@ -2090,6 +2069,7 @@ SMODS.UndiscoveredCompat = {
         ui_pos = { x = 1, y = 1 },
         keep_base_colours = true,
         sort_id = 3,
+        shade = "light",
     }
     SMODS.Suit {
         key = 'Clubs',
@@ -2098,6 +2078,7 @@ SMODS.UndiscoveredCompat = {
         ui_pos = { x = 2, y = 1 },
         keep_base_colours = true,
         sort_id = 4,
+        shade = "dark",
     }
     SMODS.Suit {
         key = 'Hearts',
@@ -2106,6 +2087,7 @@ SMODS.UndiscoveredCompat = {
         ui_pos = { x = 0, y = 1 },
         keep_base_colours = true,
         sort_id = 2,
+        shade = "light",
     }
     SMODS.Suit {
         key = 'Spades',
@@ -2114,6 +2096,7 @@ SMODS.UndiscoveredCompat = {
         ui_pos = { x = 3, y = 1 },
         keep_base_colours = true,
         sort_id = 1,
+        shade = "dark",
     }
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Rank
@@ -3066,6 +3049,14 @@ SMODS.UndiscoveredCompat = {
         inject = function(self)
             G.P_TAGS[self.key] = self
             SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
+            if self.attributes then
+                for _, attribute in ipairs(self.attributes) do
+                    if SMODS.Attributes[attribute] then
+                        self.attributes[attribute] = true
+                        SMODS.Attributes[attribute].keys = SMODS.merge_lists({SMODS.Attributes[attribute].keys or {}, {self.key}})
+                    end
+                end
+            end
         end,
         generate_ui = function(self, info_queue, card, desc_nodes, specific_vars, full_UI_table)
             if not card then
@@ -3114,6 +3105,14 @@ SMODS.UndiscoveredCompat = {
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
             desc_nodes.background_colour = res.background_colour
+        end,
+        has_attribute = function(self, attribute)
+            if not SMODS.Attributes[attribute] or not self.attributes then return false end
+            if self.attributes[attribute] then return true end
+            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
+                if self.attributes[att] then return true end
+            end
+            return false
         end
     }
 
@@ -4029,6 +4028,12 @@ SMODS.UndiscoveredCompat = {
     -------------------------------------------------------------------------------------------------
 
     assert(load(NFS.read(SMODS.path..'src/card_draw.lua'), ('=[SMODS _ "src/card_draw.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.RunSelectPage
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/runselectpage.lua'), ('=[SMODS _ "src/game_objects/runselectpage.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- INTERNAL API CODE GameObject._Loc_Post
