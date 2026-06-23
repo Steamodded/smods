@@ -49,7 +49,9 @@ function SMODS.populate_attributes()
             if G.P_CENTERS[key] then
                 G.P_CENTERS[key].attributes = G.P_CENTERS[key].attributes or {}
                 G.P_CENTERS[key].attributes[attribute.key] = true
-            end
+            elseif G.P_TAGS[key] then
+                G.P_TAGS[key].attributes = G.P_TAGS[key].attributes or {}
+                G.P_TAGS[key].attributes[attribute.key] = true
         end
     end
 
@@ -81,7 +83,7 @@ function Blind:has_attribute(attribute)
 end
 
 function Tag:has_attribute(attribute)
-    return self.config.center:has_attribute(attribute)
+    return G.P_TAGS[self.key]:has_attribute(attribute)
 end
 
 SMODS.Attribute({
