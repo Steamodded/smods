@@ -53,9 +53,21 @@ function SMODS.populate_attributes()
         end
     end
 
-    for _, center in pairs(G.P_CENTERS) do
-        if not center.has_attribute then
-            center.has_attribute = SMODS.Center.has_attribute
+    for _, c_type in pairs {
+        "Joker",
+        "Consumeables",
+        "Voucher",
+        "Enhanced",
+        "Default",
+        "Edition",
+        "Booster",
+        "Seal",
+        "Tag"
+    } do
+        for _, center in pairs(G.P_CENTER_POOLS[c_type]) do
+            if not center.has_attribute then
+                center.has_attribute = SMODS.Center.has_attribute
+            end
         end
     end
 end
