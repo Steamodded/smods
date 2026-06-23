@@ -52,6 +52,12 @@ function SMODS.populate_attributes()
             end
         end
     end
+
+    for _, center in pairs(G.P_CENTERS) do
+        if not center.has_attribute then
+            center.has_attribute = SMODS.Center.has_attribute
+        end
+    end
 end
 
 function Card:has_attribute(attribute)
