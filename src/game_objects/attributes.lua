@@ -78,10 +78,6 @@ function Card:has_attribute(attribute)
     return self.config.center:has_attribute(attribute)
 end
 
-function Blind:has_attribute(attribute)
-    return self.config.center:has_attribute(attribute)
-end
-
 function Tag:has_attribute(attribute)
     return G.P_TAGS[self.key]:has_attribute(attribute)
 end
@@ -212,8 +208,6 @@ SMODS.Attribute({
         'c_star', 'c_moon', 'c_sun', 'c_world', 'c_sigil',
 
         'm_wild',
-
-        'bl_club', 'bl_goad', 'bl_head', 'bl_window'
     }
 })
 
@@ -223,8 +217,6 @@ SMODS.Attribute({
         'j_greedy_joker', 'j_smeared', 'j_rough_gem',
 
         'c_star',
-
-        'bl_window'
     }
 })
 
@@ -234,8 +226,6 @@ SMODS.Attribute({
         'j_lusty_joker', 'j_smeared', 'j_bloodstone',
 
         'c_sun',
-
-        'bl_head'
     }
 })
 
@@ -245,8 +235,6 @@ SMODS.Attribute({
         'j_wrathful_joker', 'j_smeared', 'j_arrowhead', 'j_blackboard',
 
         'c_world',
-
-        'bl_goad'
     }
 })
 
@@ -256,8 +244,6 @@ SMODS.Attribute({
         'j_gluttenous_joker', 'j_smeared', 'j_onyx_agate', 'j_seeing_double', 'j_blackboard',
 
         'c_moon',
-
-        'bl_club'
     }
 })
 
@@ -275,8 +261,6 @@ SMODS.Attribute({
         'c_uranus', 'c_neptune', 'c_pluto', 'c_planet_x', 'c_ceres', 'c_eris',
 
         'v_telescope', 'v_observatory',
-
-        'bl_ox', 'bl_mouth', 'bl_eye'
     }
 })
 
@@ -417,8 +401,6 @@ SMODS.Attribute({
         'j_smiley', 'j_sock_and_buskin', 'j_caino',
 
         'c_familiar',
-
-        'bl_mark', 'bl_plant'
     }
 })
 
@@ -458,8 +440,6 @@ SMODS.Attribute({
 
         'tag_garbage',
 
-        'bl_hook', 'bl_water',
-
         'Purple' -- seal
     }
 })
@@ -488,8 +468,6 @@ SMODS.Attribute({
     key = 'lose_economy',
     keys = {
         'c_wraith',
-
-        'bl_ox', 'bl_tooth'
     }
 })
 
@@ -502,8 +480,6 @@ SMODS.Attribute({
         'c_wheel_of_fortune',
 
         'm_glass', 'm_lucky',
-
-        'bl_wheel'
     }
 })
 
@@ -612,8 +588,6 @@ SMODS.Attribute({
         'p_buffoon_normal_1', 'p_buffoon_normal_2', 'p_buffoon_jumbo_1', 'p_buffoon_mega_1',
 
         'tag_uncommon', 'tag_rare', 'tag_negative', 'tag_foil', 'tag_holo', 'tag_polychrome', 'tag_top_up',
-
-        'bl_final_heart'
     }
 })
 
@@ -667,8 +641,6 @@ SMODS.Attribute({
         'v_grabber', 'v_nacho_tong', 'v_hieroglyph',
 
         'tag_handy',
-        
-        'bl_needle'
     }
 })
 
@@ -754,8 +726,6 @@ SMODS.Attribute({
         'v_paint_brush', 'v_palette',
 
         'tag_juggle',
-
-        'bl_manacle'
     }
 })
 
@@ -790,8 +760,6 @@ SMODS.Attribute({
     key = 'on_sell',
     keys = {
         'j_luchador', 'j_diet_cola', 'j_invisible',
-
-        'bl_final_leaf'
     }
 })
 
@@ -815,17 +783,17 @@ SMODS.Attribute({
 
 SMODS.Attribute({
     key = 'debuff',
-    keys = { 'bl_club', 'bl_goad', 'bl_plant', 'bl_head', 'bl_final_leaf', 'bl_window', 'bl_pillar', 'bl_final_heart' }
+    keys = {}
 })
 
 SMODS.Attribute({
     key = 'face_down',
-    keys = { 'bl_fish', 'bl_house', 'bl_mark', 'bl_wheel', 'bl_final_acorn' }
+    keys = {}
 })
 
 SMODS.Attribute({
     key = 'large_blind',
-    keys = { 'bl_wall', 'bl_final_vessel' }
+    keys = {}
 })
 
 SMODS.Attribute({
@@ -869,8 +837,6 @@ SMODS.Attribute({
         'c_uranus', 'c_neptune', 'c_pluto', 'c_planet_x', 'c_ceres', 'c_eris',
 
         'tag_orbital',
-
-        'bl_arm'
     }
 })
 
