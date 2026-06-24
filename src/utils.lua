@@ -2454,7 +2454,7 @@ end
 
 local function insert(t, res)
     for k,v in pairs(res) do
-        if type(v) == 'table' and type(t[k]) == 'table' then
+        if v and type(v) == 'table' and type(t[k]) == 'table' then
             insert(t[k], v)
         else
             t[k] = true
