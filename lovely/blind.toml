@@ -651,6 +651,21 @@ payload = '''
 SMODS.reset_blind_choices(self.GAME.round_resets.blind_choices)
 '''
 
+# Restore bosses_used compatibility on loaded saves.
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+self.GAME = saveTable and saveTable.GAME or self:init_game_object()
+'''
+payload = '''
+if saveTable and SMODS.normalize_bosses_used_table then
+    self.GAME.bosses_used = SMODS.normalize_bosses_used_table(self.GAME.bosses_used)
+end
+'''
+
 # Handle setting new blinds
 [[patches]]
 [patches.pattern]
