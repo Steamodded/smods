@@ -4161,14 +4161,21 @@ function SMODS.create_unlock_text(center)
 	return localize('k_'..string.lower(center and center.set or 'unknown'))
 end
 
--- Takes a key_string of this form 'subfield.subfield.subfield ...'
-function table_get_subfield(_table, key_string)
+-- Takes a key_string of this form 'subfield.subfield.subfield ...' OR {'string key', 3 (numeric key), ...} (list of arbitrary keys)
+function table_get_subfield(_table, key_string_or_keys)
     if type(_table) ~= "table" then sendWarnMessage("table_get_subfield called with invalid table argument", "utils"); return end 
-    if type(key_string) ~= "string" then sendWarnMessage(string.format("table_get_subfield called with invalid key_string '%s'.", key_string), "utils"); return end 
+    if type(key_string_or_keys) ~= "string" and type(key_string_or_keys) ~= "table" then sendWarnMessage(string.format("table_get_subfield called with invalid key_string '%s'.", key_string_or_keys), "utils"); return end
     local _t = _table
-    for field in string.gmatch(key_string, "[^.]+") do
-        _t = _t[field]
-        if not _t then return end
+    if type(key_string_or_keys) == "string" then
+        for field in string.gmatch(key_string_or_keys, "[^.]+") do
+            _t = _t[field]
+            if not _t then return end
+        end
+    else 
+        for _, field in ipairs(key_string_or_keys) do
+            _t = _t[field]
+            if not _t then return end
+        end
     end
     return _t
 end
