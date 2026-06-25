@@ -711,20 +711,22 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     G.sticker_map[self.key] = nil
                 end
             end
-            -- Sorts stake into the correct spot
-            if self.above_stake and G.P_STAKES[self.above_stake] then
-                self.order = G.P_STAKES[self.above_stake].order + 1
-            end
-            for i, v in pairs(G.P_STAKES) do
-                if i ~= self.key and v.order >= self.order then
-                    v.order = v.order + 1
-                end
-            end
             self.injected = true
             -- should only need to do this once per injection routine
         end,
         post_inject_class = function(self)
-            table.sort(G.P_CENTER_POOLS[self.set], function(a, b) return a.order < b.order end)
+            -- sort stakes into the correct spot
+            local stakes_fixed = false
+            repeat
+                table.sort(G.P_CENTER_POOLS[self.set], function(a, b) return a.order < b.order end)
+                stakes_fixed = true
+                for i, v in ipairs(G.P_CENTER_POOLS[self.set]) do
+                    if v.above_stake and G.P_STAKES[v.above_stake] and v.order < G.P_STAKES[v.above_stake].order then
+                        v.order = G.P_STAKES[v.above_stake].order + 1
+                        stakes_fixed = false
+                    end
+                end
+            until stakes_fixed
             for i,v in ipairs(G.P_CENTER_POOLS[self.set]) do
                 G.P_STAKES[v.key].order = i
             end
