@@ -508,7 +508,7 @@ function SMODS.create_mod_badges(obj, badges)
             local size = 0.9
             local max_text_width = 2 - 2*0.05 - 4*0.03*size - 2*0.03
             local scale_fac = 1
-            local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE},float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = 0.33*size*scale_fac})
+            local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE}, maxw = mod.no_marquee and max_text_width, float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = 0.33*size*scale_fac})
             local badge_scroll = SMODS.UIScrollBox({
                 content = badge_text,
                 container = {
@@ -775,8 +775,7 @@ function SMODS.poll_seal(args)
         type_weight = type_weight + v.weight
     end
 
-    local seal_poll = pseudorandom(pseudoseed(key or 'stdseal'..G.GAME.round_resets.ante))
-    if seal_poll > 1 - (type_weight*mod / total_weight) or guaranteed then -- is a seal generated
+    if guaranteed or pseudorandom(pseudoseed(key or 'stdseal'..G.GAME.round_resets.ante)) > 1 - (type_weight*mod / total_weight) then -- is a seal generated
         local seal_type_poll = pseudorandom(pseudoseed(type_key)) -- which seal is generated
         local weight_i = 0
         for k, v in ipairs(available_seals) do

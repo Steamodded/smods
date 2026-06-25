@@ -710,6 +710,7 @@ self.b_undiscovered = {name = 'Undiscovered', debuff_text = 'Defeat this blind t
 '''
 payload = '''
 for key, blind in pairs(self.P_BLINDS) do
+    blind.set = 'Blind'
     if blind.boss and blind.boss.max then
         blind.boss.max = nil
         if blind.boss.showdown then

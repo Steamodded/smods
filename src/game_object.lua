@@ -1301,14 +1301,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
             desc_nodes.background_colour = res.background_colour
-        end,
-        has_attribute = function(self, attribute)
-            if not SMODS.Attributes[attribute] or not self.attributes then return false end
-            if self.attributes[attribute] then return true end
-            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
-                if self.attributes[att] then return true end
-            end
-            return false
         end
     }
 
@@ -1929,14 +1921,6 @@ SMODS.UndiscoveredCompat = {
         end,
         create_fake_card = function(self)
 	        return { ability = { seal = copy_table(self.config) }, fake_card = self.key }
-        end,
-        has_attribute = function(self, attribute)
-            if not SMODS.Attributes[attribute] or not self.attributes then return false end
-            if self.attributes[attribute] then return true end
-            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
-                if self.attributes[att] then return true end
-            end
-            return false
         end
     }
     for _,v in ipairs { 'Purple', 'Gold', 'Blue', 'Red' } do
@@ -3196,14 +3180,6 @@ SMODS.UndiscoveredCompat = {
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
             desc_nodes.background_colour = res.background_colour
-        end,
-        has_attribute = function(self, attribute)
-            if not SMODS.Attributes[attribute] or not self.attributes then return false end
-            if self.attributes[attribute] then return true end
-            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
-                if self.attributes[att] then return true end
-            end
-            return false
         end
     }
 
