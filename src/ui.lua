@@ -3291,6 +3291,10 @@ function SMODS.create_blind_mod_badge()
     end
 end
 
+function SMODS.modbadge_shader_on_blind()
+    return true
+end
+
 G.FUNCS.HUD_blind_badge = function(e)
     if G.GAME.blind.in_blind then
         if G.GAME.blind.config.blind.mod then
@@ -3299,6 +3303,7 @@ G.FUNCS.HUD_blind_badge = function(e)
                 G.GAME.blind_badge.name = mod.display_name
                 e.UIBox:add_child(SMODS.create_blind_mod_badge(), e)
                 e.config.colour = mod.badge_colour or G.C.DYN_UI.MAIN
+                e.config.shader = SMODS.modbadge_shader_on_blind() and mod.badge_shader or nil
                 e.config.emboss = 0.05
                 e.states.visible = true
             end
