@@ -42,10 +42,9 @@ function SMODS.SUI.input_type(i)
 end
 function SMODS.SUI.attach_hooks(target, hooks)
 	if not target or not hooks then
-		return
+		return target
 	end
-	for _, func_key in pairs(hooks) do
-		local new_func = hooks[func_key]
+	for func_key, new_func in pairs(hooks) do
 		local old_func = target[func_key] or function() end
 		target[func_key] = function(self, ...)
 			return new_func(self, old_func, ...)
