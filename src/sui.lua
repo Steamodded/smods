@@ -52,6 +52,9 @@ function SMODS.SUI.attach_hooks(target, hooks)
 	end
 	return target
 end
+function SMODS.SUI.is_column_type(n)
+	return n == G.UIT.C or n == G.UIT.B or n == G.UIT.T or n == G.UIT.O
+end
 
 -- Storages for keys which needs to be resolved by iterating dictionaries
 
@@ -144,15 +147,15 @@ function SMODS.SUI.extended_process_node(node, index, v)
 	end
 	if input_type == "node" then
 		if node.s_config.rc_fix_target == nil then
-			if v.n == G.UIT.C or v.n == G.UIT.O then
+			if SMODS.SUI.is_column_type(v.n) then
 				node.s_config.rc_fix_target = "C"
 			elseif v.n == G.UIT.R then
 				node.s_config.rc_fix_target = "R"
 			end
 			SMODS.SUI.Node.process_node(node, index, v)
-		elseif node.s_config.rc_fix_target == "C" and v.n == G.UIT.R then
+		elseif node.s_config.rc_fix_target == "C" and not SMODS.SUI.is_column_type(v.n) then
 			SMODS.SUI.Node.process_node(node, index, SUI.C({ v }))
-		elseif node.s_config.rc_fix_target == "R'" and (v.n == G.UIT.C or v.n == G.UIT.O) then
+		elseif node.s_config.rc_fix_target == "R'" and SMODS.SUI.is_column_type(v.n) then
 			SMODS.SUI.Node.process_node(node, index, SUI.R({ v }))
 		else
 			SMODS.SUI.Node.process_node(node, index, v)
@@ -493,20 +496,6 @@ SUI.CLEAR_ROOT = SUI.ROOT:extend({
 		self:process_inputs({ colour = G.C.CLEAR })
 	end,
 })
--- SUI.ROOT with default align = "cm"
-SUI.CENTER_ROOT = SUI.ROOT:extend({
-	setup = function(self, ...)
-		SUI.ROOT.setup(self, ...)
-		self:process_inputs({ align = "cm" })
-	end,
-})
--- SUI.ROOT with default colour G.C.CLEAR instead of G.C.BLACK, and with default align = "cm"
-SUI.CLEAR_CENTER_ROOT = SUI.ROOT:extend({
-	setup = function(self, ...)
-		SUI.ROOT.setup(self, ...)
-		self:process_inputs({ colour = G.C.CLEAR, align = "cm" })
-	end,
-})
 -- SUI.C with default align = "cm"
 SUI.CENTER_C = SUI.C:extend({
 	setup = function(self, ...)
@@ -519,35 +508,5 @@ SUI.CENTER_R = SUI.R:extend({
 	setup = function(self, ...)
 		SUI.R.setup(self, ...)
 		self:process_inputs({ align = "cm" })
-	end,
-})
-
--- Custom elements
-
--- SUI.LOC_TEXT: easy way to render text via SMODS.localize_box
-SUI.LOC_TEXT = SUI.C:extend({
-	process_config = function(self, k, v)
-		if k == "loc_box_config" or k == "row_config" then
-			self.s_config[k] = SMODS.merge_defaults(v or {}, self.s_config[k] or {})
-		else
-			SUI.C.process_config(self, k, v)
-		end
-	end,
-	process_node = function(self, k, v)
-		local input_type = SMODS.SUI.input_type(v)
-		if input_type == "node" or input_type == "moveable" then
-			SUI.C.process_node(self, k, v)
-		else
-			local line = input_type == "string" and loc_parse_string(v) or v
-			local box_config = SMODS.merge_defaults(self.s_config.loc_box_config or {}, {
-				vars = {},
-				default_col = G.C.UI.TEXT_LIGHT,
-			})
-			SUI.C.process_node(
-				self,
-				k,
-				SUI.R({ config = self.s_config.row_config, nodes = SMODS.localize_box(line, box_config) })
-			)
-		end
 	end,
 })
