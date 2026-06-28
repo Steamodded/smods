@@ -904,6 +904,12 @@ function SMODS.copy_card(card, args) end
 ---@return Card|table
 function SMODS.add_to_deck(card, args) end
 
+-- Util function to render one card to a `.png` file, saved to `love.filesystem.getSaveDirectory()`
+---@param card Card|table Card to save as an image
+---@param scale number? Scale to render the card at (default = G.SETTINGS.GRAPHICS.texture_scaling)
+---@param filename string? Name of the file (default = [center.key])
+function SMODS.card_to_image(card, scale, filename) end
+
 ---Checks if a card counts as at least one suit that matches the provided suit shade
 ---@param card Card|table Card to check
 ---@param shade string Suit shade to check for
