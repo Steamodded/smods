@@ -2454,11 +2454,13 @@ end
 
 local function insert(t, res)
     for k,v in pairs(res) do
-        if type(v) == 'table' and type(t[k]) == 'table' then
-            insert(t[k], v)
-        else
-            t[k] = true
-        end
+		if v then
+            if type(v) == 'table' and type(t[k]) == 'table' then
+                insert(t[k], v)
+            else
+                t[k] = true
+            end
+		end
     end
 end
 SMODS.optional_features = {
