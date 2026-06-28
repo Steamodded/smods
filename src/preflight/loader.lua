@@ -558,7 +558,7 @@ function loadMods(modsDirectory)
         if mod.can_load  ~= nil then return mod.can_load end
         seen = seen or {}
         local can_load = true
-        if seen[mod.id] then return true end
+        if seen[mod.id] ~= nil then return seen[mod.id] end
         seen[mod.id] = true
         local load_issues = {
             dependencies = {},
@@ -675,6 +675,7 @@ function loadMods(modsDirectory)
         end
         if not can_load then
             mod.load_issues = load_issues
+            seen[mod.id] = false
             return false
         end
         for _, x in ipairs(mod.dependencies or {}) do
