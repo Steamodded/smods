@@ -266,6 +266,19 @@ end
 function SMODS.SUI.Node:process_config(key, value)
 	SMODS.SUI.config_merge(self, key, value)
 end
+function SMODS.SUI.Node:process_node(index, value)
+	SMODS.SUI.node_merge(self, index, value)
+end
+function SMODS.SUI.Node:pre_process_input(input)
+	local input_type = SMODS.SUI.input_type(input)
+	if input_type ~= "table" and input_type ~= "nil" then
+		input = { input }
+		input_type = "table"
+	end
+	if input_type == "table" then
+		return input
+	end
+end
 function SMODS.SUI.Node:post_process_input(input)
 	if input.s_config then
 		self.s_config = SMODS.merge_defaults(input.s_config or {}, self.s_config or {}) or {}
@@ -277,51 +290,46 @@ function SMODS.SUI.Node:post_process_input(input)
 		self.s_init = input.s_init
 	end
 end
-function SMODS.SUI.Node:process_node(index, value)
-	SMODS.SUI.node_merge(self, index, value)
-end
 function SMODS.SUI.Node:process_input(input)
-	local input_type = SMODS.SUI.input_type(input)
-	if input_type ~= "table" and input_type ~= "nil" then
-		input = { input }
-		input_type = "table"
+	input = self:pre_process_input(input)
+	if not input then
+		return
 	end
-	if input_type == "table" then
-		local children_to_insert = {}
-		if input.config then
-			for k, v in pairs(input.config) do
-				self:process_config(k, v)
-			end
-		end
-		if input.nodes then
-			for k, v in pairs(input.nodes) do
-				children_to_insert[#children_to_insert + 1] = v
-			end
-		end
-		for k, v in pairs(input) do
-			if SMODS.SUI.special_config_keys[k] then
-			elseif type(k) == "number" then
-				children_to_insert[#children_to_insert + 1] = v
-			else
-				self:process_config(k, v)
-			end
-		end
 
-		self:post_process_config(input)
+	local children_to_insert = {}
+	if input.config then
+		for k, v in pairs(input.config) do
+			self:process_config(k, v)
+		end
+	end
+	if input.nodes then
+		for k, v in pairs(input.nodes) do
+			children_to_insert[#children_to_insert + 1] = v
+		end
+	end
+	for k, v in pairs(input) do
+		if SMODS.SUI.special_config_keys[k] then
+		elseif type(k) == "number" then
+			children_to_insert[#children_to_insert + 1] = v
+		else
+			self:process_config(k, v)
+		end
+	end
 
-		local child_index = 0
-		for _, v in ipairs(children_to_insert) do
-			if type(v) == "table" and #v > 0 then
-				for _, node in pairs(v) do
-					child_index = child_index + 1
-					self:process_node(child_index, node)
-				end
-			else
+	local child_index = 0
+	for _, v in ipairs(children_to_insert) do
+		if type(v) == "table" and #v > 0 then
+			for _, node in pairs(v) do
 				child_index = child_index + 1
-				self:process_node(child_index, v)
+				self:process_node(child_index, node)
 			end
+		else
+			child_index = child_index + 1
+			self:process_node(child_index, v)
 		end
 	end
+
+	self:post_process_input(input)
 end
 function SMODS.SUI.Node:process_inputs(...)
 	for _, input in ipairs({ ... }) do
@@ -493,20 +501,20 @@ SUI.O = SMODS.SUI.extend_uit(G.UIT.O, {
 SUI.CLEAR_ROOT = SUI.ROOT:extend({
 	setup = function(self, ...)
 		SUI.ROOT.setup(self, ...)
-		self:process_inputs({ colour = G.C.CLEAR })
+		self:process_input({ colour = G.C.CLEAR })
 	end,
 })
 -- SUI.C with default align = "cm"
 SUI.CENTER_C = SUI.C:extend({
 	setup = function(self, ...)
 		SUI.C.setup(self, ...)
-		self:process_inputs({ align = "cm" })
+		self:process_input({ align = "cm" })
 	end,
 })
 -- SUI.R with default align = "cm"
 SUI.CENTER_R = SUI.R:extend({
 	setup = function(self, ...)
 		SUI.R.setup(self, ...)
-		self:process_inputs({ align = "cm" })
+		self:process_input({ align = "cm" })
 	end,
 })
