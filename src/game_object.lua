@@ -1110,7 +1110,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         create_UIBox_your_collection = function(self)
             local type_buf = {}
             for _, v in ipairs(SMODS.ConsumableType.visible_buffer) do
-                if not v.no_collection and (not G.ACTIVE_MOD_UI or modsCollectionTally(G.P_CENTER_POOLS[v]).of > 0) then type_buf[#type_buf + 1] = v end
+                if (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) and (not G.ACTIVE_MOD_UI or modsCollectionTally(G.P_CENTER_POOLS[v]).of > 0) then type_buf[#type_buf + 1] = v end
             end
             return SMODS.card_collection_UIBox(G.P_CENTER_POOLS[self.key], self.collection_rows, { back_func = #type_buf>3 and 'your_collection_consumables' or nil })
         end,
@@ -1301,14 +1301,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
             desc_nodes.background_colour = res.background_colour
-        end,
-        has_attribute = function(self, attribute)
-            if not SMODS.Attributes[attribute] or not self.attributes then return false end
-            if self.attributes[attribute] then return true end
-            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
-                if self.attributes[att] then return true end
-            end
-            return false
         end
     }
 
@@ -1928,14 +1920,6 @@ SMODS.UndiscoveredCompat = {
         end,
         create_fake_card = function(self)
 	        return { ability = { seal = copy_table(self.config) }, fake_card = self.key }
-        end,
-        has_attribute = function(self, attribute)
-            if not SMODS.Attributes[attribute] or not self.attributes then return false end
-            if self.attributes[attribute] then return true end
-            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
-                if self.attributes[att] then return true end
-            end
-            return false
         end
     }
     for _,v in ipairs { 'Purple', 'Gold', 'Blue', 'Red' } do
@@ -3104,14 +3088,6 @@ SMODS.UndiscoveredCompat = {
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
             desc_nodes.background_colour = res.background_colour
-        end,
-        has_attribute = function(self, attribute)
-            if not SMODS.Attributes[attribute] or not self.attributes then return false end
-            if self.attributes[attribute] then return true end
-            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
-                if self.attributes[att] then return true end
-            end
-            return false
         end
     }
 

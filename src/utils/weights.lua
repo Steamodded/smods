@@ -144,6 +144,7 @@ SMODS.no_repoll = {
 }
 
 SMODS.game_table_from_type = {
+    [1] = 'P_CENTERS',
     Seal = 'P_SEALS',
     Tag = 'P_TAGS',
     Blind = 'P_BLINDS',

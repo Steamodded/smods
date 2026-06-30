@@ -2639,9 +2639,9 @@ end
 local modify_hand = Blind.modify_hand
 function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips, scoring_hand)
 	local modded
-	_G.mult, _G.hand_chips, modded = modify_hand(self, cards, poker_hands, text, mult, hand_chips, scoring_hand)
+	local _mult, _hand_chips, modded = modify_hand(self, cards, poker_hands, text, mult, hand_chips, scoring_hand)
 	local flags = SMODS.calculate_context({ modify_hand = true, poker_hands = poker_hands, scoring_name = text, scoring_hand = scoring_hand, full_hand = cards })
-	return _G.mult, _G.hand_chips, modded or flags.calculated
+	return mod_mult(_mult), mod_chips(_hand_chips), modded or flags.calculated
 end
 
 local card_set_base = Card.set_base
