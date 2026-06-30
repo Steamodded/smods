@@ -2563,7 +2563,7 @@ local defeat = Blind.defeat
 function Blind:defeat(silent)
 	defeat(self, silent)
 	G.hand.config.card_limits.blind_restriction = nil
-	SMODS.calculate_context({ blind_defeated = true })
+	-- context.blind_defeated is calculated in SMODS.enter_state()
 end
 
 local press_play = Blind.press_play

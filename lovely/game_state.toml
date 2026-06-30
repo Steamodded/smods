@@ -43,7 +43,7 @@ pattern = '''
 self.STATE = new_state or self.STATES.MENU
 '''
 payload = '''
-SMODS.enter_state(new_state or SELF.STATES.MENU)
+SMODS.enter_state(new_state or self.STATES.MENU, {from_load = true})
 '''
 
 # game.lua : Game:update_selecting_hand(dt) / Game:update_hand_played(dt) / etc. : Avoid deleting the shop in case it is held in the SMODS.state_stack

@@ -213,7 +213,7 @@ SMODS.GameState = SMODS.GameObject:extend{
     on_load = function (self) end,
     update = function (self, dt) end,
     should_calculate_context = function (self, args)
-        return not self.no_context and not args.from_hold
+        return not self.no_context and not args.from_hold and not args.from_load
     end,
     insert_context_flags = function (self, args, context) end,
     ease_background_colour = nil, -- function
@@ -441,7 +441,6 @@ SMODS.GameState {
                                 end
                             end
 
-                            if not nosave_shop then SMODS.calculate_context({starting_shop = true}) end
                             G.CONTROLLER:snap_to({node = G.shop:get_UIE_by_ID('next_round_button')})
                             if not nosave_shop then G.E_MANAGER:add_event(Event({ func = function() save_run(); return true end})) end
                             return true
@@ -475,7 +474,6 @@ SMODS.GameState {
         end
         stop_use()
         if G.shop then
-            SMODS.calculate_context({ending_shop = true})
             G.E_MANAGER:add_event(Event({
                 trigger = 'immediate',
                 func = function()
