@@ -95,3 +95,36 @@ position = 'at'
 payload = '''
 $start SMODS.create_sprite($pre $key, $rest 
 '''
+
+
+### SMODS.SpriteParticle
+
+# Game:draw() : Inject drawing of parentless SpriteParticles (after dragged card is drawn)
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = '''
+if self.CONTROLLER.focused.target and getmetatable(self.CONTROLLER.focused.target) == Card and
+    (self.CONTROLLER.focused.target.area ~= G.hand or self.CONTROLLER.focused.target == self.CONTROLLER.dragging.target) then 
+    love.graphics.push()
+        G.CONTROLLER.focused.target:translate_container()
+        G.CONTROLLER.focused.target:draw()
+    love.graphics.pop()
+end
+'''
+position = "after"
+payload = '''
+for i, particle_sprite in ipairs(SMODS.SPRITE_PARTICLES or {}) do
+    if particle_sprite.sprite_particle_key then
+        local sprite_particle_obj = SMODS.SpriteParticles[particle_sprite.sprite_particle_key]
+        if sprite_particle_obj and type(sprite_particle_obj.draw) == "function" then
+            sprite_particle_obj:draw(particle_sprite, self)
+        else
+            particle_sprite:draw()
+        end
+    else
+        particle_sprite:draw()
+    end
+end
+'''
+match_indent = true

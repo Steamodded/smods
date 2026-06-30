@@ -4276,6 +4276,15 @@ function SMODS.add_to_deck(card, args)
     return card
 end
 
+-- get_index() but with an early return
+function SMODS.get_index(t, value)
+	if not type(t) == "table" then return end
+	for k, v in pairs(t) do
+		if v == value then return k end
+	end
+	return nil
+end
+
 function Card:is_suit_shade(shade, bypass_debuff)
     if self.debuff and not bypass_debuff then return end
     if SMODS.has_no_suit(self) then
