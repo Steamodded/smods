@@ -3746,7 +3746,7 @@ end
 
 
 function SMODS.get_atlas(atlas_key)
-    return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key]
+    return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key] -- atlas.atlas_table = STATE_ATLAS -> also stored in G.ANIMATION_ATLAS
 end
 
 function SMODS.get_atlas_sprite_class(atlas_key)
@@ -3754,15 +3754,20 @@ function SMODS.get_atlas_sprite_class(atlas_key)
     local class_map = {
         ASSET_ATLAS = Sprite,
         ANIMATION_ATLAS = AnimatedSprite,
+        STATE_ATLAS = StateSprite,
     }
     return class_map[atlas.atlas_table] or Sprite
 end
 
-function SMODS.create_sprite(X, Y, W, H, atlas, pos)
+function SMODS.create_sprite(X, Y, W, H, atlas, pos, sprite_args)
     local atlas_key = (type(atlas) == "string" and atlas) or (type(atlas) == "table" and (atlas.key or atlas.name))
     atlas = SMODS.get_atlas(atlas_key)
     assert(atlas, "SMODS.create_sprite called with invalid atlas key: "..atlas_key)
-    return SMODS.get_atlas_sprite_class(atlas_key)(X, Y, W, H, atlas, pos)
+    local sprite_class = SMODS.get_atlas_sprite_class(atlas_key)
+    if sprite_class == StateSprite then
+        return sprite_class(X, Y, W, H, atlas, pos, sprite_args)
+    end
+    return sprite_class(X, Y, W, H, atlas, pos)
 end
 
 local animate = AnimatedSprite.animate
