@@ -1,6 +1,6 @@
 SMODS.SUI = {}
 
-SMODS.SUI.CSS = {}
+SMODS.SUI.classes = {}
 
 SMODS.SUI.special_config_keys = {
 	n = true, -- element type
@@ -365,20 +365,20 @@ end
 
 function SMODS.SUI.Node:render()
 	-- Propagate CSS stylesheet element uses
-	if self.s_config.css ~= nil then
+	if self.s_config.classes ~= nil then
 		for _, child in ipairs(self.nodes) do
 			if not child.s_config then
 				child.s_config = {}
 			end
-			if child.s_config.css == nil then
-				child.s_config.css = self.s_config.css
+			if child.s_config.classes == nil then
+				child.s_config.classes = self.s_config.classes
 			end
 		end
 	end
 
 	-- Apply CSS classes
 	if self.s_class then
-		local classes = self.s_config.css or SMODS.SUI.CSS
+		local classes = self.s_config.classes or SMODS.SUI.classes
 		local old_config = self.config
 		local at_least_one_match = false
 		self.config = {}
@@ -386,9 +386,13 @@ function SMODS.SUI.Node:render()
 		for word in string.gmatch(self.s_class, "%S+") do
 			if classes[word] then
 				at_least_one_match = true
-				for k, v in pairs(classes[word]) do
-					self:process_config(k, v)
-				end
+                if type(classes[word]) == "function" then
+                    classes[word](self)
+                else
+                    for k, v in pairs(classes[word]) do
+                        self:process_config(k, v)
+                    end
+                end
 			end
 		end
 
