@@ -60,11 +60,12 @@ function SMODS.clear_state_stack()
 end
 
 function SMODS.enter_state(new_state, enter_args, exit_args)
-    local current_state = SMODS.STATE or G.STATE
-    if current_state == new_state then return end
+    local old_state = SMODS.STATE or G.STATE
+    if old_state == new_state then return end
     local next_held_state = SMODS.get_next_held_state()
     enter_args = enter_args or {}
-    enter_args.old_state = current_state
+    enter_args.args_type = "enter" -- For e.g. :should_calculate_context() to more easily differentiate between enter and exit behaviour
+    enter_args.old_state = old_state
     local new_state_index = SMODS.get_state_stack_index(new_state)
     if new_state_index then
         if not enter_args.force_refresh then
@@ -72,16 +73,17 @@ function SMODS.enter_state(new_state, enter_args, exit_args)
         end
     end 
     exit_args = exit_args or {}
+    exit_args.args_type = "exit" 
     exit_args.new_state = exit_args.new_state or new_state
-    local current_state_index = SMODS.get_state_stack_index(current_state, true)
+    local current_state_index = SMODS.get_state_stack_index(old_state, true)
     local exit_state_in_stack = not exit_args.from_hold and current_state_index -- If exit_args.from_hold is already true, this is irrelevant
     if exit_state_in_stack then
         exit_args.from_hold = true
     end
-    if SMODS.GameStates[current_state] then
-        SMODS.GameStates[current_state]:on_exit(exit_args)
+    if SMODS.GameStates[old_state] then
+        SMODS.GameStates[old_state]:on_exit(exit_args)
         if not exit_args.from_hold or exit_state_in_stack then
-            SMODS.pop_from_state_stack(current_state)
+            SMODS.pop_from_state_stack(old_state)
         end
     end
     G.STATE = new_state
@@ -91,6 +93,23 @@ function SMODS.enter_state(new_state, enter_args, exit_args)
             SMODS.push_to_state_stack(new_state, enter_args)
         end
         SMODS.GameStates[new_state]:on_enter(enter_args)
+    end
+    local new_state_obj = SMODS.GameStates[new_state]
+    local old_state_obj = SMODS.GameStates[old_state]
+    if new_state_obj or old_state_obj then -- Only calculate the context if the new or old state is a SMODS.GameState
+        local context = {state_transition = true, old_state = old_state, new_state = new_state, enter_args = enter_args, exit_args = exit_args}
+        local do_calculate = false
+        if new_state_obj and new_state_obj:should_calculate_context(enter_args) then 
+            context[new_state_obj.context_flag_enter] = true
+            new_state_obj:insert_context_flags(enter_args, context)
+            do_calculate = true 
+        end
+        if old_state_obj and old_state_obj:should_calculate_context(exit_args) then 
+            context[old_state_obj.context_flag_exit] = true
+            old_state_obj:insert_context_flags(exit_args, context)
+            do_calculate = true 
+        end
+        if do_calculate then SMODS.calculate_context(context) end
     end
 end
 
@@ -186,15 +205,22 @@ SMODS.GameState = SMODS.GameObject:extend{
         'key',
     },
     inject = function (self, i)
-        
+        self.context_flag_enter = self.context_flag_enter or "enter_" .. self.key
+        self.context_flag_exit = self.context_flag_exit or "exit_" .. self.key
     end,
     on_enter = function (self, args) end,
     on_exit = function (self, args) end,
     on_load = function (self) end,
     update = function (self, dt) end,
+    should_calculate_context = function (self, args)
+        return not self.no_context and not args.from_hold
+    end,
+    insert_context_flags = function (self, args, context) end,
     ease_background_colour = nil, -- function
     exit_after_use_card = false, -- Used for consumable states like SMODS.STATES.REDEEM_VOUCHER
     exit_after_end_consumable = false, -- Used for booster-like states like SMODS.STATES.BOOSTER_OPENED
+    context_flag_enter = nil,
+    context_flag_exit = nil,
 }
 
 SMODS.GameState {
@@ -203,6 +229,7 @@ SMODS.GameState {
         SMODS.OPENED_BOOSTER.config.center:update_pack(dt)
     end,
     exit_after_end_consumable = true,
+    no_context = true,
 }
 
 function SMODS.in_booster()
@@ -214,6 +241,7 @@ SMODS.GameState {
     key = SMODS.STATES.REDEEM_VOUCHER,
     exit_after_use_card = true,
     holds_booster = true,
+    no_context = true,
 }
 
 SMODS.GameState {
@@ -223,10 +251,13 @@ SMODS.GameState {
     end,
     exit_after_use_card = true,
     holds_booster = true,
+    no_context = true,
 }
 
 SMODS.GameState {
     key = SMODS.STATES.SHOP,
+    context_flag_enter = "starting_shop",
+    context_flag_exit = "ending_shop",
     on_load = function ()
         G.shop = G.shop or UIBox{
             definition = G.UIDEF.shop(),
@@ -479,6 +510,7 @@ end
 
 SMODS.GameState {
     key = SMODS.STATES.ROUND_EVAL,
+    context_flag_enter = "round_eval",
     on_enter = function (self, args)
         args = args or {}
         if args.force_refresh then
@@ -575,6 +607,13 @@ SMODS.GameState {
 
 SMODS.GameState {
     key = SMODS.STATES.BLIND,
+    context_flag_enter = "setting_blind",
+    context_flag_exit = "blind_defeated",
+    insert_context_flags = function (self, args, context)
+        if args.args_type == "enter" then
+            context.blind = G.P_BLINDS[args.key]
+        end
+    end,
     on_enter = function (self, args)
         args = args or {}
         if args.force_refresh then
