@@ -10,6 +10,7 @@ SMODS.SUI.special_config_keys = {
 	s_config = true, -- internal sui config
 	s_hooks = true, -- list of hooks to apply on element creation
 	s_init = true, -- init function
+	s_class = true, -- css class
 }
 
 -- Utilities
@@ -52,7 +53,7 @@ function SMODS.SUI.attach_hooks(target, hooks)
 	for func_key, new_func in pairs(hooks) do
 		local old_func = target[func_key] or function() end
 		target[func_key] = function(self, ...)
-			return new_func(self, old_func, ...)
+			return new_func(old_func, self, ...)
 		end
 	end
 	return target
@@ -195,8 +196,8 @@ function SMODS.SUI.get_topology(node, options, indent)
 
 	-- Resolve class name & id and format element in tree as `n#id.class1.class2`
 	local formatted_class_name = ""
-	if node.s_config and node.s_config.class then
-		for word in string.gmatch(node.s_config.class, "%S+") do
+	if node.s_class then
+		for word in string.gmatch(node.s_class, "%S+") do
 			formatted_class_name = formatted_class_name .. "." .. word
 		end
 	end
@@ -311,6 +312,9 @@ function SMODS.SUI.Node:post_process_input(input)
 	if input.s_init then
 		self.s_init = input.s_init
 	end
+	if input.s_class then
+		self.s_class = input.s_class
+	end
 end
 function SMODS.SUI.Node:process_input(input)
 	input = self:pre_process_input(input)
@@ -373,13 +377,13 @@ function SMODS.SUI.Node:render()
 	end
 
 	-- Apply CSS classes
-	if self.s_config.class then
+	if self.s_class then
 		local classes = self.s_config.css or SMODS.SUI.CSS
 		local old_config = self.config
 		local at_least_one_match = false
 		self.config = {}
 
-		for word in string.gmatch(self.s_config.class, "%S+") do
+		for word in string.gmatch(self.s_class, "%S+") do
 			if classes[word] then
 				at_least_one_match = true
 				for k, v in pairs(classes[word]) do
@@ -406,6 +410,7 @@ function SMODS.SUI.Node:render()
 		s_config = self.s_config,
 		s_hooks = self.s_hooks,
 		s_init = self.s_init,
+		s_class = self.s_class,
 	}
 end
 function SMODS.SUI.Node:topology(options)
@@ -416,6 +421,7 @@ function SMODS.SUI.Node:topology(options)
 		nodes = self.nodes or {},
 
 		s_config = self.s_config or {},
+		s_class = self.s_class,
 
 		attributes = {
 			align = self.config.align and string.format('"%s"', self.config.align),
