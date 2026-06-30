@@ -10,7 +10,7 @@ target = "engine/ui.lua"
 pattern = '''local UIE = UIElement(parent, self, node.n, node.config)'''
 position = "at"
 payload = '''
-node = SMODS.SUI.process_node_render(node)
+node = SMODS.SUI and SMODS.SUI.process_node_render(node) or node
 local UIE = UIElement(parent, self, node.n, node.config)
 UIE.input_node = node
 '''
@@ -20,10 +20,10 @@ match_indent = true
 [[patches]]
 [patches.pattern]
 target = "engine/ui.lua"
-pattern = '''self.static_rotation = true'''
+pattern = '''Moveable.init(self,{T = _T})'''
 position = "after"
 payload = '''
-SMODS.SUI.UIE_INIT = true
+self.sui_init_request = SMODS.SUI
 '''
 match_indent = true
 
@@ -34,8 +34,8 @@ target = "engine/ui.lua"
 pattern = '''self.layered_parallax = self.layered_parallax or {x=0, y=0}'''
 position = "after"
 payload = '''
-if SMODS.SUI.UIE_INIT then
-    SMODS.SUI.UIE_INIT = nil
+if self.sui_init_request then
+    self.sui_init_request = nil
     SMODS.SUI.process_element_created(self)
 end
 '''
