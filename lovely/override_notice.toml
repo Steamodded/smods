@@ -225,6 +225,31 @@ position = "before"
 payload = "-- Function overridden by SMODS in src/overrides.lua"
 match_indent = true
 
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "G.FUNCS.toggle_shop = function(e)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "G.FUNCS.cash_out = function(e)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/button_callbacks.lua"
+pattern = "G.FUNCS.select_blind = function(e)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+
 # src/ui.lua
 
 [[patches]]

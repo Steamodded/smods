@@ -896,7 +896,7 @@ G.GAME.selected_back:trigger_effect({context = 'eval'})
 position = 'before'
 match_indent = true
 payload = '''
-SMODS.calculate_context{round_eval = true}
+-- context.round_eval is calculated in SMODS.enter_state()
 '''
 
 # Add better `add_round_eval_row` support   
@@ -999,7 +999,7 @@ end
 position = 'at'
 match_indent = true
 payload = '''
-SMODS.calculate_context({setting_blind = true, blind = G.GAME.round_resets.blind})
+-- context.setting_blind is calculated in SMODS.enter_state()
 
 -- TARGET: setting_blind effects
 '''
@@ -1310,7 +1310,7 @@ G.CONTROLLER:snap_to({node = G.shop:get_UIE_by_ID('next_round_button')})
 position = 'before'
 match_indent = true
 payload = '''
-if not nosave_shop then SMODS.calculate_context({starting_shop = true}) end
+-- context.starting_shop is calculated in SMODS.enter_state()
 '''
 # context.ending_shop
 [[patches]]
@@ -1324,7 +1324,7 @@ pattern = '''
 position = 'at'
 match_indent = true
 payload = '''
-SMODS.calculate_context({ending_shop = true})
+-- context.ending_shop is calculated in SMODS.enter_state()
 '''
 
 # context.skipping_booster
@@ -2139,7 +2139,7 @@ table.sort(G.playing_cards, function (a, b) return a.playing_card > b.playing_ca
 '''
 payload = '''
 if saveTable then
-    if saveTable.SMODS then
+    if saveTable.SMODS and saveTable.SMODS.last_hand then
         SMODS.last_hand = {scoring_hand = {}, full_hand = {}, scoring_name = saveTable.SMODS.last_hand.scoring_name}
         for _, v in ipairs({'scoring_hand','full_hand'}) do
             for _, card in ipairs(G.playing_cards) do

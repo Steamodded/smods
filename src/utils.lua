@@ -1308,8 +1308,8 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         SMODS.calculate_context({
             money_altered = true,
             amount = amount,
-            from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
-            from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
+            from_shop = (G.STATE == SMODS.STATES.SHOP or G.STATE == SMODS.STATES.BOOSTER_OPENED or G.STATE == SMODS.STATES.REDEEM_VOUCHER) or nil,
+            from_consumeable = (G.STATE == SMODS.STATES.USE_CONSUMABLE) or nil,
             from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
         })
         return true
@@ -2930,7 +2930,7 @@ function SMODS.update_hand_limit_text(play, discard)
 end
 
 function SMODS.draw_cards(hand_space)
-    if not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED) and
+    if not (G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.SPECTRAL_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED) and
         G.hand.config.card_limit <= 0 and #G.hand.cards == 0 then
         G.STATE = G.STATES.GAME_OVER; G.STATE_COMPLETE = false
         return true
@@ -3086,7 +3086,7 @@ end
 
 local game_start_run = Game.start_run
 function Game:start_run(args)
-    game_start_run(self, args)
+    local ret = game_start_run(self, args)
     G.SCORE_DISPLAY_QUEUE = nil
     G.E_MANAGER:add_event(Event({
         trigger = 'immediate',
@@ -3095,6 +3095,20 @@ function Game:start_run(args)
             return true
         end
     }))
+    if args.savetext and args.savetext.SMODS then
+        local state_data = args.savetext.SMODS.state_data
+        if state_data then
+            SMODS.STATE = state_data.STATE
+            SMODS.state_stack = state_data.state_stack or {}
+            SMODS.state_queue = state_data.state_queue or {}
+            for _, state_table in ipairs(SMODS.state_stack) do
+                if SMODS.GameStates[state_table.state] then
+                    SMODS.GameStates[state_table.state]:on_load()
+                end
+            end
+        end
+    end
+    return ret
 end
 
 G.FUNCS.SMODS_scoring_calculation_function = function(e)
@@ -3490,8 +3504,8 @@ function ease_dollars(mod, instant)
     SMODS.calculate_context({
         money_altered = true,
         amount = mod,
-        from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
-        from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
+        from_shop = (G.STATE == SMODS.STATES.SHOP or G.STATE == SMODS.STATES.BOOSTER_OPENED or G.STATE == SMODS.STATES.REDEEM_VOUCHER) or nil,
+        from_consumeable = (G.STATE == SMODS.STATES.USE_CONSUMABLE) or nil,
         from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
     })
 end
@@ -3968,14 +3982,21 @@ function save_run()
         end
     end
     smods_hook_save_run()
-    if SMODS.last_hand and G.culled_table then
+    if G.culled_table then
         G.culled_table.SMODS = {
-        last_hand = {
+            state_data = {
+                STATE = SMODS.STATE,
+                state_stack = recursive_table_cull(SMODS.state_stack),
+                state_queue = recursive_table_cull(SMODS.state_queue),
+            }
+        }
+        if SMODS.last_hand then
+            G.culled_table.SMODS.last_hand = {
                 scoring_name = SMODS.last_hand.scoring_name,
                 scoring_hand = {},
                 full_hand = {}
             }
-        }
+        end
     end
 end
 
@@ -4238,6 +4259,38 @@ end
 -- Simple unlock text function, created to give mod authors an option to hook rather than patch for their use cases.
 function SMODS.create_unlock_text(center)
 	return localize('k_'..string.lower(center and center.set or 'unknown'))
+end
+
+-- Util function to get a single card by its sort_id.
+function SMODS.get_card_by_sort_id(sort_id, card_lists)
+    card_lists = card_lists or {(G.jokers or {}).cards or {}, (G.consumeables or {}).cards or {}, G.playing_cards}
+	for _, cards in ipairs(card_lists) do
+		for _, card in ipairs(cards) do
+			if card.sort_id == sort_id then return card end
+		end
+	end
+end
+
+-- Util function to get multiple cards by their sort_ids.
+function SMODS.get_cards_by_sort_ids(sort_ids, card_lists)
+    card_lists = card_lists or {(G.jokers or {}).cards or {}, (G.consumeables or {}).cards or {}, G.playing_cards}
+    local sort_ids_map = {}
+    if sort_ids[1] and type(sort_ids[1]) == "number" then
+        for _, sort_id in ipairs(sort_ids) do
+            sort_ids_map[sort_id] = true
+        end
+    else
+        sort_ids_map = sort_ids
+    end
+    local ret = {}
+    for _, cards in ipairs(card_lists) do
+        for _, card in ipairs(cards) do
+            if sort_ids_map[card.sort_id] then
+                ret[card.sort_id] = card
+            end
+        end
+    end
+    return ret
 end
 
 function SMODS.copy_card(card, args)
