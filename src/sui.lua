@@ -274,6 +274,7 @@ function SMODS.SUI.Node:init(n, ...)
 	self.s_config = {}
 	self.s_hooks = {}
 end
+function SMODS.SUI.Node:s_init() end
 function SMODS.SUI.Node:setup() end
 function SMODS.SUI.Node:__call(...)
 	if self.n then
@@ -289,6 +290,18 @@ end
 
 function SMODS.SUI.Node:process_config(key, value)
 	SMODS.SUI.config_merge(self, key, value)
+end
+function SMODS.SUI.Node:pre_process_nodes(index, value)
+	-- Filter booleans to make conditional UI easier
+	if value == true or value == false then
+		return
+    -- If table is array of elements, process all elements in it separately
+	elseif type(value) == "table" and table.maxn(value) > 0 then
+        return value
+    -- Pass other arguments as-is
+	else
+		return { value }
+	end
 end
 function SMODS.SUI.Node:process_node(index, value)
 	SMODS.SUI.node_merge(self, index, value)
@@ -322,7 +335,7 @@ function SMODS.SUI.Node:process_input(input)
 		return
 	end
 
-	local children_to_insert = {}
+	local nodes_to_insert = {}
 	if input.config then
 		for k, v in pairs(input.config) do
 			self:process_config(k, v)
@@ -330,32 +343,28 @@ function SMODS.SUI.Node:process_input(input)
 	end
 	if input.nodes then
 		for k, v in pairs(input.nodes) do
-			children_to_insert[#children_to_insert + 1] = v
+			nodes_to_insert[#nodes_to_insert + 1] = v
 		end
 	end
 	for k, v in pairs(input) do
 		if SMODS.SUI.special_config_keys[k] then
 		elseif type(k) == "number" then
-			children_to_insert[#children_to_insert + 1] = v
+			nodes_to_insert[#nodes_to_insert + 1] = v
 		else
 			self:process_config(k, v)
 		end
 	end
 
-	local child_index = 0
-	for _, v in ipairs(children_to_insert) do
-		if type(v) == "table" and #v > 0 then
-			for _, node in pairs(v) do
-				child_index = child_index + 1
-				self:process_node(child_index, node)
+    self:post_process_input(input)
+
+	for i, v in ipairs(nodes_to_insert) do
+		local pre_processed_nodes = self:pre_process_nodes(i, v)
+		if pre_processed_nodes then
+			for _, node in pairs(pre_processed_nodes) do
+				self:process_node(i, node)
 			end
-		else
-			child_index = child_index + 1
-			self:process_node(child_index, v)
 		end
 	end
-
-	self:post_process_input(input)
 end
 function SMODS.SUI.Node:process_inputs(...)
 	for _, input in ipairs({ ... }) do
@@ -386,13 +395,13 @@ function SMODS.SUI.Node:render()
 		for word in string.gmatch(self.s_class, "%S+") do
 			if classes[word] then
 				at_least_one_match = true
-                if type(classes[word]) == "function" then
-                    classes[word](self)
-                else
-                    for k, v in pairs(classes[word]) do
-                        self:process_config(k, v)
-                    end
-                end
+				if type(classes[word]) == "function" then
+					classes[word](self)
+				else
+					for k, v in pairs(classes[word]) do
+						self:process_config(k, v)
+					end
+				end
 			end
 		end
 
