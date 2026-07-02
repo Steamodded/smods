@@ -250,7 +250,16 @@ G.FUNCS.run_select_can_change_page = function(e)
         end
     end
 
-    local final = SMODS.RunSelect.Internals.current_page == #SMODS.RunSelect.Internals.pages or SMODS.RunSelect.Functions.get_page_key(1) > #SMODS.RunSelect.Internals.pages
+    local next_page_index = SMODS.RunSelect.Functions.get_page_key(1)
+    local final = SMODS.RunSelect.Internals.current_page == #SMODS.RunSelect.Internals.pages or next_page_index > #SMODS.RunSelect.Internals.pages
+    local next_button_text = final and localize('run_select_play') or (localize('run_select_'..SMODS.RunSelect.Internals.pages[next_page_index]) .. ' >')
+
+    if next_button_text ~= SMODS.RunSelect.Internals.next_button_text then
+        SMODS.RunSelect.Internals.next_button_text = next_button_text
+        e.children[1].children[1].config.object:remove()
+        e.children[1].children[1].config.object = DynaText({string = {{ref_table = SMODS.RunSelect.Internals, ref_value = 'next_button_text'}}, colours = {G.C.WHITE}, shadow = true, maxw = 1.8, pop_in_rate = 0, scale = 0.4, silent = true})
+        e.children[1].children[1].config.object.ui_object_updated = true
+    end
 
     e.config.button = final and 'run_select_start_run' or 'run_select_change_page'
     e.config.colour =  final and SMODS.RunSelect.Colours.play or SMODS.RunSelect.Colours.nav_button
