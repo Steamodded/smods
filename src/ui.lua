@@ -1894,6 +1894,11 @@ function create_UIBox_mods_button()
                                         },
                                         nodes = {
                                             create_toggle {
+                                                label = localize('b_vanilla_run_select'),
+                                                ref_table = SMODS.config,
+                                                ref_value = 'vanilla_run_select',
+                                            },
+                                            create_toggle {
                                                 label = localize('b_disable_mod_badges'),
                                                 ref_table = SMODS.config,
                                                 ref_value = 'no_mod_badges',
