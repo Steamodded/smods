@@ -345,6 +345,7 @@ return {
             b_github_bugs_1 = 'You can report bugs and',
             b_github_bugs_2 = 'submit contributions there.',
             b_disable_mod_badges = 'Disable Mod Badges',
+            b_vanilla_run_select = 'Vanilla Run Select',
             b_author = 'Author',
             b_authors = 'Authors',
             b_unknown = 'Unknown',
