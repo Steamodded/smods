@@ -630,7 +630,7 @@ if v.big then bosses_used.big[k] = 0 end
 ## Custom Small/Big Blinds
 [[patches]]
 [patches.pattern]
-target = 'functions/common_events.lua'
+target = 'functions/button_callbacks.lua'
 pattern = '''G.GAME.round_resets.blind_choices.Boss = get_new_boss()'''
 position = 'at'
 match_indent = true
