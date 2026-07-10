@@ -150,7 +150,7 @@ function SMODS.RunSelect.Functions.nav_bar()
                 definition = {n=G.UIT.ROOT, config={align = "cr", colour = G.C.CLEAR}, nodes={
                     {n=G.UIT.R, config={align = "cm", minw = 0.1}, nodes={
                         {n=G.UIT.C, config={maxw = 3.1}, nodes = {
-                            create_text_input({id = 'run_select_seeded_input', w = 3, max_length = 2500, extended_corpus = true, ref_table = SMODS.RunSelect.Setup.choices, ref_value = 'seed', prompt_text = localize('k_enter_seed'), colour = SMODS.RunSelect.Colours.seed_input, hooked_colour = darken(SMODS.RunSelect.Colours.seed_input, 0.3)})
+                            create_text_input({id = 'run_select_seeded_input', w = 3, max_length = 8, all_caps = true, ref_table = SMODS.RunSelect.Setup.choices, ref_value = 'seed', prompt_text = localize('k_enter_seed'), colour = SMODS.RunSelect.Colours.seed_input, hooked_colour = darken(SMODS.RunSelect.Colours.seed_input, 0.3)})
                         }},
                         {n=G.UIT.C, config={align = "cm", minw = 0.1}},
                         UIBox_button({id = 'run_select_seeded_paste', label = localize('ml_paste_seed'), minw = 1, minh = 0.6, button = 'run_select_paste_seed', colour = SMODS.RunSelect.Colours.seed_input, scale = 0.3, col = true})
@@ -525,6 +525,7 @@ function SMODS.RunSelect.Functions.update_preview_texts(page_def)
     local preview_texts = SMODS.split_string(page_def.selected_text and page_def:selected_text(SMODS.RunSelect.Setup.choices[page_def.key]) or localize('run_select_nothing'))
     for i, text in ipairs(preview_texts) do
         SMODS.RunSelect.Internals.preview_texts['preview_text_'..i] = text
+        if not G.OVERLAY_MENU then return end
         local dyna_text_container = G.OVERLAY_MENU:get_UIE_by_ID('preview_text_'..i)
         if not dyna_text_container then return end
         dyna_text_container.config.object.scale = 0.7/math.max(1, string.len(text)/8)
@@ -576,7 +577,7 @@ end
 function SMODS.RunSelect.Functions.populate_preview_ui(key, to_add, silent, _remove)
     local page_def = SMODS.RunSelect.Pages[key]
     if page_def.selection_limit == 1 and not _remove then
-        G.E_MANAGER:clear_queue('run_select')
+        if G.E_MANAGER.queues.run_select then G.E_MANAGER:clear_queue('run_select') end
         remove_all(SMODS.RunSelect.Internals.preview_area.cards)
         SMODS.RunSelect.Internals.preview_area.cards = {}
         remove_all(SMODS.RunSelect.Internals.preview_area_holding.cards)
@@ -710,7 +711,7 @@ local function order_stake_chain(stake_chain, _stake)
 end
 
 function SMODS.RunSelect.Functions.clean_up(early)
-    G.E_MANAGER:clear_queue('run_select')
+    if G.E_MANAGER.queues.run_select then G.E_MANAGER:clear_queue('run_select') end
     for j = 1, #SMODS.RunSelect.Internals.select_areas do
         if SMODS.RunSelect.Internals.select_areas[j].cards then
             remove_all(SMODS.RunSelect.Internals.select_areas[j].cards)

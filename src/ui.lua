@@ -1167,7 +1167,7 @@ function modsCollectionTally(pool, set, ignore_discovered)
     local obj_tally = {tally = 0, of = 0}
 
     for _, v in pairs(pool) do
-        if v.mod and G.ACTIVE_MOD_UI.id == v.mod.id and not v.no_collection then
+        if v.mod and G.ACTIVE_MOD_UI.id == v.mod.id and (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) then
             if set then
                 if v.set and v.set == set then
                     obj_tally.of = obj_tally.of+1
@@ -3239,7 +3239,7 @@ function create_UIBox_blind_choice(type, run_info)
         for i=1, #badges do
             badges[i].nodes[1].config.minw = 2.7
             local text = SMODS.deepfind(badges[i], 'smods_mod_badge_text')
-            if next(text) and text[1].table.object then text[1].table.object.scroll_args.overflow.definition.config.maxw = text[1].table.object.scroll_args.overflow.definition.config.maxw * 2.7/2 end
+            if next(text) and text[1].table.object then text[1].table.object.scroll_args.overflow.definition.config.maxw = (text[1].table.object.scroll_args.overflow.definition.config.maxw or 1) * 2.7/2 end
             table.insert(box.nodes[1].nodes[2].nodes, badges[i])
         end
         box.nodes[1].nodes[3].config.padding = 0.1
@@ -3250,7 +3250,7 @@ end
 function SMODS.create_blind_mod_badge()
     if G.GAME.blind and G.GAME.blind.config.blind and G.GAME.blind.config.blind.mod then
         local mod = G.GAME.blind.config.blind.mod
-        local text = DynaText({string = {{ref_table = G.GAME.blind_badge, ref_value = 'name'}}, colours = {mod.badge_text_colour or G.C.WHITE}, shadow = true, silent = true, float = true, scale = 0.36})
+        local text = DynaText({string = {{ref_table = G.GAME.blind_badge, ref_value = 'name'}}, maxw = mod.no_marquee and 4.4, colours = {mod.badge_text_colour or G.C.WHITE}, shadow = true, silent = true, float = true, scale = 0.36})
         local text_scroll = SMODS.UIScrollBox({
                 content = text,
                 container = {
