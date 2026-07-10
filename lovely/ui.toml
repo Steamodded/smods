@@ -173,14 +173,14 @@ target = 'functions/misc_functions.lua'
 match_indent = true
 position = 'at'
 pattern = "if not v.omit then"
-payload = "if not v.omit and not v.no_collection then"
+payload = "if not v.omit and (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) then"
 
 [[patches]]
 [patches.pattern]
 target = "functions/misc_functions.lua"
 pattern = "if v.set == 'Joker' then"
 position = "at"
-payload = "if v.set == 'Joker' and not v.no_collection and not v.omit then "
+payload = "if v.set == 'Joker' and (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) and not v.omit then "
 match_indent = true
 times = 1
 
@@ -191,7 +191,7 @@ line_prepend = '$indent'
 position = 'at'
 pattern = '(?<indent>[\t ]*)(?<start>for _, v in pairs\(G\.P_[BT].*)(?<rest>(\n.*){7})'
 payload = '''$start
-    if not v.no_collection then
+    if (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) then
     $rest
 end
 '''
@@ -203,7 +203,7 @@ target = 'functions/common_events.lua'
 match_indent = true
 position = 'at'
 pattern = "if v.discovered and not v.alerted then"
-payload = "if v.discovered and not v.alerted and not v.no_collection then"
+payload = "if v.discovered and not v.alerted and (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) then"
 
 ## Description controls
 # localize

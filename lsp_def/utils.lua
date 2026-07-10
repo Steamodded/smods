@@ -77,6 +77,7 @@
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand.
 ---@field drawing_cards? true `true` when cards are being drawn
 ---@field amount? number Used for in some contexts to specify a numerical amount.
+---@field initial? number Used in some contexts to specify the original value of a changing number.
 ---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
 ---@field display_name? PokerHands|'Royal Flush'|string Display name of the scoring poker hand.
 ---@field mod_probability? true Check if `true` for effects that make additive or multiplicative modifications to probabilities.
@@ -107,6 +108,7 @@
 ---@field from_shop? true Check if `true` if money changed during the shop.
 ---@field from_consumeable? true Check if `true` if money changed by a consumable.
 ---@field from_scoring? true Check if `true` if money changed during scoring.
+---@field from_cashout? true Check if `true` if money changed from cashing out.
 ---@field modify_ante? number The amount the ante changes by, check for effects before the ante changes.
 ---@field ante_change? true Check if `true` for effects when the ante changes.
 ---@field ante_end? true Check if `true` for when the ante change is for reaching the end of the ante.
