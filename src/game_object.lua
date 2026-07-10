@@ -721,20 +721,22 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     G.sticker_map[self.key] = nil
                 end
             end
-            -- Sorts stake into the correct spot
-            if self.above_stake and G.P_STAKES[self.above_stake] then
-                self.order = G.P_STAKES[self.above_stake].order + 1
-            end
-            for i, v in pairs(G.P_STAKES) do
-                if i ~= self.key and v.order >= self.order then
-                    v.order = v.order + 1
-                end
-            end
             self.injected = true
             -- should only need to do this once per injection routine
         end,
         post_inject_class = function(self)
-            table.sort(G.P_CENTER_POOLS[self.set], function(a, b) return a.order < b.order end)
+            -- sort stakes into the correct spot
+            local stakes_fixed = false
+            repeat
+                table.sort(G.P_CENTER_POOLS[self.set], function(a, b) return a.order < b.order end)
+                stakes_fixed = true
+                for i, v in ipairs(G.P_CENTER_POOLS[self.set]) do
+                    if v.above_stake and G.P_STAKES[v.above_stake] and v.order < G.P_STAKES[v.above_stake].order then
+                        v.order = G.P_STAKES[v.above_stake].order + 1
+                        stakes_fixed = false
+                    end
+                end
+            until stakes_fixed
             for i,v in ipairs(G.P_CENTER_POOLS[self.set]) do
                 G.P_STAKES[v.key].order = i
             end
@@ -1120,7 +1122,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         create_UIBox_your_collection = function(self)
             local type_buf = {}
             for _, v in ipairs(SMODS.ConsumableType.visible_buffer) do
-                if not v.no_collection and (not G.ACTIVE_MOD_UI or modsCollectionTally(G.P_CENTER_POOLS[v]).of > 0) then type_buf[#type_buf + 1] = v end
+                if (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) and (not G.ACTIVE_MOD_UI or modsCollectionTally(G.P_CENTER_POOLS[v]).of > 0) then type_buf[#type_buf + 1] = v end
             end
             return SMODS.card_collection_UIBox(G.P_CENTER_POOLS[self.key], self.collection_rows, { back_func = #type_buf>3 and 'your_collection_consumables' or nil })
         end,
@@ -1311,14 +1313,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
             desc_nodes.background_colour = res.background_colour
-        end,
-        has_attribute = function(self, attribute)
-            if not SMODS.Attributes[attribute] or not self.attributes then return false end
-            if self.attributes[attribute] then return true end
-            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
-                if self.attributes[att] then return true end
-            end
-            return false
         end
     }
 
@@ -1939,14 +1933,6 @@ SMODS.UndiscoveredCompat = {
         end,
         create_fake_card = function(self)
 	        return { ability = { seal = copy_table(self.config) }, fake_card = self.key }
-        end,
-        has_attribute = function(self, attribute)
-            if not SMODS.Attributes[attribute] or not self.attributes then return false end
-            if self.attributes[attribute] then return true end
-            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
-                if self.attributes[att] then return true end
-            end
-            return false
         end
     }
     for _,v in ipairs { 'Purple', 'Gold', 'Blue', 'Red' } do
@@ -3115,14 +3101,6 @@ SMODS.UndiscoveredCompat = {
                 desc_nodes[#desc_nodes + 1] = res.main_end
             end
             desc_nodes.background_colour = res.background_colour
-        end,
-        has_attribute = function(self, attribute)
-            if not SMODS.Attributes[attribute] or not self.attributes then return false end
-            if self.attributes[attribute] then return true end
-            for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
-                if self.attributes[att] then return true end
-            end
-            return false
         end
     }
 
