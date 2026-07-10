@@ -2110,6 +2110,21 @@ if ret then
 end
 '''
 
+# Prep from_cashout field for context.money_altered
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+ease_dollars(G.GAME.current_round.dollars)
+'''
+payload = '''
+SMODS.money_from_cashout = true
+ease_dollars(G.GAME.current_round.dollars)
+SMODS.money_from_cashout = nil
+'''
+
 # Add context.modify_final_cashout
 [[patches]]
 [patches.pattern]
