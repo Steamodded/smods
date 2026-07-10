@@ -1030,7 +1030,7 @@ SMODS.collection_pool = function(_base_pool)
     local is_array = _base_pool[1]
     local ipairs = is_array and ipairs or pairs
     for _, v in ipairs(_base_pool) do
-        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not v.no_collection or (type(v.no_collection) == "function" and not v.no_collection())) then
+        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not v.no_collection or (type(v.no_collection) == "function" and not v:no_collection())) then
             pool[#pool+1] = v
         end
     end
@@ -1184,6 +1184,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if (key == 'p_dollars' or key == 'dollars' or key == 'h_dollars') and amount then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         SMODS.ease_dollars_calc = true
+        local initial_dollars = G.GAME.dollars
         ease_dollars(amount, effect.instant)
         SMODS.ease_dollars_calc = nil
         if not effect.remove_default_message then
@@ -1196,9 +1197,11 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         SMODS.calculate_context({
             money_altered = true,
             amount = amount,
+            initial = initial_dollars,
             from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
             from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
             from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
+            from_cashout = SMODS.money_from_cashout or nil,
         })
         return true
     end
@@ -2359,11 +2362,13 @@ end
 
 local function insert(t, res)
     for k,v in pairs(res) do
-        if type(v) == 'table' and type(t[k]) == 'table' then
-            insert(t[k], v)
-        else
-            t[k] = true
-        end
+		if v then
+            if type(v) == 'table' and type(t[k]) == 'table' then
+                insert(t[k], v)
+            else
+                t[k] = true
+            end
+		end
     end
 end
 SMODS.optional_features = {
@@ -3387,14 +3392,17 @@ end
 
 local ease_dollar_ref = ease_dollars
 function ease_dollars(mod, instant)
+    local initial_dollars = G.GAME.dollars
     ease_dollar_ref(mod, instant)
     if SMODS.ease_dollars_calc then return end
     SMODS.calculate_context({
         money_altered = true,
         amount = mod,
+        initial = initial_dollars,
         from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
         from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
         from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
+        from_cashout = SMODS.money_from_cashout or nil,
     })
 end
 function SMODS.add_to_pool(prototype_obj, args)

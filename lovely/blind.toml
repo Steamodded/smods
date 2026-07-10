@@ -599,33 +599,13 @@ match_indent = true
 position = 'at'
 pattern = '''
 local bosses_used = {}
+for k, v in pairs(G.P_BLINDS) do
+    if v.boss then bosses_used[k] = 0 end
+end
 '''
 payload = '''
-local bosses_used = setmetatable({boss = {}, small = {}, big = {}},{
-    __index = function(t, key)
-        return t.boss[key] or t.big[key] or t.small[key]
-    end,
-    __newindex = function(t, key, value)
-        rawset(t.boss, key, value)
-    end
-})
+local bosses_used = SMODS.normalize_bosses_used_table{}
 '''
-
-# Prepare bosses_used
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
-match_indent = true
-position = 'at'
-pattern = '''
-if v.boss then bosses_used[k] = 0 end
-'''
-payload = '''
-if v.boss then bosses_used.boss[k] = 0 end
-if v.small then bosses_used.small[k] = 0 end
-if v.big then bosses_used.big[k] = 0 end
-'''
-
 
 ## Custom Small/Big Blinds
 [[patches]]
@@ -649,6 +629,21 @@ self.GAME.round_resets.blind_choices.Boss = get_new_boss()
 '''
 payload = '''
 SMODS.reset_blind_choices(self.GAME.round_resets.blind_choices)
+'''
+
+# Restore bosses_used compatibility on loaded saves.
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+self.GAME = saveTable and saveTable.GAME or self:init_game_object()
+'''
+payload = '''
+if saveTable and SMODS.normalize_bosses_used_table then
+    self.GAME.bosses_used = SMODS.normalize_bosses_used_table(self.GAME.bosses_used)
+end
 '''
 
 # Handle setting new blinds
