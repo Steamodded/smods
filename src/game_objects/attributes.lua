@@ -46,24 +46,35 @@ end
 function SMODS.populate_attributes()
     for _, attribute in pairs(SMODS.Attributes) do
         for _, key in ipairs(attribute.keys) do
-            if G.P_CENTERS[key] then
-                G.P_CENTERS[key].attributes = G.P_CENTERS[key].attributes or {}
-                G.P_CENTERS[key].attributes[attribute.key] = true
+            for _, t in pairs(SMODS.game_table_from_type) do
+                if G[t][key] then
+                    G[t][key].attributes = G[t][key].attributes or {}
+                    G[t][key].attributes[attribute.key] = true
+                end
             end
         end
     end
 end
 
+function SMODS.has_attribute(obj, attribute)
+    if not SMODS.Attributes[attribute] or not obj.attributes then return false end
+    if obj.attributes[attribute] then return true end
+    for _, att in ipairs(SMODS.Attributes[attribute].alias or {}) do
+        if obj.attributes[att] then return true end
+    end
+    return false
+end
+
 function Card:has_attribute(attribute)
-    return self.config.center:has_attribute(attribute)
+    return SMODS.has_attribute(self.config.center, attribute)
 end
 
 function Blind:has_attribute(attribute)
-    return self.config.center:has_attribute(attribute)
+    return SMODS.has_attribute(self.config.blind, attribute)
 end
 
 function Tag:has_attribute(attribute)
-    return self.config.center:has_attribute(attribute)
+    return SMODS.has_attribute(G.P_TAGS[self.key], attribute)
 end
 
 SMODS.Attribute({
