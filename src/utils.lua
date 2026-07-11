@@ -3494,6 +3494,7 @@ local ease_dollar_ref = ease_dollars
 function ease_dollars(mod, instant)
     local initial_dollars = G.GAME.dollars
     ease_dollar_ref(mod, instant)
+    SMODS.dollars_changed = mod
     if SMODS.ease_dollars_calc then return end
     SMODS.calculate_context({
         money_altered = true,
