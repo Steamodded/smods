@@ -2125,6 +2125,18 @@ ease_dollars(G.GAME.current_round.dollars)
 SMODS.money_from_cashout = nil
 '''
 
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+G.GAME.dollars = G.GAME.dollars + mod
+'''
+payload = '''
+SMODS.dollars_changed = mod
+'''
+
 # Add context.modify_final_cashout
 [[patches]]
 [patches.pattern]
