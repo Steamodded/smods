@@ -3034,37 +3034,6 @@ function UIElement:remove()
     uie_remove_ref(self)
 end
 
-function UIElement:draw_text_outline(button_active)
-	if not button_active then
-		return
-	end
-	love.graphics.setColor(self.config.text_outline)
-	for x = -1, 1 do
-		for y = -1, 1 do
-			if x ~= 0 or y ~= 0 then
-				love.graphics.draw(
-					self.config.text_drawable,
-					((self.config.font or self.config.lang.font).TEXT_OFFSET.x + x * 20)
-						* self.config.scale
-						* (self.config.font or self.config.lang.font).FONTSCALE
-						/ G.TILESIZE,
-					((self.config.font or self.config.lang.font).TEXT_OFFSET.y + y * 20)
-						* self.config.scale
-						* (self.config.font or self.config.lang.font).FONTSCALE
-						/ G.TILESIZE,
-					0,
-					self.config.scale
-						* (self.config.font or self.config.lang.font).squish
-						* (self.config.font or self.config.lang.font).FONTSCALE
-						/ G.TILESIZE,
-					self.config.scale * (self.config.font or self.config.lang.font).FONTSCALE / G.TILESIZE
-				)
-			end
-		end
-	end
-	love.graphics.setColor(self.config.colour)
-end
-
 function G.FUNCS.dropdown_select(e)
     local args = e.config.args_table
     if e.config.value == args.ref_table[args.ref_value] and not args.no_unselect then

@@ -4161,6 +4161,38 @@ function UIElement:set_text_shader(shader, send, shadow)
     })
 end
 
+function UIElement:draw_text_outline(button_active)
+	if not button_active then
+		return
+	end
+	love.graphics.setColor(self.config.text_outline)
+	for x = -1, 1 do
+		for y = -1, 1 do
+			if x ~= 0 or y ~= 0 then
+				love.graphics.draw(
+					self.config.text_drawable,
+					((self.config.font or self.config.lang.font).TEXT_OFFSET.x + x * 20)
+						* self.config.scale
+						* (self.config.font or self.config.lang.font).FONTSCALE
+						/ G.TILESIZE,
+					((self.config.font or self.config.lang.font).TEXT_OFFSET.y + y * 20)
+						* self.config.scale
+						* (self.config.font or self.config.lang.font).FONTSCALE
+						/ G.TILESIZE,
+					0,
+					self.config.scale
+						* (self.config.font or self.config.lang.font).squish
+						* (self.config.font or self.config.lang.font).FONTSCALE
+						/ G.TILESIZE,
+					self.config.scale * (self.config.font or self.config.lang.font).FONTSCALE / G.TILESIZE
+				)
+			end
+		end
+	end
+	love.graphics.setColor(self.config.colour)
+end
+
+
 -- function to modify score: normally accepts add and mult argument and additionally card argument
 SMODS.mod_score = function(score_mod)
     score_mod = score_mod or {}

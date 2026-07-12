@@ -363,25 +363,3 @@ payload = '''
 if v.colour then inner_colour = v.colour or nil end
 '''
 match_indent = true
-
-# UIElement:draw_self
-# Handle drawing text outline
-[[patches]]
-[patches.pattern]
-target = "engine/ui.lua"
-pattern = '''
-love.graphics.draw(
-    self.config.text_drawable,
-    (self.config.font or self.config.lang.font).TEXT_OFFSET.x*(self.config.scale)*(self.config.font or self.config.lang.font).FONTSCALE/G.TILESIZE,
-    (self.config.font or self.config.lang.font).TEXT_OFFSET.y*(self.config.scale)*(self.config.font or self.config.lang.font).FONTSCALE/G.TILESIZE,
-    0,
-    (self.config.scale)*(self.config.font or self.config.lang.font).squish*(self.config.font or self.config.lang.font).FONTSCALE/G.TILESIZE,
-    (self.config.scale)*(self.config.font or self.config.lang.font).FONTSCALE/G.TILESIZE
-)'''
-position = "before"
-payload = '''
-if self.config.text_outline then
-    self:draw_text_outline(button_active)
-end
-'''
-match_indent = true
