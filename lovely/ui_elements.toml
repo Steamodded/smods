@@ -276,6 +276,7 @@ end
 match_indent = true
 
 # Apply shaders on text elements
+# Also draw text outline
 # UIElement:draw_self
 [[patches]]
 [patches.pattern]
