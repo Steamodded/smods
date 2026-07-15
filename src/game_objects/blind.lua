@@ -68,6 +68,38 @@ SMODS.Blinds.modifies_draw = {
     bl_serpent = true
 }
 
+function SMODS.normalize_bosses_used_table(bosses_used)
+    local normalized = { boss = {}, small = {}, big = {} }
+    local typed_keys = { boss = true, small = true, big = true }
+
+    if type(bosses_used) == 'table' then
+        for key, value in pairs(bosses_used) do
+            if typed_keys[key] and type(value) == 'table' then
+                for blind_key, count in pairs(value) do
+                    normalized[key][blind_key] = count
+                end
+            elseif not typed_keys[key] and type(value) ~= 'table' then
+                normalized.boss[key] = value
+            end
+        end
+    end
+
+    for key, blind in pairs(G.P_BLINDS or {}) do
+        if blind.boss and normalized.boss[key] == nil then normalized.boss[key] = 0 end
+        if blind.small and normalized.small[key] == nil then normalized.small[key] = 0 end
+        if blind.big and normalized.big[key] == nil then normalized.big[key] = 0 end
+    end
+
+    return setmetatable(normalized, {
+        __index = function(t, key)
+            return t.boss[key] or t.big[key] or t.small[key]
+        end,
+        __newindex = function(t, key, value)
+            rawset(t.boss, key, value)
+        end
+    })
+end
+
 function SMODS.add_boss_to_used_table(boss_key, type)
     if G.P_BLINDS[boss_key][type].allow_others then 
         G.GAME.bosses_used[type][boss_key] = G.GAME.bosses_used[type][boss_key] + 1
