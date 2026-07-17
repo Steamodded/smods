@@ -173,14 +173,14 @@ target = 'functions/misc_functions.lua'
 match_indent = true
 position = 'at'
 pattern = "if not v.omit then"
-payload = "if not v.omit and not v.no_collection then"
+payload = "if not v.omit and (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) then"
 
 [[patches]]
 [patches.pattern]
 target = "functions/misc_functions.lua"
 pattern = "if v.set == 'Joker' then"
 position = "at"
-payload = "if v.set == 'Joker' and not v.no_collection and not v.omit then "
+payload = "if v.set == 'Joker' and (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) and not v.omit then "
 match_indent = true
 times = 1
 
@@ -191,7 +191,7 @@ line_prepend = '$indent'
 position = 'at'
 pattern = '(?<indent>[\t ]*)(?<start>for _, v in pairs\(G\.P_[BT].*)(?<rest>(\n.*){7})'
 payload = '''$start
-    if not v.no_collection then
+    if (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) then
     $rest
 end
 '''
@@ -203,7 +203,7 @@ target = 'functions/common_events.lua'
 match_indent = true
 position = 'at'
 pattern = "if v.discovered and not v.alerted then"
-payload = "if v.discovered and not v.alerted and not v.no_collection then"
+payload = "if v.discovered and not v.alerted and (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) then"
 
 ## Description controls
 # localize
@@ -358,8 +358,9 @@ target = 'functions/common_events.lua'
 pattern = '''
 desc_nodes.name = localize{type = 'name_text', key = name_override or _c.key, set = name_override and 'Other' or _c.set} 
 '''
-position = "after"
+position = "at"
 payload = '''
+desc_nodes.name = localize{type = 'name_text', key = name_override or _c.key, set = name_override and 'Other' or _c.set, vars = specific_vars or _c.name_vars or _c.vars} 
 -- If statement guards against setting `name_styled` twice. This apparently happens
 -- when generating ui for Lucky Cards: smods takes ownership of vanilla, so
 -- this code is reached in both places it appears
@@ -372,7 +373,7 @@ if not desc_nodes.name_styled then
     if not G.localization.descriptions[set][_c.key] then set = "Other" end
   end
   desc_nodes.name_styled = {}
-  localize{type = 'name', key = key, set = set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars({}, _c:create_fake_card()) or {}).vars) or {colours = {}}} 
+  localize{type = 'name', key = key, set = set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = (_c.create_fake_card and _c.loc_vars and (_c:loc_vars({}, _c:create_fake_card()) or {}).vars) or _c.name_vars or _c.vars or {colours = {}}} 
   desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
   desc_nodes.name_styled.config.align = "cm"
 end
@@ -466,6 +467,26 @@ if not v.no_ui then
 end
 '''
 
+# Pool badges 
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''
+    if AUT.info then
+'''
+position = "before"
+payload = '''
+    local prototype_obj = card.config.center or card.config.tag
+    if prototype_obj and prototype_obj.pools then
+        for k, v in pairs(SMODS.ObjectTypes) do
+            if prototype_obj.pools[v.key] and type(v.set_badges) == "function" then
+                v:set_badges(card, badges)
+            end
+        end
+    end
+'''
+match_indent = true
+
 # Allow tilt_shadow in define_draw_steps
 [[patches]]
 [patches.pattern]
@@ -489,4 +510,49 @@ self.draw_steps[#self.draw_steps+1] = {
 '''
 payload = '''
   tilt_shadow = v.tilt_shadow,
+'''
+
+# Blind mod badge display during run
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+{n=G.UIT.R, config={align = "cm",padding = 0.15}, nodes={
+    {n=G.UIT.O, config={object = G.GAME.blind, draw_layer = 1}},
+    {n=G.UIT.C, config={align = "cm",r = 0.1, padding = 0.05, emboss = 0.05, minw = 2.9, colour = G.C.BLACK}, nodes={
+      {n=G.UIT.R, config={align = "cm", maxw = 2.8}, nodes={
+        {n=G.UIT.T, config={text = localize('ph_blind_score_at_least'), scale = 0.3, colour = G.C.WHITE, shadow = true}}
+      }},
+      {n=G.UIT.R, config={align = "cm", minh = 0.6}, nodes={
+        {n=G.UIT.O, config={w=0.5,h=0.5, colour = G.C.BLUE, object = stake_sprite, hover = true, can_collide = false}},
+        {n=G.UIT.B, config={h=0.1,w=0.1}},
+        {n=G.UIT.T, config={ref_table = G.GAME.blind, ref_value = 'chip_text', scale = 0.001, colour = G.C.RED, shadow = true, id = 'HUD_blind_count', func = 'blind_chip_UI_scale'}}
+      }},
+      {n=G.UIT.R, config={align = "cm", minh = 0.45, maxw = 2.8, func = 'HUD_blind_reward'}, nodes={
+        {n=G.UIT.T, config={text = localize('ph_blind_reward'), scale = 0.3, colour = G.C.WHITE}},
+        {n=G.UIT.O, config={object = DynaText({string = {{ref_table = G.GAME.current_round, ref_value = 'dollars_to_be_earned'}}, colours = {G.C.MONEY},shadow = true, rotate = true, bump = true, silent = true, scale = 0.45}),id = 'dollars_to_be_earned'}},
+      }},
+    }},
+  }},
+}},
+'''
+payload = '''
+{n=G.UIT.R, config = {align = "cm", r = 0.1, id = 'HUD_blind_badge', func = 'HUD_blind_badge'}, nodes = {
+  SMODS.create_blind_mod_badge()
+}},
+'''
+
+# adjust placement of G.HUD
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+config = {align=('cli'), offset = {x=-0.7,y=0},major = G.ROOM_ATTACH}
+'''
+payload = '''
+config = {align=('cli'), offset = {x=-0.7,y=0.4},major = G.ROOM_ATTACH}
 '''

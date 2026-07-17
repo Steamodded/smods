@@ -3,12 +3,14 @@ version = "1.0.0"
 dump_lua = true
 priority = -10
 
+# Use final_hand_chips value everywhere
 [[patches]]
 [patches.regex]
 target = "functions/state_events.lua"
 pattern = "^(.*)hand_chips\\s*\\*\\s*mult(.*)$"
 position = "at"
 payload = '''$1 SMODS.calculate_round_score() $2'''
+
 
 [[patches]]
 [patches.pattern]
@@ -206,7 +208,8 @@ pattern = '''
 delay(0.3)
 '''
 payload = '''
-    SMODS.last_hand_oneshot = SMODS.calculate_round_score() > G.GAME.blind.chips
+    SMODS.last_hand_score = SMODS.calculate_round_score()
+    SMODS.last_hand_oneshot = SMODS.last_hand_score >= G.GAME.blind.chips
     G.E_MANAGER:add_event(Event({
       trigger = 'immediate',
       func = (function() 
@@ -363,7 +366,7 @@ pattern = '''
 return _mult
 '''
 payload = '''
-SMODS.Scoring_Parameters.mult:modify(nil, _mult - (mult or 0))
+if _mult ~= mult or _mult ~= SMODS.Scoring_Parameters.mult.current then SMODS.Scoring_Parameters.mult:modify(nil, _mult - (mult or 0)) end
 '''
 [[patches]]
 [patches.pattern]
@@ -374,5 +377,5 @@ pattern = '''
 return _chips
 '''
 payload = '''
-SMODS.Scoring_Parameters.chips:modify(nil, _chips - (hand_chips or 0))
+if _chips ~= hand_chips or _chips ~= SMODS.Scoring_Parameters.chips.current then SMODS.Scoring_Parameters.chips:modify(nil, _chips - (hand_chips or 0)) end
 '''

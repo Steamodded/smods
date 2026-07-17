@@ -28,3 +28,11 @@ match_indent = true
 payload = '''
 local card_count = not self.config.no_card_count and self ~= G.shop_vouchers and {n=G.UIT.R, config={align = self == G.jokers and 'cl' or self == G.hand and 'cm' or 'cr', padding = 0.03, no_fill = true}, nodes={
 '''
+
+[[patches]]
+[patches.pattern]
+target = "cardarea.lua"
+pattern = "if not card.states.drag.is then"
+position = "at"
+payload = "if not card.states.drag.is and not card.disable_align then"
+match_indent = true

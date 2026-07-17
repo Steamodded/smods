@@ -526,6 +526,25 @@ function getDebugInfoForCrash()
 
     local info = "Additional Context:\nBalatro Version: " .. version .. "\nModded Version: " ..
                      (modded_version)
+    
+    local t = "\nOptional features enabled: "
+    local any_enabled
+    for k, v in pairs(SMODS.optional_features) do
+        if type(v) == 'table' then
+            if next(v) then                        
+                t = t .. k .. ' ('
+                for a, _ in pairs(v) do t = t .. a .. ', ' end
+                t = t:sub(1,-3) .. '), '
+                any_enabled = true
+            end
+        else
+            t = t .. k .. ', '
+            any_enabled = true
+        end
+    end
+    t = any_enabled and t:sub(1,-3) or (t .. "None")
+    info = info .. t
+
     local major, minor, revision, codename = love.getVersion()
     info = info .. string.format("\nLÖVE Version: %d.%d.%d", major, minor, revision)
     local lovely_success, lovely = pcall(require, "lovely")
@@ -705,6 +724,7 @@ function injectStackTrace()
             trace = ''
         elseif success and msg then
             table.insert(err, '\n' .. msg)
+
             sendInfoMessage(msg, 'StackTrace')
         else
             table.insert(err, "\n" .. "Failed to get additional context :/")

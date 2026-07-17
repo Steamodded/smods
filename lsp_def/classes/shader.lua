@@ -5,6 +5,7 @@
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field key string Unique string to reference this object. This, `path`, and shader name in the GLSL must be the same.
 ---@field path string Name of the shader file. This, `key`, and shader name in the GLSL must be the same. 
+---@field path_mod? Mod|table The mod this object's `path` belongs to, if this is not the same mod it was created by.
 ---@field __call? fun(self: SMODS.Shader|table, o: SMODS.Shader|table): nil|table|SMODS.Shader
 ---@field extend? fun(self: SMODS.Shader|table, o: SMODS.Shader|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Shader|table): boolean? Ensures objects already registered will not register. 
@@ -19,7 +20,7 @@
 ---@field inject? fun(self: SMODS.Shader|table, i?: number) Called during `inject_class`. Injects the object into the game. 
 ---@field take_ownership? fun(self: SMODS.Shader|table, key: string, obj: SMODS.Shader|table, silent?: boolean): nil|table|SMODS.Shader Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.Shader|table, key: string): SMODS.Shader|table? Returns an object if one matches the `key`. 
----@field send_vars? fun(self: SMODS.Shader|table, sprite: Sprite, card: nil|Card): table? Used to send extra args to the shader via `Shader:send(key, value)`. 
+---@field send_vars? fun(sprite: Sprite, card: nil|Card): table? Used to send extra args to the shader via `Shader:send(key, value)`. 
 ---@overload fun(self: SMODS.Shader): SMODS.Shader
 SMODS.Shader = setmetatable({}, {
     __call = function(self)
