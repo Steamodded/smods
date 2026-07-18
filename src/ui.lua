@@ -3247,65 +3247,29 @@ function create_UIBox_blind_choice(type, run_info)
     return box
 end
 
-function SMODS.create_blind_mod_badge()
-    if G.GAME.blind and G.GAME.blind.config.blind and G.GAME.blind.config.blind.mod then
-        local mod = G.GAME.blind.config.blind.mod
-        local text = DynaText({string = {{ref_table = G.GAME.blind_badge, ref_value = 'name'}}, maxw = mod.no_marquee and 4.4, colours = {mod.badge_text_colour or G.C.WHITE}, shadow = true, silent = true, float = true, scale = 0.36})
-        local text_scroll = SMODS.UIScrollBox({
-                content = text,
-                container = {
-                    config = {
-                        can_collide = false,
-                    }
-                },
-                overflow = {
-                    node_config = {
-                        no_overflow = not mod.no_marquee and "h" or false,
-                        maxw = not mod.no_marquee and 4.4 or nil,
-                    },
-                    config = {
-                        can_collide = false,
-                    }
-                },
-                sync_mode = "offset",
-                scroll_move = function(self, dt)
-                    local dx = self:get_scroll_distance()
-                    if dx == 0 or mod.no_marquee then return end
-                    if not self.scroll_start_pause then
-                        self.scroll_start_pause = 1.5
-                    end
-                    if self.scroll_start_pause > 0 and self.scroll_offset.x >= 0 then
-                        self.scroll_start_pause = self.scroll_start_pause - G.real_dt
-                    else
-                        self.scroll_offset.x = (self.scroll_offset.x or 0) + G.real_dt / 1.5
-                        if self.scroll_offset.x > self.content_container.T.w then
-                            self.scroll_start_pause = 1.5
-                            self.scroll_offset.x = -self.T.w - 0.1
-                        end
-                    end
-                end,
-            })
-        return {n=G.UIT.R, config={align = "cm", padding = 0.03*0.9, minh = 0.4}, nodes={
-            {n=G.UIT.O, config={object = text_scroll}},
-        }}
-    end
-end
-
 G.FUNCS.HUD_blind_badge = function(e)
     if G.GAME.blind.in_blind then
         if G.GAME.blind.config.blind.mod then
-            if not e.children[1] then 
+            if G.GAME.blind.config.blind.mod.display_name ~= G.GAME.blind_badge.name then 
+                if e.children[1] then e.children[1]:remove(); e.children[1] = nil end
                 local mod = G.GAME.blind.config.blind.mod
                 G.GAME.blind_badge.name = mod.display_name
-                e.UIBox:add_child(SMODS.create_blind_mod_badge(), e)
-                e.config.colour = mod.badge_colour or G.C.DYN_UI.MAIN
+                local badge = SMODS.create_mod_badge(mod, G.GAME.blind.config.blind, 4.4, 0.36)
+                e.config.minh = 0.5
+                e.config.colour = badge.config.colour or mod.badge_colour or G.C.DYN_UI.MAIN
+                e.config.shader = badge.config.shader or nil
                 e.config.emboss = 0.05
                 e.states.visible = true
+                badge.config.shader = nil
+                badge.config.emboss = nil
+                badge.config.colour = nil
+                e.UIBox:add_child(badge, e)
             end
         elseif e.children[1] then
             e.states.visible = false
             e.children[1]:remove()
             e.children[1] = nil
+            G.GAME.blind_badge = {}
         end
     end
 end

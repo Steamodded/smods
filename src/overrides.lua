@@ -2637,11 +2637,12 @@ function Blind:stay_flipped(to_area, card, from_area)
 end
 
 local modify_hand = Blind.modify_hand
-function Blind:modify_hand(cards, poker_hands, text, mult, hand_chips, scoring_hand)
+function Blind:modify_hand(cards, poker_hands, text, c_mult, _hand_chips, scoring_hand)
 	local modded
-	local _mult, _hand_chips, modded = modify_hand(self, cards, poker_hands, text, mult, hand_chips, scoring_hand)
+	local _mult, _hand_chips, modded = modify_hand(self, cards, poker_hands, text, c_mult, _hand_chips, scoring_hand)
+	mult = mod_mult(_mult); hand_chips = mod_chips(_hand_chips)
 	local flags = SMODS.calculate_context({ modify_hand = true, poker_hands = poker_hands, scoring_name = text, scoring_hand = scoring_hand, full_hand = cards })
-	return mod_mult(_mult), mod_chips(_hand_chips), modded or flags.calculated
+	return mod_mult(mult), mod_chips(hand_chips), modded or flags.calculated
 end
 
 local card_set_base = Card.set_base
