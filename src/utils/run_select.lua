@@ -546,14 +546,14 @@ function SMODS.RunSelect.Functions.build_preview_ui(key, deck_preview)
 
     return {n=G.UIT.C, config = {align = "tm", padding = 0.1}, nodes ={
         {n = G.UIT.R, config = {minh = 5.95, minw = 3, maxw = 3, colour = G.C.BLACK, r=0.1, align = "bm", padding = 0.15, emboss=0.05}, nodes = {
-            {n = G.UIT.R, config = {align = "cm", minh = 0.6, maxw = 2.8}, nodes = {
+            {n = G.UIT.R, config = {align = "bm", minh = 0.6, maxw = 2.8}, nodes = {
                 {n=G.UIT.O, config = {id = (deck_preview and 'deck_' or '')..'preview_text_1', object = DynaText({
                     string = {{ref_table = SMODS.RunSelect.Internals.preview_texts, ref_value = (deck_preview and 'deck_' or '')..'preview_text_1'}},
                     scale = 0.7/math.max(1, string.len(SMODS.RunSelect.Internals.preview_texts[(deck_preview and 'deck_' or '')..'preview_text_1'])/8),
                     colours = {G.C.GREY}, pop_in_rate = 5, silent = true, non_recalc = true
                 })}}
             }},
-            {n = G.UIT.R, config = {align = "cm", minh = 0.6, maxw = 2.8}, nodes = {
+            {n = G.UIT.R, config = {align = "tm", minh = 0.6, maxw = 2.8}, nodes = {
                 {n=G.UIT.O, config = {id = (deck_preview and 'deck_' or '')..'preview_text_2', object = DynaText({
                     string = {{ref_table = SMODS.RunSelect.Internals.preview_texts, ref_value = (deck_preview and 'deck_' or '')..'preview_text_2'}},
                     scale = 0.7/math.max(1, string.len(SMODS.RunSelect.Internals.preview_texts[(deck_preview and 'deck_' or '')..'preview_text_2'])/8),

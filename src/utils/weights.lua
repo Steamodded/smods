@@ -174,21 +174,22 @@ function SMODS.create_blind_pool(blind_type, skip_cull)
     end
 
     for k, v in pairs(G.P_BLINDS) do
-        local res, options = SMODS.add_to_pool(v)
-        options = options or {}
-        if not v[blind_type] then
-        elseif boss_already_chosen(k) then
-        elseif options.ignore_showdown_check then
-            eligible_bosses[k] = res and true or nil
-        elseif blind_type == 'boss' then
-            if
-                ((SMODS.is_showdown_ante()) == (v.boss.showdown or false)) and ((v[blind_type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante)) and ((v[blind_type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante)
-            then
+        if v[blind_type] then
+            local res, options = SMODS.add_to_pool(v)
+            options = options or {}
+            if boss_already_chosen(k) then
+            elseif options.ignore_showdown_check then
                 eligible_bosses[k] = res and true or nil
-            end
-        else
-            if (v[blind_type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante) and (v[blind_type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante then
-                eligible_bosses[k] = res and true or nil
+            elseif blind_type == 'boss' then
+                if
+                    ((SMODS.is_showdown_ante()) == (v.boss.showdown or false)) and ((v[blind_type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante)) and ((v[blind_type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante)
+                then
+                    eligible_bosses[k] = res and true or nil
+                end
+            else
+                if (v[blind_type].min or G.GAME.round_resets.ante) <= math.max(1, G.GAME.round_resets.ante) and (v[blind_type].max or G.GAME.round_resets.ante) >= G.GAME.round_resets.ante then
+                    eligible_bosses[k] = res and true or nil
+                end
             end
         end
     end

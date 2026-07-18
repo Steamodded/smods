@@ -363,3 +363,16 @@ payload = '''
 if v.colour then inner_colour = v.colour or nil end
 '''
 match_indent = true
+
+# Fix empty loc tags being ignored
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if str_parts[1] then parsed_line[#parsed_line+1] = {strings = str_parts, control = control or {}} end
+'''
+payload = '''
+if str_parts[1] or control.element then parsed_line[#parsed_line+1] = {strings = str_parts, control = control or {}} end
+'''
