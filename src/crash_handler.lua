@@ -528,18 +528,22 @@ function getDebugInfoForCrash()
                      (modded_version)
     
     local t = "\nOptional features enabled: "
+    local any_enabled
     for k, v in pairs(SMODS.optional_features) do
         if type(v) == 'table' then
             if next(v) then                        
                 t = t .. k .. ' ('
                 for a, _ in pairs(v) do t = t .. a .. ', ' end
                 t = t:sub(1,-3) .. '), '
+                any_enabled = true
             end
         else
             t = t .. k .. ', '
+            any_enabled = true
         end
     end
-    info = info .. t:sub(1,-3)
+    t = any_enabled and t:sub(1,-3) or (t .. "None")
+    info = info .. t
 
     local major, minor, revision, codename = love.getVersion()
     info = info .. string.format("\nLÖVE Version: %d.%d.%d", major, minor, revision)
