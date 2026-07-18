@@ -506,54 +506,60 @@ function SMODS.create_mod_badges(obj, badges)
             end
         end
         for i, mod in ipairs(mods) do
-            local mod_name = mod.display_name
-            local size = 0.9
-            local max_text_width = 2 - 2*0.05 - 4*0.03*size - 2*0.03
-            local scale_fac = 1
-            local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE}, maxw = mod.no_marquee and max_text_width, float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = 0.33*size*scale_fac})
-            local badge_scroll = SMODS.UIScrollBox({
-                content = badge_text,
-                container = {
-                    config = {
-                        can_collide = false,
-                    }
-                },
-                overflow = {
-                    node_config = {
-                        no_overflow = not mod.no_marquee and "h" or false,
-                        maxw = not mod.no_marquee and max_text_width or nil,
-                    },
-                    config = {
-                        can_collide = false,
-                    }
-                },
-                sync_mode = "offset",
-                scroll_move = function(self, dt)
-                    local dx = self:get_scroll_distance()
-                    if dx == 0 or mod.no_marquee then return end
-                    if not self.scroll_start_pause then
-                        self.scroll_start_pause = 1.5
-                    end
-                    if self.scroll_start_pause > 0 and self.scroll_offset.x >= 0 then
-                        self.scroll_start_pause = self.scroll_start_pause - G.real_dt
-                    else
-                        self.scroll_offset.x = (self.scroll_offset.x or 0) + G.real_dt / 1.5
-                        if self.scroll_offset.x > self.content_container.T.w then
-                            self.scroll_start_pause = 1.5
-                            self.scroll_offset.x = -self.T.w - 0.1
-                        end
-                    end
-                end,
-            })
             badges[#badges + 1] = {n=G.UIT.R, config={align = "cm"}, nodes={
-                {n=G.UIT.R, config={align = "cm", colour = mod.badge_colour or G.C.GREEN, r = 0.1, minw = 2, minh = 0.36, emboss = 0.05, padding = 0.03*size}, nodes={
-                  {n=G.UIT.B, config={h=0.1,w=0.03}},
-                  {n=G.UIT.O, config={id = 'smods_mod_badge_text', object=badge_scroll}},
-                  {n=G.UIT.B, config={h=0.1,w=0.03}},
-                }}
-              }}
+                SMODS.create_mod_badge(mod, obj)}
+            }
         end
     end
+end
+
+function SMODS.create_mod_badge(mod, obj, width, text_height)
+    if mod.set_mod_badge and type(mod.set_mod_badge) == 'function' then
+        return mod:set_mod_badge(obj)
+    end
+    local mod_name = mod.display_name
+    local max_text_width = width or 1.732
+    local scale_fac = 1
+    local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE}, maxw = mod.no_marquee and max_text_width, float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = text_height or 0.297})
+    local badge_scroll = SMODS.UIScrollBox({
+        content = badge_text,
+        container = {
+            config = {
+                can_collide = false,
+            }
+        },
+        overflow = {
+            node_config = {
+                no_overflow = not mod.no_marquee and "h" or false,
+                maxw = not mod.no_marquee and max_text_width or nil,
+            },
+            config = {
+                can_collide = false,
+            }
+        },
+        sync_mode = "offset",
+        scroll_move = function(self, dt)
+            local dx = self:get_scroll_distance()
+            if dx == 0 or mod.no_marquee then return end
+            if not self.scroll_start_pause then
+                self.scroll_start_pause = 1.5
+            end
+            if self.scroll_start_pause > 0 and self.scroll_offset.x >= 0 then
+                self.scroll_start_pause = self.scroll_start_pause - G.real_dt
+            else
+                self.scroll_offset.x = (self.scroll_offset.x or 0) + G.real_dt / 1.5
+                if self.scroll_offset.x > self.content_container.T.w then
+                    self.scroll_start_pause = 1.5
+                    self.scroll_offset.x = -self.T.w - 0.1
+                end
+            end
+        end,
+    })
+    return {n=G.UIT.R, config={align = "cm", id = 'badge_'..mod.id, colour = mod.badge_colour or G.C.GREEN, r = 0.1, minw = 2, minh = 0.36, emboss = 0.05, padding = 0.027}, nodes={
+        {n=G.UIT.B, config={h=0.1,w=0.03}},
+        {n=G.UIT.O, config={id = 'smods_mod_badge_text', object=badge_scroll}},
+        {n=G.UIT.B, config={h=0.1,w=0.03}},
+    }}
 end
 
 function SMODS.create_loc_dump()
