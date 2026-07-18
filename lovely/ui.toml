@@ -539,9 +539,7 @@ pattern = '''
 }},
 '''
 payload = '''
-{n=G.UIT.R, config = {align = "cm", r = 0.1, id = 'HUD_blind_badge', func = 'HUD_blind_badge'}, nodes = {
-  SMODS.create_blind_mod_badge()
-}},
+{n=G.UIT.R, config = {align = "cm", r = 0.1, id = 'HUD_blind_badge', func = 'HUD_blind_badge'}, nodes = {}},
 '''
 
 # adjust placement of G.HUD
