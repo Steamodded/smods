@@ -1445,7 +1445,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
     SMODS.Back = SMODS.Center:extend {
         set = 'Back',
-        discovered = false,
+        discovered = true,
         unlocked = true,
         atlas = 'centers',
         pos = { x = 0, y = 0 },
