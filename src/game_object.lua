@@ -460,8 +460,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if not self.language and (self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.language)] or self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.real_language)]) then return end
             self.full_path = (self.path_mod or self.mod or SMODS).path ..
                 'assets/' .. G.SETTINGS.GRAPHICS.texture_scaling .. 'x/' .. file_path
-            local file_data = assert(NFS.newFileData(self.full_path),
-                ('Failed to collect file data for Atlas %s'):format(self.key))
+            local file_data = NFS.newFileData(self.full_path)
             if file_data then
                 self.image_data = assert(love.image.newImageData(file_data),
                     ('Failed to initialize image data for Atlas %s'):format(self.key))
