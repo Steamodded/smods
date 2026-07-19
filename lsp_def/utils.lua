@@ -770,6 +770,13 @@ function SMODS.reset_card(card, args) end
 --- i.e. the in_pool method doesn't exist or it returns `true`
 function SMODS.add_to_pool(prototype_obj, args) end
 
+---@param prototype_obj SMODS.GameObject|table
+---@param args table?
+---@return boolean?, table?
+--- Checks whether an object should be hidden from the collection.
+--- i.e. the no_collection method doesn't exist or it returns `false`
+function SMODS.hide_from_collection(prototype_obj, args) end
+
 ---@param context CalcContext|table The context being pushed
 ---@param func string|nil The function/file from which the call originates
 --- Pushes a context to the SMODS.context_stack. (Form: {context=context, count=[number of consecutive pushes]})

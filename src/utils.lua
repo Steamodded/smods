@@ -1165,7 +1165,7 @@ SMODS.collection_pool = function(_base_pool)
     local is_array = _base_pool[1]
     local ipairs = is_array and ipairs or pairs
     for _, v in ipairs(_base_pool) do
-        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not v.no_collection or (type(v.no_collection) == "function" and not v:no_collection())) then
+        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not SMODS.hide_from_collection(v)) then
             pool[#pool+1] = v
         end
     end
@@ -3520,6 +3520,13 @@ function SMODS.add_to_pool(prototype_obj, args)
         return prototype_obj:in_pool(args)
     end
     return true
+end
+
+function SMODS.hide_from_collection(prototype_obj, args)
+    if type(prototype_obj.no_collection) == "function" then
+        return prototype_obj:no_collection(args)
+    end
+    return false
 end
 
 
