@@ -470,18 +470,16 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                     ('Failed to collect file data for Atlas %s'):format(self.key))
                 self.image_data = assert(love.image.newImageData(file_data),
                     ('Failed to initialize image data for Atlas %s'):format(self.key))
-                local imageData2
-                if G.SETTINGS.GRAPHICS.texture_scaling == 2 then
-                    imageData2 = love.image.newImageData(bit.lshift(self.image_data:getWidth(), 1), bit.lshift(self.image_data:getHeight(), 1), self.image_data:getFormat())
-                    imageData2:mapPixel(function(x, y)
-                        return self.image_data:getPixel(bit.rshift(x, 1), bit.rshift(y, 1))
-                    end)
-                else
-                    imageData2 = love.image.newImageData(bit.rshift(self.image_data:getWidth(), 1), bit.rshift(self.image_data:getHeight(), 1), self.image_data:getFormat())
-                    imageData2:mapPixel(function(x, y)
-                        return self.image_data:getPixel(bit.lshift(x, 1), bit.lshift(y, 1))
-                    end)
-                end
+                local shifts = { bit.rshift, bit.lshift }
+                local shift_dim, shift_pixel = shifts[G.SETTINGS.GRAPHICS.texture_scaling], shifts[3-G.SETTINGS.GRAPHICS.texture_scaling]
+                local imageData2 = love.image.newImageData(
+                    shift_dim(self.image_data:getWidth(), 1),
+                    shift_dim(self.image_data:getHeight(), 1),
+                    self.image_data:getFormat()
+                )
+                imageData2:mapPixel(function(x, y)
+                    return self.image_data:getPixel(shift_pixel(x, 1), shift_pixel(y, 1))
+                end)
                 self.image_data:release()
                 self.image_data = imageData2
         	end
