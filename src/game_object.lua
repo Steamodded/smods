@@ -496,7 +496,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
         pre_inject_class = function(self)
             G:set_render_settings() -- restore originals first in case a texture pack was disabled
-        end
+        end,
+        post_inject_class = function(self)
+            for _, v in pairs(G.I.SPRITE) do
+                v:reset()
+            end
+        end,
     }
 
     SMODS.Atlas {
