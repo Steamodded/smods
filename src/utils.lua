@@ -2682,7 +2682,14 @@ local function parse_tooltip_vars(str, separator)
     return vars
 end
 
+function SMODS.get_loc_colour(ctrl, vars)
+    if type(ctrl) == 'table' then ctrl = ctrl.c end
+    if not ctrl then return end
+    return (vars or {})[tonumber(ctrl) or {}] or loc_colour(ctrl)
+end
+
 function SMODS.localize_box(lines, args)
+    args.vars = args.vars or {}
     local final_line = {}
     for _, part in ipairs(lines) do
         if part.control.element then
@@ -2698,13 +2705,15 @@ function SMODS.localize_box(lines, args)
         end
 
         local thunk = {
-            bg_col = part.control.B and args.vars.colours[tonumber(part.control.B)] or part.control.X and loc_colour(part.control.X) or nil,
-            text_col = part.control.V and args.vars.colours[tonumber(part.control.V)] or part.control.C and loc_colour(part.control.C),
-            underline = part.control.u and loc_colour(part.control.u),
-            strikethrough = part.control.st and loc_colour(part.control.st),
+            bg_col = SMODS.get_loc_colour(part.control.B or part.control.X, args.vars.colours),
+            text_col = SMODS.get_loc_colour(part.control.V or part.control.C, args.vars.colours),
+            underline = SMODS.get_loc_colour(part.control.u, args.vars.colours),
+            underline_scale = type(part.control.u) == 'table' and part.control.u.s,
+            strikethrough = SMODS.get_loc_colour(part.control.st, args.vars.colours),
+            strikethrough_scale = type(part.control.st) == 'table' and part.control.st.s,
             font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
-            scale_mod = part.control.s and tonumber(part.control.s) or args.scale  or 1,
-            text_outline = part.control.O and loc_colour(part.control.O),
+            scale_mod = part.control.s and tonumber(part.control.s) or args.scale or 1,
+            text_outline = SMODS.get_loc_colour(part.control.O, args.vars.colours),
         }
         local desc_scale = (thunk.font or G.LANG.font).DESCSCALE
         if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
@@ -2720,9 +2729,11 @@ function SMODS.localize_box(lines, args)
           end
           final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
           final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
-          button = part.control.button,
-          underline = thunk.underline,
-          strikethrough = thunk.strikethrough,
+            button = part.control.button,
+            underline = thunk.underline,
+            underline_scale = thunk.underline_scale,
+            strikethrough = thunk.strikethrough,
+            strikethrough_scale = thunk.strikethrough_scale,
             object = DynaText({string = {assembled_string},
               colours = {thunk.text_col or args.text_colour or G.C.UI.TEXT_LIGHT},
               bump = not args.no_bump,
@@ -2736,9 +2747,7 @@ function SMODS.localize_box(lines, args)
               spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
               font = thunk.font,
               button = part.control.button,
-              strikethrough = part.control.st and loc_colour(part.control.st),
-              underline = part.control.u and loc_colour(part.control.u),
-              text_outline = part.control.O and loc_colour(part.control.O),
+              text_outline = thunk.text_outline,
               scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*thunk.scale_mod*(args.fixed_scale or 1)
             })
           }}
@@ -2756,7 +2765,9 @@ function SMODS.localize_box(lines, args)
             final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
                 button = part.control.button,
                 underline = thunk.underline,
+                underline_scale = thunk.underline_scale,
                 strikethrough = thunk.strikethrough,
+                strikethrough_scale = thunk.strikethrough_scale,
                 object = DynaText({string = {assembled_string}, colours = {thunk.text_col or loc_colour()},
                     float = _float,
                     silent = _silent,
@@ -2769,14 +2780,16 @@ function SMODS.localize_box(lines, args)
                 }
             }
         elseif part.control.X or part.control.B then
-            final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = part.control.B and args.vars.colours[tonumber(part.control.B)] or loc_colour(part.control.X), r = 0.05, padding = 0.03, res = 0.15}, nodes={
+            final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={
                 {n=G.UIT.T, config={
                     button = part.control.button,
                     text = assembled_string,
                     colour = thunk.text_col or loc_colour(),
                     font = thunk.font,
-                    underline = thunk.underline,
                     strikethrough = thunk.strikethrough,
+                    strikethrough_scale = thunk.strikethrough_scale,
+                    underline = thunk.underline,
+                    underline_scale = thunk.underline_scale,
                     text_outline = thunk.text_outline,
                     scale = 0.32*thunk.scale_mod*desc_scale}},
                 }}
@@ -2796,8 +2809,10 @@ function SMODS.localize_box(lines, args)
                 shadow = args.shadow,
                 colour = thunk.text_col or args.text_colour or loc_colour(nil, args.default_col),
                 font = thunk.font,
-                underline = thunk.underline,
                 strikethrough = thunk.strikethrough,
+                strikethrough_scale = thunk.strikethrough_scale,
+                underline = thunk.underline,
+                underline_scale = thunk.underline_scale,
                 text_outline = thunk.text_outline,
                 scale = 0.32*thunk.scale_mod*desc_scale
             }}
