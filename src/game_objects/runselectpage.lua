@@ -27,7 +27,7 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
         end
         if not self.injected then
             if self.quick_start_text then
-                table.insert(SMODS.RunSelect.Internals.quick_start_text_functions, self.quick_start_text)
+                table.insert(SMODS.RunSelect.Internals.quick_start_text_functions, self.page, self.quick_start_text)
             end
             table.insert(SMODS.RunSelect.Internals.pages, self.page, self.key)
             for i = self.page + 1, #SMODS.RunSelect.Internals.pages do
