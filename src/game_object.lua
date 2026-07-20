@@ -465,14 +465,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 self.image_data = assert(love.image.newImageData(file_data),
                     ('Failed to initialize image data for Atlas %s'):format(self.key))
             else
-                self.full_path = NFS.getNormalizedPath(
-                    string.gsub(
-                        self.full_path,
-                        "assets/" .. G.SETTINGS.GRAPHICS.texture_scaling .. "x/",
-                        "assets/"..(3 - G.SETTINGS.GRAPHICS.texture_scaling) .. "x/",
-                        1
-                    )
-                )
+                self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
+                    'assets/' .. (3 - G.SETTINGS.GRAPHICS.texture_scaling) .. 'x/' .. file_path)
                 file_data = assert(NFS.newFileData(self.full_path),
                     ('Failed to collect file data for Atlas %s'):format(self.key))
                 self.image_data = assert(love.image.newImageData(file_data),
