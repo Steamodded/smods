@@ -212,6 +212,7 @@ end
 
 local function handle_loc_file(dir, language, force, mod_id)
     for k, v in ipairs({ dir .. language .. '.lua', dir .. language .. '.json' }) do
+        v = NFS.getNormalizedPath(v)
         if NFS.getInfo(v) then
             parse_loc_file(v, force, mod_id)
             break

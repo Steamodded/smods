@@ -328,8 +328,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             local file_path = self.path
             if file_path == 'DEFAULT' then return end
 
-            self.full_path = (self.path_mod or self.mod or SMODS).path ..
-                'assets/fonts/' .. file_path
+            self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
+                'assets/fonts/' .. file_path)
             local file_data = assert(NFS.newFileData(self.full_path),
                 ('Failed to collect file data for Font %s'):format(self.key))
             self.FONT = assert(love.graphics.newFont(file_data, self.render_scale or G.TILESIZE),
@@ -458,14 +458,21 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             -- language specific sprites override fully defined sprites only if that language is set
             if self.language and G.SETTINGS.language ~= self.language and G.SETTINGS.real_language ~= self.language then return end
             if not self.language and (self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.language)] or self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.real_language)]) then return end
-            self.full_path = (self.path_mod or self.mod or SMODS).path ..
-                'assets/' .. G.SETTINGS.GRAPHICS.texture_scaling .. 'x/' .. file_path
+            self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
+                'assets/' .. G.SETTINGS.GRAPHICS.texture_scaling .. 'x/' .. file_path)
             local file_data = NFS.newFileData(self.full_path)
             if file_data then
                 self.image_data = assert(love.image.newImageData(file_data),
                     ('Failed to initialize image data for Atlas %s'):format(self.key))
             else
-                self.full_path = string.gsub(self.full_path, "assets/" .. G.SETTINGS.GRAPHICS.texture_scaling .. "x/", "assets/"..(3 - G.SETTINGS.GRAPHICS.texture_scaling) .. "x/", 1)
+                self.full_path = NFS.getNormalizedPath(
+                    string.gsub(
+                        self.full_path,
+                        "assets/" .. G.SETTINGS.GRAPHICS.texture_scaling .. "x/",
+                        "assets/"..(3 - G.SETTINGS.GRAPHICS.texture_scaling) .. "x/",
+                        1
+                    )
+                )
                 file_data = assert(NFS.newFileData(self.full_path),
                     ('Failed to collect file data for Atlas %s'):format(self.key))
                 self.image_data = assert(love.image.newImageData(file_data),
@@ -557,8 +564,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ((G.SETTINGS.real_language and self.path[G.SETTINGS.real_language]) or self.path[G.SETTINGS.language] or self.path['default'] or self.path['en-us']) or self.path
             if file_path == 'DEFAULT' then return end
             local prev_path = self.full_path
-            self.full_path = (self.path_mod or self.mod or SMODS).path ..
-                'assets/sounds/' .. file_path
+            self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
+                'assets/sounds/' .. file_path)
             if prev_path == self.full_path then return end
             self.data = NFS.read('data', self.full_path)
             --self.decoder = love.sound.newDecoder(self.data)
@@ -3395,8 +3402,8 @@ SMODS.UndiscoveredCompat = {
         set = 'Shader',
         send_vars = nil, -- function (sprite) - get custom externs to send to shader.
         inject = function(self)
-            self.full_path = (self.path_mod or self.mod or SMODS).path ..
-                'assets/shaders/' .. self.path
+            self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
+                'assets/shaders/' .. self.path)
 
             local file = assert(NFS.read(self.full_path),
                 ('Failed to collect file data for Shader %s'):format(self.key))
