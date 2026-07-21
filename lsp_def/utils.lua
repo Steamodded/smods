@@ -77,6 +77,7 @@
 ---@field modify_hand? true Check if `true` for modifying the chips and mult of the played hand.
 ---@field drawing_cards? true `true` when cards are being drawn
 ---@field amount? number Used for in some contexts to specify a numerical amount.
+---@field initial? number Used in some contexts to specify the original value of a changing number.
 ---@field evaluate_poker_hand? integer Check if `true` for modifying the name, display name or contained poker hands when evaluating a hand.
 ---@field display_name? PokerHands|'Royal Flush'|string Display name of the scoring poker hand.
 ---@field mod_probability? true Check if `true` for effects that make additive or multiplicative modifications to probabilities.
@@ -107,6 +108,7 @@
 ---@field from_shop? true Check if `true` if money changed during the shop.
 ---@field from_consumeable? true Check if `true` if money changed by a consumable.
 ---@field from_scoring? true Check if `true` if money changed during scoring.
+---@field from_cashout? true Check if `true` if money changed from cashing out.
 ---@field modify_ante? number The amount the ante changes by, check for effects before the ante changes.
 ---@field ante_change? true Check if `true` for effects when the ante changes.
 ---@field ante_end? true Check if `true` for when the ante change is for reaching the end of the ante.
@@ -527,6 +529,11 @@ function format_ui_value(value) end
 --- Returns the blind amount.
 function SMODS.get_blind_amount(ante) end
 
+--- Converts save data for a single vanilla object.
+---@param entry {count?:number,[("wins"|"losses")]?: table<number,number>, [("wins_by_key"|"losses_by_key")]?:table<string,number>}|table A deck/joker usage entry.
+---@return table
+function convert_usage_entry(entry) end
+
 --- Converts save data for vanilla objects.
 function convert_save_data() end
 
@@ -742,10 +749,19 @@ function SMODS.is_poker_hand_visible(handname) end
 function SMODS.is_eternal(card, trigger) end
 
 ---@param card Card|table
----@param args? table|{ref_table: table, ref_value: string, scalar_value: string, scalar_table: table?, operation: '+'|'X'|'-'|string|fun(ref_table: table, ref_value: string, initial: number, change: number)?, block_overrides: {value: boolean?, scalar: boolean?, message: boolean?}?, scaling_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
---- Tells Jokers that this card is scaling allowing for scaling detection
---- Args must contain `ref_table`, `ref_value`, and `scalar_value`. It may optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
+---@param args? table|{ref_table: table, ref_value: string, scalar_value: string?, scalar_table: table?, scalar_factor:number?, operation: '+'|'X'|'-'|string|fun(ref_table: table, ref_value: string, initial: number, change: number)?, block_overrides: {value: boolean?, scalar: boolean?, message: boolean?}?, scaling_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
+---@return number, number
+--- Tells Jokers that this card is scaling allowing for scaling detection.
+--- Args must contain `ref_table` and `ref_value`. If `scalar_value` is not defined, it is automatically created.
+--- It may also optionally contain `scalar_table`, used in place of `ref_table` for the `scalar_value`, and `operation` to designate the scaling operation, which defaults to `"+"`
+--- Returns the final scaled value, and what it had been scaled by
 function SMODS.scale_card(card, args) end
+
+---@param card Card|table
+---@param args? table|{ref_table: table, ref_value: string, reset_value: number, operation: fun(ref_table: table, ref_value: string, initial: number, reset: number)?, block_override: boolean?, reset_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
+--- Tells Jokers that this card is resetting allowing for resetting detection
+--- Args must contain `ref_table`, `ref_value`, and `reset_value`. It may optionally contain an `operation` function to define the behavior of resetting
+function SMODS.reset_card(card, args) end
 
 ---@param prototype_obj SMODS.GameObject|table
 ---@param args table?
@@ -753,6 +769,13 @@ function SMODS.scale_card(card, args) end
 --- Checks whether an object should be added to the pool.
 --- i.e. the in_pool method doesn't exist or it returns `true`
 function SMODS.add_to_pool(prototype_obj, args) end
+
+---@param prototype_obj SMODS.GameObject|table
+---@param args table?
+---@return boolean?, table?
+--- Checks whether an object should be hidden from the collection.
+--- i.e. the no_collection method doesn't exist or it returns `false`
+function SMODS.hide_from_collection(prototype_obj, args) end
 
 ---@param context CalcContext|table The context being pushed
 ---@param func string|nil The function/file from which the call originates
@@ -889,3 +912,10 @@ function SMODS.copy_card(card, args) end
 ---@param args {set: string?, area: CardArea|table?, playing_card: integer?}?
 ---@return Card|table
 function SMODS.add_to_deck(card, args) end
+
+---Checks if a card counts as at least one suit that matches the provided suit shade
+---@param card Card|table Card to check
+---@param shade string Suit shade to check for
+---@param bypass_debuff boolean? Whether to ignore the card's debuff status
+---@return boolean
+function Card.is_suit_shade(card, shade, bypass_debuff) end

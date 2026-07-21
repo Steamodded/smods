@@ -212,6 +212,7 @@ end
 
 local function handle_loc_file(dir, language, force, mod_id)
     for k, v in ipairs({ dir .. language .. '.lua', dir .. language .. '.json' }) do
+        v = NFS.getNormalizedPath(v)
         if NFS.getInfo(v) then
             parse_loc_file(v, force, mod_id)
             break
@@ -506,54 +507,60 @@ function SMODS.create_mod_badges(obj, badges)
             end
         end
         for i, mod in ipairs(mods) do
-            local mod_name = mod.display_name
-            local size = 0.9
-            local max_text_width = 2 - 2*0.05 - 4*0.03*size - 2*0.03
-            local scale_fac = 1
-            local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE},float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = 0.33*size*scale_fac})
-            local badge_scroll = SMODS.UIScrollBox({
-                content = badge_text,
-                container = {
-                    config = {
-                        can_collide = false,
-                    }
-                },
-                overflow = {
-                    node_config = {
-                        no_overflow = not mod.no_marquee and "h" or false,
-                        maxw = not mod.no_marquee and max_text_width or nil,
-                    },
-                    config = {
-                        can_collide = false,
-                    }
-                },
-                sync_mode = "offset",
-                scroll_move = function(self, dt)
-                    local dx = self:get_scroll_distance()
-                    if dx == 0 or mod.no_marquee then return end
-                    if not self.scroll_start_pause then
-                        self.scroll_start_pause = 1.5
-                    end
-                    if self.scroll_start_pause > 0 and self.scroll_offset.x >= 0 then
-                        self.scroll_start_pause = self.scroll_start_pause - G.real_dt
-                    else
-                        self.scroll_offset.x = (self.scroll_offset.x or 0) + G.real_dt / 1.5
-                        if self.scroll_offset.x > self.content_container.T.w then
-                            self.scroll_start_pause = 1.5
-                            self.scroll_offset.x = -self.T.w - 0.1
-                        end
-                    end
-                end,
-            })
             badges[#badges + 1] = {n=G.UIT.R, config={align = "cm"}, nodes={
-                {n=G.UIT.R, config={align = "cm", colour = mod.badge_colour or G.C.GREEN, r = 0.1, minw = 2, minh = 0.36, emboss = 0.05, padding = 0.03*size}, nodes={
-                  {n=G.UIT.B, config={h=0.1,w=0.03}},
-                  {n=G.UIT.O, config={object=badge_scroll}},
-                  {n=G.UIT.B, config={h=0.1,w=0.03}},
-                }}
-              }}
+                SMODS.create_mod_badge(mod, obj)}
+            }
         end
     end
+end
+
+function SMODS.create_mod_badge(mod, obj, width, text_height)
+    if mod.set_mod_badge and type(mod.set_mod_badge) == 'function' then
+        return mod:set_mod_badge(obj)
+    end
+    local mod_name = mod.display_name
+    local max_text_width = width or 1.732
+    local scale_fac = 1
+    local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE}, maxw = mod.no_marquee and max_text_width, float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = text_height or 0.297})
+    local badge_scroll = SMODS.UIScrollBox({
+        content = badge_text,
+        container = {
+            config = {
+                can_collide = false,
+            }
+        },
+        overflow = {
+            node_config = {
+                no_overflow = not mod.no_marquee and "h" or false,
+                maxw = not mod.no_marquee and max_text_width or nil,
+            },
+            config = {
+                can_collide = false,
+            }
+        },
+        sync_mode = "offset",
+        scroll_move = function(self, dt)
+            local dx = self:get_scroll_distance()
+            if dx == 0 or mod.no_marquee then return end
+            if not self.scroll_start_pause then
+                self.scroll_start_pause = 1.5
+            end
+            if self.scroll_start_pause > 0 and self.scroll_offset.x >= 0 then
+                self.scroll_start_pause = self.scroll_start_pause - G.real_dt
+            else
+                self.scroll_offset.x = (self.scroll_offset.x or 0) + G.real_dt / 1.5
+                if self.scroll_offset.x > self.content_container.T.w then
+                    self.scroll_start_pause = 1.5
+                    self.scroll_offset.x = -self.T.w - 0.1
+                end
+            end
+        end,
+    })
+    return {n=G.UIT.R, config={align = "cm", id = 'badge_'..mod.id, colour = mod.badge_colour or G.C.GREEN, shader = not obj.no_shader_on_modbadge and mod.badge_shader or nil, r = 0.1, minw = 2, minh = 0.36, emboss = 0.05, padding = 0.027}, nodes={
+        {n=G.UIT.B, config={h=0.1,w=0.03}},
+        {n=G.UIT.O, config={id = 'smods_mod_badge_text', object=badge_scroll}},
+        {n=G.UIT.B, config={h=0.1,w=0.03}},
+    }}
 end
 
 function SMODS.create_loc_dump()
@@ -777,8 +784,7 @@ function SMODS.poll_seal(args)
         type_weight = type_weight + v.weight
     end
 
-    local seal_poll = pseudorandom(pseudoseed(key or 'stdseal'..G.GAME.round_resets.ante))
-    if seal_poll > 1 - (type_weight*mod / total_weight) or guaranteed then -- is a seal generated
+    if guaranteed or pseudorandom(pseudoseed(key or 'stdseal'..G.GAME.round_resets.ante)) > 1 - (type_weight*mod / total_weight) then -- is a seal generated
         local seal_type_poll = pseudorandom(pseudoseed(type_key)) -- which seal is generated
         local weight_i = 0
         for k, v in ipairs(available_seals) do
@@ -817,57 +823,42 @@ function SMODS.stake_from_index(index)
     return stake.key
 end
 
-function convert_save_data()
-    local stakecount = #G.P_CENTER_POOLS.Stake
-    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
-        if v.wins_by_key then
-            v.wins = {}
-            for kk,vv in pairs(v.wins_by_key) do
-                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
-                if index then v.wins[index] = vv end
-            end
-        else
-            v.wins_by_key = {}
-            for index=1,stakecount do
-                v.wins_by_key[SMODS.stake_from_index(index)] = v.wins[index]
-            end
-        end
-        if v.losses_by_key then
-            for kk,vv in pairs(v.losses_by_key) do
-                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
-                if index then v.losses[index] = vv end
-            end
-        else
-            v.losses_by_key = {}
-            for index=1,stakecount do
-                v.losses_by_key[SMODS.stake_from_index(index)] = v.losses[index]
+function convert_usage_entry(entry)
+    for _,keys in ipairs{ {"wins","wins_by_key"},{"losses","losses_by_key"}} do
+        entry[keys[1]] = entry[keys[1]] or {}
+        entry[keys[2]] = entry[keys[2]] or {}
+        local data = entry[keys[1]]
+        local data_by_key = entry[keys[2]]
+        setmetatable(data_by_key, {
+            __index = function(t, k) 
+                if (G.P_STAKES[k] or {}).vanilla_index then
+                    return data[G.P_STAKES[k].vanilla_index]
+                end
+                return rawget(t,k)
+            end,
+            __newindex = function(t,k,w)
+                if (G.P_STAKES[k] or {}).vanilla_index then
+                    data[G.P_STAKES[k].vanilla_index] = w
+                end
+                rawset(t,k,w)
+            end,
+        })
+        for k,w in pairs(data_by_key) do
+            if (G.P_STAKES[k] or {}).vanilla_index then
+                data[G.P_STAKES[k].vanilla_index] = math.max(data[G.P_STAKES[k].vanilla_index] or 0, w)
+                rawset(data_by_key, k, nil)
             end
         end
     end
+    return entry
+end
+
+function convert_save_data()
+    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
+        convert_usage_entry(v)
+    end
     for _, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
-        if v.wins_by_key then
-            v.wins = {}
-            for kk,vv in pairs(v.wins_by_key) do
-                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
-                if index then v.wins[index] = vv end
-            end
-        else
-            v.wins_by_key = {}
-            for index=1,stakecount do
-                v.wins_by_key[SMODS.stake_from_index(index)] = v.wins[index]
-            end
-        end
-        if v.losses_by_key then
-            for kk,vv in pairs(v.losses_by_key) do
-                local index = G.P_STAKES[kk] and G.P_STAKES[kk].order
-                if index then v.losses[index] = vv end
-            end
-        else
-            v.losses_by_key = {}
-            for index=1,stakecount do
-                v.losses_by_key[SMODS.stake_from_index(index)] = v.losses[index]
-            end
-        end
+        convert_usage_entry(v)
     end
     G:save_settings()
 end
@@ -1175,7 +1166,7 @@ SMODS.collection_pool = function(_base_pool)
     local is_array = _base_pool[1]
     local ipairs = is_array and ipairs or pairs
     for _, v in ipairs(_base_pool) do
-        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not v.no_collection or (type(v.no_collection) == "function" and not v.no_collection())) then
+        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not SMODS.hide_from_collection(v)) then
             pool[#pool+1] = v
         end
     end
@@ -1312,21 +1303,26 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if (key == 'p_dollars' or key == 'dollars' or key == 'h_dollars') and amount then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         SMODS.ease_dollars_calc = true
+        local initial_dollars = G.GAME.dollars
+        SMODS.dollars_changed = amount
         ease_dollars(amount, effect.instant)
+        local final_amt = SMODS.dollars_changed
         SMODS.ease_dollars_calc = nil
         if not effect.remove_default_message then
             if effect.dollar_message then
                 card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.dollar_message)
             else
-                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'dollars', amount, percent)
+                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'dollars', final_amt, percent)
             end
         end
         SMODS.calculate_context({
             money_altered = true,
-            amount = amount,
+            amount = final_amt,
+            initial = initial_dollars,
             from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
             from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
             from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
+            from_cashout = SMODS.money_from_cashout or nil,
         })
         return true
     end
@@ -2470,11 +2466,13 @@ end
 
 local function insert(t, res)
     for k,v in pairs(res) do
-        if type(v) == 'table' and type(t[k]) == 'table' then
-            insert(t[k], v)
-        else
-            t[k] = true
-        end
+		if v then
+            if type(v) == 'table' and type(t[k]) == 'table' then
+                insert(t[k], v)
+            else
+                t[k] = true
+            end
+		end
     end
 end
 SMODS.optional_features = {
@@ -2662,9 +2660,12 @@ function SMODS.seeing_double_check(hand, suit)
     end
     for i = 1, #hand do
         if SMODS.has_any_suit(hand[i]) then
-            if hand[i]:is_suit(suit) and suit_tally[suit] == 0 then suit_tally[suit] = suit_tally[suit] + 1 end
-            for k, v in pairs(suit_tally) do
-                if hand[i]:is_suit(k) and suit_tally[k] == 0  then suit_tally[k] = suit_tally[k] + 1 end
+            if hand[i]:is_suit(suit) and suit_tally[suit] == 0 then
+                suit_tally[suit] = 1
+            else
+                for k, v in pairs(suit_tally) do
+                    if hand[i]:is_suit(k) and suit_tally[k] == 0  then suit_tally[k] = 1 end
+                end
             end
         end
     end
@@ -2702,7 +2703,8 @@ function SMODS.localize_box(lines, args)
             underline = part.control.u and loc_colour(part.control.u),
             strikethrough = part.control.st and loc_colour(part.control.st),
             font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
-            scale_mod = part.control.s and tonumber(part.control.s) or args.scale  or 1
+            scale_mod = part.control.s and tonumber(part.control.s) or args.scale  or 1,
+            text_outline = part.control.O and loc_colour(part.control.O),
         }
         local desc_scale = (thunk.font or G.LANG.font).DESCSCALE
         if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
@@ -2736,6 +2738,7 @@ function SMODS.localize_box(lines, args)
               button = part.control.button,
               strikethrough = part.control.st and loc_colour(part.control.st),
               underline = part.control.u and loc_colour(part.control.u),
+              text_outline = part.control.O and loc_colour(part.control.O),
               scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*thunk.scale_mod*(args.fixed_scale or 1)
             })
           }}
@@ -2774,6 +2777,7 @@ function SMODS.localize_box(lines, args)
                     font = thunk.font,
                     underline = thunk.underline,
                     strikethrough = thunk.strikethrough,
+                    text_outline = thunk.text_outline,
                     scale = 0.32*thunk.scale_mod*desc_scale}},
                 }}
         else
@@ -2794,6 +2798,7 @@ function SMODS.localize_box(lines, args)
                 font = thunk.font,
                 underline = thunk.underline,
                 strikethrough = thunk.strikethrough,
+                text_outline = thunk.text_outline,
                 scale = 0.32*thunk.scale_mod*desc_scale
             }}
         end
@@ -3180,7 +3185,12 @@ function SMODS.scale_card(card, args)
     args.ref_table = args.ref_table or card.ability.extra
     args.scalar_table = args.scalar_table or args.ref_table
     local initial = args.ref_table[args.ref_value]
+    if not args.scalar_value then
+        args.scalar_value = "SMODS_scalar_"..args.ref_value
+        args.scalar_table[args.scalar_value] = 1
+    end
     local scalar_value = args.scalar_table[args.scalar_value]
+    local scalar_factor = args.scalar_factor or 1
     if args.operation == '-' and scalar_value < 0 then scalar_value = scalar_value * -1 end
     local scaling_message = args.scaling_message
     local scaling_responses = {}
@@ -3214,17 +3224,17 @@ function SMODS.scale_card(card, args)
     end
 
     if type(args.operation) == 'function' then
-        args.operation(args.ref_table, args.ref_value, initial, scalar_value)
+        args.operation(args.ref_table, args.ref_value, initial, scalar_value * scalar_factor)
     elseif args.operation == 'X' then
-        SMODS.multiplicative_scaling(args.ref_table, args.ref_value, initial, scalar_value)
+        SMODS.multiplicative_scaling(args.ref_table, args.ref_value, initial, scalar_value * scalar_factor)
     elseif args.operation == '-' then
-        SMODS.additive_scaling(args.ref_table, args.ref_value, initial, -1 * scalar_value)
+        SMODS.additive_scaling(args.ref_table, args.ref_value, initial, -1 * scalar_value * scalar_factor)
     else
-        SMODS.additive_scaling(args.ref_table, args.ref_value, initial, scalar_value)
+        SMODS.additive_scaling(args.ref_table, args.ref_value, initial, scalar_value * scalar_factor)
     end
 
     scaling_message = scaling_message or {
-        message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or scalar_value}} or 'k_upgrade_ex'),
+        message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or scalar_value * scalar_factor}} or 'k_upgrade_ex'),
         colour = args.message_colour or G.C.FILTER,
         delay = args.message_delay,
     }
@@ -3234,6 +3244,7 @@ function SMODS.scale_card(card, args)
     for _, ret in ipairs(scaling_responses) do
         SMODS.calculate_effect(ret, ret.source)
     end
+    return args.ref_table[args.ref_value], scalar_value * scalar_factor
 end
 
 function SMODS.additive_scaling(ref_table, ref_value, initial, modifier)
@@ -3242,6 +3253,60 @@ end
 
 function SMODS.multiplicative_scaling(ref_table, ref_value, initial, modifier)
     ref_table[ref_value] = initial * modifier
+end
+
+function SMODS.reset_card(card, args)
+    if not G.deck then return end
+    args.block_overrides = args.block_overrides or {}
+    args.ref_table = args.ref_table or card.ability.extra
+    local initial = args.ref_table[args.ref_value]
+    local reset_value = args.reset_value or 0
+    local reset_message = args.reset_message
+    local reset_responses = {}
+    for _, area in ipairs(SMODS.get_card_areas('jokers')) do
+        for _, _card in ipairs(area.cards) do
+            local obj = _card.config.center
+            if obj.calc_resetting and type(obj.calc_resetting) == "function" then
+                local ret = obj:calc_resetting(_card, card, initial, reset_value, args)
+                if ret then
+                    if ret.override_value and not args.block_overrides.value then reset_value = ret.override_value.value; SMODS.calculate_effect(ret.override_value, _card) end
+                    if ret.override_message and not args.block_overrides.message then reset_message = SMODS.merge_defaults(ret.override_message, reset_message) end
+                    if ret.post then ret.post.source = _card; reset_responses[#reset_responses + 1] = ret.post end
+                    SMODS.calculate_effect(ret, _card)
+                end
+            end
+        end
+    end
+    if card.edition then
+        local edition = G.P_CENTERS[card.edition.key]
+        if edition.calc_resetting and type(edition.calc_resetting) == 'function' then
+            local ret = edition:calc_resetting(card, card, initial, reset_value, args)
+            if ret then
+                if ret.override_value and not args.block_overrides.value then reset_value = ret.override_value.value; SMODS.calculate_effect(ret.override_value, card) end
+                if ret.override_message and not args.block_overrides.message then reset_message = SMODS.merge_defaults(ret.override_message, reset_message) end
+                if ret.post then ret.post.source = card; reset_responses[#reset_responses + 1] = ret.post end
+                SMODS.calculate_effect(ret, card)
+            end
+        end
+    end
+
+    if type(args.operation) == 'function' then
+        args.operation(args.ref_table, args.ref_value, initial, reset_value)
+    else
+        args.ref_table[args.ref_value] = reset_value
+    end
+
+    reset_message = reset_message or {
+        message = localize(args.message_key or 'k_reset'),
+        colour = args.message_colour or G.C.FILTER,
+        delay = args.message_delay,
+    }
+    if next(reset_message) and not args.no_message then
+        SMODS.calculate_effect(reset_message, card)
+    end
+    for _, ret in ipairs(reset_responses) do
+        SMODS.calculate_effect(ret, ret.source)
+    end
 end
 
 function SMODS.quip(quip_type)
@@ -3335,13 +3400,16 @@ function SMODS.challenge_is_unlocked(challenge, k)
 end
 
 function SMODS.stake_is_unlocked(stake_key, deck_key)
-    if not (SMODS.Stakes[stake_key] and G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key]) then return stake_key == SMODS.stake_from_index(1) end
     if G.PROFILES[G.SETTINGS.profile].all_unlocked then return true end
     local stake = SMODS.Stakes[stake_key]
+    if not stake then return false end
     if stake.unlocked then return true end
+    if not G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key] then
+        return not next(stake.applied_stakes)
+    end
     local unlocked = true
     local wins = G.PROFILES[G.SETTINGS.profile].deck_usage[deck_key].wins_by_key
-    for i,v in ipairs(stake.applied_stakes) do
+    for _,v in ipairs(stake.applied_stakes) do
         if not (wins[v] and wins[v] > 0) then
             unlocked = false
         end
@@ -3438,14 +3506,18 @@ end
 
 local ease_dollar_ref = ease_dollars
 function ease_dollars(mod, instant)
+    local initial_dollars = G.GAME.dollars
     ease_dollar_ref(mod, instant)
+    SMODS.dollars_changed = mod
     if SMODS.ease_dollars_calc then return end
     SMODS.calculate_context({
         money_altered = true,
         amount = mod,
+        initial = initial_dollars,
         from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
         from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
         from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
+        from_cashout = SMODS.money_from_cashout or nil,
     })
 end
 function SMODS.add_to_pool(prototype_obj, args)
@@ -3453,6 +3525,13 @@ function SMODS.add_to_pool(prototype_obj, args)
         return prototype_obj:in_pool(args)
     end
     return true
+end
+
+function SMODS.hide_from_collection(prototype_obj, args)
+    if type(prototype_obj.no_collection) == "function" then
+        return prototype_obj:no_collection(args)
+    end
+    return prototype_obj.no_collection
 end
 
 
@@ -4102,6 +4181,38 @@ function UIElement:set_text_shader(shader, send, shadow)
     })
 end
 
+function UIElement:draw_text_outline(button_active)
+	if not button_active then
+		return
+	end
+	love.graphics.setColor(self.config.text_outline)
+	for x = -1, 1 do
+		for y = -1, 1 do
+			if x ~= 0 or y ~= 0 then
+				love.graphics.draw(
+					self.config.text_drawable,
+					((self.config.font or self.config.lang.font).TEXT_OFFSET.x + x * 20)
+						* self.config.scale
+						* (self.config.font or self.config.lang.font).FONTSCALE
+						/ G.TILESIZE,
+					((self.config.font or self.config.lang.font).TEXT_OFFSET.y + y * 20)
+						* self.config.scale
+						* (self.config.font or self.config.lang.font).FONTSCALE
+						/ G.TILESIZE,
+					0,
+					self.config.scale
+						* (self.config.font or self.config.lang.font).squish
+						* (self.config.font or self.config.lang.font).FONTSCALE
+						/ G.TILESIZE,
+					self.config.scale * (self.config.font or self.config.lang.font).FONTSCALE / G.TILESIZE
+				)
+			end
+		end
+	end
+	love.graphics.setColor(self.config.colour)
+end
+
+
 -- function to modify score: normally accepts add and mult argument and additionally card argument
 SMODS.mod_score = function(score_mod)
     score_mod = score_mod or {}
@@ -4227,4 +4338,58 @@ function SMODS.add_to_deck(card, args)
     local area = args.area or G.jokers
     area:emplace(card)
     return card
+end
+
+function Card:is_suit_shade(shade, bypass_debuff)
+    if self.debuff and not bypass_debuff then return end
+    if SMODS.has_no_suit(self) then
+        return false
+    end
+    for i, v in pairs(SMODS.Suits) do
+        if self:is_suit(i, bypass_debuff) and shade == v.shade then
+            return true
+        end
+    end
+    return false
+end
+
+
+-------------------------------------------------------------------------------------------------
+----- API IMPORT RunSelect
+-------------------------------------------------------------------------------------------------
+
+assert(load(SMODS.NFS.read(SMODS.path..'src/utils/run_select.lua'), ('=[SMODS _ "src/utils/run_select.lua"]')))()
+
+function SMODS.table_size(t)
+    local size = 0
+    for _,_ in pairs(t) do
+        size = size + 1
+    end
+    return size
+end
+
+function SMODS.split_string(_string, parts)
+    local length = string.len(_string)
+    local words = {}
+    for i in string.gmatch(_string, "%S+") do
+        table.insert(words, i)
+    end
+    local spaces = #words - 1
+    local line_break = math.floor(length/(parts or 2))
+    
+    local text_output = {}
+    for i=1, (parts or 2) do text_output[i] = '' end
+
+    local line = 1
+    for i, v in ipairs(words) do
+        if string.len(text_output[line]) > line_break or i > spaces+1 or (i == 2 and spaces == 1) then
+            line = line + 1
+        end
+        text_output[line] = text_output[line] .. v .. " "
+    end
+    for i, v in ipairs(text_output) do
+        text_output[i] = string.sub(v, 1, string.len(v)-1)
+    end
+
+    return text_output
 end

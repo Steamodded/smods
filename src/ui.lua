@@ -1167,7 +1167,7 @@ function modsCollectionTally(pool, set, ignore_discovered)
     local obj_tally = {tally = 0, of = 0}
 
     for _, v in pairs(pool) do
-        if v.mod and G.ACTIVE_MOD_UI.id == v.mod.id and not v.no_collection then
+        if v.mod and G.ACTIVE_MOD_UI.id == v.mod.id and (not SMODS.hide_from_collection(v)) then
             if set then
                 if v.set and v.set == set then
                     obj_tally.of = obj_tally.of+1
@@ -1615,7 +1615,7 @@ function SMODS.load_mod_config(mod)
         return load(NFS.read(('config/%s.jkr'):format(mod.id)), ('=[SMODS %s "config"]'):format(mod.id))()
     end)
     local s2, default_config = pcall(function()
-        return load(NFS.read(mod.path..(mod.config_file or 'config.lua')), ('=[SMODS %s "default_config"]'):format(mod.id))()
+        return load(NFS.read(NFS.getNormalizedPath(mod.path..(mod.config_file or 'config.lua'))), ('=[SMODS %s "default_config"]'):format(mod.id))()
     end)
     if not s1 or type(config) ~= 'table' then config = {} end
     if not s2 or type(default_config) ~= 'table' then default_config = {} end
@@ -1888,9 +1888,13 @@ function create_UIBox_mods_button()
                                     return {
                                         n = G.UIT.ROOT,
                                         config = {
+                                            emboss = 0.05,
+                                            minh = 6,
+                                            r = 0.1,
+                                            minw = 6,
                                             align = "cm",
-                                            padding = 0.05,
-                                            colour = G.C.CLEAR,
+                                            padding = 0.2,
+                                            colour = G.C.BLACK,
                                         },
                                         nodes = {
                                             create_toggle {
@@ -1912,7 +1916,19 @@ function create_UIBox_mods_button()
                                                 opt_callback = 'update_achievement_settings',
                                                 current_option = SMODS.config.achievements,
                                                 cycle_shoulders = true,
-                                            }
+                                            },
+                                            create_toggle {
+                                                label = localize('b_vanilla_run_select'),
+                                                ref_table = SMODS.config,
+                                                ref_value = 'vanilla_run_select',
+                                                info = {localize('b_vanilla_run_select_info')}
+                                            },
+                                            create_toggle {
+                                                label = localize('b_run_select_reduce'),
+                                                ref_table = SMODS.config,
+                                                ref_value = 'run_select_performance',
+                                                info = {localize('b_run_select_reduce_info')}
+                                            },
                                         }
                                     }
                                 end
@@ -2540,6 +2556,9 @@ local igo = Game.init_game_object
 function Game:init_game_object()
     local t = igo(self)
     t.smods_version = SMODS.version
+    t.blind_badge = {
+        name = 'temp'
+    }
     return t
 end
 
@@ -3203,3 +3222,72 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
         }
     }
 end
+
+-- #region blind tooltips
+
+local old_blind_popup = create_UIBox_blind_popup
+function create_UIBox_blind_popup(blind, discovered, vars)
+    local popup = old_blind_popup(blind, discovered, vars)
+    popup.config.colour = darken(G.C.BLACK, 0.1)
+    popup.config.align = 'cm'
+    if blind.mod then
+        local badges = {}
+        SMODS.create_mod_badges(blind, badges)
+        for i=1, #badges do
+            table.insert(popup.nodes, badges[i])
+        end
+    end
+    popup = {n=G.UIT.R, config={colour=lighten(G.C.JOKER_GREY, 0.5), align='cm', padding=0.05, emboss=0.07, r=0.12}, nodes = {
+        {n=G.UIT.R, config={align = "cm", padding = 0.07, r = 0.1, colour = adjust_alpha(darken(G.C.BLACK, 0.1), 0.8), id = 'blind_popup_container'}, nodes=
+            popup.nodes
+        }}
+    }
+    return popup
+  end 
+
+local old_blind_choice_UI = create_UIBox_blind_choice
+function create_UIBox_blind_choice(type, run_info)
+    local box = old_blind_choice_UI(type, run_info)
+    local blind = G.P_BLINDS[G.GAME.round_resets.blind_choices[type]]
+    if blind.mod then
+        local badges = {}
+        SMODS.create_mod_badges(blind, badges)
+        for i=1, #badges do
+            badges[i].nodes[1].config.minw = 2.7
+            local text = SMODS.deepfind(badges[i], 'smods_mod_badge_text')
+            if next(text) and text[1].table.object then text[1].table.object.scroll_args.overflow.definition.config.maxw = (text[1].table.object.scroll_args.overflow.definition.config.maxw or 1) * 2.7/2 end
+            table.insert(box.nodes[1].nodes[2].nodes, badges[i])
+        end
+        box.nodes[1].nodes[3].config.padding = 0.1
+    end
+    return box
+end
+
+G.FUNCS.HUD_blind_badge = function(e)
+    if G.GAME.blind.in_blind then
+        if G.GAME.blind.config.blind.mod then
+            if G.GAME.blind.config.blind.mod.display_name ~= G.GAME.blind_badge.name then 
+                if e.children[1] then e.children[1]:remove(); e.children[1] = nil end
+                local mod = G.GAME.blind.config.blind.mod
+                G.GAME.blind_badge.name = mod.display_name
+                local badge = SMODS.create_mod_badge(mod, G.GAME.blind.config.blind, 4.4, 0.36)
+                e.config.minh = 0.5
+                e.config.colour = badge.config.colour or mod.badge_colour or G.C.DYN_UI.MAIN
+                e.config.shader = badge.config.shader or nil
+                e.config.emboss = 0.05
+                e.states.visible = true
+                badge.config.shader = nil
+                badge.config.emboss = nil
+                badge.config.colour = nil
+                e.UIBox:add_child(badge, e)
+            end
+        elseif e.children[1] then
+            e.states.visible = false
+            e.children[1]:remove()
+            e.children[1] = nil
+            G.GAME.blind_badge = {}
+        end
+    end
+end
+
+-- #endregion
