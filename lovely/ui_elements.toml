@@ -276,6 +276,7 @@ end
 match_indent = true
 
 # Apply shaders on text elements
+# Also draw text outline
 # UIElement:draw_self
 [[patches]]
 [patches.pattern]
@@ -294,6 +295,9 @@ payload = """
 local text_shaders = SMODS.resolve_ui_shaders(self, self.states.visible and self.config.shader, nil)
 for _, v in ipairs(text_shaders) do
     if v then self:set_text_shader(v.shader, v.send, false) end
+    if self.config.text_outline then
+        self:draw_text_outline(button_active)
+    end
     love.graphics.draw(
         self.config.text_drawable,
         self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
