@@ -517,11 +517,11 @@ SMODS.Attribute({
 SMODS.Attribute({
     key = 'jumbo',
     keys = {
-        'p_celestial_normal_1', 'p_celestial_normal_2', 
-        'p_standard_normal_1', 'p_standard_normal_2',
-        'p_arcana_normal_1', 'p_arcana_normal_2',
-        'p_spectral_normal_1',
-        'p_buffoon_normal_1'
+        'p_celestial_jumbo_1', 'p_celestial_jumbo_2', 
+        'p_standard_jumbo_1', 'p_standard_jumbo_2',
+        'p_arcana_jumbo_1', 'p_arcana_jumbo_2',
+        'p_spectral_jumbo_1',
+        'p_buffoon_jumbo_1'
     }
 })
 
