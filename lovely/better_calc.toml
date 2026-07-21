@@ -866,7 +866,7 @@ for _, target in ipairs(SMODS.get_card_areas('individual', 'calc_dollar_bonus'))
         if ret then
             if not ret_opts.no_eval_row then
                 if ret_opts.text then
-                    name = text
+                    name = ret_opts.text
                 elseif (ret_opts.set or target.set) and (ret_opts.key or target.key) then
                     if ret_opts.set == "Challenge" or (not ret_opts.set and target.set == "Challenge") then
                         name = localize(ret_opts.key or target.key, 'challenge_names')
