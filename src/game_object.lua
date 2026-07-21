@@ -4025,6 +4025,11 @@ SMODS.UndiscoveredCompat = {
         text = '^'
     }
 
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.MatcherCondition / etc.
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/game_objects/card_matchers.lua'), ('=[SMODS _ "src/game_objects/card_matchers.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
