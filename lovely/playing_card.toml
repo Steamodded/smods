@@ -121,46 +121,6 @@ payload = '''
         G.ARGS.LOC_COLOURS[v:lower()] = G.C.SUITS[v]
     end'''
 
-# get_flush()
-[[patches]]
-[patches.pattern]
-target = "functions/misc_functions.lua"
-pattern = '''
-local suits = {
-    "Spades",
-    "Hearts",
-    "Clubs",
-    "Diamonds"
-  }
-'''
-position = 'at'
-payload = 'local suits = SMODS.Suit.obj_buffer'
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "functions/misc_functions.lua"
-pattern = "local four_fingers = next(find_joker('Four Fingers'))"
-position = 'at'
-payload = "local four_fingers = SMODS.four_fingers('flush')"
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "functions/misc_functions.lua"
-pattern = "if #hand > 5 or #hand < (5 - (four_fingers and 1 or 0)) then return ret else"
-position = 'at'
-payload = "if #hand < four_fingers then return ret else"
-match_indent = true
-
-[[patches]]
-[patches.pattern]
-target = "functions/misc_functions.lua"
-pattern = "if flush_count >= (5 - (four_fingers and 1 or 0)) then"
-position = 'at'
-payload = "if flush_count >= four_fingers then"
-match_indent = true
-
 # Card:get_nominal()
 [[patches]]
 [patches.regex]

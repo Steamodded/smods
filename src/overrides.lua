@@ -626,8 +626,8 @@ function get_flush(hand)
 	local four_fingers = SMODS.four_fingers('flush')
 	if #hand < four_fingers then return ret end
 	local suit_tally, value_to_cards = SMODS.get_suit_tally(hand)
-	for _, k in ipairs(SMODS.Suit.obj_buffer) do
-		if (suit_tally[k] or 0) >= four_fingers then
+	for k, tally in pairs(suit_tally) do
+		if tally >= four_fingers then
 			local t = SMODS.get_sorted_card_list(value_to_cards[k])
 			table.insert(ret, t)
 			return ret -- Vanilla early return
