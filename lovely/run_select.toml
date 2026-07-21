@@ -14,7 +14,7 @@ pattern = '''
 position = 'at'
 line_prepend = "$indent"
 payload = '''
-tab_definition_function = G.UIDEF.run_select_galdur,
+tab_definition_function = (SMODS.config.vanilla_run_select and #SMODS.RunSelect.Internals.pages == 2 and G.UIDEF.run_setup_option) or G.UIDEF.run_select_galdur,
 tab_definition_function_args = 'New Run'
 
 '''
@@ -64,5 +64,9 @@ pattern = '''G:start_run({})'''
 position = 'at'
 match_indent = true
 payload = '''
-G.FUNCS.run_select_quick_start()
+if SMODS.config.vanilla_run_select and #SMODS.RunSelect.Internals.pages == 2 then
+    G:start_run({})
+else
+    G.FUNCS.run_select_quick_start()
+end
 '''

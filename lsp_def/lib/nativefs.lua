@@ -91,4 +91,10 @@ function nativefs.getDirectoryItemsInfo(path, filtertype) end
 ---@return table|{type: love.FileType, size: number, modtime: number} info
 function nativefs.getInfo(path, filtertype) end
 
+---@param path string
+---@return string
+--- Given a file path, looks for a valid file path that is equivalent to the input up to case. Does nothing on case insensitive filesystems.
+function nativefs.getNormalizedPath(path) end
+
+
 return nativefs

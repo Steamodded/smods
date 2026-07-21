@@ -882,7 +882,7 @@ function SMODS.load_file(path, id)
     if not mod then
         error("Mod not found. Ensure you are passing the correct ID.")
     end
-    local file_path = mod.path .. path
+    local file_path = NFS.getNormalizedPath(mod.path .. path)
     local file_content, err = NFS.read(file_path)
     if not file_content then return  nil, "Error reading file '" .. path .. "' for mod with ID '" .. mod.id .. "': " .. err end
     local chunk, err = load(file_content, "=[SMODS " .. mod.id .. ' "' .. path .. '"]')

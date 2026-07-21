@@ -1167,7 +1167,7 @@ function modsCollectionTally(pool, set, ignore_discovered)
     local obj_tally = {tally = 0, of = 0}
 
     for _, v in pairs(pool) do
-        if v.mod and G.ACTIVE_MOD_UI.id == v.mod.id and (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) then
+        if v.mod and G.ACTIVE_MOD_UI.id == v.mod.id and (not SMODS.hide_from_collection(v)) then
             if set then
                 if v.set and v.set == set then
                     obj_tally.of = obj_tally.of+1
@@ -1615,7 +1615,7 @@ function SMODS.load_mod_config(mod)
         return load(NFS.read(('config/%s.jkr'):format(mod.id)), ('=[SMODS %s "config"]'):format(mod.id))()
     end)
     local s2, default_config = pcall(function()
-        return load(NFS.read(mod.path..(mod.config_file or 'config.lua')), ('=[SMODS %s "default_config"]'):format(mod.id))()
+        return load(NFS.read(NFS.getNormalizedPath(mod.path..(mod.config_file or 'config.lua'))), ('=[SMODS %s "default_config"]'):format(mod.id))()
     end)
     if not s1 or type(config) ~= 'table' then config = {} end
     if not s2 or type(default_config) ~= 'table' then default_config = {} end
@@ -1888,9 +1888,13 @@ function create_UIBox_mods_button()
                                     return {
                                         n = G.UIT.ROOT,
                                         config = {
+                                            emboss = 0.05,
+                                            minh = 6,
+                                            r = 0.1,
+                                            minw = 6,
                                             align = "cm",
-                                            padding = 0.05,
-                                            colour = G.C.CLEAR,
+                                            padding = 0.2,
+                                            colour = G.C.BLACK,
                                         },
                                         nodes = {
                                             create_toggle {
@@ -1912,7 +1916,19 @@ function create_UIBox_mods_button()
                                                 opt_callback = 'update_achievement_settings',
                                                 current_option = SMODS.config.achievements,
                                                 cycle_shoulders = true,
-                                            }
+                                            },
+                                            create_toggle {
+                                                label = localize('b_vanilla_run_select'),
+                                                ref_table = SMODS.config,
+                                                ref_value = 'vanilla_run_select',
+                                                info = {localize('b_vanilla_run_select_info')}
+                                            },
+                                            create_toggle {
+                                                label = localize('b_run_select_reduce'),
+                                                ref_table = SMODS.config,
+                                                ref_value = 'run_select_performance',
+                                                info = {localize('b_run_select_reduce_info')}
+                                            },
                                         }
                                     }
                                 end
