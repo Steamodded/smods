@@ -673,7 +673,7 @@ function SMODS.seeing_double_check(hand, suit) end
 ---@param ctrl string|table
 ---@param vars table[]
 ---@return table?
---- Given a `ctrl` string that represents a numeric index in `vars` or a valid loc_colour, returns the colour table corresponding to `ctrl`. Given a `ctrl` table, treats `ctrl.c` as the string value of `ctrl`.
+--- Given a `ctrl` string that represents a hex code, a numeric index in `vars` or a valid loc_colour, returns the colour table corresponding to `ctrl`. Given a `ctrl` table, treats `ctrl.c` as the string value of `ctrl`.
 function SMODS.get_loc_colour(ctrl, vars) end
 
 ---@param lines table

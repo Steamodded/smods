@@ -2685,6 +2685,7 @@ end
 function SMODS.get_loc_colour(ctrl, vars)
     if type(ctrl) == 'table' then ctrl = ctrl.c end
     if not ctrl then return end
+    if (#ctrl == 6 or #ctrl == 8) and not string.find(ctrl, "%X") then return HEX(ctrl) end
     return (vars or {})[tonumber(ctrl) or {}] or loc_colour(ctrl)
 end
 
@@ -2709,48 +2710,70 @@ function SMODS.localize_box(lines, args)
             text_col = SMODS.get_loc_colour(part.control.V or part.control.C, args.vars.colours),
             underline = SMODS.get_loc_colour(part.control.u, args.vars.colours),
             underline_scale = type(part.control.u) == 'table' and part.control.u.s,
+            overline = SMODS.get_loc_colour(part.control.ov, args.vars.colours),
+            overline_scale = type(part.control.ov) == 'table' and part.control.ov.s,
             strikethrough = SMODS.get_loc_colour(part.control.st, args.vars.colours),
             strikethrough_scale = type(part.control.st) == 'table' and part.control.st.s,
+            text_outline = SMODS.get_loc_colour(part.control.O, args.vars.colours),
+            text_outline_scale = type(part.control.O) == 'table' and part.control.O.s,
             font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
             scale_mod = part.control.s and tonumber(part.control.s) or args.scale or 1,
-            text_outline = SMODS.get_loc_colour(part.control.O, args.vars.colours),
         }
         local desc_scale = (thunk.font or G.LANG.font).DESCSCALE
         if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
+
+        local base_config = function(t)
+            return SMODS.merge_defaults(t, {
+                button = part.control.button,
+                underline = thunk.underline,
+                underline_scale = thunk.underline_scale,
+                overline = thunk.overline,
+                overline_scale = thunk.overline_scale,
+                strikethrough = thunk.strikethrough,
+                strikethrough_scale = thunk.strikethrough_scale,
+                text_outline = thunk.text_outline,
+                text_outline_scale = thunk.text_outline_scale,
+                font = thunk.font,
+                scale = 0.32*thunk.scale_mod*desc_scale,
+                text = assembled_string,
+                detailed_tooltip = part.control.T and (
+                    G.P_CENTERS[part.control.T]
+                    or G.P_TAGS[part.control.T]
+                    or {
+                        set = part.control.T_set or 'Other',
+                        key = part.control.T,
+                        vars = part.control.T_vars and parse_tooltip_vars(part.control.T_vars) or {}
+                    }
+                ) or nil,
+            })
+        end
         
         if args.type == 'name' then
             local final_name_assembled_string = ''
             for _, part in ipairs(lines) do
-              local assembled_string_part = ''
-              for _, subpart in ipairs(part.strings) do
-                  assembled_string_part = assembled_string_part..(type(subpart) == 'string' and subpart or format_ui_value(format_ui_value(args.vars[tonumber(subpart[1])])) or 'ERROR')
-              end
-              final_name_assembled_string = final_name_assembled_string..assembled_string_part
-          end
-          final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
-          final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
-            button = part.control.button,
-            underline = thunk.underline,
-            underline_scale = thunk.underline_scale,
-            strikethrough = thunk.strikethrough,
-            strikethrough_scale = thunk.strikethrough_scale,
-            object = DynaText({string = {assembled_string},
-              colours = {thunk.text_col or args.text_colour or G.C.UI.TEXT_LIGHT},
-              bump = not args.no_bump,
-              text_effect = SMODS.DynaTextEffects[part.control.E] and part.control.E,
-              silent = not args.no_silent,
-              pop_in = (not args.no_pop_in and (args.pop_in or 0)) or nil,
-              pop_in_rate = (not args.no_pop_in and (args.pop_in_rate or 4)) or nil,
-              maxw = args.maxw or 5,
-              shadow = not args.no_shadow,
-              y_offset = args.y_offset or -0.6,
-              spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
-              font = thunk.font,
-              button = part.control.button,
-              text_outline = thunk.text_outline,
-              scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*thunk.scale_mod*(args.fixed_scale or 1)
-            })
-          }}
+                local assembled_string_part = ''
+                for _, subpart in ipairs(part.strings) do
+                    assembled_string_part = assembled_string_part..(type(subpart) == 'string' and subpart or format_ui_value(format_ui_value(args.vars[tonumber(subpart[1])])) or 'ERROR')
+                end
+                final_name_assembled_string = final_name_assembled_string..assembled_string_part
+            end
+            final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
+            final_line[#final_line].nodes[1] = {n=G.UIT.O, config=base_config{
+                object = DynaText(base_config{
+                    string = {assembled_string},
+                    colours = {thunk.text_col or args.text_colour or G.C.UI.TEXT_LIGHT},
+                    bump = not args.no_bump,
+                    text_effect = SMODS.DynaTextEffects[part.control.E] and part.control.E,
+                    silent = not args.no_silent,
+                    pop_in = (not args.no_pop_in and (args.pop_in or 0)) or nil,
+                    pop_in_rate = (not args.no_pop_in and (args.pop_in_rate or 4)) or nil,
+                    maxw = args.maxw or 5,
+                    shadow = not args.no_shadow,
+                    y_offset = args.y_offset or -0.6,
+                    spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
+                    scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*thunk.scale_mod*(args.fixed_scale or 1),
+                })
+            }}
         elseif part.control.E then
             local _float, _silent, _pop_in, _bump, _spacing = nil, true, nil, nil, nil
             local text_effects
@@ -2762,59 +2785,28 @@ function SMODS.localize_box(lines, args)
                 text_effects = part.control.E
             end
             final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
-            final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
-                button = part.control.button,
-                underline = thunk.underline,
-                underline_scale = thunk.underline_scale,
-                strikethrough = thunk.strikethrough,
-                strikethrough_scale = thunk.strikethrough_scale,
-                object = DynaText({string = {assembled_string}, colours = {thunk.text_col or loc_colour()},
+            final_line[#final_line].nodes[1] = {n=G.UIT.O, config=base_config{
+                object = DynaText(base_config{
+                    string = {assembled_string},
+                    colours = {thunk.text_col or loc_colour()},
                     float = _float,
                     silent = _silent,
                     pop_in = _pop_in,
                     bump = _bump,
                     text_effect = text_effects,
-                    spacing = _spacing,
-                    font = thunk.font,
-                    scale = 0.32*thunk.scale_mod*desc_scale})
-                }
-            }
+                    spacing = _spacing
+                })
+            }}
         elseif part.control.X or part.control.B then
             final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={
-                {n=G.UIT.T, config={
-                    button = part.control.button,
-                    text = assembled_string,
+                {n=G.UIT.T, config=base_config{
                     colour = thunk.text_col or loc_colour(),
-                    font = thunk.font,
-                    strikethrough = thunk.strikethrough,
-                    strikethrough_scale = thunk.strikethrough_scale,
-                    underline = thunk.underline,
-                    underline_scale = thunk.underline_scale,
-                    text_outline = thunk.text_outline,
-                    scale = 0.32*thunk.scale_mod*desc_scale}},
-                }}
+                }},
+            }}
         else
-            final_line[#final_line+1] = {n=G.UIT.T, config={
-                button = part.control.button,
-                detailed_tooltip = part.control.T and (
-                    G.P_CENTERS[part.control.T]
-                    or G.P_TAGS[part.control.T]
-                    or {
-                        set = part.control.T_set or 'Other',
-                        key = part.control.T,
-                        vars = part.control.T_vars and parse_tooltip_vars(part.control.T_vars) or {}
-                    }
-                  ) or nil,
-                text = assembled_string,
+            final_line[#final_line+1] = {n=G.UIT.T, config=base_config{
                 shadow = args.shadow,
                 colour = thunk.text_col or args.text_colour or loc_colour(nil, args.default_col),
-                font = thunk.font,
-                strikethrough = thunk.strikethrough,
-                strikethrough_scale = thunk.strikethrough_scale,
-                underline = thunk.underline,
-                underline_scale = thunk.underline_scale,
-                text_outline = thunk.text_outline,
-                scale = 0.32*thunk.scale_mod*desc_scale
             }}
         end
     end
@@ -3553,16 +3545,16 @@ end
 
 
 function UIElement:draw_pixellated_under(_type, _parallax, _emboss, _progress)
-    if not self.pixellated_rect or
-        #self.pixellated_rect[_type].vertices < 1 or
-        _parallax ~= self.pixellated_rect.parallax or
-        self.pixellated_rect.w ~= self.VT.w or
-        self.pixellated_rect.h ~= self.VT.h or
-        self.pixellated_rect.sw ~= self.shadow_parrallax.x or
-        self.pixellated_rect.sh ~= self.shadow_parrallax.y or
-        self.pixellated_rect.progress ~= (_progress or 1)
+    if not self.pixellated_under or
+        #self.pixellated_under[_type].vertices < 1 or
+        _parallax ~= self.pixellated_under.parallax or
+        self.pixellated_under.w ~= self.VT.w or
+        self.pixellated_under.h ~= self.VT.h or
+        self.pixellated_under.sw ~= self.shadow_parrallax.x or
+        self.pixellated_under.sh ~= self.shadow_parrallax.y or
+        self.pixellated_under.progress ~= (_progress or 1)
     then
-        self.pixellated_rect = {
+        self.pixellated_under = {
             w = self.VT.w,
             h = self.VT.h,
             sw = self.shadow_parrallax.x,
@@ -3577,50 +3569,109 @@ function UIElement:draw_pixellated_under(_type, _parallax, _emboss, _progress)
         }
         local ext_up = self.config.ext_up and self.config.ext_up*G.TILESIZE or 0
         local totw, toth = self.VT.w*G.TILESIZE, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE
+        local scale = (self.config.underline_scale or 0.1)*toth
 
         local vertices = {
             totw,toth+ext_up,
             0, toth+ext_up,
-            0, toth+ext_up+0.5,
-            totw,toth+ext_up+0.5
+            0, toth+ext_up+scale,
+            totw,toth+ext_up+scale,
         }
         for k, v in ipairs(vertices) do
-            if k%2 == 1 and v > totw*self.pixellated_rect.progress then v = totw*self.pixellated_rect.progress end
-            self.pixellated_rect.fill.vertices[k] = v
+            if k%2 == 1 and v > totw*self.pixellated_under.progress then v = totw*self.pixellated_under.progress end
+            self.pixellated_under.fill.vertices[k] = v
             if k > 4 then
-                self.pixellated_rect.line.vertices[k-4] = v
+                self.pixellated_under.line.vertices[k-4] = v
                 if _emboss then
-                    self.pixellated_rect.line_emboss.vertices[k-4] = v + (k%2 == 0 and -_emboss*self.shadow_parrallax.y or -0.7*_emboss*self.shadow_parrallax.x)
+                    self.pixellated_under.line_emboss.vertices[k-4] = v + (k%2 == 0 and -_emboss*self.shadow_parrallax.y or -0.7*_emboss*self.shadow_parrallax.x)
                 end
             end
             if k%2 == 0 then
-                self.pixellated_rect.shadow.vertices[k] = v -self.shadow_parrallax.y*_parallax
+                self.pixellated_under.shadow.vertices[k] = v -self.shadow_parrallax.y*_parallax
                 if _emboss then
-                    self.pixellated_rect.emboss.vertices[k] = v + _emboss*G.TILESIZE
+                    self.pixellated_under.emboss.vertices[k] = v + _emboss*G.TILESIZE
                 end
             else
-                self.pixellated_rect.shadow.vertices[k] = v -self.shadow_parrallax.x*_parallax
+                self.pixellated_under.shadow.vertices[k] = v -self.shadow_parrallax.x*_parallax
                 if _emboss then
-                    self.pixellated_rect.emboss.vertices[k] = v
+                    self.pixellated_under.emboss.vertices[k] = v
                 end
             end
         end
     end
-    love.graphics.polygon("fill", self.pixellated_rect.fill.vertices)
+    love.graphics.polygon("fill", self.pixellated_under.fill.vertices)
+end
+
+function UIElement:draw_pixellated_over(_type, _parallax, _emboss, _progress)
+    if not self.pixellated_over or
+        #self.pixellated_over[_type].vertices < 1 or
+        _parallax ~= self.pixellated_over.parallax or
+        self.pixellated_over.w ~= self.VT.w or
+        self.pixellated_over.h ~= self.VT.h or
+        self.pixellated_over.sw ~= self.shadow_parrallax.x or
+        self.pixellated_over.sh ~= self.shadow_parrallax.y or
+        self.pixellated_over.progress ~= (_progress or 1)
+    then
+        self.pixellated_over = {
+            w = self.VT.w,
+            h = self.VT.h,
+            sw = self.shadow_parrallax.x,
+            sh = self.shadow_parrallax.y,
+            progress = (_progress or 1),
+            fill = {vertices = {}},
+            shadow = {vertices = {}},
+            line = {vertices = {}},
+            emboss = {vertices = {}},
+            line_emboss = {vertices = {}},
+            parallax = _parallax
+        }
+        local ext_up = self.config.ext_up and self.config.ext_up*G.TILESIZE or 0
+        local totw, toth = self.VT.w*G.TILESIZE, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE
+        local scale = (self.config.overline_scale or 0.1)*toth
+
+        local vertices = {
+            totw,0,
+            0, 0,
+            0, -scale,
+            totw,-scale,
+        }
+        for k, v in ipairs(vertices) do
+            if k%2 == 1 and v > totw*self.pixellated_over.progress then v = totw*self.pixellated_over.progress end
+            self.pixellated_over.fill.vertices[k] = v
+            if k > 4 then
+                self.pixellated_over.line.vertices[k-4] = v
+                if _emboss then
+                    self.pixellated_over.line_emboss.vertices[k-4] = v + (k%2 == 0 and -_emboss*self.shadow_parrallax.y or -0.7*_emboss*self.shadow_parrallax.x)
+                end
+            end
+            if k%2 == 0 then
+                self.pixellated_over.shadow.vertices[k] = v -self.shadow_parrallax.y*_parallax
+                if _emboss then
+                    self.pixellated_over.emboss.vertices[k] = v + _emboss*G.TILESIZE
+                end
+            else
+                self.pixellated_over.shadow.vertices[k] = v -self.shadow_parrallax.x*_parallax
+                if _emboss then
+                    self.pixellated_over.emboss.vertices[k] = v
+                end
+            end
+        end
+    end
+    love.graphics.polygon("fill", self.pixellated_over.fill.vertices)
 end
 
 function UIElement:draw_pixellated_strikethough(_type, _parallax, _emboss, _progress)
 	if
-		not self.pixellated_rect
-		or #self.pixellated_rect[_type].vertices < 1
-		or _parallax ~= self.pixellated_rect.parallax
-		or self.pixellated_rect.w ~= self.VT.w
-		or self.pixellated_rect.h ~= self.VT.h
-		or self.pixellated_rect.sw ~= self.shadow_parrallax.x
-		or self.pixellated_rect.sh ~= self.shadow_parrallax.y
-		or self.pixellated_rect.progress ~= (_progress or 1)
+		not self.pixellated_strikethrough
+		or #self.pixellated_strikethrough[_type].vertices < 1
+		or _parallax ~= self.pixellated_strikethrough.parallax
+		or self.pixellated_strikethrough.w ~= self.VT.w
+		or self.pixellated_strikethrough.h ~= self.VT.h
+		or self.pixellated_strikethrough.sw ~= self.shadow_parrallax.x
+		or self.pixellated_strikethrough.sh ~= self.shadow_parrallax.y
+		or self.pixellated_strikethrough.progress ~= (_progress or 1)
 	then
-		self.pixellated_rect = {
+		self.pixellated_strikethrough = {
 			w = self.VT.w,
 			h = self.VT.h,
 			sw = self.shadow_parrallax.x,
@@ -3635,26 +3686,27 @@ function UIElement:draw_pixellated_strikethough(_type, _parallax, _emboss, _prog
 		}
 		local ext_up = self.config.ext_up and self.config.ext_up * G.TILESIZE or 0
 		local totw, toth = self.VT.w * G.TILESIZE, (self.VT.h + math.abs(ext_up) / G.TILESIZE) * G.TILESIZE
+        local half_scale = (self.config.strikethrough_scale or 0.1)/2 * toth
 
 		local vertices = {
 			totw,
-			toth / 2 + ext_up,
+			toth / 2 + ext_up - half_scale,
 			0,
-			toth / 2 + ext_up,
+			toth / 2 + ext_up - half_scale,
 			0,
-			toth / 2 + ext_up + 1,
+			toth / 2 + ext_up + half_scale,
 			totw,
-			toth / 2 + ext_up + 1,
+			toth / 2 + ext_up + half_scale,
 		}
 		for k, v in ipairs(vertices) do
-			if k % 2 == 1 and v > totw * self.pixellated_rect.progress then
-				v = totw * self.pixellated_rect.progress
+			if k % 2 == 1 and v > totw * self.pixellated_strikethrough.progress then
+				v = totw * self.pixellated_strikethrough.progress
 			end
-			self.pixellated_rect.fill.vertices[k] = v
+			self.pixellated_strikethrough.fill.vertices[k] = v
 			if k > 4 then
-				self.pixellated_rect.line.vertices[k - 4] = v
+				self.pixellated_strikethrough.line.vertices[k - 4] = v
 				if _emboss then
-					self.pixellated_rect.line_emboss.vertices[k - 4] = v
+					self.pixellated_strikethrough.line_emboss.vertices[k - 4] = v
 						+ (
 							k % 2 == 0 and -_emboss * self.shadow_parrallax.y
 							or -0.7 * _emboss * self.shadow_parrallax.x
@@ -3662,19 +3714,19 @@ function UIElement:draw_pixellated_strikethough(_type, _parallax, _emboss, _prog
 				end
 			end
 			if k % 2 == 0 then
-				self.pixellated_rect.shadow.vertices[k] = v - self.shadow_parrallax.y * _parallax
+				self.pixellated_strikethrough.shadow.vertices[k] = v - self.shadow_parrallax.y * _parallax
 				if _emboss then
-					self.pixellated_rect.emboss.vertices[k] = v + _emboss * G.TILESIZE
+					self.pixellated_strikethrough.emboss.vertices[k] = v + _emboss * G.TILESIZE
 				end
 			else
-				self.pixellated_rect.shadow.vertices[k] = v - self.shadow_parrallax.x * _parallax
+				self.pixellated_strikethrough.shadow.vertices[k] = v - self.shadow_parrallax.x * _parallax
 				if _emboss then
-					self.pixellated_rect.emboss.vertices[k] = v
+					self.pixellated_strikethrough.emboss.vertices[k] = v
 				end
 			end
 		end
 	end
-	love.graphics.polygon("fill", self.pixellated_rect.fill.vertices)
+	love.graphics.polygon("fill", self.pixellated_strikethrough.fill.vertices)
 end
 
 function SMODS.card_select_area(card, pack)
@@ -4194,16 +4246,17 @@ function UIElement:draw_text_outline(button_active)
 		return
 	end
 	love.graphics.setColor(self.config.text_outline)
+    local outline_size = (self.config.text_outline_scale or 1)*G.TILESIZE
 	for x = -1, 1 do
 		for y = -1, 1 do
 			if x ~= 0 or y ~= 0 then
 				love.graphics.draw(
 					self.config.text_drawable,
-					((self.config.font or self.config.lang.font).TEXT_OFFSET.x + x * 20)
+					((self.config.font or self.config.lang.font).TEXT_OFFSET.x + x * outline_size)
 						* self.config.scale
 						* (self.config.font or self.config.lang.font).FONTSCALE
 						/ G.TILESIZE,
-					((self.config.font or self.config.lang.font).TEXT_OFFSET.y + y * 20)
+					((self.config.font or self.config.lang.font).TEXT_OFFSET.y + y * outline_size)
 						* self.config.scale
 						* (self.config.font or self.config.lang.font).FONTSCALE
 						/ G.TILESIZE,
