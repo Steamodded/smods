@@ -3526,7 +3526,7 @@ function SMODS.hide_from_collection(prototype_obj, args)
     if type(prototype_obj.no_collection) == "function" then
         return prototype_obj:no_collection(args)
     end
-    return false
+    return prototype_obj.no_collection
 end
 
 
