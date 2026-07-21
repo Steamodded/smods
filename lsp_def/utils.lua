@@ -770,6 +770,13 @@ function SMODS.reset_card(card, args) end
 --- i.e. the in_pool method doesn't exist or it returns `true`
 function SMODS.add_to_pool(prototype_obj, args) end
 
+---@param prototype_obj SMODS.GameObject|table
+---@param args table?
+---@return boolean?, table?
+--- Checks whether an object should be hidden from the collection.
+--- i.e. the no_collection method doesn't exist or it returns `false`
+function SMODS.hide_from_collection(prototype_obj, args) end
+
 ---@param context CalcContext|table The context being pushed
 ---@param func string|nil The function/file from which the call originates
 --- Pushes a context to the SMODS.context_stack. (Form: {context=context, count=[number of consecutive pushes]})
@@ -796,6 +803,16 @@ function SMODS.update_context_flags(context, flags) end
 --- (e.g. "enhancement" for context.check_enhancement)
 --- or false if the [context] isn't a getter context.
 function SMODS.is_getter_context(context) end
+
+---@param context CalcContext|table The context checked
+---@return boolean
+-- Returns whether or not the given context can retrigger (by checking SMODS.CONTEXT_RETRIGGER_BLACKLIST)
+function SMODS.can_context_retrigger(context) end
+
+---@param context CalcContext|table The context checked
+---@return boolean
+--- Returns whether or not the given context can post_trigger (by checking SMODS.CONTEXT_POST_TRIGGER_BLACKLIST)
+function SMODS.can_context_post_trigger(context) end
 
 ---@param eval_object SMODS.GameObject|table The object that will be evaluated next if this returns false
 ---@return boolean
