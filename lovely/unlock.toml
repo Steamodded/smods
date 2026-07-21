@@ -1,0 +1,17 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# check_for_unlock
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+pattern = '''if args.type == 'have_edition' then'''
+position = 'at'
+payload = '''if args.type == 'have_edition' and G.jokers then'''
+match_indent = true
+
+
+
+
