@@ -212,6 +212,7 @@ end
 
 local function handle_loc_file(dir, language, force, mod_id)
     for k, v in ipairs({ dir .. language .. '.lua', dir .. language .. '.json' }) do
+        v = NFS.getNormalizedPath(v)
         if NFS.getInfo(v) then
             parse_loc_file(v, force, mod_id)
             break
@@ -1036,7 +1037,7 @@ SMODS.collection_pool = function(_base_pool)
     local is_array = _base_pool[1]
     local ipairs = is_array and ipairs or pairs
     for _, v in ipairs(_base_pool) do
-        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not v.no_collection or (type(v.no_collection) == "function" and not v:no_collection())) then
+        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not SMODS.hide_from_collection(v)) then
             pool[#pool+1] = v
         end
     end
@@ -1532,7 +1533,7 @@ SMODS.calculate_repetitions = function(card, context, reps)
                     for i = curr_size + 1, new_size do
                         if not first then
                             post = {}
-                            if not context.post_trigger and SMODS.optional_features.post_trigger then
+                            if SMODS.optional_features.post_trigger and SMODS.can_context_post_trigger(context) then
                                 SMODS.calculate_context({blueprint_card = context.blueprint_card, post_trigger = true, other_card = _card, other_context = context, other_ret = eval}, post)
                             end
                         end
@@ -1600,7 +1601,7 @@ end
 
 SMODS.calculate_retriggers = function(card, context, _ret)
     local retriggers = {}
-    if not SMODS.optional_features.retrigger_joker then return retriggers end
+    if not SMODS.optional_features.retrigger_joker or not SMODS.can_context_retrigger(context) then return retriggers end
     for _, area in ipairs(SMODS.get_card_areas('jokers')) do
         for _, _card in ipairs(area.cards) do
             local eval, post = eval_card(_card, {retrigger_joker_check = true, other_card = card, other_context = context, other_ret = _ret})
@@ -1883,6 +1884,46 @@ end
 function SMODS.is_loopable_context(context)
     return SMODS.get_context_type(context) ~= SMODS.CONTEXT_TYPES.QUANTUM_GETTER
 end
+
+SMODS.CONTEXT_RETRIGGER_BLACKLIST = {
+    mod_probability = true, fix_probability = true,
+    check_enhancement = true,
+    retrigger_joker_check = true, retrigger_joker = true,
+    modify_scoring_hand = true,
+    modify_weights = true,
+    evaluate_poker_hand = true,
+    debuff_hand = true,
+}
+
+function SMODS.can_context_retrigger(context)
+    for entry, _ in pairs(SMODS.CONTEXT_RETRIGGER_BLACKLIST) do
+        if context[entry] then
+            return false
+        end
+    end
+    return true
+end
+
+SMODS.CONTEXT_POST_TRIGGER_BLACKLIST = {
+    mod_probability = true, fix_probability = true,
+    check_enhancement = true,
+    retrigger_joker_check = true, 
+    post_trigger = true,
+    modify_scoring_hand = true,
+    modify_weights = true,
+    evaluate_poker_hand = true,
+    debuff_hand = true,
+}
+
+function SMODS.can_context_post_trigger(context)
+    for entry, _ in pairs(SMODS.CONTEXT_POST_TRIGGER_BLACKLIST) do
+        if context[entry] then
+            return false
+        end
+    end
+    return true
+end
+
 
 function SMODS.check_looping_context(eval_object)
     if #SMODS.context_stack < 2 then return false end
@@ -2270,13 +2311,11 @@ function SMODS.eval_individual(individual, context)
     if (eff and not eff.no_retrigger) or triggered then
         --if type(eff) == 'table' then eff.juice_card = eff.juice_card or individual.scored_card end
         ret.individual = eff
-        if not (context.retrigger_joker_check or context.retrigger_joker) then
-            local retriggers = SMODS.calculate_retriggers(individual.object, context, ret)
-            if next(retriggers) then
-                ret.retriggers = retriggers
-            end
+        local retriggers = SMODS.calculate_retriggers(individual.object, context, ret)
+        if next(retriggers) then
+            ret.retriggers = retriggers
         end
-        if not context.post_trigger and not context.retrigger_joker_check and SMODS.optional_features.post_trigger then
+        if SMODS.optional_features.post_trigger and SMODS.can_context_post_trigger(context) then
             SMODS.calculate_context({blueprint_card = context.blueprint_card, post_trigger = true, other_card = individual.object, other_context = context, other_ret = ret}, post_trig)
         end
     end
@@ -2579,7 +2618,8 @@ function SMODS.localize_box(lines, args)
             underline = part.control.u and loc_colour(part.control.u),
             strikethrough = part.control.st and loc_colour(part.control.st),
             font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
-            scale_mod = part.control.s and tonumber(part.control.s) or args.scale  or 1
+            scale_mod = part.control.s and tonumber(part.control.s) or args.scale  or 1,
+            text_outline = part.control.O and loc_colour(part.control.O),
         }
         local desc_scale = (thunk.font or G.LANG.font).DESCSCALE
         if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
@@ -2613,6 +2653,7 @@ function SMODS.localize_box(lines, args)
               button = part.control.button,
               strikethrough = part.control.st and loc_colour(part.control.st),
               underline = part.control.u and loc_colour(part.control.u),
+              text_outline = part.control.O and loc_colour(part.control.O),
               scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*thunk.scale_mod*(args.fixed_scale or 1)
             })
           }}
@@ -2651,6 +2692,7 @@ function SMODS.localize_box(lines, args)
                     font = thunk.font,
                     underline = thunk.underline,
                     strikethrough = thunk.strikethrough,
+                    text_outline = thunk.text_outline,
                     scale = 0.32*thunk.scale_mod*desc_scale}},
                 }}
         else
@@ -2671,6 +2713,7 @@ function SMODS.localize_box(lines, args)
                 font = thunk.font,
                 underline = thunk.underline,
                 strikethrough = thunk.strikethrough,
+                text_outline = thunk.text_outline,
                 scale = 0.32*thunk.scale_mod*desc_scale
             }}
         end
@@ -3421,6 +3464,13 @@ function SMODS.add_to_pool(prototype_obj, args)
     return true
 end
 
+function SMODS.hide_from_collection(prototype_obj, args)
+    if type(prototype_obj.no_collection) == "function" then
+        return prototype_obj:no_collection(args)
+    end
+    return prototype_obj.no_collection
+end
+
 
 function Card:is_rarity(rarity)
     if self.ability.set ~= "Joker" then return false end
@@ -4086,6 +4136,38 @@ function UIElement:set_text_shader(shader, send, shadow)
         end
     })
 end
+
+function UIElement:draw_text_outline(button_active)
+	if not button_active then
+		return
+	end
+	love.graphics.setColor(self.config.text_outline)
+	for x = -1, 1 do
+		for y = -1, 1 do
+			if x ~= 0 or y ~= 0 then
+				love.graphics.draw(
+					self.config.text_drawable,
+					((self.config.font or self.config.lang.font).TEXT_OFFSET.x + x * 20)
+						* self.config.scale
+						* (self.config.font or self.config.lang.font).FONTSCALE
+						/ G.TILESIZE,
+					((self.config.font or self.config.lang.font).TEXT_OFFSET.y + y * 20)
+						* self.config.scale
+						* (self.config.font or self.config.lang.font).FONTSCALE
+						/ G.TILESIZE,
+					0,
+					self.config.scale
+						* (self.config.font or self.config.lang.font).squish
+						* (self.config.font or self.config.lang.font).FONTSCALE
+						/ G.TILESIZE,
+					self.config.scale * (self.config.font or self.config.lang.font).FONTSCALE / G.TILESIZE
+				)
+			end
+		end
+	end
+	love.graphics.setColor(self.config.colour)
+end
+
 
 -- function to modify score: normally accepts add and mult argument and additionally card argument
 SMODS.mod_score = function(score_mod)
