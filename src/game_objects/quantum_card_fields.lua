@@ -21,7 +21,8 @@ local function _general_quantum_getter(card, args)
             for key, q_field in pairs(SMODS.QuantumCardFields) do 
                 ret[q_field.return_flag] = {} 
                 for k, _ in pairs(eval[q_field.return_flag]) do
-                    ret[q_field.return_flag][q_field.g_obj_table[type(k) == "table" and k.key or k]] = true
+                    local obj = q_field.g_obj_table[type(k) == "table" and k.key or k] or {[k] = true, key = k} -- This table supports fake values which don't actually exist as an object.
+                    ret[q_field.return_flag][obj] = true
                 end
             end
             return ret
