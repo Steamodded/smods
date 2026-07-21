@@ -3709,13 +3709,29 @@ SMODS.UndiscoveredCompat = {
         end
     }
 
-        SMODS.Keybind {
+    SMODS.Keybind {
         key_pressed = 'f5',
         held_keys = { "lalt" },
         event = 'pressed',
         action = function(self)
             SMODS.save_all_config()
 		    SMODS.restart_game()
+        end
+    }
+
+    SMODS.Keybind {
+        key_pressed = 'f2',
+        event = 'pressed',
+        action = function(self)
+            local target = G.CONTROLLER.hovering.target or G.CONTROLLER.focused.target
+            if not _RELEASE_MODE and target and type(target.is) == "function" and target:is(Card) then
+                local scale = 0
+                for i=0,9,1 do
+                    if love.keyboard.isDown(""..i) then scale = scale + (i == 0 and 10 or i) end
+                end
+                if scale <= 0 then scale = G.SETTINGS.GRAPHICS.texture_scaling end
+                SMODS.card_to_image(target, scale)
+            end
         end
     }
 

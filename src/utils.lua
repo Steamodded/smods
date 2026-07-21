@@ -4338,8 +4338,9 @@ function SMODS.card_to_image(card, scale, filename)
     local old_rm = G.SETTINGS.reduced_motion
     card.T.r = 0
     local old_scale = card.T.scale 
-    card.T.scale = scale / G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 * 763/768 -- Don't ask me why I had to multiply by 1.5 * 763/768 here, I do not know,,, (this may have been brute-tinkered) (well the times 763/768 is to remove an extra pixel in height for scales == 2.0 -> 16.0 (at least))
-    card:hard_set_T(card.T.w/2*(card.T.scale-1), card.T.h/2*(card.T.scale-1))
+    card.T.scale = scale / G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 -- Don't ask me why I had to multiply by 1.5 here, and by the per-dimension factors below, I do not know,,, (this may have been brute-tinkered)
+    local w, h = old_t.w * 0.997, old_t.h * 0.99348                                                         -- (well these factors are needed to remove extra pixels in height/width for scales == 2.0 -> 16.0 (at least))
+    card:hard_set_T(w/2*(card.T.scale-1), h/2*(card.T.scale-1), w, h)
 	card.no_shadow = true
     G.SETTINGS.reduced_motion = true
     SMODS.texture_filter_override = "nearest"
@@ -4352,7 +4353,7 @@ function SMODS.card_to_image(card, scale, filename)
 
 	local image_data = canvas:newImageData()
 	image_data:encode("png", filename)
-	print("SMODS : Saved card image to "..love.filesystem.getSaveDirectory().."/"..filename)
+	print("SMODS : Saved card image to "..love.filesystem.getSaveDirectory().."/"..filename .. " at scale " .. scale)
 end
 
 function Card:is_suit_shade(shade, bypass_debuff)
