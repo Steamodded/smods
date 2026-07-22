@@ -2685,7 +2685,12 @@ end
 function SMODS.get_loc_colour(ctrl, vars)
     if type(ctrl) == 'table' then ctrl = ctrl.c end
     if not ctrl then return end
-    if (#ctrl == 6 or #ctrl == 8) and not string.find(ctrl, "%X") then return HEX(ctrl) end
+    if (#ctrl == 6 or #ctrl == 8) and not string.find(ctrl, "%X") then
+        if next(loc_colour(ctrl, {})) then
+            sendWarnMessage(("Interpreting colour identifier '%s' as a hex code. A named `loc_colour` entry with the same name exists and was ignored"):format(ctrl),"SMODS.get_loc_colour")
+        end
+        return HEX(ctrl)
+    end
     return (vars or {})[tonumber(ctrl) or {}] or loc_colour(ctrl)
 end
 
