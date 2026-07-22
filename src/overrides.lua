@@ -2857,8 +2857,10 @@ function Card:quantum_set_ability(center)
         local old_hand = self.ability.to_do_poker_hand
         self.ability.to_do_poker_hand = nil
 
+        local is_collection_area = self.area and (self.area.config.type == 'title' or self.area.config.type == 'title_2' or self.area.config.collection)
+
         while not self.ability.to_do_poker_hand do
-            self.ability.to_do_poker_hand = pseudorandom_element(_poker_hands, pseudoseed((self.area and self.area.config.type == 'title') and 'false_to_do' or 'to_do'))
+            self.ability.to_do_poker_hand = pseudorandom_element(_poker_hands, pseudoseed(is_collection_area and 'false_to_do' or 'to_do'))
             if self.ability.to_do_poker_hand == old_hand then self.ability.to_do_poker_hand = nil end
         end
     end
