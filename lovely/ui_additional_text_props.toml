@@ -360,6 +360,66 @@ if v.colour then inner_colour = v.colour or nil end
 '''
 match_indent = true
 
+# DynaText outline
+# shadow
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = '''if v then self:set_letter_shader(v.shader, v.send, true, letter) end'''
+position = 'after'
+payload = '''
+if self.config.text_outline then
+    local outline_scale = (self.config.text_outline_scale or 1)*G.TILESIZE
+    for x = -1, 1 do
+        for y = -1, 1 do
+            if x ~= 0 or y ~= 0 then
+                love.graphics.draw(
+                    letter.letter,
+                    0.5*(letter.dims.x - letter.offset.x + x*outline_scale)*self.font.FONTSCALE/G.TILESIZE -self.shadow_parrallax.x*self.scale/(G.TILESIZE),
+                    0.5*(letter.dims.y + y*outline_scale)*self.font.FONTSCALE/G.TILESIZE -self.shadow_parrallax.y*self.scale/(G.TILESIZE), 
+                    letter.r or 0,
+                    real_pop_in*self.scale*self.font.FONTSCALE/G.TILESIZE,
+                    real_pop_in*self.scale*self.font.FONTSCALE/G.TILESIZE,
+                    0.5*letter.dims.x/self.scale,
+                    0.5*letter.dims.y/self.scale
+                )
+            end
+        end
+    end
+end
+'''
+match_indent = true
+# actual text
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+pattern = '''if v then self:set_letter_shader(v.shader, v.send, false, letter) end'''
+position = 'after'
+payload = '''
+if self.config.text_outline then
+    love.graphics.setColor(self.config.text_outline)
+    local outline_scale = (self.config.text_outline_scale or 1)*G.TILESIZE
+    for x = -1, 1 do
+        for y = -1, 1 do
+            if x ~= 0 or y ~= 0 then
+                love.graphics.draw(
+                    letter.letter,
+                    0.5*(letter.dims.x - letter.offset.x + x*outline_scale)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.x,
+                    0.5*(letter.dims.y - letter.offset.y + y*outline_scale)*self.font.FONTSCALE/G.TILESIZE + _shadow_norm.y, 
+                    letter.r or 0,
+                    real_pop_in*letter.scale*self.scale*self.font.FONTSCALE/G.TILESIZE,
+                    real_pop_in*letter.scale*self.scale*self.font.FONTSCALE/G.TILESIZE,
+                    0.5*letter.dims.x/(self.scale),
+                    0.5*letter.dims.y/(self.scale)
+                )
+            end
+        end
+    end
+    love.graphics.setColor(letter.prefix or letter.suffix or letter.colour or self.colours[k%#self.colours + 1])
+end
+'''
+match_indent = true
+
 # Fix empty loc tags being ignored
 [[patches]]
 [patches.pattern]
