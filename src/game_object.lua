@@ -1957,7 +1957,6 @@ SMODS.UndiscoveredCompat = {
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Suit
     -------------------------------------------------------------------------------------------------
-
     SMODS.inject_p_card = function(suit, rank)
         G.P_CARDS[suit.card_key .. '_' .. rank.card_key] = {
             name = rank.key .. ' of ' .. suit.key,
@@ -2133,7 +2132,13 @@ SMODS.UndiscoveredCompat = {
         },
         next = {},
         prev = nil,
-        straight_edge = false,
+        virtual = {
+            ranks = nil,
+            next = nil,
+            prev = nil,
+        },
+        parity = nil,
+        is_royal = nil,
         -- TODO we need a better system for what this is doing.
         -- We should allow setting a playing card's atlas and position to any values,
         -- and we should also ensure that it's easy to create an atlas with a standard
@@ -2192,15 +2197,20 @@ SMODS.UndiscoveredCompat = {
             SMODS.process_loc_text(G.localization.misc.ranks, self.key, self.loc_txt, 'name')
         end,
         inject = function(self)
-            for _,v in ipairs(self.next) do
-                local other = self.obj_table[v]
+            for k, _ in pairs(self.next) do
+                local other = self.obj_table[k]
                 if other then
-                    table.insert(other.prev, self.key)
+                    other.prev[self.key] = true
                 end
             end
             for _, suit in pairs(SMODS.Suits) do
                 SMODS.inject_p_card(suit, self)
             end
+            self.virtual = { -- Redefine so it's not shared between ranks
+                ranks = {},
+                next = nil,
+                prev = nil,
+            }
         end,
         delete = function(self)
             local i
@@ -2212,16 +2222,37 @@ SMODS.UndiscoveredCompat = {
             end
             self.used_card_keys[self.card_key] = nil
             table.remove(self.obj_buffer, i)
+        end,
+        get_straight_next = function (self, direction, do_wrap)
+            local dir = direction == "prev" and "prev" or "next"
+            return self.virtual[dir] or self[dir]
         end
     }
-    for _, v in ipairs({ 2, 3, 4, 5, 6, 7, 8, 9 }) do
+    SMODS.Rank {
+        key = '2',
+        card_key = '2',
+        pos = { x = 0 },
+        nominal = 2,
+        next = { ['3'] = true },
+        parity = 0,
+        strength_effect = {
+            fixed_next = '3',
+            fixed_prev = 'Ace'
+        },
+    }
+    for _, v in ipairs({ 3, 4, 5, 6, 7, 8, 9 }) do
         SMODS.Rank {
             key = v .. '',
             card_key = v .. '',
             pos = { x = v - 2 },
             nominal = v,
             sort_id = v - 1,
-            next = { (v + 1) .. '' },
+            next = { [(v + 1) .. ''] = true },
+            parity = math.fmod(v, 2),
+            strength_effect = {
+                fixed_next = (v + 1) .. '',
+                fixed_prev = (v - 1) .. '',
+            },
         }
     end
     SMODS.Rank {
@@ -2230,7 +2261,13 @@ SMODS.UndiscoveredCompat = {
         pos = { x = 8 },
         nominal = 10,
         sort_id = 9,
-        next = { 'Jack' },
+        next = { Jack = true },
+        parity = 0,
+        is_royal = true,
+        strength_effect = {
+            fixed_next = 'Jack',
+            fixed_prev = '9'
+        },
     }
     SMODS.Rank {
         key = 'Jack',
@@ -2241,7 +2278,13 @@ SMODS.UndiscoveredCompat = {
         face = true,
         sort_id = 10,
         shorthand = 'J',
-        next = { 'Queen' },
+        next = { Queen = true },
+        parity = nil,
+        is_royal = true,
+        strength_effect = {
+            fixed_next = 'Queen',
+            fixed_prev = '10'
+        },
     }
     SMODS.Rank {
         key = 'Queen',
@@ -2252,7 +2295,13 @@ SMODS.UndiscoveredCompat = {
         face = true,
         sort_id = 11,
         shorthand = 'Q',
-        next = { 'King' },
+        next = { King = true },
+        parity = nil,
+        is_royal = true,
+        strength_effect = {
+            fixed_next = 'King',
+            fixed_prev = 'Jack'
+        },
     }
     SMODS.Rank {
         key = 'King',
@@ -2263,7 +2312,13 @@ SMODS.UndiscoveredCompat = {
         face = true,
         sort_id = 12,
         shorthand = 'K',
-        next = { 'Ace' },
+        next = { Ace = true },
+        parity = nil,
+        is_royal = true,
+        strength_effect = {
+            fixed_next = 'Ace',
+            fixed_prev = 'Queen'
+        },
     }
     SMODS.Rank {
         key = 'Ace',
@@ -2273,9 +2328,24 @@ SMODS.UndiscoveredCompat = {
         face_nominal = 0.4,
         sort_id = 13,
         shorthand = 'A',
-        straight_edge = true,
-        next = { '2' },
+        next = { ['2'] = true },
+        parity = 1,
+        is_royal = true,
+        strength_effect = {
+            fixed_next = '2',
+            fixed_prev = 'King'
+        },
     }
+
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.VirtualRank
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/game_objects/virtual_ranks.lua'), ('=[SMODS _ "src/game_objects/virtual_ranks.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
+
+    
     -- make consumable effects compatible with added suits
     -- TODO put this in utils.lua
     local function juice_flip(used_tarot)
@@ -2933,8 +3003,17 @@ SMODS.UndiscoveredCompat = {
             return { SMODS.merge_lists(parts._5, parts._flush) }
         end,
         ['Flush House'] = function(parts)
-            if #parts._3 < 1 or #parts._2 < 2 or not next(parts._flush) then return {} end
-            return { SMODS.merge_lists(parts._all_pairs, parts._flush) }
+            if not SMODS.optional_features.quantum_fields.rank then
+                if #parts._3 > 0 and #parts._2 > 1 and next(parts._flush) then
+                    return { SMODS.merge_lists(parts._all_pairs, parts._flush) }
+                end
+            else
+                local full_house = get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._3, min_len = 3}}) or {}
+                if next(full_house) and next(parts._flush) then
+                    return { SMODS.merge_lists(full_house, parts._flush) }
+                end
+            end
+            return {}
         end,
         ['Five of a Kind'] = function(parts) return parts._5 end,
         ['Straight Flush'] = function(parts)
@@ -2943,15 +3022,27 @@ SMODS.UndiscoveredCompat = {
         end,
         ['Four of a Kind'] = function(parts) return parts._4 end,
         ['Full House'] = function(parts)
-            if #parts._3 < 1 or #parts._2 < 2 then return {} end
-            return parts._all_pairs
+            if not SMODS.optional_features.quantum_fields.rank then
+                if #parts._3 > 0 and #parts._2 > 1 then
+                    return parts._all_pairs
+                end
+            else
+                return get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._3, min_len = 3}}) or {}
+            end
+            return {}
         end,
         ['Flush'] = function(parts) return parts._flush end,
         ['Straight'] = function(parts) return parts._straight end,
         ['Three of a Kind'] = function(parts) return parts._3 end,
         ['Two Pair'] = function(parts)
-            if #parts._2 < 2 then return {} end
-            return parts._all_pairs
+            if not SMODS.optional_features.quantum_fields.rank then
+                if #parts._2 > 1 then
+                    return parts._all_pairs
+                end
+            else
+                return get_quantum_pairing({{pairs = parts._2, min_len = 2}, {pairs = parts._2, min_len = 2}}) or {}
+            end
+            return {}
         end,
         ['Pair'] = function(parts) return parts._2 end,
         ['High Card'] = function(parts) return parts._highest end,
@@ -3285,6 +3376,10 @@ SMODS.UndiscoveredCompat = {
     ----- API CODE GameObject.Enhancement
     -------------------------------------------------------------------------------------------------
 
+    SMODS.Enhancements = {}
+    for _, k in ipairs({"c_base", "m_bonus", "m_mult", "m_wild", "m_glass", "m_steel", "m_stone", "m_gold", "m_lucky"}) do
+        SMODS.Enhancements[k] = G.P_CENTERS[k]
+    end
     SMODS.Enhancement = SMODS.Center:extend {
         set = 'Enhanced',
         class_prefix = 'm',
@@ -3314,6 +3409,7 @@ SMODS.UndiscoveredCompat = {
             self.config = self.config or {}
             assert(not (self.no_suit and self.any_suit), "Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Enhancement object.")
             if self.no_rank then self.overrides_base_rank = true end
+            SMODS.Enhancements[self.key] = self
             SMODS.Enhancement.super.register(self)
         end,
         -- Produces the description of the whole playing card
@@ -3370,6 +3466,7 @@ SMODS.UndiscoveredCompat = {
     -- })
 
     SMODS.Enhancement:take_ownership('glass', {
+        shatters = true,
         calculate = function(self, card, context)
             if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and SMODS.pseudorandom_probability(card, 'glass', 1, card.ability.extra) then
                 card.glass_trigger = true
@@ -3483,6 +3580,10 @@ SMODS.UndiscoveredCompat = {
     ----- API CODE GameObject.Edition
     -------------------------------------------------------------------------------------------------
 
+    SMODS.Editions = {}
+    for _, k in ipairs({"e_base", "e_foil", "e_holo", "e_polychrome", "e_negative"}) do
+        SMODS.Editions[k] = G.P_CENTERS[k]
+    end
     SMODS.Edition = SMODS.Center:extend {
         set = 'Edition',
         -- atlas only matters for displaying editions in the collection
@@ -3520,6 +3621,7 @@ SMODS.UndiscoveredCompat = {
                     generic = string.sub(self.key, 3) .. '_generic' .. '_SMODS_INTERNAL'
                 }
             end
+            SMODS.Editions[self.key] = self
             SMODS.Edition.super.register(self)
         end,
         process_loc_text = function(self)
@@ -3570,18 +3672,7 @@ SMODS.UndiscoveredCompat = {
 
     SMODS.Edition:take_ownership('foil', {
         shader = 'foil',
-        config = setmetatable({ chips = 50 }, {
-            __index = function(t, k)
-                if k == 'extra' then return t.chips end
-                return rawget(t, k)
-            end,
-            __newindex = function(t, k, v)
-                if k == 'extra' then
-                    t.chips = v; return
-                end
-                rawset(t, k, v)
-            end,
-        }),
+        config = { extra = { chips = 50 } },
         sound = { sound = "foil1", per = 1.2, vol = 0.4 },
         weight = 20,
         extra_cost = 2,
@@ -3591,30 +3682,19 @@ SMODS.UndiscoveredCompat = {
             return G.GAME.edition_rate * self.weight
         end,
         loc_vars = function(self, info_queue, card)
-            return { vars = { card.edition.chips } }
+            return { vars = { card.edition.extra.chips } }
         end,
         calculate = function(self, card, context)
             if context.pre_joker or (context.main_scoring and context.cardarea == G.play) then
                 return {
-                    chips = card.edition.chips
+                    chips = ((card.ability.edition or {}).extra or {}).chips
                 }
             end
         end
     })
     SMODS.Edition:take_ownership('holo', {
         shader = 'holo',
-        config = setmetatable({ mult = 10 }, {
-            __index = function(t, k)
-                if k == 'extra' then return t.mult end
-                return rawget(t, k)
-            end,
-            __newindex = function(t, k, v)
-                if k == 'extra' then
-                    t.mult = v; return
-                end
-                rawset(t, k, v)
-            end,
-        }),
+        config = { extra = { mult = 10 } },
         sound = { sound = "holo1", per = 1.2 * 1.58, vol = 0.4 },
         weight = 14,
         extra_cost = 3,
@@ -3624,30 +3704,19 @@ SMODS.UndiscoveredCompat = {
             return G.GAME.edition_rate * self.weight
         end,
         loc_vars = function(self, info_queue, card)
-            return { vars = { card.edition.mult } }
+            return { vars = { card.edition.extra.mult } }
         end,
         calculate = function(self, card, context)
             if context.pre_joker or (context.main_scoring and context.cardarea == G.play) then
                 return {
-                    mult = card.edition.mult
+                    mult = ((card.ability.edition or {}).extra or {}).mult
                 }
             end
         end
     })
     SMODS.Edition:take_ownership('polychrome', {
         shader = 'polychrome',
-        config = setmetatable({ x_mult = 1.5 }, {
-            __index = function(t, k)
-                if k == 'extra' then return t.x_mult end
-                return rawget(t, k)
-            end,
-            __newindex = function(t, k, v)
-                if k == 'extra' then
-                    t.x_mult = v; return
-                end
-                rawset(t, k, v)
-            end,
-        }),
+        config = { extra = { x_mult = 1.5 } },
         sound = { sound = "polychrome1", per = 1.2, vol = 0.7 },
         weight = 3,
         extra_cost = 5,
@@ -3657,12 +3726,12 @@ SMODS.UndiscoveredCompat = {
             return (G.GAME.edition_rate - 1) * G.P_CENTERS["e_negative"].weight + G.GAME.edition_rate * self.weight
         end,
         loc_vars = function(self, info_queue, card)
-            return { vars = { card.edition.x_mult } }
+            return { vars = { card.edition.extra.x_mult } }
         end,
         calculate = function(self, card, context)
             if context.post_joker or (context.main_scoring and context.cardarea == G.play) then
                 return {
-                    x_mult = card.edition.x_mult
+                    x_mult = ((card.ability.edition or {}).extra or {}).x_mult
                 }
             end
         end
@@ -4040,6 +4109,18 @@ SMODS.UndiscoveredCompat = {
         func = function(self, chips, mult, flames) return chips ^ mult end,
         text = '^'
     }
+
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.CardAbilityField
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/game_objects/card_ability_fields.lua'), ('=[SMODS _ "src/game_objects/card_ability_fields.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.QuantumCardField
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/game_objects/quantum_card_fields.lua'), ('=[SMODS _ "src/game_objects/quantum_card_fields.lua"]')))()
 
 
     -------------------------------------------------------------------------------------------------
