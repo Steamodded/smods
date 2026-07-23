@@ -1,0 +1,42 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 0
+
+# Intercept created UIE
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+pattern = '''local UIE = UIElement(parent, self, node.n, node.config)'''
+position = "at"
+payload = '''
+node = SMODS.SUI and SMODS.SUI.process_node_render(node) or node
+local UIE = UIElement(parent, self, node.n, node.config)
+UIE.input_node = node
+'''
+match_indent = true
+
+# Mark a point where UIE is fully created
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+pattern = '''Moveable.init(self,{T = _T})'''
+position = "after"
+payload = '''
+self.sui_init_request = SMODS.SUI
+'''
+match_indent = true
+
+# Init element
+[[patches]]
+[patches.pattern]
+target = "engine/ui.lua"
+pattern = '''self.layered_parallax = self.layered_parallax or {x=0, y=0}'''
+position = "after"
+payload = '''
+if self.sui_init_request then
+    self.sui_init_request = nil
+    SMODS.SUI.process_element_created(self)
+end
+'''
+match_indent = true
