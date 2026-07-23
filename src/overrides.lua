@@ -2669,6 +2669,7 @@ end
 
 local use_consumeable = Card.use_consumeable
 function Card:use_consumeable(area, copier)
+	SMODS.currently_used_consumable = self
 	local ret = use_consumeable(self, area, copier)
 	if SMODS.post_prob and next(SMODS.post_prob) then
         local prob_tables = SMODS.post_prob
@@ -2678,6 +2679,7 @@ function Card:use_consumeable(area, copier)
             SMODS.calculate_context(v)
         end
     end
+	SMODS.currently_used_consumable = nil
 	return ret
 end
 
