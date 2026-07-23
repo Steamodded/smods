@@ -2752,8 +2752,8 @@ function SMODS.localize_box(lines, args)
     local final_line = {}
     for _, part in ipairs(lines) do
         if part.control.element then
-            local elem = args.vars.elements[tonumber(part.control.element)]
-            if elem.is and elem:is(Node) then
+            local elem = (args.vars.elements or {})[tonumber(part.control.element)]
+            if elem and elem.is and elem:is(Node) then
                 elem = { n=G.UIT.O, config = { object = elem }}
             end
             final_line[#final_line+1] = elem
