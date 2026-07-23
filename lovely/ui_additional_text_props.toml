@@ -368,8 +368,8 @@ target = 'engine/text.lua'
 pattern = '''if v then self:set_letter_shader(v.shader, v.send, true, letter) end'''
 position = 'after'
 payload = '''
-if self.config.text_outline then
-    local outline_scale = (self.config.text_outline_scale or 1)*G.TILESIZE
+if letter.text_outline or self.config.text_outline then
+    local outline_scale = (letter.text_outline_scale or self.config.text_outline_scale or 1)*G.TILESIZE
     for x = -1, 1 do
         for y = -1, 1 do
             if x ~= 0 or y ~= 0 then
@@ -396,9 +396,9 @@ target = 'engine/text.lua'
 pattern = '''if v then self:set_letter_shader(v.shader, v.send, false, letter) end'''
 position = 'after'
 payload = '''
-if self.config.text_outline then
-    love.graphics.setColor(self.config.text_outline)
-    local outline_scale = (self.config.text_outline_scale or 1)*G.TILESIZE
+if letter.text_outline or self.config.text_outline then
+    love.graphics.setColor(letter.text_outline or self.config.text_outline)
+    local outline_scale = (letter.text_outline_scale or self.config.text_outline_scale or 1)*G.TILESIZE
     for x = -1, 1 do
         for y = -1, 1 do
             if x ~= 0 or y ~= 0 then
