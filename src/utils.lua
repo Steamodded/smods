@@ -1790,7 +1790,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 if SMODS.check_looping_context(_card) then
                     goto skip
                 end
-                SMODS.current_evaluated_object = _card
                 local eval, post = eval_card(_card, context)
                 if args and args.main_scoring and eval.jokers then
                     eval.jokers.juice_card = eval.jokers.juice_card or eval.jokers.card or _card
@@ -1855,7 +1854,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                         if SMODS.check_looping_context(card) then
                             goto skip
                         end
-                        SMODS.current_evaluated_object = card
                         local effects = {eval_card(card, context)}
                         local f = SMODS.trigger_effects(effects, card)
                         for k,v in pairs(f) do flags[k] = v end
@@ -1882,11 +1880,9 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 end
                 --calculate the played card effects
                 if return_table then
-                    SMODS.current_evaluated_object = card
                     return_table[#return_table+1] = eval_card(card, context)
                     SMODS.calculate_quantum_enhancements(card, return_table, context)
                 else
-                    SMODS.current_evaluated_object = card
                     local effects = {eval_card(card, context)}
                     SMODS.calculate_quantum_enhancements(card, effects, context)
                     local f = SMODS.trigger_effects(effects, card)
@@ -1904,7 +1900,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             if SMODS.check_looping_context(area.object) then
                 goto skip
             end
-            SMODS.current_evaluated_object = area.object
             local eval, post = SMODS.eval_individual(area, context)
             if args and args.main_scoring and eval.individual then
                 eval.individual.juice_card = eval.individual.juice_card or eval.individual.card or area.scored_card
@@ -1937,7 +1932,6 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
             ::skip::
         end
     end
-    SMODS.current_evaluated_object = nil
     return flags
 end
 
@@ -1969,8 +1963,6 @@ function SMODS.update_context_flags(context, flags)
         if flags.replace_poker_hands then context.poker_hands = flags.replace_poker_hands end
     end
 end
-
-SMODS.current_evaluated_object = nil
 
 -- Used to avoid looping getter context calls. Example;
 -- Joker A: Doubles lucky card probabilities
@@ -2042,22 +2034,28 @@ function SMODS.check_looping_context(eval_object)
 end
 
 -- The context stack list, structured like so;
--- SMODS.context_stack = {1: {context = [unique context 1], count = [number of times it was added consecutively], caller = [the SMODS.current_evaluated_object when the context was added]}, ...}
+-- SMODS.context_stack = {1: {context = [unique context 1], count = [number of times it was added consecutively], evaluee = [evaluee param of SMODS.push_to_context_stack()]}, ...}
 -- (Contexts may repeat non-consecutively, though I don't think they ever should..)
 -- Allows some advanced effects, like:
 -- Individual playing cards modifying probabilities checked during individual scoring, only when they're the context.other_card
 -- (-> By checking the context in the stack PRIOR to the mod_probability context for the .individual / .other_card flags)
 SMODS.context_stack = {}
 
-function SMODS.push_to_context_stack(context, func)
+function SMODS.push_to_context_stack(context, evaluee, func)
     if not context or type(context) ~= "table" then
         sendWarnMessage(('Called SMODS.push_to_context_stack with invalid context \'%s\', in function \'%s\''):format(context, func), 'Util')
     end
     local len = #SMODS.context_stack
-    if len <= 0 or SMODS.context_stack[len].context ~= context then
-        SMODS.context_stack[len+1] = {context = context, count = 1, caller = SMODS.current_evaluated_object}
+    local stack_entry = SMODS.context_stack[len]
+    if len <= 0 or stack_entry.context ~= context then
+        evaluee = evaluee or stack_entry and stack_entry.evaluees[#stack_entry.evaluees] or "NIL" -- evaluee param as passed, or the latest evaluee of the previous stack_entry
+        table.insert(SMODS.context_stack, {context = context, count = 1, evaluees = {evaluee}})
     else
-        SMODS.context_stack[len].count = SMODS.context_stack[len].count + 1
+        local previous_entry = SMODS.context_stack[len-1]
+        evaluee = evaluee or previous_entry and previous_entry.evaluees[#previous_entry.evaluees] or "NIL" -- evaluee param as passed, or the latest evaluee of the previous stack_entry
+        stack_entry.count = stack_entry.count + 1
+        if evaluee == "NIL" then sendWarnMessage('Called SMODS.push_to_context_stack on repeat context without evaluee', "Util") end
+        table.insert(stack_entry.evaluees, evaluee)
     end
 end
 
@@ -2069,8 +2067,26 @@ function SMODS.pop_from_context_stack(context, func)
         SMODS.context_stack[len].count = SMODS.context_stack[len].count - 1
         if SMODS.context_stack[len].count <= 0 then
             table.remove(SMODS.context_stack, len)
+        else
+            table.remove(SMODS.context_stack[len].evaluees, #SMODS.context_stack[len].evaluees)
         end
     end
+end
+
+function SMODS.get_context_evaluee(stack_index, evaluee_index)
+    local len = #SMODS.context_stack
+    if len < 1 then return end
+    stack_index = stack_index or len
+    if stack_index < 1 then stack_index = len + stack_index end
+    local stack_entry = SMODS.context_stack[stack_index]
+    evaluee_index = evaluee_index or #stack_entry.evaluees
+    if evaluee_index < 1 then evaluee_index = #stack_entry.evaluees + evaluee_index end
+    local evaluee = stack_entry.evaluees[evaluee_index]
+    return evaluee ~= "NIL" and evaluee or nil
+end
+
+function SMODS.get_previous_evaluee(previous_context)
+    return not previous_context and SMODS.get_context_evaluee(0, -1) or SMODS.get_context_evaluee(-1, 0)
 end
 
 function SMODS.get_previous_context()
@@ -2082,7 +2098,7 @@ end
 function SMODS.calculate_context(context, return_table, no_resolve)
     if G.STAGE ~= G.STAGES.RUN then return end
 
-    SMODS.push_to_context_stack(context, "utils.lua : SMODS.calculate_context")
+    SMODS.push_to_context_stack(context, nil, "utils.lua : SMODS.calculate_context")
 
     local has_area = context.cardarea and true or nil
     if no_resolve then SMODS.no_resolve = true end
@@ -2395,7 +2411,7 @@ function Blind:calc_dollar_bonus()
 end
 
 function SMODS.eval_individual(individual, context)
-    SMODS.push_to_context_stack(context, "utils.lua : SMODS.eval_individual")
+    SMODS.push_to_context_stack(context, individual.object, "utils.lua : SMODS.eval_individual")
     local ret = {}
     local post_trig = {}
 

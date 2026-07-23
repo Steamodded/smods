@@ -2623,7 +2623,7 @@ function Blind:stay_flipped(to_area, card, from_area)
     local ret = stay_flipped(self, to_area, card, from_area)
     local context = { to_area = to_area, from_area = from_area, other_card = card, stay_flipped = true }
     local flags = SMODS.calculate_context(context)
-    SMODS.push_to_context_stack(context, "overrides.lua : Blind:stay_flipped()")
+    SMODS.push_to_context_stack(context, card, "overrides.lua : Blind:stay_flipped()")
     local self_eval, self_post = eval_card(card, context)
     local self_flags = SMODS.trigger_effects({ self_eval, self_post })
     for k,v in pairs(self_flags) do flags[k] = flags[k] or v end
@@ -2691,25 +2691,25 @@ end
 
 local eval_card_ref = eval_card
 function eval_card(card, context)
-	SMODS.push_to_context_stack(context, "overrides.lua : eval_card")
+	SMODS.push_to_context_stack(context, card, "overrides.lua : eval_card")
 	local eff, post = eval_card_ref(card, context)
-	SMODS.pop_from_context_stack(context, "overrides.lua : eval_card")
+	SMODS.pop_from_context_stack(context, card, "overrides.lua : eval_card")
 	return eff, post
 end
 
 local calculate_seal_ref = Card.calculate_seal
 function Card:calculate_seal(context, ...)
-	SMODS.push_to_context_stack(context, "overrides.lua : Card.calculate_seal")
+	SMODS.push_to_context_stack(context, self, "overrides.lua : Card.calculate_seal")
 	local eff, post = calculate_seal_ref(self, context, ...)
-	SMODS.pop_from_context_stack(context, "overrides.lua : Card.calculate_seal")
+	SMODS.pop_from_context_stack(context, self, "overrides.lua : Card.calculate_seal")
 	return eff, post
 end
 
 local calculate_joker_ref = Card.calculate_joker
 function Card:calculate_joker(context, ...)
-	SMODS.push_to_context_stack(context, "overrides.lua : Card.calculate_joker")
+	SMODS.push_to_context_stack(context, self, "overrides.lua : Card.calculate_joker")
 	local eff, post = calculate_joker_ref(self, context, ...)
-	SMODS.pop_from_context_stack(context, "overrides.lua : Card.calculate_joker")
+	SMODS.pop_from_context_stack(context, self, "overrides.lua : Card.calculate_joker")
 	return eff, post
 end
 

@@ -793,6 +793,14 @@ function SMODS.push_to_context_stack(context, func) end
 --- Pop a context from the SMODS.context_stack. (Removes 1 from .count)
 function SMODS.pop_from_context_stack(context, func) end
 
+---@param stack_index integer? Optionally the index of the context in the SMODS.context_stack from which to return the latest evaluee. -1 for previous context.
+--- Returns the latest evaluee of the context at stack_index in the SMODS.context_stack
+function SMODS.get_context_evaluee(stack_index) end
+
+---@param previous_context boolean? Whether or not to check the current context's previous evaluee, skipped if this is true.
+--- Returns the previous evaluee, first checking the current SMODS.context_stack entry's previous evaluee and then checking the previous entry's latest evaluee.
+function SMODS.get_previous_evaluee() end
+
 ---@return CalcContext|table|nil
 --- Returns the second to last context from the SMODS.context_stack.
 --- Useful for Seals/Enhancements determining whether a playing card was being individually evaluated,
