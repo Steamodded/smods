@@ -2919,56 +2919,149 @@ G.FUNCS.blind_chip_UI_scale = function(e)
     e.config.scale = scale_number(blind_chips, 0.7, 100000)
 end
 
-	-- patch all shaders on GLSL ES
-	-- stub shader
-    SMODS.shader_stub = love.graphics.newShader [[
-    vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _) {
-        return Texel(texture, tc);
-    }
-    ]]
-    local mt = getmetatable(SMODS.shader_stub)
-	local send = mt.send
-	local sendColor = mt.sendColor
-	function mt:send(...)
-		if self == SMODS.shader_stub then
-			return
-		end
-		send(self, ...)
+-- patch all shaders on GLSL ES
+-- stub shader
+SMODS.shader_stub = love.graphics.newShader [[
+vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _) {
+	return Texel(texture, tc);
+}
+]]
+local mt = getmetatable(SMODS.shader_stub)
+local send = mt.send
+local sendColor = mt.sendColor
+function mt:send(...)
+	if self == SMODS.shader_stub then
+		return
 	end
-	function mt:sendColor(...)
-		if self == SMODS.shader_stub then
-			return
-		end
-		sendColor(self, ...)
+	send(self, ...)
+end
+function mt:sendColor(...)
+	if self == SMODS.shader_stub then
+		return
+	end
+	sendColor(self, ...)
+end
+
+-- this is where the patching happens
+-- code that gets here is usually already patched with its own buffer name. here we patch it as a second catchall buffer name
+local newShader = love.graphics.newShader
+function love.graphics.newShader(code, other_code)
+	-- this only supports a single argument passed as code, file names are not supported
+	-- only when we're running GLSL ES do we need to patch
+	if other_code or not string.find(code,'\n') or love.graphics.getRendererInfo() ~= "OpenGL ES" then
+		return newShader(code,other_code)
 	end
 
-    -- this is where the patching happens
-	-- code that gets here is usually already patched with its own buffer name. here we patch it as a second catchall buffer name
-    local newShader = love.graphics.newShader
-    function love.graphics.newShader(code, other_code)
-		-- this only supports a single argument passed as code, file names are not supported
-		-- only when we're running GLSL ES do we need to patch
-        if other_code or not string.find(code,'\n') or love.graphics.getRendererInfo() ~= "OpenGL ES" then
-			return newShader(code,other_code)
-		end
+	-- we can't patch if lovely is too old
+	local lovely_success, lovely = pcall(require, "lovely")
+	if not lovely_success then return newShader(code) end
 
-        -- we can't patch if lovely is too old
-        local lovely_success, lovely = pcall(require, "lovely")
-        if not lovely_success then return newShader(code) end
+	local patched_code = assert(lovely.apply_patches(
+		"GLSL_ES_PATCHES.fs",
+		code
+	))
+	local success, shader = pcall(newShader, patched_code)
+	if success then return shader end
 
-        local patched_code = assert(lovely.apply_patches(
-            "GLSL_ES_PATCHES.fs",
-            code
-        ))
-        local success, shader = pcall(newShader, patched_code)
-        if success then return shader end
+	-- -- Couldn't compile with patches. Try the original
+	local old_success, old_shader = pcall(newShader, code)
+	if old_success then return old_shader end
 
-		-- -- Couldn't compile with patches. Try the original
-		local old_success, old_shader = pcall(newShader, code)
-		if old_success then return old_shader end
+	-- Neither worked
+	sendWarnMessage(("Failed to compile or patch shader for GLSL ES! Replacing affected shader with a stub that does nothing. To test on desktop, set LOVE_GRAPHICS_USE_OPENGLES=1 in your environment variables to run GLSL ES if supported. Patched shader code:\n%s\nError:\n%s"):format(patched_code, shader), "Shader")
 
-        -- Neither worked
-		sendWarnMessage(("Failed to compile or patch shader for GLSL ES! Replacing affected shader with a stub that does nothing. To test on desktop, set LOVE_GRAPHICS_USE_OPENGLES=1 in your environment variables to run GLSL ES if supported. Patched shader code:\n%s\nError:\n%s"):format(patched_code, shader), "Shader")
+	return SMODS.shader_stub
+end
 
-        return SMODS.shader_stub
+
+-- AnimatedSprite : Use obj.sprite_args and allow wrapping / overlapping frames / StateSprite args like flipped_h/v, frame_duration(s) and frame_order.
+function AnimatedSprite:init(X, Y, W, H, new_sprite_atlas, sprite_pos, args)
+	self.sprite_args = args or {}
+    Sprite.init(self,X, Y, W, H, new_sprite_atlas, sprite_pos)
+    self.offset = {x = 0, y = 0}
+	self.sprite_args.start_pos = self.sprite_args.start_pos or {}
+	self.sprite_args.start_pos.x = self.sprite_args.start_pos.x or sprite_pos.x or 0
+	self.sprite_args.start_pos.y = self.sprite_args.start_pos.y or sprite_pos.y or 0
+	self.flipped_h = self.sprite_args.flipped_h or false
+    self.flipped_v = self.sprite_args.flipped_v or false
+
+    table.insert(G.ANIMATIONS, self)
+    if getmetatable(self) == AnimatedSprite then 
+        table.insert(G.I.SPRITE, self)
     end
+end
+
+function AnimatedSprite:animate()
+    local frame_finished = (math.floor(G.ANIMATION_FPS*(G.TIMERS.REAL - self.offset_seconds) / self.current_animation.frame_duration)) > 0
+    if frame_finished then
+        self.current_animation.current = SMODS.get_new_frame(self, self.sprite_args.frame_order)
+        self.current_animation.frame_duration = (self.sprite_args.frame_durations or {})[self.current_animation.current] or self.sprite_args.frame_duration or 1
+        local _x = self.animation.w * ((self.sprite_args.start_pos.x + self.current_animation.current) % self.atlas.columns)
+        local _y = self.animation.h * (self.sprite_args.start_pos.y + math.floor(self.current_animation.current / self.atlas.columns))
+        self.sprite:setViewport(
+            _x,
+            _y,
+            self.animation.w,
+            self.animation.h
+        )
+        self.offset_seconds = G.TIMERS.REAL
+    end
+    if self.float then 
+        self.T.r = 0.02*math.sin(2*G.TIMERS.REAL+self.T.x)
+        self.offset.y = -(1+0.3*math.sin(0.666*G.TIMERS.REAL+self.T.y))*self.shadow_parrallax.y
+        self.offset.x = -(0.7+0.2*math.sin(0.666*G.TIMERS.REAL+self.T.x))*self.shadow_parrallax.x
+    end
+end
+
+function AnimatedSprite:draw_self()
+    if not self.states.visible then return end
+
+    prep_draw(self, 1)
+    love.graphics.scale(1/self.scale_mag)
+    love.graphics.setColor(G.C.WHITE)
+    love.graphics.draw(
+        self.atlas.image, 
+        self.sprite,
+        0, 0,
+        0,
+        self.VT.w/(self.T.w) * (self.flipped_h and -1 or 1),
+        self.VT.h/(self.T.h) * (self.flipped_v and -1 or 1)
+    )
+    love.graphics.pop()
+end
+
+function AnimatedSprite:set_sprite_pos(sprite_pos)
+    self.animation = {
+        x= sprite_pos and sprite_pos.x or 0,
+        y= sprite_pos and sprite_pos.y or 0,
+        frames= self.sprite_args.frames or self.atlas.frames, current=0,
+        w=self.scale.x, h=self.scale.y}
+
+    self.current_animation = {
+        current = 0,
+        frames = self.animation.frames,
+        w = self.animation.w,
+        h = self.animation.h,
+		frame_duration = (self.sprite_args.frame_durations or {})[0] or self.sprite_args.frame_duration or 1
+	}
+
+    self.image_dims = self.image_dims or {}
+    self.image_dims[1], self.image_dims[2] = self.atlas.image:getDimensions()
+
+    self.sprite = love.graphics.newQuad( 
+		self.animation.w*self.animation.x,
+        self.animation.h*self.animation.y,
+		self.animation.w,
+		self.animation.h,
+		self.image_dims[1], self.image_dims[2])
+    self.offset_seconds = G.TIMERS.REAL
+end
+
+function AnimatedSprite:get_pos_pixel()
+    self.RETS.get_pos_pixel = self.RETS.get_pos_pixel or {}
+    self.RETS.get_pos_pixel[1] = ((self.sprite_args.start_pos.x + self.current_animation.current) % self.atlas.columns)
+    self.RETS.get_pos_pixel[2] = (self.sprite_args.start_pos.y + math.floor(self.current_animation.current / self.atlas.columns))
+    self.RETS.get_pos_pixel[3] = self.animation.w
+    self.RETS.get_pos_pixel[4] = self.animation.h
+    return self.RETS.get_pos_pixel
+end

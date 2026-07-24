@@ -504,6 +504,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
         pre_inject_class = function(self)
             G:set_render_settings() -- restore originals first in case a texture pack was disabled
+            for _, atlas in pairs(G.ASSET_ATLAS) do
+                atlas.columns = atlas.image:getWidth() / atlas.px
+                atlas.rows = atlas.image:getHeight() / atlas.py
+            end
+            for key, atlas in pairs(G.ANIMATION_ATLAS) do
+                atlas.columns = atlas.image:getWidth() / atlas.px
+                atlas.rows = atlas.image:getHeight() / atlas.py
+            end
         end,
         post_inject_class = function(self)
             for _, v in pairs(G.I.SPRITE) do

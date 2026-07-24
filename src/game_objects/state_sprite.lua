@@ -97,6 +97,17 @@ function StateSprite:load_states(states)
     end
 end
 
+-- Helper function used by AnimatedSprite:animate() and StateSprite:animate()
+function SMODS.get_new_frame(animated_sprite, frame_order)
+    if type(frame_order) == "table" then
+        animated_sprite.current_animation.frame_index = ((animated_sprite.current_animation.frame_index or 0) + 1) % animated_sprite.current_animation.frames + 1 -- +1 because Lua
+        return frame_order[animated_sprite.current_animation.frame_index] or animated_sprite.current_animation.current
+    elseif frame_order == "random" then
+        return math.random(0, animated_sprite.current_animation.frames - 1)
+    end
+    return ((animated_sprite.current_animation.current + 1) % animated_sprite.current_animation.frames)
+end
+
 function StateSprite:animate()
     if not self.state then return end
     if self.state.exit_to and self.current_animation.elapsed >= self.current_animation.frames then
@@ -106,16 +117,9 @@ function StateSprite:animate()
             self:set_state(self.state.exit_to)
         end
     end
-    local frame_finished = (math.floor(G.ANIMATION_FPS*(G.TIMERS.REAL - self.offset_seconds) / (self.current_animation.frame_duration or self.state.default_frame_duration or 1))) > 0
+    local frame_finished = (math.floor(G.ANIMATION_FPS*(G.TIMERS.REAL - self.offset_seconds) / self.current_animation.frame_duration)) > 0
     if frame_finished then
-        local new_frame
-        if type(self.state.frame_order) == "table" then
-            self.current_animation.frame_index = (self.current_animation.frame_index + 1) % self.current_animation.frames
-            new_frame = self.state.frame_order[self.current_animation.frame_index] or self.current_animation.current
-        elseif self.state.frame_order == "random" then
-            new_frame = math.random(0, self.current_animation.frames - 1)
-        end
-        self.current_animation.current = new_frame or ((self.current_animation.current + 1) % self.current_animation.frames)
+        self.current_animation.current = SMODS.get_new_frame(self, self.state.frame_order)
         self.current_animation.elapsed = self.current_animation.elapsed + 1
         self.current_animation.frame_duration = (self.state.frame_durations or {})[self.current_animation.current] or self.state.default_frame_duration or 1
         local _x = self.animation.w * ((self.states_offset.x + self.state.start_pos.x + self.current_animation.current) % self.atlas.columns)
@@ -142,8 +146,6 @@ function StateSprite:set_sprite_pos(sprite_pos)
         frames = self.state and self.state.frames or 1, current = 0,
         w = self.scale.x, h = self.scale.y
     }
-
-    self.frame_offset = 0 -- Unused
 
     self.current_animation = {
         current = 0,
