@@ -2982,7 +2982,7 @@ function AnimatedSprite:init(X, Y, W, H, new_sprite_atlas, sprite_pos, args)
 	self.sprite_args.start_pos = self.sprite_args.start_pos or {}
 	self.sprite_args.start_pos.x = self.sprite_args.start_pos.x or sprite_pos.x or 0
 	self.sprite_args.start_pos.y = self.sprite_args.start_pos.y or sprite_pos.y or 0
-	self.sprite_args.frames = self.sprite_args.frames or self.sprite_args.end_pos and (self.sprite_args.end_pos.x - self.sprite_args.start_pos.x + (self.sprite_args.end_pos.y - self.sprite_args.start_pos.y) * self.atlas.columns + 1) or self.atlas.frames
+	self.sprite_args.frames = self.sprite_args.frames or self.sprite_args.end_pos and ((self.sprite_args.end_pos.x or self.sprite_args.start_pos.x) - self.sprite_args.start_pos.x + ((self.sprite_args.end_pos.y or self.sprite_args.start_pos.y) - self.sprite_args.start_pos.y) * self.atlas.columns + 1) or self.atlas.frames
 	self.flipped_h = self.sprite_args.flipped_h or false
     self.flipped_v = self.sprite_args.flipped_v or false
 
