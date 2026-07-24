@@ -3299,7 +3299,7 @@ SMODS.UndiscoveredCompat = {
         set = 'Enhanced',
         class_prefix = 'm',
         atlas = 'centers',
-        sprite_args = nil, -- Used by StateSprite (when the atlas' atlas_table == "STATE_ATLAS"), {states=..., states_offset=..., default_state=...}
+        sprite_args = nil, -- Used by StateSprite (when the atlas' atlas_table == "STATE_ATLAS"), see state_sprite.lua for table structure
         pos = { x = 0, y = 0 },
         required_params = {
             'key',

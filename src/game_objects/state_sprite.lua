@@ -24,18 +24,18 @@ StateSprite = AnimatedSprite:extend()
     },
     wakey = {
         start_pos = {x = 4},        (y is set to 0)
-        frames = 4,                 (end_pos is set to start_pos with .x + frames)
+        frames = 4,                 (end_pos is set to start_pos with .x + frames (wraps correctly))
         default_frame_duration = 3, (all frames last 3 times longer (0.3 seconds with default G.ANIMATION_FPS == 10))
         exit_to = "lookey",         (after one iteration, sets state to this value)
     },
     lookey = {
         flipped_h = true, (start_pos is set to {x = 0, y = 0}, end_pos is set to start_pos => this state is a single frame "animation" at x = 0, y = 0, and flipped horizontally and vertically)
         flipped_v = true,
-        frame_durations = {[1] = 3} (the first frame lasts three times longer)
+        frame_durations = {[1] = 3} (the first frame lasts three times longer) (ignore that this example has only one frame)
     }
 }
 ]]
--- To change state, call StateSprite:set_state(state_name)
+-- To change state, call StateSprite:set_state(state_name) / Card:set_sprite_state()
 function StateSprite:init(X, Y, W, H, new_sprite_atlas, _pos, args)
     AnimatedSprite.init(self, X, Y, W, H, new_sprite_atlas, {x=0, y=0})
     args = args or {}
@@ -76,7 +76,7 @@ function StateSprite:load_states(states)
     self.a_states = {}
     for key, state in pairs(states) do
         state.start_pos = state.start_pos and {x = state.start_pos.x or 0, y = state.start_pos.y or 0} or {x = 0, y = 0}
-        state.frames = state.frames or ((state.end_pos or state.start_pos).x - state.start_pos.x + ((state.end_pos.y or state.start_pos).y - state.start_pos.y) * self.atlas.columns + 1)
+        state.frames = state.frames or ((state.end_pos or state.start_pos).x - state.start_pos.x + ((state.end_pos or state.start_pos).y - state.start_pos.y) * self.atlas.columns + 1)
         state.key = key
         if type(state.frame_order) == "string" then
             local keymap = {
@@ -151,7 +151,7 @@ function StateSprite:set_sprite_pos(sprite_pos)
         w = self.animation.w,
         h = self.animation.h,
         elapsed = 0,
-        frame_duration = (self.state.frame_durations or {})[0] or self.state.default_frame_duration or 1
+        frame_duration = (self.state and self.state.frame_durations or {})[0] or self.state and self.state.default_frame_duration or 1
     }
 
     self.image_dims = self.image_dims or {}
