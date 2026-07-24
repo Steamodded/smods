@@ -3833,7 +3833,7 @@ function SMODS.create_sprite(X, Y, W, H, atlas, pos, sprite_args)
     atlas = SMODS.get_atlas(atlas_key)
     assert(atlas, "SMODS.create_sprite called with invalid atlas key: "..atlas_key)
     local sprite_class = SMODS.get_atlas_sprite_class(atlas_key)
-    if sprite_class == StateSprite then
+    if sprite_class ~= Sprite then
         return sprite_class(X, Y, W, H, atlas, pos, sprite_args)
     end
     return sprite_class(X, Y, W, H, atlas, pos)
