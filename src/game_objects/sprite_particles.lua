@@ -19,7 +19,7 @@ SMODS.SpriteParticle = SMODS.GameObject:extend {
     shader = nil,
     sound = nil, -- sound code, table<key=key, per=per, vol=vol>, or func(self, sprite, args)
     life_time = nil,
-    remove_condition = function (self, sprite, card)
+    should_remove = function (self, sprite, card)
         if not self.life_time then return true end
         local speed = sprite.game_speed_dependent and G.SETTINGS.GAMESPEED or 1
         if G.TIMERS.REAL - sprite.spawn_time > self.life_time / speed  then
@@ -79,7 +79,7 @@ SMODS.SpriteParticle = SMODS.GameObject:extend {
         sprite:remove()
     end,
     update = function (self, sprite, card) 
-        if self:remove_condition(sprite, card) then
+        if self:should_remove(sprite, card) then
             self:remove_sprite(sprite, card)
         end
     end,
