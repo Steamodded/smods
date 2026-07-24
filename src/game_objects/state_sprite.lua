@@ -189,6 +189,6 @@ function Card:set_sprite_state(new_state)
     if self.children.center:is(StateSprite) then
         return self.children.center:set_state(new_state)
     else
-        sendWarnMessage("Card:card_set_sprite_state() called on card with no StateSprite", "utils")
+        sendWarnMessage("Card:card_set_sprite_state() called on card with no StateSprite as .children.center", "utils")
     end
 end
