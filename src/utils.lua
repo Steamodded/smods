@@ -4282,8 +4282,8 @@ function UIElement:set_element_shader(shader, send, shadow)
         extra = { shadow },
         default_send_func = function(element, shader, shadow)
             local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
-
-            G.SHADERS[shader]:send("uie_details", {element.VT.x * tile_scale, element.VT.y * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
+            
+            G.SHADERS[shader]:send("uie_details", {(element.container.T.x + element.VT.x) * tile_scale, (element.container.T.y + element.VT.y) * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
             G.SHADERS[shader]:send("uie_scale", element.VT.scale)
             G.SHADERS[shader]:send("uie_rot", element.VT.r)
         end
@@ -4298,7 +4298,7 @@ function UIElement:set_text_shader(shader, send, shadow)
         default_send_func = function(element, shader, shadow)
             local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
 
-            G.SHADERS[shader]:send("text_details", {element.VT.x * tile_scale, element.VT.y * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
+            G.SHADERS[shader]:send("text_details", {(element.container.T.x + element.VT.x) * tile_scale, (element.container.T.y + element.VT.y) * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
             G.SHADERS[shader]:send("text_scale", element.VT.scale)
             G.SHADERS[shader]:send("text_rot", element.VT.r)
             G.SHADERS[shader]:send("text_shadow", not not shadow)
