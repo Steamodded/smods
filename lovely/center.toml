@@ -66,7 +66,18 @@ payload = '''
     if self.ability.set ~= "Enhanced" and obj.calculate and type(obj.calculate) == 'function' then
         local o, t = obj:calculate(self, context)
         if o or t then return o, t end
-    end'''
+    end
+    if self.ability.set ~= "Enhanced" and context.scaling_card and obj.calc_scaling and type(obj.calc_scaling) == 'function' then
+        sendWarnMessage("Usage of a `calc_scaling` function is deprecated. Please use `context.scaling_card` in a `calculate` function instead.", "Calculation")
+        local o,t = obj:calc_scaling(self, context.card, context.value, context.scalar_value, context)
+        if o or t then return o, t end
+    end
+    if self.ability.set ~= "Enhanced" and context.resetting_card and obj.calc_resetting and type(obj.calc_resetting) == 'function' then
+        sendWarnMessage("Usage of a `calc_resetting` function is deprecated. Please use `context.resetting_card` in a `calculate` function instead.", "Calculation")
+        local o,t = obj:calc_resetting(self, context.card, context.initial_value, context.reset_value, context)
+        if o or t then return o, t end
+    end
+'''
 match_indent = true
 
 # Card:update()
