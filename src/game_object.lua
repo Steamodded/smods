@@ -425,6 +425,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     ----- API CODE GameObject.Atlas
     -------------------------------------------------------------------------------------------------
 
+    local atlas_table_map = {
+        ASSET_ATLAS = "ASSET_ATLAS",
+        ANIMATION_ATLAS = "ANIMATION_ATLAS",
+        STATE_ATLAS = "ANIMATION_ATLAS",
+    }
+
     SMODS.Atlases = {}
     SMODS.Atlas = SMODS.GameObject:extend {
         obj_table = SMODS.Atlases,
@@ -486,7 +492,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         	end
             self.image = love.graphics.newImage(self.image_data,
                 { mipmaps = true, dpiscale = G.SETTINGS.GRAPHICS.texture_scaling })
-            G[self.atlas_table][self.key_noloc or self.key] = self
+            self.columns = self.image:getWidth() / self.px
+            self.rows = self.image:getHeight() / self.py
+            G[atlas_table_map[self.atlas_table]][self.key_noloc or self.key] = self
 
             local mipmap_level = SMODS.config.graphics_mipmap_level_options[SMODS.config.graphics_mipmap_level]
             if not self.disable_mipmap and mipmap_level and mipmap_level > 0 then
@@ -496,6 +504,14 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
         pre_inject_class = function(self)
             G:set_render_settings() -- restore originals first in case a texture pack was disabled
+            for _, atlas in pairs(G.ASSET_ATLAS) do
+                atlas.columns = atlas.image:getWidth() / atlas.px
+                atlas.rows = atlas.image:getHeight() / atlas.py
+            end
+            for key, atlas in pairs(G.ANIMATION_ATLAS) do
+                atlas.columns = atlas.image:getWidth() / atlas.px
+                atlas.rows = atlas.image:getHeight() / atlas.py
+            end
         end,
         post_inject_class = function(self)
             for _, v in pairs(G.I.SPRITE) do
@@ -729,7 +745,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
                     G.STAGE_OBJECT_INTERRUPT = true
-                    G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos)
+                    G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos, self.sprite_args)
                     G.STAGE_OBJECT_INTERRUPT = false
                     G.sticker_map[self.key] = self.key:sub(7)
                 else
@@ -1826,7 +1842,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         inject = function(self)
             if self.overlay_pos then
                 G.STAGE_OBJECT_INTERRUPT = true
-                self.overlay_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.overlay_pos)
+                self.overlay_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.overlay_pos, self.sprite_args)
                 G.STAGE_OBJECT_INTERRUPT = false
                 self.no_overlay = true
             end
@@ -1883,7 +1899,7 @@ SMODS.UndiscoveredCompat = {
         inject = function(self)
             G.P_SEALS[self.key] = self
             G.STAGE_OBJECT_INTERRUPT = true
-            G.shared_seals[self.key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas) or SMODS.get_atlas('centers'), self.pos)
+            G.shared_seals[self.key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas) or SMODS.get_atlas('centers'), self.pos, self.sprite_args)
             G.STAGE_OBJECT_INTERRUPT = false
             self.badge_to_key[self.key:lower() .. '_seal'] = self.key
             SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
@@ -3153,7 +3169,7 @@ SMODS.UndiscoveredCompat = {
         end,
         inject = function(self)
             G.STAGE_OBJECT_INTERRUPT = true
-            self.sticker_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.pos)
+            self.sticker_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.pos, self.sprite_args)
             G.STAGE_OBJECT_INTERRUPT = false
             G.shared_stickers[self.key] = self.sticker_sprite
         end,
@@ -3289,6 +3305,7 @@ SMODS.UndiscoveredCompat = {
         set = 'Enhanced',
         class_prefix = 'm',
         atlas = 'centers',
+        sprite_args = nil, -- Used by StateSprite (when the atlas' atlas_table == "STATE_ATLAS"), see state_sprite.lua for table structure
         pos = { x = 0, y = 0 },
         required_params = {
             'key',
@@ -4041,6 +4058,12 @@ SMODS.UndiscoveredCompat = {
         text = '^'
     }
 
+
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT Object.Node.Moveable.Sprite.AnimatedSprite.StateSprite
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/game_objects/state_sprite.lua'), ('=[SMODS _ "src/game_objects/state_sprite.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
