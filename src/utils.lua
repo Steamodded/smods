@@ -2363,6 +2363,7 @@ function SMODS.get_card_areas(_type, _context)
     end
     if _type == 'jokers' then
         local t = {G.jokers, G.consumeables, G.vouchers}
+         if SMODS.currently_used_consumable and not SMODS.currently_used_consumable.area then table.insert(t, {cards = {SMODS.currently_used_consumable}}) end
         -- TARGET: add your own CardAreas for joker evaluation
         return t
     end
