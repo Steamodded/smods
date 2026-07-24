@@ -233,27 +233,7 @@ v:update(dt*self.SPEEDFACTOR, self.real_dt)
 '''
 
 
-# Add underline property for text
-[[patches]]
-[patches.pattern]
-target = 'engine/ui.lua'
-match_indent = true
-position = 'before'
-pattern = '''
---Draw the 'chosen triangle'
-'''
-payload = '''
-if self.config.underline and self.config.underline[4] > 0.01 then 
-    prep_draw(self, 1)
-    love.graphics.scale(1/(G.TILESIZE))
-    love.graphics.setLineWidth(1)
-    love.graphics.setColor(self.config.underline)
-    self:draw_pixellated_under('line', parallax_dist)
-    love.graphics.pop()
-end
-'''
-
-# Add strikethrough property for text
+# Add under-/overline and strikethrough properties for text
 [[patches]]
 [patches.pattern]
 target = 'engine/ui.lua'
@@ -269,6 +249,22 @@ if self.config.strikethrough and self.config.strikethrough[4] > 0.01 then
     love.graphics.setLineWidth(1)
     love.graphics.setColor(self.config.strikethrough)
     self:draw_pixellated_strikethough('line', parallax_dist)
+    love.graphics.pop()
+end
+if self.config.underline and self.config.underline[4] > 0.01 then 
+    prep_draw(self, 1)
+    love.graphics.scale(1/(G.TILESIZE))
+    love.graphics.setLineWidth(1)
+    love.graphics.setColor(self.config.underline)
+    self:draw_pixellated_under('line', parallax_dist)
+    love.graphics.pop()
+end
+if self.config.overline and self.config.overline[4] > 0.01 then
+    prep_draw(self, 1)
+    love.graphics.scale(1/(G.TILESIZE))
+    love.graphics.setLineWidth(1)
+    love.graphics.setColor(self.config.overline)
+    self:draw_pixellated_over('line', parallax_dist)
     love.graphics.pop()
 end
 '''
@@ -363,3 +359,16 @@ payload = '''
 if v.colour then inner_colour = v.colour or nil end
 '''
 match_indent = true
+
+# Fix empty loc tags being ignored
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if str_parts[1] then parsed_line[#parsed_line+1] = {strings = str_parts, control = control or {}} end
+'''
+payload = '''
+if str_parts[1] or control.element then parsed_line[#parsed_line+1] = {strings = str_parts, control = control or {}} end
+'''

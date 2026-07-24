@@ -146,6 +146,7 @@ function loadMods(modsDirectory)
         priority = { type = 'number', default = 0 },
         badge_colour = { type = 'string', check = function(mod, s) local success, hex = pcall(sUtil.hex, s); mod.badge_colour = success and hex or sUtil.hex('666665FF') end },
         badge_text_colour = { type = 'string', check = function(mod, s) local success, hex = pcall(sUtil.hex, s); mod.badge_text_colour = success and hex or sUtil.hex('FFFFFFFF') end},
+        badge_shader = { type = 'string', },
         prefix = { type = 'string', required = true, check = function(mod, s) if string.find(s, '%$') then error("Disallowed use of reserved prefix "..s) end end },
         version = { type = 'string', check = function(mod, x) return x and sUtil.V(x):is_valid() and x or '0.0.0' end },
         dump_loc = { type = 'boolean' },
@@ -558,7 +559,7 @@ function loadMods(modsDirectory)
         if mod.can_load  ~= nil then return mod.can_load end
         seen = seen or {}
         local can_load = true
-        if seen[mod.id] then return true end
+        if seen[mod.id] ~= nil then return seen[mod.id] end
         seen[mod.id] = true
         local load_issues = {
             dependencies = {},
@@ -675,6 +676,7 @@ function loadMods(modsDirectory)
         end
         if not can_load then
             mod.load_issues = load_issues
+            seen[mod.id] = false
             return false
         end
         for _, x in ipairs(mod.dependencies or {}) do
@@ -880,7 +882,7 @@ function SMODS.load_file(path, id)
     if not mod then
         error("Mod not found. Ensure you are passing the correct ID.")
     end
-    local file_path = mod.path .. path
+    local file_path = NFS.getNormalizedPath(mod.path .. path)
     local file_content, err = NFS.read(file_path)
     if not file_content then return  nil, "Error reading file '" .. path .. "' for mod with ID '" .. mod.id .. "': " .. err end
     local chunk, err = load(file_content, "=[SMODS " .. mod.id .. ' "' .. path .. '"]')
