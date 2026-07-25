@@ -1893,6 +1893,7 @@ function get_front_spriteinfo(_front)
 			local deckSkin = SMODS.DeckSkins[collab]
 			if deckSkin then
 				if deckSkin.outdated then
+					local sprite_args = (deckSkin.sprite_args_by_value or {})[_front.value]
 					local hasRank = false
 					for i = 1, #deckSkin.ranks do
 						if deckSkin.ranks[i] == _front.value then hasRank = true break end
@@ -1901,24 +1902,25 @@ function get_front_spriteinfo(_front)
 						local atlas = SMODS.get_atlas(G.SETTINGS.colour_palettes[_front.suit] == 'hc' and deckSkin.hc_atlas or deckSkin.lc_atlas)
 						if atlas then
 							if deckSkin.pos_style == 'collab' then
-								return atlas, G.COLLABS.pos[_front.value], (deckSkin.sprite_args_by_value or {})[_front.value]
+								return atlas, G.COLLABS.pos[_front.value],sprite_args
 							elseif deckSkin.pos_style == 'suit' then
-								return atlas, { x = _front.pos.x, y = 0}, (deckSkin.sprite_args_by_value or {})[_front.value]
+								return atlas, { x = _front.pos.x, y = 0}, sprite_args
 							elseif deckSkin.pos_style == 'deck' then
-								return atlas, _front.pos, (deckSkin.sprite_args_by_value or {})[_front.value]
+								return atlas, _front.pos, sprite_args
 							elseif deckSkin.pos_style == 'ranks' or nil then
 								for i, rank in ipairs(deckSkin.ranks) do
 									if rank == _front.value then
-										return atlas, { x = i - 1, y = 0}, (deckSkin.sprite_args_by_value or {})[_front.value]
+										return atlas, { x = i - 1, y = 0}, sprite_args
 									end
 								end
 							end
 						end
 					end
                     local atlas = SMODS.get_atlas(G.SETTINGS.colour_palettes[_front.suit] == 'hc' and _front.hc_atlas or _front.lc_atlas or {}) or SMODS.get_atlas(_front.atlas) or SMODS.get_atlas("cards_"..(G.SETTINGS.colour_palettes[_front.suit] == 'hc' and 2 or 1))
-					return atlas, _front.pos, (deckSkin.sprite_args_by_value or {})[_front.value]
+					return atlas, _front.pos, sprite_args
 				else
 					local palette = deckSkin.palette_map and deckSkin.palette_map[G.SETTINGS.colour_palettes[_front.suit] or ''] or (deckSkin.palettes or {})[1]
+					local sprite_args = (palette.sprite_args_by_value or {})[_front.value]
 					local hasRank = false
 					for i = 1, #palette.ranks do
 						if palette.ranks[i] == _front.value then hasRank = true break end
@@ -1931,33 +1933,33 @@ function get_front_spriteinfo(_front)
 									atlas = SMODS.get_atlas(palette.pos_style[_front.value].atlas)
 								end
 								if palette.pos_style[_front.value].pos then
-									return atlas, palette.pos_style[_front.value].pos, (palette.sprite_args_by_value or {})[_front.value]
+									return atlas, palette.pos_style[_front.value].pos, sprite_args
 								end
 							elseif palette.pos_style.fallback_style then
 								if palette.pos_style.fallback_style == 'collab' then
-									return atlas, G.COLLABS.pos[_front.value], (palette.sprite_args_by_value or {})[_front.value]
+									return atlas, G.COLLABS.pos[_front.value], sprite_args
 								elseif palette.pos_style.fallback_style == 'suit' then
-									return atlas, { x = _front.pos.x, y = 0}, (palette.sprite_args_by_value or {})[_front.value]
+									return atlas, { x = _front.pos.x, y = 0}, sprite_args
 								elseif palette.pos_style.fallback_style == 'deck' then
-									return atlas, _front.pos, (palette.sprite_args_by_value or {})[_front.value]
+									return atlas, _front.pos, sprite_args
 								end
 							end
 						elseif palette.pos_style == 'collab' then
-							return atlas, G.COLLABS.pos[_front.value], (palette.sprite_args_by_value or {})[_front.value]
+							return atlas, G.COLLABS.pos[_front.value], sprite_args
 						elseif palette.pos_style == 'suit' then
-							return atlas, { x = _front.pos.x, y = 0}, (palette.sprite_args_by_value or {})[_front.value]
+							return atlas, { x = _front.pos.x, y = 0}, sprite_args
 						elseif palette.pos_style == 'deck' then
-							return atlas, _front.pos, (palette.sprite_args_by_value or {})[_front.value]
+							return atlas, _front.pos, sprite_args
 						elseif palette.pos_style == 'ranks' or nil then
 							for i, rank in ipairs(palette.ranks) do
 								if rank == _front.value then
-									return atlas, { x = i - 1, y = 0}, (palette.sprite_args_by_value or {})[_front.value]
+									return atlas, { x = i - 1, y = 0}, sprite_args
 								end
 							end
 						end
 					end
                     local atlas = SMODS.get_atlas(palette.hc_default and _front.hc_atlas or _front.lc_atlas or {}) or SMODS.get_atlas(_front.atlas) or SMODS.get_atlas("cards_"..(palette.hc_default and 2 or 1))
-					return atlas, _front.pos, (palette.sprite_args_by_value or {})[_front.value]
+					return atlas, _front.pos, sprite_args
 				end
 			end
 		end
