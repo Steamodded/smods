@@ -2,7 +2,7 @@ SMODS.SPRITE_PARTICLES = {}
 
 local _sprite_update_hook = function (self, ...)
     local obj = SMODS.SpriteParticles[self.sprite_particle_key]
-    Sprite.update(self, ...)
+    getmetatable(self).update(self, ...)
     obj:update(self, self.particle_parent)
 end
 
@@ -39,7 +39,7 @@ SMODS.SpriteParticle = SMODS.GameObject:extend {
         }
         local x = (card and card.VT.x or args.x or 0) + offset.x
         local y = (card and card.VT.y or args.y or 0) + offset.y
-        local sprite = SMODS.create_sprite(x, y, w, h, self.atlas, self.pos)
+        local sprite = SMODS.create_sprite(x, y, w, h, self.atlas, self.pos, args.sprite_args)
         sprite.sprite_particle_key = self.key
         sprite.custom_draw = true
         sprite.update = _sprite_update_hook
