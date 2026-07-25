@@ -29,29 +29,26 @@ StateSprite = AnimatedSprite:extend()
         exit_to = "lookey",         (after one iteration, sets state to this value)
     },
     lookey = {
-        flipped_h = true, (start_pos is set to {x = 0, y = 0}, end_pos is set to start_pos => this state is a single frame "animation" at x = 0, y = 0, and flipped horizontally and vertically)
+        (start_pos is set to {x = 0, y = 0}, end_pos is set to start_pos => this state is a single frame "animation" at x = 0, y = 0)
+        flipped_h = true, (flipped_h/v makes the sprite be drawn flipped (by calling love.graphics.draw() with a width/height multiplied by -1), it does not affect state/frame order.)
         flipped_v = true,
-        frame_durations = {[1] = 3} (the first frame lasts three times longer) (ignore that this example has only one frame)
+        frame_durations = {[1] = 3} (the first frame lasts three times longer) (ignore that this example has only one frame) (frame indices start at 1 like Lua!!)
     }
 }
 ]]
 -- To change state, call StateSprite:set_state(state_name) / Card:set_sprite_state()
 function StateSprite:init(X, Y, W, H, new_sprite_atlas, _pos, args)
-    AnimatedSprite.init(self, X, Y, W, H, new_sprite_atlas, {x=0, y=0})
-    args = args or {}
+    self.sprite_args = args or {}
+    AnimatedSprite.init(self, X, Y, W, H, new_sprite_atlas, {x=0, y=0}, args)
 
-    if not args.states or not next(args.states) then
+    if not self.sprite_args.states or not next(self.sprite_args.states) then
         sendWarnMessage(string.format("StateSprite initialized without states, atlas = '%s'", new_sprite_atlas.name), "utils")
     else
-        self.sprite_args = args
-        self.states_offset = args.states_offset and {x = args.states_offset.x or 0, y = args.states_offset.y or 0} or {x = 0, y = 0}
-        self.default_state = args.default_state or next(args.states)
-        self:load_states(args.states)
+        self.states_offset = self.sprite_args.states_offset and {x = self.sprite_args.states_offset.x or 0, y = self.sprite_args.states_offset.y or 0} or {x = 0, y = 0}
+        self.default_state = self.sprite_args.default_state or next(self.sprite_args.states)
+        self:load_states(self.sprite_args.states)
         self:set_state(self.default_state)
     end
-
-    self.flipped_h = false
-    self.flipped_v = false
 
     if getmetatable(self) == StateSprite then
         table.insert(G.I.SPRITE, self)
@@ -99,11 +96,13 @@ end
 
 -- Helper function used by AnimatedSprite:animate() and StateSprite:animate()
 function SMODS.get_new_frame(animated_sprite, frame_order)
+    local cur_anim = animated_sprite.current_animation
     if type(frame_order) == "table" then
-        animated_sprite.current_animation.frame_index = ((animated_sprite.current_animation.frame_index or 0) + 1) % animated_sprite.current_animation.frames + 1 -- +1 because Lua
-        return frame_order[animated_sprite.current_animation.frame_index] or animated_sprite.current_animation.current
+        cur_anim.frame_index = ((cur_anim.frame_index + 1) % cur_anim.frames)
+        if cur_anim.frame_index == 0 then cur_anim.frame_index = cur_anim.frames end
+        return frame_order[cur_anim.frame_index] - 1 or cur_anim.current
     elseif frame_order == "random" then
-        return math.random(0, animated_sprite.current_animation.frames - 1)
+        return math.random(0, cur_anim.frames-1)
     end
     return ((animated_sprite.current_animation.current + 1) % animated_sprite.current_animation.frames)
 end
@@ -121,7 +120,7 @@ function StateSprite:animate()
     if frame_finished then
         self.current_animation.current = SMODS.get_new_frame(self, self.state.frame_order)
         self.current_animation.elapsed = self.current_animation.elapsed + 1
-        self.current_animation.frame_duration = (self.state.frame_durations or {})[self.current_animation.current] or self.state.default_frame_duration or 1
+        self.current_animation.frame_duration = (self.state.frame_durations or {})[self.current_animation.current+1] or self.state.default_frame_duration or 1
         local _x = self.animation.w * ((self.states_offset.x + self.state.start_pos.x + self.current_animation.current) % self.atlas.columns)
         local _y = self.animation.h * (self.states_offset.y + self.state.start_pos.y + math.floor(self.current_animation.current / self.atlas.columns))
         self.sprite:setViewport(
@@ -153,7 +152,8 @@ function StateSprite:set_sprite_pos(sprite_pos)
         w = self.animation.w,
         h = self.animation.h,
         elapsed = 0,
-        frame_duration = (self.state and self.state.frame_durations or {})[0] or self.state and self.state.default_frame_duration or 1
+        frame_index = 0,
+        frame_duration = (self.state and self.state.frame_durations or {})[1] or self.state and self.state.default_frame_duration or 1
     }
 
     self.image_dims = self.image_dims or {}
@@ -178,12 +178,21 @@ function StateSprite:draw_self()
     love.graphics.draw(
         self.atlas.image,
         self.sprite,
-        0 ,0,
+        (self.state.flipped_h and self.atlas.px or 0), (self.state.flipped_v and self.atlas.py or 0),
         0,
-        self.VT.w/(self.T.w) * (self.flipped_h and -1 or 1),
-        self.VT.h/(self.T.h) * (self.flipped_v and -1 or 1)
+        self.VT.w/(self.T.w) * (self.state.flipped_h and -1 or 1),
+        self.VT.h/(self.T.h) * (self.state.flipped_v and -1 or 1)
     )
     love.graphics.pop()
+end
+
+function StateSprite:get_pos_pixel()
+    self.RETS.get_pos_pixel = self.RETS.get_pos_pixel or {}
+    self.RETS.get_pos_pixel[1] = self.state and ((self.state.start_pos.x + self.current_animation.current) % self.atlas.columns) or 0
+    self.RETS.get_pos_pixel[2] = self.state and (self.state.start_pos.y + math.floor(self.current_animation.current / self.atlas.columns)) or 0
+    self.RETS.get_pos_pixel[3] = self.animation.w
+    self.RETS.get_pos_pixel[4] = self.animation.h
+    return self.RETS.get_pos_pixel
 end
 
 
