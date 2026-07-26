@@ -64,7 +64,6 @@ return {
 				},
 			},
 
-
 			-- card perma bonuses
 			card_extra_chips = {
 				text = {
@@ -103,103 +102,201 @@ return {
 			},
 			card_extra_h_chips = {
 				text = {
-					"손에 남을 시 칩 {C:chips}#1#{}개",
+					"손패에 남을 경우 칩 {C:chips}#1#{}개",
 				},
 			},
 			card_h_x_chips = {
 				text = {
-					"손에 남을 시 칩 {X:chips,C:white}X#1#{}개",
+					"손패에 남을 경우 칩 {X:chips,C:white}X#1#{}개",
 				},
 			},
 			card_extra_h_x_chips = {
 				text = {
-					"손에 남을 시 추가 칩 {X:chips,C:white}X#1#{}개",
+					"손패에 남을 경우 추가 칩 {X:chips,C:white}X#1#{}개",
 				},
 			},
 			card_extra_h_mult = {
 				text = {
-					"손에 남을 시 {C:mult}#1#{} 배수",
+					"손패에 남을 경우 {C:mult}#1#{} 배수",
 				},
 			},
 			card_h_x_mult = {
 				text = {
-					"손에 남을 시 {X:mult,C:white}X#1#{} 배수",
+					"손패에 남을 경우 {X:mult,C:white}X#1#{} 배수",
 				},
 			},
 			card_extra_h_x_mult = {
 				text = {
-					"손에 남을 시 {X:mult,C:white}X#1#{} 추가 배수",
+					"손패에 남을 경우 {X:mult,C:white}X#1#{} 추가 배수",
 				},
 			},
 			card_extra_h_dollars = {
 				text = {
-					"라운드 종료 시 {C:money}#1#{}",
+					"라운드 종료 시 손패에 남아 있으면 {C:money}#1#{}",
 				},
 			},
-            card_extra_repetitions = {
-                text = {
-                    "이 카드를 {C:attention}#1#{}#2#",
-                    "다시 발동합니다",
-                },
-            },
-            artist = {
-                text = {
-                    "{C:inactive}아티스트",
-                },
-            },
-            artist_credit = {
-                name = "아티스트",
-                text = {
-                    "{E:1}#1#{}"
-                },
-            },
-            generic_card_limit = {
-                name = "카드 제한",
-                text = {
-                    '영역 슬롯 {C:dark_edition}#1#{}개'
-                }
-            },
-            generic_card_limit_plural = {
-                name = "카드 제한",
-                text = {
-                    '영역 슬롯 {C:dark_edition}#1#{}개'
-                }
-            },
-            generic_extra_slots = {
-                name = "슬롯 사용",
-                text = {
-                    '{C:dark_edition}#1#{} 슬롯 크기'
-                }
-            },
-            card_chips_minus = {
-                text = {
-                    '{C:chips}#1#{} 개의 칩'
-                },
-            },
+			card_extra_repetitions = {
+				text = {
+					"이 카드를 {C:attention}#1#{}#2#",
+					"다시 발동합니다",
+				},
+			},
+			card_score = {
+				text = {
+					"점수 {C:purple}#1#{}",
+				},
+			},
+			card_h_score = {
+				text = {
+					"손패에 남을 경우 점수 {C:purple}#1#{}",
+				},
+			},
+			card_x_score = {
+				text = {
+					"점수 {X:purple,C:white}X#1#{}",
+				},
+			},
+			card_h_x_score = {
+				text = {
+					"손패에 남을 경우 점수 {X:purple,C:white}X#1#{}",
+				},
+			},
+			card_extra_score = {
+				text = {
+					"추가 점수 {C:purple}#1#{}",
+				},
+			},
+			card_extra_h_score = {
+				text = {
+					"손패에 남을 경우 추가 점수 {C:purple}#1#{}",
+				},
+			},
+			card_extra_x_score = {
+				text = {
+					"추가 점수 {X:purple,C:white}X#1#{}",
+				},
+			},
+			card_extra_h_x_score = {
+				text = {
+					"손패에 남을 경우 추가 점수 {X:purple,C:white}X#1#{}",
+				},
+			},
+			card_blind_size = {
+				text = {
+					"요구 점수 {C:blind}#1#{}",
+				},
+			},
+			card_h_blind_size = {
+				text = {
+					"손패에 남을 경우 요구 점수 {C:blind}#1#{}",
+				},
+			},
+			card_x_blind_size = {
+				text = {
+					"요구 점수 {X:blind,C:white}X#1#{}",
+				},
+			},
+			card_h_x_blind_size = {
+				text = {
+					"손패에 남을 경우 요구 점수 {X:blind,C:white}X#1#{}",
+				},
+			},
+			card_extra_blind_size = {
+				text = {
+					"추가 요구 점수 {C:blind}#1#{}",
+				},
+			},
+			card_extra_h_blind_size = {
+				text = {
+					"손패에 남을 경우 추가 요구 점수 {C:blind}#1#{}",
+				},
+			},
+			card_extra_x_blind_size = {
+				text = {
+					"추가 요구 점수 {X:blind,C:white}X#1#{}",
+				},
+			},
+			card_extra_h_x_blind_size = {
+				text = {
+					"손패에 남을 경우 추가 요구 점수 {X:blind,C:white}X#1#{}",
+				},
+			},
+			artist = {
+				text = {
+					"{C:inactive}아티스트",
+				},
+			},
+			artist_credit = {
+				name = "아티스트",
+				text = {
+					"{E:1}#1#{}",
+				},
+			},
+			generic_card_limit = {
+				name = "카드 제한",
+				text = {
+					"슬롯 {C:dark_edition}#1#{}개",
+				},
+			},
+			generic_card_limit_plural = {
+				name = "카드 제한",
+				text = {
+					"슬롯 {C:dark_edition}#1#{}개",
+				},
+			},
+			generic_card_limit_pc = {
+				name = "손패 크기",
+				text = {
+					"손패 크기 {C:dark_edition}#1#{}장",
+				},
+			},
+			generic_card_limit_pc_plural = {
+				name = "손패 크기",
+				text = {
+					"손패 크기 {C:dark_edition}#1#{}장",
+				},
+			},
+			generic_extra_slots = {
+				name = "슬롯 사용",
+				text = {
+					"슬롯 {C:dark_edition}#1#{}개를 차지",
+				},
+			},
+			generic_extra_slots_pc = {
+				name = "손패 공간",
+				text = {
+					"손패 {C:dark_edition}#1#{}장을 차지",
+				},
+			},
+			card_chips_minus = {
+				text = {
+					"칩 {C:chips}#1#{}개",
+				},
+			},
 		},
 		Edition = {
 			e_negative_playing_card = {
 				name = "네거티브",
 				text = {
-					"핸드 크기 {C:dark_edition}#1#{}장",
+					"손패 크기 {C:dark_edition}#1#{}장",
 				},
 			},
-            e_negative_generic = {
-                name = "네거티브",
-                text = {
-                    "영역 슬롯 {C:dark_edition}#1#{}개"
-                },
-            }
+			e_negative_generic = {
+				name = "네거티브",
+				text = {
+					"슬롯 {C:dark_edition}#1#{}개",
+				},
+			},
 		},
 		Enhanced = {
-            m_gold = {
-                name = "황금 카드",
-                text = {
-                    "라운드 종료 시",
-                    "이 카드가 손패에 남아 있으면",
-                    "{C:money}#1#{}를 획득합니다",
-                },
-            },
+			m_gold = {
+				name = "황금 카드",
+				text = {
+					"라운드 종료 시",
+					"이 카드가 손패에 남아 있으면",
+					"{C:money}#1#{}를 획득합니다",
+				},
+			},
 			m_stone = {
 				name = "석재 카드",
 				text = {
@@ -213,15 +310,15 @@ return {
 					"{C:mult}#1#{} 배수",
 				},
 			},
-            m_lucky = {
-                name = "행운 카드",
-                text = {
-                    "{C:green}#1#/#3#{} 확률로",
-                    "{C:mult}+#2#{} 배수를 획득합니다",
-                    "{C:green}#6#/#5#{} 확률로",
-                    "{C:money}$#4#{}를 획득합니다",
-                },
-            },
+			m_lucky = {
+				name = "행운 카드",
+				text = {
+					"{C:green}#1#/#3#{} 확률로",
+					"{C:mult}+#2#{} 배수를 획득합니다",
+					"{C:green}#6#/#5#{} 확률로",
+					"{C:money}$#4#{}를 획득합니다",
+				},
+			},
 		},
 	},
 	misc = {
@@ -245,16 +342,20 @@ return {
 			b_rewrite_by = "재개발: ",
 			b_github_project = "Github 프로젝트",
 			b_github_bugs_1 = "버그를 제보하거나",
-			b_github_bugs_2 = "코드에 기여할수 있습니다",
+			b_github_bugs_2 = "코드에 기여할 수 있습니다",
 			b_disable_mod_badges = "모드 배지 숨기기",
+			b_vanilla_run_select = "바닐라 런 선택 메뉴",
+			b_vanilla_run_select_info = "이 설정은 모드가 선택 메뉴에 페이지를 추가하면 무시됩니다",
+			b_run_select_reduce = "런 선택 메뉴 최적화",
+			b_run_select_reduce_info = "카드 수 감소 및 애니메이션 생략",
 			b_author = "제작자",
 			b_authors = "제작자",
 			b_unknown = "불명",
-			b_lovely_mod = "(Lovely Mod)",
+			b_lovely_mod = "(Lovely 모드)",
 			b_by = "By: ",
-            b_priority = '우선도: ',
+			b_priority = "우선도: ",
 			b_config = "설정",
-			b_additions = "추가",
+			b_additions = "추가 요소",
 			b_stickers = "스티커",
 			b_achievements = "업적",
 			b_applies_stakes_1 = "적용: ",
@@ -264,7 +365,7 @@ return {
 			b_search_prompt = "모드 검색",
 			b_search_button = "검색",
 			b_seeded_unlocks = "시드런 언락",
-			b_seeded_unlocks_info = "시드런에서도 해금이 가능해집니다",
+			b_seeded_unlocks_info = "시드런에서도 해금과 발견이 가능합니다",
 			ml_achievement_settings = {
 				"비활성화",
 				"활성화",
@@ -273,20 +374,39 @@ return {
 			b_deckskins_lc = "저대비 색상",
 			b_deckskins_hc = "고대비 색상",
 			b_deckskins_def = "기본 색상",
-            b_limit = '최대 ',
-            b_retrigger_single = '번',
-            b_retrigger_plural = '번'
+			b_limit = "최대 ",
+			b_retrigger_single = "번",
+			b_retrigger_plural = "번",
+			k_enhanced = "강화",
+			run_select_locked_stake = "잠김",
+			run_select_locked_stake_message = "이 덱으로 다음 스테이크에서 먼저 승리하세요: ",
+			run_select_locked_stake_and = ", ",
+			run_select_nothing = "없음",
+			run_select_selected = "선택됨",
+			run_select_quick_start = "빠른 시작",
+			run_select_play = "플레이",
+			run_setup_enable_seed = "시드 활성화",
+			run_select_deck_choice = "덱 선택",
+			run_select_stake_choice = "스테이크 선택",
+			run_select_deck_choice_random = "랜덤 덱",
+			run_select_stake_choice_random = "랜덤 스테이크",
 		},
 		v_dictionary = {
 			c_types = "#1# 종류",
 			cashout_hidden = "...그리고 #1#개 더",
 			a_xchips = "칩 X#1# 개",
 			a_xchips_minus = "칩 -X#1# 개",
+			a_score = "점수 #1#",
+			a_xscore = "점수 X#1#",
+			a_xscore_minus = "점수 -X#1#",
+			a_blind_size = "요구 점수 #1#",
+			a_xblind_size = "요구 점수 X#1#",
+			a_xblind_size_minus = "요구 점수 -X#1#",
 			smods_version_mismatch = {
 				"이 런을 시작한 후 Steamodded의",
 				"버전이 바뀌었습니다!",
 				"계속 진행 할 경우 예상치 않은",
-				"오류가 발생할수 있습니다.",
+				"오류가 발생할 수 있습니다.",
 				"시작한 버전: #1#",
 				"현재 버전: #2#",
 			},
