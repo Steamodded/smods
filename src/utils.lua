@@ -409,6 +409,7 @@ function SMODS.create_card(t)
         t.front = t.front or (t.suit and t.rank and (t.suit .. "_" .. t.rank)) or nil
     end
     t.silent = t.silent == true and { edition = true, seal = true } or type(t.silent) ~= "table" and {} or t.silent
+    t.immediate = t.immediate == true and { edition = true, seal = true } or type(t.immediate) ~= "table" and {} or t.immediate
     SMODS.bypass_create_card_edition = t.no_edition or t.edition
     SMODS.bypass_create_card_discover = t.discover
     SMODS.bypass_create_card_discovery_center = t.bypass_discovery_center
@@ -427,8 +428,8 @@ function SMODS.create_card(t)
 
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
-    if t.edition then _card:set_edition(t.edition, nil, t.silent.edition) end
-    if t.seal then _card:set_seal(t.seal, t.silent.seal); _card.ability.delay_seal = false end
+    if t.edition then _card:set_edition(t.edition, t.immediate.edition, t.silent.edition) end
+    if t.seal then _card:set_seal(t.seal, t.silent.seal, t.immediate.seal); _card.ability.delay_seal = false end
     if t.stickers or type(t.force_stickers) == "table" then
         local applied_stickers = {}
         if type(t.force_stickers) == "table" then
