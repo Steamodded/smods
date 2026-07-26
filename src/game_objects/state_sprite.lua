@@ -104,7 +104,7 @@ function SMODS.get_new_frame(animated_sprite, frame_order)
     elseif frame_order == "random" then
         return math.random(0, cur_anim.frames-1)
     end
-    return ((animated_sprite.current_animation.current + 1) % animated_sprite.current_animation.frames)
+    return ((cur_anim.current + 1) % cur_anim.frames)
 end
 
 function StateSprite:animate()

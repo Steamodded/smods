@@ -2989,7 +2989,7 @@ function AnimatedSprite:init(X, Y, W, H, new_sprite_atlas, sprite_pos, args)
 		self.sprite_args.start_pos = self.sprite_args.start_pos or {}
 		self.sprite_args.start_pos.x = self.sprite_args.start_pos.x or sprite_pos.x or 0
 		self.sprite_args.start_pos.y = self.sprite_args.start_pos.y or sprite_pos.y or 0
-		self.sprite_args.frames = self.sprite_args.frames or self.sprite_args.end_pos and ((self.sprite_args.end_pos.x or self.sprite_args.start_pos.x) - self.sprite_args.start_pos.x + ((self.sprite_args.end_pos.y or self.sprite_args.start_pos.y) - self.sprite_args.start_pos.y) * self.atlas.columns + 1) or self.atlas.frames
+		self.sprite_args.frames = self.sprite_args.frames or self.sprite_args.end_pos and ((self.sprite_args.end_pos.x or self.sprite_args.start_pos.x) - self.sprite_args.start_pos.x + ((self.sprite_args.end_pos.y or self.sprite_args.start_pos.y) - self.sprite_args.start_pos.y) * self.atlas.columns + 1) or self.atlas.frames or 1
 		self.flipped_h = self.sprite_args.flipped_h or false
 		self.flipped_v = self.sprite_args.flipped_v or false
         table.insert(G.I.SPRITE, self)
@@ -3027,7 +3027,7 @@ function AnimatedSprite:draw_self()
     love.graphics.draw(
         self.atlas.image, 
         self.sprite,
-        (self.state.flipped_h and self.atlas.px or 0), (self.state.flipped_v and self.atlas.py or 0),
+        (self.flipped_h and self.atlas.px or 0), (self.flipped_v and self.atlas.py or 0),
         0,
         self.VT.w/(self.T.w) * (self.flipped_h and -1 or 1),
         self.VT.h/(self.T.h) * (self.flipped_v and -1 or 1)
@@ -3039,7 +3039,7 @@ function AnimatedSprite:set_sprite_pos(sprite_pos)
     self.animation = {
         x= sprite_pos and sprite_pos.x or 0,
         y= sprite_pos and sprite_pos.y or 0,
-        frames= self.sprite_args.frames, current=0,
+        frames= self.sprite_args.frames or self.atlas.frames or 1, current=0,
         w=self.scale.x, h=self.scale.y}
 
     self.current_animation = {
