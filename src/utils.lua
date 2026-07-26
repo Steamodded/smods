@@ -1836,6 +1836,20 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 end
                 ::skip::
             end
+            if area == G.consumeables and SMODS.currently_used_consumable and not SMODS.currently_used_consumable.area and not SMODS.check_looping_context(SMODS.currently_used_consumable) then
+                local eval, post = eval_card(SMODS.currently_used_consumable, context)
+                local effects = {eval}
+                for _,v in ipairs(post) do effects[#effects+1] = v end
+                if return_table then
+                    for _,v in ipairs(effects) do
+                        return_table[#return_table+1] = v
+                    end
+                else
+                    local f = SMODS.trigger_effects(effects, SMODS.currently_used_consumable)
+                    for k,v in pairs(f) do flags[k] = v end
+                    SMODS.update_context_flags(context, flags)
+                end
+            end
         end
     end
 
@@ -2363,7 +2377,6 @@ function SMODS.get_card_areas(_type, _context)
     end
     if _type == 'jokers' then
         local t = {G.jokers, G.consumeables, G.vouchers}
-         if SMODS.currently_used_consumable and not SMODS.currently_used_consumable.area then table.insert(t, {cards = {SMODS.currently_used_consumable}}) end
         -- TARGET: add your own CardAreas for joker evaluation
         return t
     end
