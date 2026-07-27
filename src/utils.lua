@@ -1471,6 +1471,8 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         booster_create_flags = true,
         override_value = true,
         override_scalar_value = true,
+        override_scalar = true,
+        override_reset_value = true,
         override_message = true,
         post = true,
     }
@@ -1991,12 +1993,13 @@ function SMODS.update_context_flags(context, flags)
                 context.value = flags.override_value
             end
         end
-        if not context.block_overrides.scalar and flags.override_scalar_value then
-            if type(flags.override_scalar_value) == 'table' then
-                context.scalar_value = flags.override_scalar_value or context.value
-                SMODS.calculate_effect(flags.override_scalar_value, flags.scored_card)
+        local override_scalar = flags.override_scalar_value or flags.override_scalar
+        if not context.block_overrides.scalar and override_scalar then
+            if type(override_scalar) == 'table' then
+                context.scalar_value = override_scalar.value or context.value
+                SMODS.calculate_effect(override_scalar, flags.scored_card)
             else
-                context.scalar_value = flags.override_scalar_value
+                context.scalar = override_scalar
             end
         end
         if not context.block_overrides.message and flags.override_message then
@@ -2007,7 +2010,8 @@ function SMODS.update_context_flags(context, flags)
             flags.post_effects = flags.post_effects or {}
             table.insert(flags.post_effects, flags.post)
         end
-        flags.override_value, flags.override_scalar_value, flags.override_message, flags.post = nil, nil, nil, nil
+        ---@diagnostic disable-next-line: unbalanced-assignments
+        flags.override_value, flags.override_scalar, flags.override_scalar_value, flags.override_message, flags.post = nil
     end
     if context.resetting_card then
         local override_value = flags.override_value or flags.override_reset_value
@@ -2027,7 +2031,8 @@ function SMODS.update_context_flags(context, flags)
             flags.post_effects = flags.post_effects or {}
             table.insert(flags.post_effects, flags.post)
         end
-        flags.override_value, flags.override_message, flags.post = nil, nil, nil
+        ---@diagnostic disable-next-line: unbalanced-assignments
+        flags.override_value, flags.override_reset_value, flags.override_message, flags.post = nil
     end
 end
 
@@ -3324,10 +3329,16 @@ function SMODS.scale_card(card, args)
     args.scaling_card = true
     args.card = card
     args.value = args.ref_table[args.ref_value]
-    args.scalar_value = args.scalar_table[args.scalar_value]
-    if args.operation == '-' and args.scalar_value < 0 then args.scalar_value = -args.scalar_value end
+    args.scalar = args.scalar_table[args.scalar_value]
+    args.scaling_message = args.scaling_message or {
+        message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or change}} or 'k_upgrade_ex'),
+        colour = args.message_colour or G.C.FILTER,
+        delay = args.message_delay,
+    }
+    if args.operation == '-' and args.scalar < 0 then args.scalar = -args.scalar end
+
     local flags = SMODS.calculate_context(args)
-    local value, change = args.value, args.scalar_value * args.scalar_factor
+    local value, change = args.value, args.scalar * args.scalar_factor
 
     if type(args.operation) == 'function' then
         args.operation(args.ref_table, args.ref_value, value, change)
@@ -3339,11 +3350,6 @@ function SMODS.scale_card(card, args)
         SMODS.additive_scaling(args.ref_table, args.ref_value, value, change)
     end
 
-    args.scaling_message = args.scaling_message or {
-        message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or change}} or 'k_upgrade_ex'),
-        colour = args.message_colour or G.C.FILTER,
-        delay = args.message_delay,
-    }
     if next(args.scaling_message) and not args.no_message then
         SMODS.calculate_effect(args.scaling_message, card)
     end
