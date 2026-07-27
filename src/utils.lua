@@ -1601,7 +1601,7 @@ SMODS.other_calculation_keys = {
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
     'shop_create_flags', 'booster_create_flags',
-    'override_value', 'override_scalar_value', 'override_message', 'post',
+    'override_value', 'override_reset_value', 'override_scalar_value', 'override_scalar', 'override_message', 'post',
     'extra',
 }
 SMODS.silent_calculation = {
@@ -1996,7 +1996,7 @@ function SMODS.update_context_flags(context, flags)
         local override_scalar = flags.override_scalar_value or flags.override_scalar
         if not context.block_overrides.scalar and override_scalar then
             if type(override_scalar) == 'table' then
-                context.scalar_value = override_scalar.value or context.value
+                context.scalar = override_scalar.value or context.scalar
                 SMODS.calculate_effect(override_scalar, flags.scored_card)
             else
                 context.scalar = override_scalar
@@ -3330,12 +3330,12 @@ function SMODS.scale_card(card, args)
     args.card = card
     args.value = args.ref_table[args.ref_value]
     args.scalar = args.scalar_table[args.scalar_value]
+    if args.operation == '-' and args.scalar < 0 then args.scalar = -args.scalar end
     args.scaling_message = args.scaling_message or {
         message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or change}} or 'k_upgrade_ex'),
         colour = args.message_colour or G.C.FILTER,
         delay = args.message_delay,
     }
-    if args.operation == '-' and args.scalar < 0 then args.scalar = -args.scalar end
 
     local flags = SMODS.calculate_context(args)
     local value, change = args.value, args.scalar * args.scalar_factor
@@ -3375,6 +3375,11 @@ function SMODS.reset_card(card, args)
     args.reset_value = args.reset_value or 0
     args.resetting_card = true
     args.card = card
+    args.reset_message = args.reset_message or {
+        message = localize(args.message_key or 'k_reset'),
+        colour = args.message_colour or G.C.FILTER,
+        delay = args.message_delay,
+    }
     local flags = SMODS.calculate_context(args)
     
     if type(args.operation) == 'function' then
@@ -3382,16 +3387,10 @@ function SMODS.reset_card(card, args)
     else
         args.ref_table[args.ref_value] = args.reset_value
     end
-
-    args.reset_message = args.reset_message or {
-        message = localize(args.message_key or 'k_reset'),
-        colour = args.message_colour or G.C.FILTER,
-        delay = args.message_delay,
-    }
     if next(args.reset_message) and not args.no_message then
-        SMODS.calculate_effect(reset_message, card)
+        SMODS.calculate_effect(args.reset_message, card)
     end
-    for _, ret in ipairs(flags.post_effects) do
+    for _, ret in ipairs(flags.post_effects or {}) do
         SMODS.calculate_effect(ret, ret.source)
     end
 end
