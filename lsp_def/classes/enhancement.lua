@@ -2,7 +2,7 @@
 
 ---@class SMODS.Enhancement: SMODS.Center
 ---@field super? SMODS.Center|table Parent class.
----@field obj_buffer? Enhancements|string[] Array of keys to all objects registered to this class. 
+---@field obj_buffer? Enhancements[]|string[] Array of keys to all objects registered to this class. 
 ---@field obj_table? table<Enhancements|string, SMODS.Enhancement|table> Table of objects registered to this class. 
 ---@field replace_base_card? boolean Don't draw base card sprite or give base chips. 
 ---@field no_rank? boolean Enhanced cards have no rank

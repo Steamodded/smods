@@ -450,7 +450,7 @@ function SMODS.add_card(t)
     return SMODS.add_to_deck(card, t)
 end
 
-function SMODS.debuff_card(card, debuff, source)
+function SMODS.debuff_card(card, debuff, source, delay)
     debuff = debuff or nil
     source = source and tostring(source) or nil
     if debuff == 'reset' then
@@ -461,6 +461,15 @@ function SMODS.debuff_card(card, debuff, source)
     card.ability.debuff_sources = card.ability.debuff_sources or {}
     card.ability.debuff_sources[source] = debuff
     SMODS.recalc_debuff(card)
+    if delay then
+        card.delay_debuff = true
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                card.delay_debuff = nil   
+                return true
+            end
+        }))
+    end
 end
 
 -- Recalculate whether a card should be debuffed
@@ -1857,7 +1866,8 @@ SMODS.CONTEXT_TYPES = {
     POST_TRIGGER = "post_trigger",
     QUANTUM_GETTER = "quantum_getter"
 }
--- Used to avoid looping context calls. Example;
+
+-- Used to avoid looping getter context calls. Example;
 -- Joker A: Doubles lucky card probabilities
 -- Joker B: 1 in 3 chance that a card counts as a lucky card
 -- Joker A calls SMODS.has_enhancement() during a probability context to check whether it should double the numerator
@@ -1942,22 +1952,28 @@ function SMODS.check_looping_context(eval_object)
 end
 
 -- The context stack list, structured like so;
--- SMODS.context_stack = {1: {context = [unique context 1], count = [number of times it was added consecutively], caller = [the previous_context.evaluee when the context was added], evaluee = [continously updated to be the object that is currently getting evaluated]}, ...}
+-- SMODS.context_stack = {1: {context = [unique context 1], count = [number of times it was added consecutively], evaluee = [evaluee param of SMODS.push_to_context_stack()]}, ...}
 -- (Contexts may repeat non-consecutively, though I don't think they ever should..)
 -- Allows some advanced effects, like:
 -- Individual playing cards modifying probabilities checked during individual scoring, only when they're the context.other_card
 -- (-> By checking the context in the stack PRIOR to the mod_probability context for the .individual / .other_card flags)
 SMODS.context_stack = {}
 
-function SMODS.push_to_context_stack(context, func)
+function SMODS.push_to_context_stack(context, evaluee, func)
     if not context or type(context) ~= "table" then
         sendWarnMessage(('Called SMODS.push_to_context_stack with invalid context \'%s\', in function \'%s\''):format(context, func), 'Util')
     end
     local len = #SMODS.context_stack
-    if len <= 0 or SMODS.context_stack[len].context ~= context then
-        SMODS.context_stack[len+1] = {context = context, count = 1, caller = (SMODS.context_stack[len] or {}).evaluee}
+    local stack_entry = SMODS.context_stack[len]
+    if len <= 0 or stack_entry.context ~= context then
+        evaluee = evaluee or stack_entry and stack_entry.evaluees[#stack_entry.evaluees] or "NIL" -- evaluee param as passed, or the latest evaluee of the previous stack_entry
+        table.insert(SMODS.context_stack, {context = context, count = 1, evaluees = {evaluee}})
     else
-        SMODS.context_stack[len].count = SMODS.context_stack[len].count + 1
+        local previous_entry = SMODS.context_stack[len-1]
+        evaluee = evaluee or previous_entry and previous_entry.evaluees[#previous_entry.evaluees] or "NIL" -- evaluee param as passed, or the latest evaluee of the previous stack_entry
+        stack_entry.count = stack_entry.count + 1
+        if evaluee == "NIL" then sendWarnMessage('Called SMODS.push_to_context_stack on repeat context without evaluee', "Util") end
+        table.insert(stack_entry.evaluees, evaluee)
     end
 end
 
@@ -1969,8 +1985,26 @@ function SMODS.pop_from_context_stack(context, func)
         SMODS.context_stack[len].count = SMODS.context_stack[len].count - 1
         if SMODS.context_stack[len].count <= 0 then
             table.remove(SMODS.context_stack, len)
+        else
+            table.remove(SMODS.context_stack[len].evaluees, #SMODS.context_stack[len].evaluees)
         end
     end
+end
+
+function SMODS.get_context_evaluee(stack_index, evaluee_index)
+    local len = #SMODS.context_stack
+    if len < 1 then return end
+    stack_index = stack_index or len
+    if stack_index < 1 then stack_index = len + stack_index end
+    local stack_entry = SMODS.context_stack[stack_index]
+    evaluee_index = evaluee_index or #stack_entry.evaluees
+    if evaluee_index < 1 then evaluee_index = #stack_entry.evaluees + evaluee_index end
+    local evaluee = stack_entry.evaluees[evaluee_index]
+    return evaluee ~= "NIL" and evaluee or nil
+end
+
+function SMODS.get_previous_evaluee(previous_context)
+    return not previous_context and SMODS.get_context_evaluee(0, -1) or SMODS.get_context_evaluee(-1, 0)
 end
 
 function SMODS.get_previous_context()
@@ -1988,7 +2022,7 @@ end
 function SMODS.calculate_context(context, return_table, no_resolve)
     if G.STAGE ~= G.STAGES.RUN then return end
 
-    SMODS.push_to_context_stack(context, "utils.lua : SMODS.calculate_context")
+    SMODS.push_to_context_stack(context, nil, "utils.lua : SMODS.calculate_context")
 
     local has_area = context.cardarea and true or nil
     if no_resolve then SMODS.no_resolve = true end
@@ -2299,8 +2333,7 @@ function Blind:calc_dollar_bonus()
 end
 
 function SMODS.eval_individual(individual, context)
-    SMODS.push_to_context_stack(context, "utils.lua : SMODS.eval_individual")
-    SMODS.set_context_evaluee(individual.object)
+    SMODS.push_to_context_stack(context, individual.object, "utils.lua : SMODS.eval_individual")
     local ret = {}
     local post_trig = {}
 
@@ -2597,12 +2630,25 @@ local function parse_tooltip_vars(str, separator)
     return vars
 end
 
+function SMODS.get_loc_colour(ctrl, vars)
+    if type(ctrl) == 'table' then ctrl = ctrl.c end
+    if not ctrl then return end
+    if (#ctrl == 6 or #ctrl == 8) and not string.find(ctrl, "%X") then
+        if next(loc_colour(ctrl, {})) then
+            sendWarnMessage(("Interpreting colour identifier '%s' as a hex code. A named `loc_colour` entry with the same name exists and was ignored"):format(ctrl),"SMODS.get_loc_colour")
+        end
+        return HEX(ctrl)
+    end
+    return (vars or {})[tonumber(ctrl) or {}] or loc_colour(ctrl)
+end
+
 function SMODS.localize_box(lines, args)
+    args.vars = args.vars or {}
     local final_line = {}
     for _, part in ipairs(lines) do
         if part.control.element then
-            local elem = args.vars.elements[tonumber(part.control.element)]
-            if elem.is and elem:is(Node) then
+            local elem = (args.vars.elements or {})[tonumber(part.control.element)]
+            if elem and elem.is and elem:is(Node) then
                 elem = { n=G.UIT.O, config = { object = elem }}
             end
             final_line[#final_line+1] = elem
@@ -2613,50 +2659,74 @@ function SMODS.localize_box(lines, args)
         end
 
         local thunk = {
-            bg_col = part.control.B and args.vars.colours[tonumber(part.control.B)] or part.control.X and loc_colour(part.control.X) or nil,
-            text_col = part.control.V and args.vars.colours[tonumber(part.control.V)] or part.control.C and loc_colour(part.control.C),
-            underline = part.control.u and loc_colour(part.control.u),
-            strikethrough = part.control.st and loc_colour(part.control.st),
-            font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)],
-            scale_mod = part.control.s and tonumber(part.control.s) or args.scale  or 1,
-            text_outline = part.control.O and loc_colour(part.control.O),
+            bg_col = SMODS.get_loc_colour(part.control.B or part.control.X, args.vars.colours),
+            text_col = SMODS.get_loc_colour(part.control.V or part.control.C, args.vars.colours),
+            underline = SMODS.get_loc_colour(part.control.u, args.vars.colours),
+            underline_scale = type(part.control.u) == 'table' and part.control.u.s,
+            overline = SMODS.get_loc_colour(part.control.ov, args.vars.colours),
+            overline_scale = type(part.control.ov) == 'table' and part.control.ov.s,
+            strikethrough = SMODS.get_loc_colour(part.control.st, args.vars.colours),
+            strikethrough_scale = type(part.control.st) == 'table' and part.control.st.s,
+            text_outline = SMODS.get_loc_colour(part.control.O, args.vars.colours),
+            text_outline_scale = type(part.control.O) == 'table' and part.control.O.s,
+            font = SMODS.Fonts[part.control.f] or G.FONTS[tonumber(part.control.f)] or args.font,
+            scale_mod = part.control.s and tonumber(part.control.s) or args.scale or 1,
         }
         local desc_scale = (thunk.font or G.LANG.font).DESCSCALE
         if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
+
+        local base_config = function(t)
+            return SMODS.merge_defaults(t, {
+                button = part.control.button,
+                underline = thunk.underline,
+                underline_scale = thunk.underline_scale,
+                overline = thunk.overline,
+                overline_scale = thunk.overline_scale,
+                strikethrough = thunk.strikethrough,
+                strikethrough_scale = thunk.strikethrough_scale,
+                text_outline = thunk.text_outline,
+                text_outline_scale = thunk.text_outline_scale,
+                font = thunk.font,
+                scale = 0.32*thunk.scale_mod*desc_scale,
+                text = assembled_string,
+                detailed_tooltip = part.control.T and (
+                    G.P_CENTERS[part.control.T]
+                    or G.P_TAGS[part.control.T]
+                    or {
+                        set = part.control.T_set or 'Other',
+                        key = part.control.T,
+                        vars = part.control.T_vars and parse_tooltip_vars(part.control.T_vars) or {}
+                    }
+                ) or nil,
+            })
+        end
         
         if args.type == 'name' then
             local final_name_assembled_string = ''
             for _, part in ipairs(lines) do
-              local assembled_string_part = ''
-              for _, subpart in ipairs(part.strings) do
-                  assembled_string_part = assembled_string_part..(type(subpart) == 'string' and subpart or format_ui_value(format_ui_value(args.vars[tonumber(subpart[1])])) or 'ERROR')
-              end
-              final_name_assembled_string = final_name_assembled_string..assembled_string_part
-          end
-          final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
-          final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
-          button = part.control.button,
-          underline = thunk.underline,
-          strikethrough = thunk.strikethrough,
-            object = DynaText({string = {assembled_string},
-              colours = {thunk.text_col or args.text_colour or G.C.UI.TEXT_LIGHT},
-              bump = not args.no_bump,
-              text_effect = SMODS.DynaTextEffects[part.control.E] and part.control.E,
-              silent = not args.no_silent,
-              pop_in = (not args.no_pop_in and (args.pop_in or 0)) or nil,
-              pop_in_rate = (not args.no_pop_in and (args.pop_in_rate or 4)) or nil,
-              maxw = args.maxw or 5,
-              shadow = not args.no_shadow,
-              y_offset = args.y_offset or -0.6,
-              spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
-              font = thunk.font,
-              button = part.control.button,
-              strikethrough = part.control.st and loc_colour(part.control.st),
-              underline = part.control.u and loc_colour(part.control.u),
-              text_outline = part.control.O and loc_colour(part.control.O),
-              scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*thunk.scale_mod*(args.fixed_scale or 1)
-            })
-          }}
+                local assembled_string_part = ''
+                for _, subpart in ipairs(part.strings) do
+                    assembled_string_part = assembled_string_part..(type(subpart) == 'string' and subpart or format_ui_value(format_ui_value(args.vars[tonumber(subpart[1])])) or 'ERROR')
+                end
+                final_name_assembled_string = final_name_assembled_string..assembled_string_part
+            end
+            final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
+            final_line[#final_line].nodes[1] = {n=G.UIT.O, config=base_config{
+                object = DynaText(base_config{
+                    string = {assembled_string},
+                    colours = {thunk.text_col or args.text_colour or G.C.UI.TEXT_LIGHT},
+                    bump = not args.no_bump,
+                    text_effect = SMODS.DynaTextEffects[part.control.E] and part.control.E,
+                    silent = not args.no_silent,
+                    pop_in = (not args.no_pop_in and (args.pop_in or 0)) or nil,
+                    pop_in_rate = (not args.no_pop_in and (args.pop_in_rate or 4)) or nil,
+                    maxw = args.maxw or 5,
+                    shadow = not args.no_shadow,
+                    y_offset = args.y_offset or -0.6,
+                    spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
+                    scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*thunk.scale_mod*(args.fixed_scale or 1),
+                })
+            }}
         elseif part.control.E then
             local _float, _silent, _pop_in, _bump, _spacing = nil, true, nil, nil, nil
             local text_effects
@@ -2668,53 +2738,28 @@ function SMODS.localize_box(lines, args)
                 text_effects = part.control.E
             end
             final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
-            final_line[#final_line].nodes[1] = {n=G.UIT.O, config={
-                button = part.control.button,
-                underline = thunk.underline,
-                strikethrough = thunk.strikethrough,
-                object = DynaText({string = {assembled_string}, colours = {thunk.text_col or loc_colour()},
+            final_line[#final_line].nodes[1] = {n=G.UIT.O, config=base_config{
+                object = DynaText(base_config{
+                    string = {assembled_string},
+                    colours = {thunk.text_col or loc_colour()},
                     float = _float,
                     silent = _silent,
                     pop_in = _pop_in,
                     bump = _bump,
                     text_effect = text_effects,
-                    spacing = _spacing,
-                    font = thunk.font,
-                    scale = 0.32*thunk.scale_mod*desc_scale})
-                }
-            }
+                    spacing = _spacing
+                })
+            }}
         elseif part.control.X or part.control.B then
-            final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = part.control.B and args.vars.colours[tonumber(part.control.B)] or loc_colour(part.control.X), r = 0.05, padding = 0.03, res = 0.15}, nodes={
-                {n=G.UIT.T, config={
-                    button = part.control.button,
-                    text = assembled_string,
+            final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={
+                {n=G.UIT.T, config=base_config{
                     colour = thunk.text_col or loc_colour(),
-                    font = thunk.font,
-                    underline = thunk.underline,
-                    strikethrough = thunk.strikethrough,
-                    text_outline = thunk.text_outline,
-                    scale = 0.32*thunk.scale_mod*desc_scale}},
-                }}
+                }},
+            }}
         else
-            final_line[#final_line+1] = {n=G.UIT.T, config={
-                button = part.control.button,
-                detailed_tooltip = part.control.T and (
-                    G.P_CENTERS[part.control.T]
-                    or G.P_TAGS[part.control.T]
-                    or {
-                        set = part.control.T_set or 'Other',
-                        key = part.control.T,
-                        vars = part.control.T_vars and parse_tooltip_vars(part.control.T_vars) or {}
-                    }
-                  ) or nil,
-                text = assembled_string,
+            final_line[#final_line+1] = {n=G.UIT.T, config=base_config{
                 shadow = args.shadow,
                 colour = thunk.text_col or args.text_colour or loc_colour(nil, args.default_col),
-                font = thunk.font,
-                underline = thunk.underline,
-                strikethrough = thunk.strikethrough,
-                text_outline = thunk.text_outline,
-                scale = 0.32*thunk.scale_mod*desc_scale
             }}
         end
     end
@@ -3482,16 +3527,16 @@ end
 
 
 function UIElement:draw_pixellated_under(_type, _parallax, _emboss, _progress)
-    if not self.pixellated_rect or
-        #self.pixellated_rect[_type].vertices < 1 or
-        _parallax ~= self.pixellated_rect.parallax or
-        self.pixellated_rect.w ~= self.VT.w or
-        self.pixellated_rect.h ~= self.VT.h or
-        self.pixellated_rect.sw ~= self.shadow_parrallax.x or
-        self.pixellated_rect.sh ~= self.shadow_parrallax.y or
-        self.pixellated_rect.progress ~= (_progress or 1)
+    if not self.pixellated_under or
+        #self.pixellated_under[_type].vertices < 1 or
+        _parallax ~= self.pixellated_under.parallax or
+        self.pixellated_under.w ~= self.VT.w or
+        self.pixellated_under.h ~= self.VT.h or
+        self.pixellated_under.sw ~= self.shadow_parrallax.x or
+        self.pixellated_under.sh ~= self.shadow_parrallax.y or
+        self.pixellated_under.progress ~= (_progress or 1)
     then
-        self.pixellated_rect = {
+        self.pixellated_under = {
             w = self.VT.w,
             h = self.VT.h,
             sw = self.shadow_parrallax.x,
@@ -3506,50 +3551,109 @@ function UIElement:draw_pixellated_under(_type, _parallax, _emboss, _progress)
         }
         local ext_up = self.config.ext_up and self.config.ext_up*G.TILESIZE or 0
         local totw, toth = self.VT.w*G.TILESIZE, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE
+        local scale = (self.config.underline_scale or 0.1)*toth
 
         local vertices = {
             totw,toth+ext_up,
             0, toth+ext_up,
-            0, toth+ext_up+0.5,
-            totw,toth+ext_up+0.5
+            0, toth+ext_up+scale,
+            totw,toth+ext_up+scale,
         }
         for k, v in ipairs(vertices) do
-            if k%2 == 1 and v > totw*self.pixellated_rect.progress then v = totw*self.pixellated_rect.progress end
-            self.pixellated_rect.fill.vertices[k] = v
+            if k%2 == 1 and v > totw*self.pixellated_under.progress then v = totw*self.pixellated_under.progress end
+            self.pixellated_under.fill.vertices[k] = v
             if k > 4 then
-                self.pixellated_rect.line.vertices[k-4] = v
+                self.pixellated_under.line.vertices[k-4] = v
                 if _emboss then
-                    self.pixellated_rect.line_emboss.vertices[k-4] = v + (k%2 == 0 and -_emboss*self.shadow_parrallax.y or -0.7*_emboss*self.shadow_parrallax.x)
+                    self.pixellated_under.line_emboss.vertices[k-4] = v + (k%2 == 0 and -_emboss*self.shadow_parrallax.y or -0.7*_emboss*self.shadow_parrallax.x)
                 end
             end
             if k%2 == 0 then
-                self.pixellated_rect.shadow.vertices[k] = v -self.shadow_parrallax.y*_parallax
+                self.pixellated_under.shadow.vertices[k] = v -self.shadow_parrallax.y*_parallax
                 if _emboss then
-                    self.pixellated_rect.emboss.vertices[k] = v + _emboss*G.TILESIZE
+                    self.pixellated_under.emboss.vertices[k] = v + _emboss*G.TILESIZE
                 end
             else
-                self.pixellated_rect.shadow.vertices[k] = v -self.shadow_parrallax.x*_parallax
+                self.pixellated_under.shadow.vertices[k] = v -self.shadow_parrallax.x*_parallax
                 if _emboss then
-                    self.pixellated_rect.emboss.vertices[k] = v
+                    self.pixellated_under.emboss.vertices[k] = v
                 end
             end
         end
     end
-    love.graphics.polygon("fill", self.pixellated_rect.fill.vertices)
+    love.graphics.polygon("fill", self.pixellated_under.fill.vertices)
+end
+
+function UIElement:draw_pixellated_over(_type, _parallax, _emboss, _progress)
+    if not self.pixellated_over or
+        #self.pixellated_over[_type].vertices < 1 or
+        _parallax ~= self.pixellated_over.parallax or
+        self.pixellated_over.w ~= self.VT.w or
+        self.pixellated_over.h ~= self.VT.h or
+        self.pixellated_over.sw ~= self.shadow_parrallax.x or
+        self.pixellated_over.sh ~= self.shadow_parrallax.y or
+        self.pixellated_over.progress ~= (_progress or 1)
+    then
+        self.pixellated_over = {
+            w = self.VT.w,
+            h = self.VT.h,
+            sw = self.shadow_parrallax.x,
+            sh = self.shadow_parrallax.y,
+            progress = (_progress or 1),
+            fill = {vertices = {}},
+            shadow = {vertices = {}},
+            line = {vertices = {}},
+            emboss = {vertices = {}},
+            line_emboss = {vertices = {}},
+            parallax = _parallax
+        }
+        local ext_up = self.config.ext_up and self.config.ext_up*G.TILESIZE or 0
+        local totw, toth = self.VT.w*G.TILESIZE, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE
+        local scale = (self.config.overline_scale or 0.1)*toth
+
+        local vertices = {
+            totw,0,
+            0, 0,
+            0, -scale,
+            totw,-scale,
+        }
+        for k, v in ipairs(vertices) do
+            if k%2 == 1 and v > totw*self.pixellated_over.progress then v = totw*self.pixellated_over.progress end
+            self.pixellated_over.fill.vertices[k] = v
+            if k > 4 then
+                self.pixellated_over.line.vertices[k-4] = v
+                if _emboss then
+                    self.pixellated_over.line_emboss.vertices[k-4] = v + (k%2 == 0 and -_emboss*self.shadow_parrallax.y or -0.7*_emboss*self.shadow_parrallax.x)
+                end
+            end
+            if k%2 == 0 then
+                self.pixellated_over.shadow.vertices[k] = v -self.shadow_parrallax.y*_parallax
+                if _emboss then
+                    self.pixellated_over.emboss.vertices[k] = v + _emboss*G.TILESIZE
+                end
+            else
+                self.pixellated_over.shadow.vertices[k] = v -self.shadow_parrallax.x*_parallax
+                if _emboss then
+                    self.pixellated_over.emboss.vertices[k] = v
+                end
+            end
+        end
+    end
+    love.graphics.polygon("fill", self.pixellated_over.fill.vertices)
 end
 
 function UIElement:draw_pixellated_strikethough(_type, _parallax, _emboss, _progress)
 	if
-		not self.pixellated_rect
-		or #self.pixellated_rect[_type].vertices < 1
-		or _parallax ~= self.pixellated_rect.parallax
-		or self.pixellated_rect.w ~= self.VT.w
-		or self.pixellated_rect.h ~= self.VT.h
-		or self.pixellated_rect.sw ~= self.shadow_parrallax.x
-		or self.pixellated_rect.sh ~= self.shadow_parrallax.y
-		or self.pixellated_rect.progress ~= (_progress or 1)
+		not self.pixellated_strikethrough
+		or #self.pixellated_strikethrough[_type].vertices < 1
+		or _parallax ~= self.pixellated_strikethrough.parallax
+		or self.pixellated_strikethrough.w ~= self.VT.w
+		or self.pixellated_strikethrough.h ~= self.VT.h
+		or self.pixellated_strikethrough.sw ~= self.shadow_parrallax.x
+		or self.pixellated_strikethrough.sh ~= self.shadow_parrallax.y
+		or self.pixellated_strikethrough.progress ~= (_progress or 1)
 	then
-		self.pixellated_rect = {
+		self.pixellated_strikethrough = {
 			w = self.VT.w,
 			h = self.VT.h,
 			sw = self.shadow_parrallax.x,
@@ -3564,26 +3668,27 @@ function UIElement:draw_pixellated_strikethough(_type, _parallax, _emboss, _prog
 		}
 		local ext_up = self.config.ext_up and self.config.ext_up * G.TILESIZE or 0
 		local totw, toth = self.VT.w * G.TILESIZE, (self.VT.h + math.abs(ext_up) / G.TILESIZE) * G.TILESIZE
+        local half_scale = (self.config.strikethrough_scale or 0.1)/2 * toth
 
 		local vertices = {
 			totw,
-			toth / 2 + ext_up,
+			toth / 2 + ext_up - half_scale,
 			0,
-			toth / 2 + ext_up,
+			toth / 2 + ext_up - half_scale,
 			0,
-			toth / 2 + ext_up + 1,
+			toth / 2 + ext_up + half_scale,
 			totw,
-			toth / 2 + ext_up + 1,
+			toth / 2 + ext_up + half_scale,
 		}
 		for k, v in ipairs(vertices) do
-			if k % 2 == 1 and v > totw * self.pixellated_rect.progress then
-				v = totw * self.pixellated_rect.progress
+			if k % 2 == 1 and v > totw * self.pixellated_strikethrough.progress then
+				v = totw * self.pixellated_strikethrough.progress
 			end
-			self.pixellated_rect.fill.vertices[k] = v
+			self.pixellated_strikethrough.fill.vertices[k] = v
 			if k > 4 then
-				self.pixellated_rect.line.vertices[k - 4] = v
+				self.pixellated_strikethrough.line.vertices[k - 4] = v
 				if _emboss then
-					self.pixellated_rect.line_emboss.vertices[k - 4] = v
+					self.pixellated_strikethrough.line_emboss.vertices[k - 4] = v
 						+ (
 							k % 2 == 0 and -_emboss * self.shadow_parrallax.y
 							or -0.7 * _emboss * self.shadow_parrallax.x
@@ -3591,19 +3696,19 @@ function UIElement:draw_pixellated_strikethough(_type, _parallax, _emboss, _prog
 				end
 			end
 			if k % 2 == 0 then
-				self.pixellated_rect.shadow.vertices[k] = v - self.shadow_parrallax.y * _parallax
+				self.pixellated_strikethrough.shadow.vertices[k] = v - self.shadow_parrallax.y * _parallax
 				if _emboss then
-					self.pixellated_rect.emboss.vertices[k] = v + _emboss * G.TILESIZE
+					self.pixellated_strikethrough.emboss.vertices[k] = v + _emboss * G.TILESIZE
 				end
 			else
-				self.pixellated_rect.shadow.vertices[k] = v - self.shadow_parrallax.x * _parallax
+				self.pixellated_strikethrough.shadow.vertices[k] = v - self.shadow_parrallax.x * _parallax
 				if _emboss then
-					self.pixellated_rect.emboss.vertices[k] = v
+					self.pixellated_strikethrough.emboss.vertices[k] = v
 				end
 			end
 		end
 	end
-	love.graphics.polygon("fill", self.pixellated_rect.fill.vertices)
+	love.graphics.polygon("fill", self.pixellated_strikethrough.fill.vertices)
 end
 
 function SMODS.card_select_area(card, pack)
@@ -3734,7 +3839,7 @@ function SMODS.get_keys(t)
 end
 
 function SMODS.get_atlas(atlas_key)
-    return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key]
+    return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key] -- atlas.atlas_table = STATE_ATLAS -> also stored in G.ANIMATION_ATLAS
 end
 
 function SMODS.get_atlas_sprite_class(atlas_key)
@@ -3742,15 +3847,20 @@ function SMODS.get_atlas_sprite_class(atlas_key)
     local class_map = {
         ASSET_ATLAS = Sprite,
         ANIMATION_ATLAS = AnimatedSprite,
+        STATE_ATLAS = StateSprite,
     }
     return class_map[atlas.atlas_table] or Sprite
 end
 
-function SMODS.create_sprite(X, Y, W, H, atlas, pos)
+function SMODS.create_sprite(X, Y, W, H, atlas, pos, sprite_args)
     local atlas_key = (type(atlas) == "string" and atlas) or (type(atlas) == "table" and (atlas.key or atlas.name))
     atlas = SMODS.get_atlas(atlas_key)
     assert(atlas, "SMODS.create_sprite called with invalid atlas key: "..atlas_key)
-    return SMODS.get_atlas_sprite_class(atlas_key)(X, Y, W, H, atlas, pos)
+    local sprite_class = SMODS.get_atlas_sprite_class(atlas_key)
+    if sprite_class ~= Sprite then
+        return sprite_class(X, Y, W, H, atlas, pos, sprite_args)
+    end
+    return sprite_class(X, Y, W, H, atlas, pos)
 end
 
 local animate = AnimatedSprite.animate
@@ -4113,8 +4223,8 @@ function UIElement:set_element_shader(shader, send, shadow)
         extra = { shadow },
         default_send_func = function(element, shader, shadow)
             local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
-
-            G.SHADERS[shader]:send("uie_details", {element.VT.x * tile_scale, element.VT.y * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
+            
+            G.SHADERS[shader]:send("uie_details", {(element.container.T.x + element.VT.x) * tile_scale, (element.container.T.y + element.VT.y) * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
             G.SHADERS[shader]:send("uie_scale", element.VT.scale)
             G.SHADERS[shader]:send("uie_rot", element.VT.r)
         end
@@ -4129,7 +4239,7 @@ function UIElement:set_text_shader(shader, send, shadow)
         default_send_func = function(element, shader, shadow)
             local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
 
-            G.SHADERS[shader]:send("text_details", {element.VT.x * tile_scale, element.VT.y * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
+            G.SHADERS[shader]:send("text_details", {(element.container.T.x + element.VT.x) * tile_scale, (element.container.T.y + element.VT.y) * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
             G.SHADERS[shader]:send("text_scale", element.VT.scale)
             G.SHADERS[shader]:send("text_rot", element.VT.r)
             G.SHADERS[shader]:send("text_shadow", not not shadow)
@@ -4142,16 +4252,17 @@ function UIElement:draw_text_outline(button_active)
 		return
 	end
 	love.graphics.setColor(self.config.text_outline)
+    local outline_size = (self.config.text_outline_scale or 1)*G.TILESIZE
 	for x = -1, 1 do
 		for y = -1, 1 do
 			if x ~= 0 or y ~= 0 then
 				love.graphics.draw(
 					self.config.text_drawable,
-					((self.config.font or self.config.lang.font).TEXT_OFFSET.x + x * 20)
+					((self.config.font or self.config.lang.font).TEXT_OFFSET.x + x * outline_size)
 						* self.config.scale
 						* (self.config.font or self.config.lang.font).FONTSCALE
 						/ G.TILESIZE,
-					((self.config.font or self.config.lang.font).TEXT_OFFSET.y + y * 20)
+					((self.config.font or self.config.lang.font).TEXT_OFFSET.y + y * outline_size)
 						* self.config.scale
 						* (self.config.font or self.config.lang.font).FONTSCALE
 						/ G.TILESIZE,
@@ -4354,6 +4465,69 @@ function SMODS.add_to_deck(card, args)
     local area = args.area or G.jokers
     area:emplace(card)
     return card
+end
+
+-- Hook for the below Util function
+local sprite_draw_from_ref = Sprite.draw_from
+function Sprite:draw_from(...)
+    local old_filter_min, old_filter_mag
+    if self.atlas and SMODS.texture_filter_override then 
+        old_filter_min, old_filter_mag = self.atlas.image:getFilter()
+        self.atlas.image:setFilter(SMODS.texture_filter_override, SMODS.texture_filter_override) 
+    end
+    local ret = sprite_draw_from_ref(self, ...)
+    if self.atlas and SMODS.texture_filter_override then 
+        self.atlas.image:setFilter(old_filter_min, old_filter_mag) 
+    end
+    return ret
+end
+
+-- Hook for the below Util function
+local sprite_draw_self_ref = Sprite.draw_self
+function Sprite:draw_self(...)
+    local old_filter_min, old_filter_mag
+    if self.atlas and SMODS.texture_filter_override then 
+        old_filter_min, old_filter_mag = self.atlas.image:getFilter()
+        self.atlas.image:setFilter(SMODS.texture_filter_override, SMODS.texture_filter_override) 
+    end
+    local ret = sprite_draw_self_ref(self, ...)
+    if self.atlas and SMODS.texture_filter_override then 
+        self.atlas.image:setFilter(old_filter_min, old_filter_mag) 
+    end
+    return ret
+end
+
+-- Util function to render one card to a .png file (usually saved to the mods folder's parent directory)
+function SMODS.card_to_image(card, scale, filename)
+	if not type(card) == "table" then return end
+    local key = ((card.config or {}).center or {}).key or "card_to_image"
+    scale = scale or G.SETTINGS.GRAPHICS.texture_scaling
+	filename = (filename or key == "j_joker" and "jimbo" or key) .. ".png"
+    
+	local canvas = love.graphics.newCanvas(71 * scale, 95 * scale, {type = '2d', readable = true})
+    canvas:setFilter('nearest', 'nearest')
+
+    local old_t = SMODS.shallow_copy(card.T)
+	local old_shadow = card.no_shadow
+    local old_rm = G.SETTINGS.reduced_motion
+    card.T.r = 0
+    local old_scale = card.T.scale 
+    card.T.scale = scale / G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 -- Don't ask me why I had to multiply by 1.5 here, and by the per-dimension factors below, I do not know,,, (this may have been brute-tinkered)
+    local w, h = old_t.w * 0.997, old_t.h * 0.99348                                                         -- (well these factors are needed to remove extra pixels in height/width for scales == 2.0 -> 16.0 (at least))
+    card:hard_set_T(w/2*(card.T.scale-1), h/2*(card.T.scale-1), w, h)
+	card.no_shadow = true
+    G.SETTINGS.reduced_motion = true
+    SMODS.texture_filter_override = "nearest"
+	canvas:renderTo(card.draw, card)
+    SMODS.texture_filter_override = nil
+    G.SETTINGS.reduced_motion = old_rm
+    card.no_shadow = old_shadow
+    card.T.scale = old_scale
+    card:hard_set_T(old_t.x, old_t.y, old_t.w, old_t.h)
+
+	local image_data = canvas:newImageData()
+	image_data:encode("png", filename)
+	print("SMODS : Saved card image to "..love.filesystem.getSaveDirectory().."/"..filename .. " at scale " .. scale)
 end
 
 function Card:is_suit_shade(shade, bypass_debuff)

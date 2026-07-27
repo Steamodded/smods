@@ -1,7 +1,7 @@
 ---@meta
 
 ---@class SMODS.Rank: SMODS.GameObject
----@field obj_buffer? Ranks|string[] Array of keys to all objects registered to this class. 
+---@field obj_buffer? Ranks[]|string[] Array of keys to all objects registered to this class. 
 ---@field obj_table? table<Ranks|string, SMODS.Rank|table> Table of objects registered to this class. 
 ---@field loc_txt? table|{name: string} Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.GameObject|table Parent class. 

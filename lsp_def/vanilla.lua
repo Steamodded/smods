@@ -80,6 +80,11 @@ function Sprite:__call(...) return self end
 AnimatedSprite = {}
 function AnimatedSprite:__call(...) return self end
 
+---@class StateSprite: AnimatedSprite
+---@overload fun(...: any): StateSprite|table
+StateSprite = {}
+function StateSprite:__call(...) return self end
+
 ---@class Blind: Moveable
 ---@overload fun(...: any): Blind|table
 Blind = {}

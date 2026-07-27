@@ -458,7 +458,7 @@ SMODS.DrawStep {
     key = 'debuff',
     order = 70,
     func = function(self)
-        if self.debuff then
+        if self.debuff and not self.delay_debuff then
             self.children.center:draw_shader('debuff', nil, self.ARGS.send_to_shader)
             if self.children.front and (self.ability.delayed or not self:should_hide_front()) then
                 self.children.front:draw_shader('debuff', nil, self.ARGS.send_to_shader)

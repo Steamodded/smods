@@ -449,8 +449,9 @@ function SMODS.add_card(t) end
 ---@param card Card|table
 ---@param debuff boolean|"reset"|'prevent_debuff'?
 ---@param source string?
+---@param delay boolean? If the application of the shader should be delayed
 --- Sets a flag that debuffs (or prevents debuff on) provided `card`.
-function SMODS.debuff_card(card, debuff, source) end
+function SMODS.debuff_card(card, debuff, source, delay) end
 
 ---@param card Card|table
 --- Recalculate card debuffs.
@@ -656,6 +657,12 @@ function SMODS.smeared_check(card, suit) end
 --- Checks if the provided `hand` meets the conditions to trigger Seeing Double.
 function SMODS.seeing_double_check(hand, suit) end
 
+---@param ctrl string|table
+---@param vars table[]
+---@return table?
+--- Given a `ctrl` string that represents a hex code, a numeric index in `vars` or a valid loc_colour, returns the colour table corresponding to `ctrl`. Given a `ctrl` table, treats `ctrl.c` as the string value of `ctrl`.
+function SMODS.get_loc_colour(ctrl, vars) end
+
 ---@param lines table
 ---@param args table
 ---@return table
@@ -781,6 +788,14 @@ function SMODS.push_to_context_stack(context, func) end
 ---@param func string|nil The function/file from which the call originates
 --- Pop a context from the SMODS.context_stack. (Removes 1 from .count)
 function SMODS.pop_from_context_stack(context, func) end
+
+---@param stack_index integer? Optionally the index of the context in the SMODS.context_stack from which to return the latest evaluee. -1 for previous context.
+--- Returns the latest evaluee of the context at stack_index in the SMODS.context_stack
+function SMODS.get_context_evaluee(stack_index) end
+
+---@param previous_context boolean? Whether or not to check the current context's previous evaluee, skipped if this is true.
+--- Returns the previous evaluee, first checking the current SMODS.context_stack entry's previous evaluee and then checking the previous entry's latest evaluee.
+function SMODS.get_previous_evaluee() end
 
 ---@return CalcContext|table|nil
 --- Returns the second to last context from the SMODS.context_stack.
@@ -929,7 +944,7 @@ function SMODS.mod_blind_size(mod_blind_size) end
 
 ---Copies a card
 ---@param card Card|table? Card to copy
----@param args CopyCardArgs
+---@param args CopyCardArgs?
 ---@return Card|table
 function SMODS.copy_card(card, args) end
 
@@ -939,6 +954,12 @@ function SMODS.copy_card(card, args) end
 ---@param args {set: string?, area: CardArea|table?, playing_card: integer?}?
 ---@return Card|table
 function SMODS.add_to_deck(card, args) end
+
+-- Util function to render one card to a `.png` file, saved to `love.filesystem.getSaveDirectory()`
+---@param card Card|table Card to save as an image
+---@param scale number? Scale to render the card at (default = G.SETTINGS.GRAPHICS.texture_scaling)
+---@param filename string? Name of the file (default = [center.key])
+function SMODS.card_to_image(card, scale, filename) end
 
 ---Checks if a card counts as at least one suit that matches the provided suit shade
 ---@param card Card|table Card to check
