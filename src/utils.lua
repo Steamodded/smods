@@ -1984,12 +1984,20 @@ function SMODS.update_context_flags(context, flags)
     end
     if context.scaling_card then
         if not context.block_overrides.value and flags.override_value then
-            context.value = flags.override_value.value or context.value
-            SMODS.calculate_effect(flags.override_value, flags.scored_card)
+            if type(flags.override_value) == 'table' then
+                context.value = flags.override_value.value or context.value
+                SMODS.calculate_effect(flags.override_value, flags.scored_card)
+            else
+                context.value = flags.override_value
+            end
         end
         if not context.block_overrides.scalar and flags.override_scalar_value then
-            context.scalar_value = flags.override_scalar_value or context.scalar_value
-            SMODS.calculate_effect(flags.override_scalar_value, flags.scored_card)
+            if type(flags.override_scalar_value) == 'table' then
+                context.scalar_value = flags.override_scalar_value or context.value
+                SMODS.calculate_effect(flags.override_scalar_value, flags.scored_card)
+            else
+                context.scalar_value = flags.override_scalar_value
+            end
         end
         if not context.block_overrides.message and flags.override_message then
             context.scaling_message = SMODS.merge_defaults(flags.override_message, context.scaling_message)
@@ -2002,9 +2010,14 @@ function SMODS.update_context_flags(context, flags)
         flags.override_value, flags.override_scalar_value, flags.override_message, flags.post = nil, nil, nil, nil
     end
     if context.resetting_card then
-        if not context.block_overrides.value and flags.override_value then
-            context.reset_value = flags.override_value.value or context.reset_value
-            SMODS.calculate_effect(flags.override_value, flags.scored_card)
+        local override_value = flags.override_value or flags.override_reset_value
+        if not context.block_overrides.value and override_value then
+            if type(override_value) == 'table' then
+                context.reset_value = override_value.value
+                SMODS.calculate_effect(override_value, flags.scored_card)
+            else 
+                context.reset_value = override_value
+            end
         end
         if not context.block_overrides.message and flags.override_message then
             context.reset_message = SMODS.merge_defaults(flags.override_message, context.reset_message)
