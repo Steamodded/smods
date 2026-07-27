@@ -369,7 +369,7 @@ local function _general_quantum_tally(key, cards, ...)
 end
 
 local function _general_quantum_calculate(key, card, context, args, ...)
-    SMODS.push_to_context_stack(context, "quantum_card_fields.lua : _general_quantum_calculate")
+    SMODS.push_to_context_stack(context, card, "quantum_card_fields.lua : _general_quantum_calculate : QField = " .. key)
     local q_field = SMODS.QuantumCardFields[key]
     SMODS.qfield_cache[card].active_field = key
     local values = q_field.getter(card, args, ...)
@@ -377,7 +377,6 @@ local function _general_quantum_calculate(key, card, context, args, ...)
     for c_key, v in pairs(values) do
         local obj = q_field.g_obj_table[c_key] or {} -- Due to Enhancements storing their key equivalently to Jokers (config.center.key), this {} is necessary to prevent a crash when quantum_calculating Jokers. 
         if obj.calculate and type(obj.calculate) == 'function' then
-            SMODS.set_context_evaluee(obj)
             if SMODS.qfield_cache[card].abilities and q_field.cache_ability then 
                 SMODS.qfield_cache[card].active_ability = SMODS.get_active_q_ability(SMODS.qfield_cache[card].abilities, key, c_key) 
             end
@@ -390,8 +389,7 @@ local function _general_quantum_calculate(key, card, context, args, ...)
     end
     SMODS.qfield_cache[card].active_ability = card._base_ability
     SMODS.qfield_cache[card].active_field = nil
-    SMODS.set_context_evaluee(card)
-    SMODS.pop_from_context_stack(context, "quantum_card_fields.lua : _general_quantum_calculate")
+    SMODS.pop_from_context_stack(context, "quantum_card_fields.lua : _general_quantum_calculate : QField = " .. key)
     return ret
 end
 
