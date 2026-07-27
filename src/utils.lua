@@ -2016,12 +2016,6 @@ function SMODS.get_previous_context()
     return (SMODS.context_stack[#SMODS.context_stack-1] or {}).context
 end
 
-function SMODS.set_context_evaluee(obj)
-    if #SMODS.context_stack > 0 then
-        SMODS.context_stack[#SMODS.context_stack].evaluee = obj
-    end
-end
-
 -- Used to calculate contexts across G.jokers, scoring_hand (if present), G.play and G.GAME.selected_back
 -- Hook this function to add different areas to MOST calculations
 function SMODS.calculate_context(context, return_table, no_resolve)
@@ -2357,7 +2351,6 @@ function SMODS.eval_individual(individual, context)
             SMODS.calculate_context({blueprint_card = context.blueprint_card, post_trigger = true, other_card = individual.object, other_context = context, other_ret = ret}, post_trig)
         end
     end
-    SMODS.set_context_evaluee(nil)
     SMODS.pop_from_context_stack(context, "utils.lua : SMODS.eval_individual")
     return ret, post_trig
 end
