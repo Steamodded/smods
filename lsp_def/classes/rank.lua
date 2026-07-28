@@ -1,7 +1,7 @@
 ---@meta
 
 ---@class SMODS.Rank: SMODS.GameObject
----@field obj_buffer? Ranks|string[] Array of keys to all objects registered to this class. 
+---@field obj_buffer? Ranks[]|string[] Array of keys to all objects registered to this class. 
 ---@field obj_table? table<Ranks|string, SMODS.Rank|table> Table of objects registered to this class. 
 ---@field loc_txt? table|{name: string} Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.GameObject|table Parent class. 
@@ -14,8 +14,8 @@
 ---@field shorthand? string Short description of this rank in deck preview. 
 ---@field face_nominal? number Determines the displayed order of ranks with the same nominal value. 
 ---@field face? boolean Sets if this rank counts as a "face" card. 
----@field next? Ranks|string[] List of keys to other ranks that come after this card. 
----@field prev? Ranks|string[] List of keys to other ranks that come before this card. Used when evaluating straights. 
+---@field next? Ranks[]|string[] List of keys to other ranks that come after this card. 
+---@field prev? Ranks[]|string[] List of keys to other ranks that come before this card. Used when evaluating straights. 
 ---@field strength_effect? table|{fixed?: number, random?: boolean, ignore?: boolean} Determines how cards with this rank behave when Strength is used. 
 ---@field straight_edge? boolean Sets if this rank behaves like an Ace for straights. 
 ---@field suit_map? table<string, number> For any suit keys in this table, use this rank's atlas over the suit's atlas. Provided number is the `y` position of the suit on the rank's atlas. 

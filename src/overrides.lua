@@ -132,7 +132,7 @@ function create_UIBox_your_collection_blinds(exit)
 	local row, col = 1, 1
 	for k, v in ipairs(blind_tab) do
 		local atlas_key = v.discovered and v.atlas or 'blind_chips'
-		local temp_blind = SMODS.create_sprite(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, atlas_key, v.discovered and v.pos or G.b_undiscovered.pos)
+		local temp_blind = SMODS.create_sprite(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, atlas_key, v.discovered and v.pos or G.b_undiscovered.pos, v.sprite_args)
 		temp_blind.states.click.can = false
 		temp_blind.states.drag.can = false
 		temp_blind.states.hover.can = true
@@ -322,7 +322,7 @@ function G.FUNCS.your_collection_blinds_page(args)
 	local row, col = 1, 1
 	for k, v in ipairs(blind_tab) do
 		local atlas_key = v.discovered and v.atlas or 'blind_chips'
-		local temp_blind = SMODS.create_sprite(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, atlas_key, v.discovered and v.pos or G.b_undiscovered.pos)
+		local temp_blind = SMODS.create_sprite(G.your_collection[row].T.x + G.your_collection[row].T.w/2, G.your_collection[row].T.y, 1.3, 1.3, atlas_key, v.discovered and v.pos or G.b_undiscovered.pos, v.sprite_args)
 		temp_blind.states.click.can = false
 		temp_blind.states.drag.can = false
 		temp_blind.states.hover.can = true
@@ -1796,9 +1796,9 @@ end
 
 function Card:set_sprites(_center, _front)
     if _front then
-        local _atlas, _pos = get_front_spriteinfo(_front)
+        local _atlas, _pos, _sprite_args = get_front_spriteinfo(_front)
         if self.children.front then self.children.front:remove() end
-		self.children.front = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, _atlas, _pos)
+		self.children.front = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, _atlas, _pos, _sprite_args)
 		self.children.front.states.hover = self.states.hover
 		self.children.front.states.click = self.states.click
 		self.children.front.states.drag = self.states.drag
@@ -1837,9 +1837,9 @@ function Card:set_sprites(_center, _front)
 				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
 			elseif _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' then
 				local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
-				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, _center.pos or {x=0, y=0})
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, _center.pos or {x=0, y=0}, _center.sprite_args)
 			else
-				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, _center.atlas or 'centers', _center.pos)
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, _center.atlas or 'centers', _center.pos, _center.sprite_args)
 			end
 			self.children.center.states.hover = self.states.hover
 			self.children.center.states.click = self.states.click
@@ -1866,7 +1866,7 @@ function Card:set_sprites(_center, _front)
         if _center.soul_pos or _center[G.SETTINGS.colourblind_option and 'hc_soul_atlas' or 'lc_soul_atlas'] or _center.soul_atlas then
 			if self.children.floating_sprite then self.children.floating_sprite:remove() end
             local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_soul_atlas' or 'lc_soul_atlas'] or _center.soul_atlas or _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
-            self.children.floating_sprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, _center.soul_pos or { x = 0, y = 0 })
+            self.children.floating_sprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, _center.soul_pos or { x = 0, y = 0 }, (_center.soul_pos or {}).sprite_args)
             self.children.floating_sprite.role.draw_major = self
             self.children.floating_sprite.states.hover.can = false
             self.children.floating_sprite.states.click.can = false
@@ -1874,7 +1874,7 @@ function Card:set_sprites(_center, _front)
 
         if self.children.back then self.children.back:remove() end
 		local atlas_key = (G.GAME.viewed_back or G.GAME.selected_back) and ((G.GAME.viewed_back or G.GAME.selected_back)[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or (G.GAME.viewed_back or G.GAME.selected_back).atlas) or 'centers'
-		self.children.back = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos))
+		self.children.back = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos), (G.GAME.viewed_back or G.GAME.selected_back or {}).sprite_args)
 		self.children.back.states.hover = self.states.hover
 		self.children.back.states.click = self.states.click
 		self.children.back.states.drag = self.states.drag
@@ -1893,6 +1893,7 @@ function get_front_spriteinfo(_front)
 			local deckSkin = SMODS.DeckSkins[collab]
 			if deckSkin then
 				if deckSkin.outdated then
+					local sprite_args = (deckSkin.sprite_args_by_value or {})[_front.value]
 					local hasRank = false
 					for i = 1, #deckSkin.ranks do
 						if deckSkin.ranks[i] == _front.value then hasRank = true break end
@@ -1901,23 +1902,25 @@ function get_front_spriteinfo(_front)
 						local atlas = SMODS.get_atlas(G.SETTINGS.colour_palettes[_front.suit] == 'hc' and deckSkin.hc_atlas or deckSkin.lc_atlas)
 						if atlas then
 							if deckSkin.pos_style == 'collab' then
-								return atlas, G.COLLABS.pos[_front.value]
+								return atlas, G.COLLABS.pos[_front.value],sprite_args
 							elseif deckSkin.pos_style == 'suit' then
-								return atlas, { x = _front.pos.x, y = 0}
+								return atlas, { x = _front.pos.x, y = 0}, sprite_args
 							elseif deckSkin.pos_style == 'deck' then
-								return atlas, _front.pos
+								return atlas, _front.pos, sprite_args
 							elseif deckSkin.pos_style == 'ranks' or nil then
 								for i, rank in ipairs(deckSkin.ranks) do
 									if rank == _front.value then
-										return atlas, { x = i - 1, y = 0}
+										return atlas, { x = i - 1, y = 0}, sprite_args
 									end
 								end
 							end
 						end
 					end
-					return SMODS.get_atlas(G.SETTINGS.colour_palettes[_front.suit] == 'hc' and _front.hc_atlas or _front.lc_atlas or {}) or SMODS.get_atlas(_front.atlas) or SMODS.get_atlas("cards_"..(G.SETTINGS.colour_palettes[_front.suit] == 'hc' and 2 or 1)), _front.pos
+                    local atlas = SMODS.get_atlas(G.SETTINGS.colour_palettes[_front.suit] == 'hc' and _front.hc_atlas or _front.lc_atlas or {}) or SMODS.get_atlas(_front.atlas) or SMODS.get_atlas("cards_"..(G.SETTINGS.colour_palettes[_front.suit] == 'hc' and 2 or 1))
+					return atlas, _front.pos, sprite_args
 				else
 					local palette = deckSkin.palette_map and deckSkin.palette_map[G.SETTINGS.colour_palettes[_front.suit] or ''] or (deckSkin.palettes or {})[1]
+					local sprite_args = (palette.sprite_args_by_value or {})[_front.value] or (deckSkin.sprite_args_by_value or {})[_front.value]
 					local hasRank = false
 					for i = 1, #palette.ranks do
 						if palette.ranks[i] == _front.value then hasRank = true break end
@@ -1930,38 +1933,39 @@ function get_front_spriteinfo(_front)
 									atlas = SMODS.get_atlas(palette.pos_style[_front.value].atlas)
 								end
 								if palette.pos_style[_front.value].pos then
-									return atlas, palette.pos_style[_front.value].pos
+									return atlas, palette.pos_style[_front.value].pos, sprite_args
 								end
 							elseif palette.pos_style.fallback_style then
 								if palette.pos_style.fallback_style == 'collab' then
-									return atlas, G.COLLABS.pos[_front.value]
+									return atlas, G.COLLABS.pos[_front.value], sprite_args
 								elseif palette.pos_style.fallback_style == 'suit' then
-									return atlas, { x = _front.pos.x, y = 0}
+									return atlas, { x = _front.pos.x, y = 0}, sprite_args
 								elseif palette.pos_style.fallback_style == 'deck' then
-									return atlas, _front.pos
+									return atlas, _front.pos, sprite_args
 								end
 							end
 						elseif palette.pos_style == 'collab' then
-							return atlas, G.COLLABS.pos[_front.value]
+							return atlas, G.COLLABS.pos[_front.value], sprite_args
 						elseif palette.pos_style == 'suit' then
-							return atlas, { x = _front.pos.x, y = 0}
+							return atlas, { x = _front.pos.x, y = 0}, sprite_args
 						elseif palette.pos_style == 'deck' then
-							return atlas, _front.pos
+							return atlas, _front.pos, sprite_args
 						elseif palette.pos_style == 'ranks' or nil then
 							for i, rank in ipairs(palette.ranks) do
 								if rank == _front.value then
-									return atlas, { x = i - 1, y = 0}
+									return atlas, { x = i - 1, y = 0}, sprite_args
 								end
 							end
 						end
 					end
-					return SMODS.get_atlas(palette.hc_default and _front.hc_atlas or _front.lc_atlas or {}) or SMODS.get_atlas(_front.atlas) or SMODS.get_atlas("cards_"..(palette.hc_default and 2 or 1)), _front.pos
+                    local atlas = SMODS.get_atlas(palette.hc_default and _front.hc_atlas or _front.lc_atlas or {}) or SMODS.get_atlas(_front.atlas) or SMODS.get_atlas("cards_"..(palette.hc_default and 2 or 1))
+					return atlas, _front.pos, sprite_args
 				end
 			end
 		end
 	end
-
-	return SMODS.get_atlas(G.SETTINGS.colourblind_option and _front.hc_atlas or _front.lc_atlas or {}) or SMODS.get_atlas(_front.atlas) or SMODS.get_atlas("cards_"..(G.SETTINGS.colourblind_option and 2 or 1)), _front.pos
+    local atlas = SMODS.get_atlas(G.SETTINGS.colourblind_option and _front.hc_atlas or _front.lc_atlas or {}) or SMODS.get_atlas(_front.atlas) or SMODS.get_atlas("cards_"..(G.SETTINGS.colourblind_option and 2 or 1))
+	return atlas, _front.pos, _front.sprite_args
 end
 
 
@@ -2972,3 +2976,99 @@ end
 
         return SMODS.shader_stub
     end
+
+
+-- AnimatedSprite : Use obj.sprite_args and allow wrapping / overlapping frames / StateSprite args like flipped_h/v, frame_duration(s) and frame_order.
+function AnimatedSprite:init(X, Y, W, H, new_sprite_atlas, sprite_pos, args)
+	sprite_pos = sprite_pos or {x=0, y=0}
+	self.sprite_args = args or {}
+    Sprite.init(self,X, Y, W, H, new_sprite_atlas, sprite_pos)
+    self.offset = {x = 0, y = 0}
+
+    table.insert(G.ANIMATIONS, self)
+    if getmetatable(self) == AnimatedSprite then 
+		self.sprite_args.start_pos = self.sprite_args.start_pos or {}
+		self.sprite_args.start_pos.x = self.sprite_args.start_pos.x or sprite_pos.x or 0
+		self.sprite_args.start_pos.y = self.sprite_args.start_pos.y or sprite_pos.y or 0
+		self.sprite_args.frames = self.sprite_args.frames or self.sprite_args.end_pos and ((self.sprite_args.end_pos.x or self.sprite_args.start_pos.x) - self.sprite_args.start_pos.x + ((self.sprite_args.end_pos.y or self.sprite_args.start_pos.y) - self.sprite_args.start_pos.y) * self.atlas.columns + 1) or self.atlas.frames or 1
+		self.flipped_h = self.sprite_args.flipped_h or false
+		self.flipped_v = self.sprite_args.flipped_v or false
+        table.insert(G.I.SPRITE, self)
+    end
+end
+
+function AnimatedSprite:animate()
+    local frame_finished = (math.floor(G.ANIMATION_FPS*(G.TIMERS.REAL - self.offset_seconds) / self.current_animation.frame_duration)) > 0
+    if frame_finished then
+        self.current_animation.current = SMODS.get_new_frame(self, self.sprite_args.frame_order)
+        self.current_animation.frame_duration = (self.sprite_args.frame_durations or {})[self.current_animation.current+1] or self.sprite_args.frame_duration or 1
+        local _x = self.animation.w * ((self.sprite_args.start_pos.x + self.current_animation.current) % self.atlas.columns)
+        local _y = self.animation.h * (self.sprite_args.start_pos.y + math.floor(self.current_animation.current / self.atlas.columns))
+        self.sprite:setViewport(
+            _x,
+            _y,
+            self.animation.w,
+            self.animation.h
+        )
+        self.offset_seconds = G.TIMERS.REAL
+    end
+    if self.float then 
+        self.T.r = 0.02*math.sin(2*G.TIMERS.REAL+self.T.x)
+        self.offset.y = -(1+0.3*math.sin(0.666*G.TIMERS.REAL+self.T.y))*self.shadow_parrallax.y
+        self.offset.x = -(0.7+0.2*math.sin(0.666*G.TIMERS.REAL+self.T.x))*self.shadow_parrallax.x
+    end
+end
+
+function AnimatedSprite:draw_self()
+    if not self.states.visible then return end
+
+    prep_draw(self, 1)
+    love.graphics.scale(1/self.scale_mag)
+    love.graphics.setColor(G.C.WHITE)
+    love.graphics.draw(
+        self.atlas.image, 
+        self.sprite,
+        (self.flipped_h and self.atlas.px or 0), (self.flipped_v and self.atlas.py or 0),
+        0,
+        self.VT.w/(self.T.w) * (self.flipped_h and -1 or 1),
+        self.VT.h/(self.T.h) * (self.flipped_v and -1 or 1)
+    )
+    love.graphics.pop()
+end
+
+function AnimatedSprite:set_sprite_pos(sprite_pos)
+    self.animation = {
+        x= sprite_pos and sprite_pos.x or 0,
+        y= sprite_pos and sprite_pos.y or 0,
+        frames= self.sprite_args.frames or self.atlas.frames or 1, current=0,
+        w=self.scale.x, h=self.scale.y}
+
+    self.current_animation = {
+        current = 0,
+        frames = self.animation.frames,
+        w = self.animation.w,
+        h = self.animation.h,
+		frame_index = 0,
+		frame_duration = (self.sprite_args.frame_durations or {})[1] or self.sprite_args.frame_duration or 1 / (self.atlas.FPS or G.ANIMATION_FPS) * G.ANIMATION_FPS or 1
+	}
+
+    self.image_dims = self.image_dims or {}
+    self.image_dims[1], self.image_dims[2] = self.atlas.image:getDimensions()
+
+    self.sprite = love.graphics.newQuad( 
+		self.animation.w*self.animation.x,
+        self.animation.h*self.animation.y,
+		self.animation.w,
+		self.animation.h,
+		self.image_dims[1], self.image_dims[2])
+    self.offset_seconds = G.TIMERS.REAL
+end
+
+function AnimatedSprite:get_pos_pixel()
+    self.RETS.get_pos_pixel = self.RETS.get_pos_pixel or {}
+    self.RETS.get_pos_pixel[1] = ((self.sprite_args.start_pos.x + self.current_animation.current) % self.atlas.columns)
+    self.RETS.get_pos_pixel[2] = (self.sprite_args.start_pos.y + math.floor(self.current_animation.current / self.atlas.columns))
+    self.RETS.get_pos_pixel[3] = self.animation.w
+    self.RETS.get_pos_pixel[4] = self.animation.h
+    return self.RETS.get_pos_pixel
+end

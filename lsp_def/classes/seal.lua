@@ -1,7 +1,7 @@
 ---@meta
 
 ---@class SMODS.Seal: SMODS.GameObject
----@field obj_buffer? Seals|string[] Array of keys to all objects registered to this class. 
+---@field obj_buffer? Seals[]|string[] Array of keys to all objects registered to this class. 
 ---@field obj_table? table<Seals|string, SMODS.Seal|table> Table of objects registered to this class. 
 ---@field loc_txt? table|{name: string|string[], text: string[]|string[][], label: string} Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.GameObject|table Parent class. 

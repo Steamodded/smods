@@ -225,6 +225,46 @@ position = "before"
 payload = "-- Function overridden by SMODS in src/overrides.lua"
 match_indent = true
 
+[[patches]]
+[patches.pattern]
+target = "engine/animatedsprite.lua"
+pattern = "function AnimatedSprite:init(X, Y, W, H, new_sprite_atlas, sprite_pos)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "engine/animatedsprite.lua"
+pattern = "function AnimatedSprite:set_sprite_pos(sprite_pos)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "engine/animatedsprite.lua"
+pattern = "function AnimatedSprite:get_pos_pixel()"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "engine/animatedsprite.lua"
+pattern = "function AnimatedSprite:draw_self()"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "engine/animatedsprite.lua"
+pattern = "function AnimatedSprite:animate()"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
 # src/ui.lua
 
 [[patches]]

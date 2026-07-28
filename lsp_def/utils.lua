@@ -479,8 +479,9 @@ function SMODS.add_card(t) end
 ---@param card Card|table
 ---@param debuff boolean|"reset"|'prevent_debuff'?
 ---@param source string?
+---@param delay boolean? If the application of the shader should be delayed
 --- Sets a flag that debuffs (or prevents debuff on) provided `card`.
-function SMODS.debuff_card(card, debuff, source) end
+function SMODS.debuff_card(card, debuff, source, delay) end
 
 ---@param card Card|table
 --- Recalculate card debuffs.
@@ -942,7 +943,7 @@ function SMODS.mod_blind_size(mod_blind_size) end
 
 ---Copies a card
 ---@param card Card|table? Card to copy
----@param args CopyCardArgs
+---@param args CopyCardArgs?
 ---@return Card|table
 function SMODS.copy_card(card, args) end
 

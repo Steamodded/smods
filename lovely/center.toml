@@ -733,3 +733,15 @@ payload = '''
 SMODS.create_card_scale = SMODS.create_card_scale or {w = 1, h = 1}
 local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W*SMODS.create_card_scale.w, G.CARD_H*SMODS.create_card_scale.h, front, center,
 '''
+
+# Automatically get the colour of a custom consumable type for materializing
+# Card.start_materialize
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "(self.ability.set == 'Voucher' and {G.C.SECONDARY_SET.Voucher, G.C.CLEAR}) or "
+position = 'after'
+match_indent = true
+payload = '''
+(G.C.SECONDARY_SET[self.ability.set] and {G.C.SECONDARY_SET[self.ability.set]}) or
+'''
