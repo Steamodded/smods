@@ -2056,6 +2056,7 @@ end
 function SMODS.is_getter_context(context)
     if context.mod_probability or context.fix_probability then return "probability" end
     if context.check_enhancement then return "enhancement" end
+    if context.scaling_card or context.resetting_card then return "scaling" end
     return false
 end
 
