@@ -2817,7 +2817,7 @@ function SMODS.GUI.scrollbar(args)
 				minh = not args.horizontal and args.h or nil,
 				minw = args.horizontal and args.w or nil,
 				colour = args.bg_colour or G.C.CLEAR,
-				focus_args = { type = "slider" },
+				focus_args = { type = "scrollbar", nav = "tall" },
 				collideable = true,
 				hover = true,
 			},
@@ -2870,6 +2870,57 @@ function SMODS.GUI.scrollbar(args)
 	}
 end
 
+function G.FUNCS.controller_scroll(root, velocity, button)
+    local e = root.children[2]
+    e.states.drag.can = true
+	local scrollbar_track = e.UIBox
+	scrollbar_track.states.drag.can = true
+	local ref_table = e.config.ref_table
+    local ref_value = e.config.ref_value
+    local scrollbox = e.config.scroll_collision_obj
+    local percent = (ref_table[ref_value] - e.config.min) / (e.config.max - e.config.min)
+    local should_scroll = true
+    local was_scrolled = nil
+    if scrollbox then
+		if e.config.scroll_dir == "v" then
+            local h = scrollbox.scroll_args.overflow.node_config.h or scrollbox.scroll_args.overflow.node_config.maxh
+			should_scroll = scrollbox.content.T.h > (h or math.huge)
+		else
+            local w = scrollbox.scroll_args.overflow.node_config.w or scrollbox.scroll_args.overflow.node_config.maxw
+			should_scroll = scrollbox.content.T.w > (w or math.huge)
+		end
+    end
+	if should_scroll and scrollbox then
+		local v = velocity
+		if e.config.scroll_dir == "h" and (button == "dpright" or button == "dpleft") then
+			if button == "dpleft" then
+				v = -v
+			end
+			local scroll_velocity = v * (e.config.scroll_mult or 1)
+			percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
+			percent = math.max(0, math.min(1, percent))
+			ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
+            was_scrolled = true
+		elseif button == "dpup" or button == "dpdown" then
+			if button == "dpdown" then
+				v = -v
+			end
+			local scroll_velocity = v * (e.config.scroll_mult or 1)
+			percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
+			percent = math.max(0, math.min(1, percent))
+			ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
+            was_scrolled = true
+		end
+	end
+    if e.config.scroll_dir == "h" then
+        scrollbar_track.UIRoot.children[1].config.minw = percent * (scrollbar_track.T.w - e.T.w)
+    else
+        scrollbar_track.UIRoot.children[1].config.minh = percent * (scrollbar_track.T.h - e.T.h)
+    end
+    scrollbar_track:recalculate()
+    return was_scrolled
+end
+
 function G.FUNCS.scrollbar(e)
 	e.states.drag.can = true
 	local scrollbar_track = e.UIBox
@@ -2902,7 +2953,7 @@ function G.FUNCS.scrollbar(e)
             percent = math.max(0, math.min(1, percent))
             ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
         elseif scrollbox and scrollbox:collides_with_point(G.CURSOR.T) or scrollbar_track:collides_with_point(G.CURSOR.T) then
-            local scroll_velocity = SMODS.wheel_velocity.y * (e.config.scroll_mult or 1) / G.TILESIZE
+            local scroll_velocity = SMODS.wheel_velocity.y * (e.config.scroll_mult or 1) * G.real_dt * G.TILESIZE
             percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
             percent = math.max(0, math.min(1, percent))
             ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
