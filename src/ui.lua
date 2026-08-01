@@ -2817,9 +2817,10 @@ function SMODS.GUI.scrollbar(args)
 				minh = not args.horizontal and args.h or nil,
 				minw = args.horizontal and args.w or nil,
 				colour = args.bg_colour or G.C.CLEAR,
-				focus_args = { type = "scrollbar", nav = "tall" },
+				focus_args = { type = "scrollbar", nav = args.horizontal and "wide" or "tall" },
 				collideable = true,
 				hover = true,
+                _attached_dropdown_button = args._attached_dropdown_button,
 			},
 			nodes = {
 				{
@@ -2893,7 +2894,7 @@ function G.FUNCS.controller_scroll(root, velocity, button)
 	if should_scroll and scrollbox then
 		local v = velocity
 		if e.config.scroll_dir == "h" and (button == "dpright" or button == "dpleft") then
-			if button == "dpleft" then
+			if button == "dpright" then
 				v = -v
 			end
 			local scroll_velocity = v * (e.config.scroll_mult or 1)
@@ -2901,7 +2902,7 @@ function G.FUNCS.controller_scroll(root, velocity, button)
 			percent = math.max(0, math.min(1, percent))
 			ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
             was_scrolled = true
-		elseif button == "dpup" or button == "dpdown" then
+		elseif e.config.scroll_dir == "v" and (button == "dpup" or button == "dpdown") then
 			if button == "dpdown" then
 				v = -v
 			end
@@ -2974,6 +2975,8 @@ function SMODS.GUI.dropdown_select(args)
     args.ref_table[args.ref_value] = args.ref_table[args.ref_value] or args.init_value
     args.default = args.default or args.options[1]
     args.scale = args.scale or 0.4
+    args.close_on_select = args.close_on_select ~= false
+    args.no_unselect = args.no_unselect ~= false
     local needs_default = true
     for _, v in ipairs(args.options) do
         if args.ref_table[args.ref_value] == v then
@@ -3182,7 +3185,7 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
 					},
 				},
 			},
-            config = { align = "cm" },
+            config = { align = "cm", instance_type = "DROPDOWN" },
 		},
         overflow = {
             node_config = {
@@ -3265,6 +3268,7 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
                                 scroll_collision_obj = scrollbox,
                                 knob_h = args.max_menu_h / 6,
                                 bg_colour = { 0, 0, 0, 0.15 },
+                                _attached_dropdown_button = parent
                             })
                         }
                     } or nil,

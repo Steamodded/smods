@@ -375,3 +375,19 @@ self.focused.target.config.focus_args and
 payload = '''
 self.focused.target.config.focus_args.type == "scrollbar" and
 '''
+
+[[patches]]
+[patches.pattern]
+target = 'engine/controller.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if eligible then
+'''
+payload = '''
+if self.focused.target and self.focused.target.UIBox and self.focused.target.UIBox.config.instance_type == "DROPDOWN" then
+    if not (v.config.dropdown_button ~= nil or self.focused.target.config.dropdown_button == v or v.config._attached_dropdown_button == self.focused.target.config.dropdown_button) then
+        eligible = false
+    end
+end
+'''
