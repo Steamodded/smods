@@ -1916,7 +1916,7 @@ G.E_MANAGER:add_event(Event({
         return true
     end
 }))
-SMODS.destroy_cards(self, nil, nil, true)
+SMODS.destroy_cards(self, nil, nil, nil)
 '''
 
 # Joker-type removed context added
