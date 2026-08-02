@@ -33,6 +33,8 @@ SMODS.SpriteStep {
 	order = 0,
 	func = function(self, image, quad, sprite)
 		love.graphics.draw(image,quad,0,0)
+		love.graphics.setColor(1,0,0)
+		love.graphics.rectangle("fill", 5, 5, 20, 20)
 	end,
 	should_apply = function(self, sprite) return false end,
 }
@@ -67,6 +69,7 @@ function Sprite:draw_self(overlay)
 	SMODS.SpriteStepQuad:setViewport(vx,vy,self.scale.x,self.scale.y,qx,qy)
 
     love.graphics.setBlendMode("alpha", "premultiplied")
+	local first = true
 	for i, k in ipairs(SMODS.SpriteStep.obj_buffer) do
 		local step = SMODS.SpriteSteps[k]
 		if step.should_apply and step:should_apply(self) or type(step.should_apply) == "nil" then
@@ -76,13 +79,21 @@ function Sprite:draw_self(overlay)
 			love.graphics.setShader()
 			love.graphics.setCanvas(storagecanvas)
 			love.graphics.clear()
-			love.graphics.draw(i == 1 and self.atlas.image or canvas,0,0)
+			print(first)
+			if first then
+				love.graphics.draw(
+					self.atlas.image,
+					self.sprite,vx,vy)
+			else
+				love.graphics.draw(canvas, 0, 0)
+			end
 			love.graphics.setCanvas(canvas)
 			love.graphics.translate(vx,vy)
 			love.graphics.clear()
 			step:func(storagecanvas, SMODS.SpriteStepQuad, self)
 
 			love.graphics.pop()
+			first = false
 		end
 	end
 
