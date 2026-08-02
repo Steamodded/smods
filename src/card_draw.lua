@@ -562,7 +562,5 @@ function Card:draw(layer)
     end
 end
 
--- Import Sprite Steps optional feature
-if not SMODS.optional_features.sprite_steps then
-    assert(load(SMODS.NFS.read(SMODS.path..'src/utils/sprite_steps.lua'), ('=[SMODS _ "src/utils/sprite_steps.lua"]')))()
-end
+-- Import Sprite Steps
+ assert(load(SMODS.NFS.read(SMODS.path..'src/utils/sprite_steps.lua'), ('=[SMODS _ "src/utils/sprite_steps.lua"]')))()

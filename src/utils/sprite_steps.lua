@@ -38,6 +38,13 @@ SMODS.SpriteStep {
 
 local sds_hook = Sprite.draw_self
 function Sprite:draw_self(overlay)
+	-- Skip if no SpriteSteps are applicable
+	local do_the_thing = false
+	for i, k in ipairs(SMODS.SpriteStep.obj_buffer) do
+		if step.should_apply and step:should_apply(self) or type(step.should_apply) == "nil" then do_the_thing = true break end
+	end
+	if not do_the_thing then sds_hook(self, overlay) return end
+
 	-- Get existing canvas and shader
 	local target = love.graphics.getCanvas()
 	local shader = love.graphics.getShader()
