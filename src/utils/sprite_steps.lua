@@ -77,7 +77,6 @@ function Sprite:draw_self(overlay)
 			love.graphics.setShader()
 			love.graphics.setCanvas(storagecanvas)
 			love.graphics.clear()
-			print(first)
 			if first then
 				love.graphics.draw(
 					self.atlas.image,
@@ -106,48 +105,3 @@ function Sprite:draw_self(overlay)
 	sds_hook(self, overlay)
 	self.atlas.image = old_img
 end
-
---[[local sds_hook = Sprite.draw_self
-function Sprite:draw_self(overlay)
-	local target = love.graphics.getCanvas()
-	local shader = love.graphics.getShader()
-
-	if self.RETS and self.RETS.get_pos_pixel then
-		local tw,th = self.RETS.get_pos_pixel[1]*self.RETS.get_pos_pixel[3], self.RETS.get_pos_pixel[2]*self.RETS.get_pos_pixel[4]
-		SMODS.SpriteStepQuad:setViewport( tw,th, self.RETS.get_pos_pixel[3], self.RETS.get_pos_pixel[4], self.image_dims[1], self.image_dims[2] )
-	end
-
-	local qx,qy = self.sprite:getTextureDimensions()
-	local canvas_name = qx.."_"..qy
-	if not SMODS.SpriteStepCanvases[canvas_name] then
-		SMODS.SpriteStepCanvases[canvas_name] = love.graphics.newCanvas(qx,qy)
-	end
-	local canvas = SMODS.SpriteStepCanvases[canvas_name]
-	
-	local canvas_name = self.atlas.px.."_"..self.atlas.py
-	if not SMODS.SpriteStepCanvases[canvas_name] then
-		SMODS.SpriteStepCanvases[canvas_name] = love.graphics.newCanvas(qx,qy)
-	end
-	local canvas = SMODS.SpriteStepCanvases[canvas_name]
-
-	for _, k in ipairs(SMODS.SpriteStep.obj_buffer) do
-		local step = SMODS.SpriteSteps[k]
-		if step.should_apply and step:should_apply(self) or type(step.should_apply) == "nil" then
-			love.graphics.push()
-			love.graphics.origin()
-			love.graphics.translate(0,0)
-			love.graphics.setCanvas(canvas)
-			--print(step.key)
-			canvas:renderTo(step.func, step, SMODS.SpriteStepQuad, self.atlas.image, self)
-			love.graphics.pop()
-		end
-	end
-	
-	love.graphics.setCanvas({target, stencil=true})
-
-	love.graphics.setShader(shader)
-	local old_img = self.atlas.image
-	self.atlas.image = canvas
-	sds_hook(self, overlay)
-	self.atlas.image = old_img
-end]]
