@@ -33,8 +33,6 @@ SMODS.SpriteStep {
 	order = 0,
 	func = function(self, image, quad, sprite)
 		love.graphics.draw(image,quad,0,0)
-		love.graphics.setColor(1,0,0)
-		love.graphics.rectangle("fill", 5, 5, 20, 20)
 	end,
 	should_apply = function(self, sprite) return false end,
 }
