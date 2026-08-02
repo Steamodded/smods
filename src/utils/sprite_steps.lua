@@ -27,13 +27,14 @@ SMODS.SpriteStep = SMODS.GameObject:extend {
 	end,
 }
 
+-- Example SpriteStep, Should use as template
 SMODS.SpriteStep {
 	key = "sprite",
 	order = 0,
 	func = function(self, image, quad, sprite)
 		love.graphics.draw(image,quad,0,0)
 	end,
-	should_apply = function(self, sprite) return true end,
+	should_apply = function(self, sprite) return false end,
 }
 
 local sds_hook = Sprite.draw_self
