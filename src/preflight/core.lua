@@ -27,10 +27,17 @@ local json = require "json"
 local lovely_mod_dir = lovely.mod_dir:gsub("/$", "")
 NFS = nativefs -- Global for backwards compatibility
 local NFS = nativefs -- local so nothing accidentially overwrites our global
--- make lovely_mod_dir an absolute path.
--- respects symlink/.. combos
-NFS.setWorkingDirectory(lovely_mod_dir)
-lovely_mod_dir = NFS.getWorkingDirectory()
+-- HACK: This noramlzing breaks the dupe check on iOS
+-- We can't use the same technique to normalize the smods dir.
+-- To investigate:
+-- - Is this nessicary?
+-- - Is there a better way to normalize paths?
+if love.system.getOS() ~= "iOS" then
+    -- make lovely_mod_dir an absolute path.
+    -- respects symlink/.. combos
+    NFS.setWorkingDirectory(lovely_mod_dir)
+    lovely_mod_dir = NFS.getWorkingDirectory()
+end
 -- make sure NFS behaves the same as love.filesystem
 NFS.setWorkingDirectory(love.filesystem.getSaveDirectory())
 

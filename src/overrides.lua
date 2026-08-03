@@ -1856,10 +1856,10 @@ function Card:set_sprites(_center, _front)
                 self.children.center.scale.y = self.children.center.scale.x
             end
             if _center.pixel_size and _center.pixel_size.h and (_center.discovered or self.bypass_discovery_center) then
-                self.children.center.scale.y = self.children.center.scale.y*(_center.pixel_size.h/95)
+                self.children.center.scale.y = self.children.center.scale.y*(_center.pixel_size.h/self.children.center.atlas.py)
             end
             if _center.pixel_size and _center.pixel_size.w and (_center.discovered or self.bypass_discovery_center) then
-                self.children.center.scale.x = self.children.center.scale.x*(_center.pixel_size.w/71)
+                self.children.center.scale.x = self.children.center.scale.x*(_center.pixel_size.w/self.children.center.atlas.px)
             end
         end
 
@@ -2982,6 +2982,11 @@ end
 function AnimatedSprite:init(X, Y, W, H, new_sprite_atlas, sprite_pos, args)
 	sprite_pos = sprite_pos or {x=0, y=0}
 	self.sprite_args = args or {}
+	if new_sprite_atlas.sprite_args then 
+		for arg_key, v in pairs(new_sprite_atlas.sprite_args) do
+			if self.sprite_args[arg_key] == nil then self.sprite_args[arg_key] = v end
+		end
+	end
     Sprite.init(self,X, Y, W, H, new_sprite_atlas, sprite_pos)
     self.offset = {x = 0, y = 0}
 
@@ -3002,7 +3007,7 @@ function AnimatedSprite:animate()
     if frame_finished then
         self.current_animation.current = SMODS.get_new_frame(self, self.sprite_args.frame_order)
 		local frame_duration = (self.sprite_args.frame_durations or {})[self.current_animation.current+1] or self.sprite_args.frame_duration or 1
-		local fps = self.sprite_args.FPS or self.atlas.FPS or G.ANIMATION_FPS
+		local fps = self.sprite_args.fps or self.atlas.fps or G.ANIMATION_FPS
         self.current_animation.frame_duration = frame_duration / fps
         local _x = self.animation.w * ((self.sprite_args.start_pos.x + self.current_animation.current) % self.atlas.columns)
         local _y = self.animation.h * (self.sprite_args.start_pos.y + math.floor(self.current_animation.current / self.atlas.columns))
@@ -3046,7 +3051,7 @@ function AnimatedSprite:set_sprite_pos(sprite_pos)
         w=self.scale.x, h=self.scale.y}
 	
 	local frame_duration = (self.sprite_args.frame_durations or {})[1] or self.sprite_args.frame_duration or 1
-	local fps = self.sprite_args.FPS or self.atlas.FPS or G.ANIMATION_FPS
+	local fps = self.sprite_args.fps or self.atlas.fps or G.ANIMATION_FPS
     self.current_animation = {
         current = 0,
         frames = self.animation.frames,

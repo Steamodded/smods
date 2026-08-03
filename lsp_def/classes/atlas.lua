@@ -10,6 +10,7 @@
 ---@field atlas_table? "ASSET_ATLAS"|"ANIMATION_ATLAS"|"ASSET_IMAGES"|"STATE_ATLAS"|string Type of atlas. `ASSET_ATLAS`: non-animated sprites, `ANIMATION_ATLAS`: animated sprites, `STATE_ATLAS`: StateSprites, `ASSET_IMAGES`: anything other image, e.g. logos.
 ---@field frames? number Number of frames in the animation. 
 ---@field fps? number Speed of animation based on frames per second. Default: 10 or G.ANIMATION_FPS.
+---@field sprite_args? table Default sprite_args passed to Animated/StateSprites with this atlas. (Sprite.init()'s argument param and this field are merged, with the init param taking priority) (Allows defining defaults like e.g. sprite_args.frame_durations on the atlas)
 ---@field columns? number Number of columns (= sprites horizontally).
 ---@field rows? number Number of rows (= sprites vertically).
 ---@field raw_key? boolean Sets whether the mod prefix is added to atlas key. Used for overriding vanilla sprites. 
