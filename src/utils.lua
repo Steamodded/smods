@@ -3341,11 +3341,6 @@ function SMODS.scale_card(card, args)
     args.value = args.ref_table[args.ref_value]
     args.scalar = args.scalar_table[args.scalar_value]
     if args.operation == '-' and args.scalar < 0 then args.scalar = -args.scalar end
-    args.scaling_message = args.scaling_message or {
-        message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or change}} or 'k_upgrade_ex'),
-        colour = args.message_colour or G.C.FILTER,
-        delay = args.message_delay,
-    }
 
     local flags = SMODS.calculate_context(args)
     local value, change = args.value, args.scalar * args.scalar_factor
@@ -3360,6 +3355,11 @@ function SMODS.scale_card(card, args)
         SMODS.additive_scaling(args.ref_table, args.ref_value, value, change)
     end
 
+    args.scaling_message = SMODS.merge_defaults(args.scaling_message, {
+        message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or change}} or 'k_upgrade_ex'),
+        colour = args.message_colour or G.C.FILTER,
+        delay = args.message_delay,
+    })
     if next(args.scaling_message) and not args.no_message then
         SMODS.calculate_effect(args.scaling_message, card)
     end
