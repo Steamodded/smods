@@ -273,8 +273,8 @@ G.FUNCS.run_select_start_run = function(e)
     SMODS.RunSelect.Functions.start_run()
 end
 
-G.FUNCS.run_select_quick_start = function(e)
-    SMODS.RunSelect.Functions.start_run(true)
+G.FUNCS.run_select_quick_start = function(skip_wipe)
+    SMODS.RunSelect.Functions.start_run(true, skip_wipe)
 end
 
 G.FUNCS.random_type = function(e)
@@ -300,7 +300,7 @@ G.FUNCS.run_select_paste_seed = function(e)
 end
 
 
-function SMODS.RunSelect.Functions.start_run(_quick_start)
+function SMODS.RunSelect.Functions.start_run(_quick_start, _skip_wipe)
     local run_args = {}
     SMODS.RunSelect.Functions.clean_up()
     
@@ -321,12 +321,18 @@ function SMODS.RunSelect.Functions.start_run(_quick_start)
     run_args.deck_choice = {name = G.P_CENTERS[run_args.deck_choice].name}
     run_args.stake_choice = G.P_STAKES[run_args.stake_choice].order
     
-    G.FUNCS.start_run(nil, run_args)
+    if _skip_wipe then
+        G:delete_run()
+        G:start_run(run_args)
+    else
+        G.FUNCS.start_run(nil, run_args)
+    end
 end
 
 local start_run = Game.start_run
 function Game:start_run(args)
     start_run(self, args)
+    if not G.SETTINGS.tutorial_complete then return end
     if args.savetext then return end
     for _, value in ipairs(SMODS.RunSelectPage.obj_buffer) do
         local page = SMODS.RunSelect.Pages[value]

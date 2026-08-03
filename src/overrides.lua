@@ -1856,10 +1856,10 @@ function Card:set_sprites(_center, _front)
                 self.children.center.scale.y = self.children.center.scale.x
             end
             if _center.pixel_size and _center.pixel_size.h and (_center.discovered or self.bypass_discovery_center) then
-                self.children.center.scale.y = self.children.center.scale.y*(_center.pixel_size.h/95)
+                self.children.center.scale.y = self.children.center.scale.y*(_center.pixel_size.h/self.children.center.atlas.py)
             end
             if _center.pixel_size and _center.pixel_size.w and (_center.discovered or self.bypass_discovery_center) then
-                self.children.center.scale.x = self.children.center.scale.x*(_center.pixel_size.w/71)
+                self.children.center.scale.x = self.children.center.scale.x*(_center.pixel_size.w/self.children.center.atlas.px)
             end
         end
 

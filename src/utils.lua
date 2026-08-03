@@ -4272,7 +4272,7 @@ function DynaText:set_letter_shader(shader, send, shadow, letter)
         send = send,
         extra = { shadow, letter },
         default_send_func = function(element, shader, shadow, letter)
-            local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
+            local tile_scale = love.window.toPixels(G.TILESCALE*G.TILESIZE*G.CANV_SCALE)
             local _shadow_norm = (not shadow) and element.ARGS.draw_shadow_norm or {x=0, y=0}
 
             local letter_x, letter_y = 0.5*(letter.dims.x - letter.offset.x)*element.font.FONTSCALE/G.TILESIZE + _shadow_norm.x,
@@ -4295,7 +4295,7 @@ function UIElement:set_element_shader(shader, send, shadow)
         send = send,
         extra = { shadow },
         default_send_func = function(element, shader, shadow)
-            local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
+            local tile_scale = love.window.toPixels(G.TILESCALE*G.TILESIZE*G.CANV_SCALE)
             
             G.SHADERS[shader]:send("uie_details", {(element.container.T.x + element.VT.x) * tile_scale, (element.container.T.y + element.VT.y) * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
             G.SHADERS[shader]:send("uie_scale", element.VT.scale)
@@ -4310,7 +4310,7 @@ function UIElement:set_text_shader(shader, send, shadow)
         send = send,
         extra = { shadow },
         default_send_func = function(element, shader, shadow)
-            local tile_scale = G.TILESCALE*G.TILESIZE*G.CANV_SCALE
+            local tile_scale = love.window.toPixels(G.TILESCALE*G.TILESIZE*G.CANV_SCALE)
 
             G.SHADERS[shader]:send("text_details", {(element.container.T.x + element.VT.x) * tile_scale, (element.container.T.y + element.VT.y) * tile_scale, element.VT.w * tile_scale, element.VT.h * tile_scale})
             G.SHADERS[shader]:send("text_scale", element.VT.scale)
