@@ -175,11 +175,9 @@ local is_focusable_hook = Controller.is_node_focusable
 function Controller:is_node_focusable(node, ...)
     local ret = is_focusable_hook(self, node, ...)
     if node and SMODS.inside_overflow(node) then
-        local x = node.T.x + node.container.T.x
-        local y = node.T.y + node.container.T.y
-        local upper_in_bounds = node:inside_overflow_boundaries({ x = x, y = y }) or node:inside_overflow_boundaries({ x = x + node.T.w, y = y })
-        local lower_in_bounds = node:inside_overflow_boundaries({ x = x, y = y + node.T.h }) or node:inside_overflow_boundaries({ x = x + node.T.w, y = y + node.T.h })
-        if not (upper_in_bounds or lower_in_bounds) then
+        local x = node.T.x + node.container.T.x + node.T.w / 2
+        local y = node.T.y + node.container.T.y + node.T.h / 2
+        if not node:inside_overflow_boundaries({ x = x, y = y }) then
             ret = false
         end
     end
