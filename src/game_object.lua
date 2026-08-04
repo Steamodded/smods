@@ -431,6 +431,19 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         STATE_ATLAS = "ANIMATION_ATLAS",
     }
 
+    local scalingShader = love.graphics.newShader([[
+        extern Image sourceImage;
+        extern vec2 dim;
+
+        vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
+            vec2 uv = screen_coords / love_ScreenSize.xy;
+
+            vec4 pixel = Texel(sourceImage, uv);
+
+            return pixel;
+        }
+    ]])
+
     SMODS.Atlases = {}
     SMODS.Atlas = SMODS.GameObject:extend {
         obj_table = SMODS.Atlases,
@@ -463,33 +476,38 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if file_path == 'DEFAULT' then return end
             -- language specific sprites override fully defined sprites only if that language is set
             if self.language and G.SETTINGS.language ~= self.language and G.SETTINGS.real_language ~= self.language then return end
+            local texture_scaling = G.SETTINGS.GRAPHICS.texture_scaling
             if not self.language and (self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.language)] or self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.real_language)]) then return end
             self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
-                'assets/' .. G.SETTINGS.GRAPHICS.texture_scaling .. 'x/' .. file_path)
+                'assets/' .. texture_scaling .. 'x/' .. file_path)
             local file_data = NFS.newFileData(self.full_path)
             if file_data then
                 self.image_data = assert(love.image.newImageData(file_data),
                     ('Failed to initialize image data for Atlas %s'):format(self.key))
             else
+                local other_scale = 3 - texture_scaling
                 self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
-                    'assets/' .. (3 - G.SETTINGS.GRAPHICS.texture_scaling) .. 'x/' .. file_path)
+                    'assets/' .. other_scale .. 'x/' .. file_path)
                 file_data = assert(NFS.newFileData(self.full_path),
                     ('Failed to collect file data for Atlas %s'):format(self.key))
-                self.image_data = assert(love.image.newImageData(file_data),
-                    ('Failed to initialize image data for Atlas %s'):format(self.key))
-                local shifts = { bit.rshift, bit.lshift }
-                local shift_dim, shift_pixel = shifts[G.SETTINGS.GRAPHICS.texture_scaling], shifts[3-G.SETTINGS.GRAPHICS.texture_scaling]
-                local imageData2 = love.image.newImageData(
-                    shift_dim(self.image_data:getWidth(), 1),
-                    shift_dim(self.image_data:getHeight(), 1),
-                    self.image_data:getFormat()
-                )
-                imageData2:mapPixel(function(x, y)
-                    return self.image_data:getPixel(shift_pixel(x, 1), shift_pixel(y, 1))
-                end)
-                self.image_data:release()
+                local image = love.graphics.newImage(file_data)
+                local newScale = texture_scaling/other_scale
+                local w, h = image:getWidth(), image:getHeight()
+                local nw, nh = w * newScale, h * newScale
+                local canvas = love.graphics.newCanvas(nw, nh)
+                image:setFilter("nearest", "nearest")
+                love.graphics.setCanvas(canvas)
+                love.graphics.setColor(1,1,1,1)
+                scalingShader:send("sourceImage", image)
+                love.graphics.setShader(scalingShader)
+                love.graphics.rectangle("fill", 0, 0, nw, nh)
+                love.graphics.setShader()
+                love.graphics.setCanvas()
+                local imageData2 = canvas:newImageData()
+                image:release()
+                canvas:release()
                 self.image_data = imageData2
-        	end
+            end
             self.image = love.graphics.newImage(self.image_data,
                 { mipmaps = true, dpiscale = G.SETTINGS.GRAPHICS.texture_scaling })
             self.columns = self.image:getWidth() / self.px
