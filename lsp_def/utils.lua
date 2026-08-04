@@ -145,6 +145,7 @@
 ---@field scaling_message? table Used in scaling context as message that will be displayed when the operation has been performed.
 ---@field reset_message? table Used in resetting context as message that will be displayed when the operation has been performed.
 ---@field no_message? true Used in scaling/resetting contexts. If `true`, no message will be displayed when the operation has been performed.
+---@field drawing_to_play_area? true Check if `true` for effects before cards are moved to the play area for scoring.
 
 --- Util Functions
 
