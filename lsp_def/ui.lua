@@ -131,8 +131,9 @@ function SMODS.pop_from_stencil_stack() end
 --- Cleanup stencil stack
 function SMODS.reset_stencil_stack() end
 
---- Reload stencil stack by cleaning up current stencil and redrawing all stencils from stack
-function SMODS.reload_stencil_stack() end
+--- Restore stencil buffer in current canvas
+--- @param full boolean Fully reload stencil stack by cleaning up current stencil and redrawing all stencils from stack
+function SMODS.reload_stencil_stack(full) end
 
 ---@param str string
 ---@return any
