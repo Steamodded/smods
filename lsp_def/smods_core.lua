@@ -47,6 +47,7 @@ SMODS.path = ""
 ---@field set_debuff? fun(card: Card|table): boolean|string? Allows controlling when a card is debuffed or not. Return `"prevent_debuff"` to force a card to be undebuffable.
 ---@field menu_cards? fun(): table? Allows adding custom cards to the title screen, as well as passing a custom function to modify the cards on the title screen after all cards have been added.
 ---@field quip_filter? fun(quip: SMODS.JimboQuip|table, quip_type: string): boolean?, table? Allows configuring a quip is allowed to appear.
+---@field set_mod_badge? fun(obj: table): table? Allows replacing the mod's badge
 ---@field optional_features? SMODS.optional_features|(fun(): SMODS.optional_features) Table of optional SMODS features to enable inserted into `SMODS.optional_features`. If function, returns table.
 ---@field save_mod_config? fun(mod: Mod) If defined, this funciton will be called over `SMODS.save_mod_config` when SMODS goes to save this mod's config.
 ---@field meta_mod? boolean Marked as a "meta mod" by SMODS. Only "Steamodded", "Lovely", and "Balatro" are provided by default.

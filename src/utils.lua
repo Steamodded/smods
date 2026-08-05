@@ -1477,7 +1477,13 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         modify = true,
         override = true,
         shop_create_flags = true,
-        booster_create_flags = true
+        booster_create_flags = true,
+        override_value = true,
+        override_scalar_value = true,
+        override_scalar = true,
+        override_reset_value = true,
+        override_message = true,
+        post = true,
     }
 
     if key == 'modify' then
@@ -1549,7 +1555,7 @@ SMODS.calculate_effect_table_key = function(effect_table, key, card, ret)
 end
 
 SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
-    local ret = {}
+    local ret = { scored_card = scored_card }
     for _, key in ipairs(SMODS.calculation_keys) do
         if effect[key] then
             if effect.juice_card and not SMODS.no_resolve and not effect.no_juice then
@@ -1604,6 +1610,7 @@ SMODS.other_calculation_keys = {
     'no_destroy', 'prevent_trigger',
     'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
     'shop_create_flags', 'booster_create_flags',
+    'override_value', 'override_reset_value', 'override_scalar_value', 'override_scalar', 'override_message', 'post',
     'extra',
 }
 SMODS.silent_calculation = {
@@ -1782,7 +1789,23 @@ function Card:calculate_edition(context)
         if edition.calculate and type(edition.calculate) == 'function' then
             local o = edition:calculate(self, context)
             if o then
-                if not o.card then o.card = self end
+                o.card = o.card or self
+                return o
+            end
+        end
+        if context.scaling_card and edition.calc_scaling and type(edition.calc_scaling) == 'function' then
+            sendWarnMessage("Usage of a `calc_scaling` function is deprecated. Please use `context.scaling_card` in a `calculate` function instead.", "Calculation")
+            local o = edition:calc_scaling(self, context.card, context.value, context.scalar_value, context)
+            if o then
+                o.card = o.card or self
+                return o
+            end
+        end
+        if context.resetting_card and edition.calc_resetting and type(edition.calc_resetting) == 'function' then
+            sendWarnMessage("Usage of a `calc_resetting` function is deprecated. Please use `context.resetting_card` in a `calculate` function instead.", "Calculation")
+            local o = edition:calc_resetting(self, context.card, context.initial_value, context.reset_value, context)
+            if o then
+                o.card = o.card or self
                 return o
             end
         end
@@ -1971,6 +1994,56 @@ function SMODS.update_context_flags(context, flags)
         if flags.replace_display_name then context.display_name = flags.replace_display_name end
         if flags.replace_poker_hands then context.poker_hands = flags.replace_poker_hands end
     end
+    if context.scaling_card then
+        if not context.block_overrides.value and flags.override_value then
+            if type(flags.override_value) == 'table' then
+                context.value = flags.override_value.value or context.value
+                SMODS.calculate_effect(flags.override_value, flags.scored_card)
+            else
+                context.value = flags.override_value
+            end
+        end
+        local override_scalar = flags.override_scalar_value or flags.override_scalar
+        if not context.block_overrides.scalar and override_scalar then
+            if type(override_scalar) == 'table' then
+                context.scalar = override_scalar.value or context.scalar
+                SMODS.calculate_effect(override_scalar, flags.scored_card)
+            else
+                context.scalar = override_scalar
+            end
+        end
+        if not context.block_overrides.message and flags.override_message then
+            context.scaling_message = SMODS.merge_defaults(flags.override_message, context.scaling_message)
+        end
+        if flags.post then
+            flags.post.source = flags.scored_card
+            flags.post_effects = flags.post_effects or {}
+            table.insert(flags.post_effects, flags.post)
+        end
+        ---@diagnostic disable-next-line: unbalanced-assignments
+        flags.override_value, flags.override_scalar, flags.override_scalar_value, flags.override_message, flags.post = nil
+    end
+    if context.resetting_card then
+        local override_value = flags.override_value or flags.override_reset_value
+        if not context.block_overrides.value and override_value then
+            if type(override_value) == 'table' then
+                context.reset_value = override_value.value
+                SMODS.calculate_effect(override_value, flags.scored_card)
+            else 
+                context.reset_value = override_value
+            end
+        end
+        if not context.block_overrides.message and flags.override_message then
+            context.reset_message = SMODS.merge_defaults(flags.override_message, context.reset_message)
+        end
+        if flags.post then
+            flags.post.source = flags.scored_card
+            flags.post_effects = flags.post_effects or {}
+            table.insert(flags.post_effects, flags.post)
+        end
+        ---@diagnostic disable-next-line: unbalanced-assignments
+        flags.override_value, flags.override_reset_value, flags.override_message, flags.post = nil
+    end
 end
 
 -- Used to avoid looping getter context calls. Example;
@@ -1984,6 +2057,7 @@ end
 function SMODS.is_getter_context(context)
     if context.mod_probability or context.fix_probability then return "probability" end
     if context.check_enhancement then return "enhancement" end
+    if context.scaling_card or context.resetting_card then return "scaling" end
     return false
 end
 
@@ -3258,67 +3332,42 @@ function SMODS.scale_card(card, args)
     args.block_overrides = args.block_overrides or {}
     args.ref_table = args.ref_table or card.ability.extra
     args.scalar_table = args.scalar_table or args.ref_table
-    local initial = args.ref_table[args.ref_value]
     if not args.scalar_value then
         args.scalar_value = "SMODS_scalar_"..args.ref_value
         args.scalar_table[args.scalar_value] = 1
     end
-    local scalar_value = args.scalar_table[args.scalar_value]
-    local scalar_factor = args.scalar_factor or 1
-    if args.operation == '-' and scalar_value < 0 then scalar_value = scalar_value * -1 end
-    local scaling_message = args.scaling_message
-    local scaling_responses = {}
-    for _, area in ipairs(SMODS.get_card_areas('jokers')) do
-        for _, _card in ipairs(area.cards) do
-            local obj = _card.config.center
-            if obj.calc_scaling and type(obj.calc_scaling) == "function" then
-                local ret = obj:calc_scaling(_card, card, initial, scalar_value, args)
-                if ret then
-                    if ret.override_value and not args.block_overrides.value then initial = ret.override_value.value; SMODS.calculate_effect(ret.override_value, _card) end
-                    if ret.override_scalar_value and not args.block_overrides.scalar then scalar_value = ret.override_scalar_value.value; SMODS.calculate_effect(ret.override_scalar_value, _card) end
-                    if ret.override_message and not args.block_overrides.message then scaling_message = SMODS.merge_defaults(ret.override_message, scaling_message) end
-                    if ret.post then ret.post.source = _card; scaling_responses[#scaling_responses + 1] = ret.post end
-                    SMODS.calculate_effect(ret, _card)
-                end
-            end
-        end
-    end
-    if card.edition then
-        local edition = G.P_CENTERS[card.edition.key]
-        if edition.calc_scaling and type(edition.calc_scaling) == 'function' then
-            local ret = edition:calc_scaling(card, card, initial, scalar_value, args)
-            if ret then
-                if ret.override_value and not args.block_overrides.value then initial = ret.override_value.value; SMODS.calculate_effect(ret.override_value, card) end
-                if ret.override_scalar_value and not args.block_overrides.scalar then scalar_value = ret.override_scalar_value.value; SMODS.calculate_effect(ret.override_scalar_value, card) end
-                if ret.override_message and not args.block_overrides.message then scaling_message = SMODS.merge_defaults(ret.override_message, scaling_message) end
-                if ret.post then ret.post.source = card; scaling_responses[#scaling_responses + 1] = ret.post end
-                SMODS.calculate_effect(ret, card)
-            end
-        end
-    end
+    args.scalar_factor = args.scalar_factor or 1
+    args.scaling_card = true
+    args.card = card
+    args.value = args.ref_table[args.ref_value]
+    args.scalar = args.scalar_table[args.scalar_value]
+    if args.operation == '-' and args.scalar < 0 then args.scalar = -args.scalar end
+
+    local flags = SMODS.calculate_context(args)
+    local value, change = args.value, args.scalar * args.scalar_factor
 
     if type(args.operation) == 'function' then
-        args.operation(args.ref_table, args.ref_value, initial, scalar_value * scalar_factor)
+        args.operation(args.ref_table, args.ref_value, value, change)
     elseif args.operation == 'X' then
-        SMODS.multiplicative_scaling(args.ref_table, args.ref_value, initial, scalar_value * scalar_factor)
+        SMODS.multiplicative_scaling(args.ref_table, args.ref_value, value, change)
     elseif args.operation == '-' then
-        SMODS.additive_scaling(args.ref_table, args.ref_value, initial, -1 * scalar_value * scalar_factor)
+        SMODS.additive_scaling(args.ref_table, args.ref_value, value, -change)
     else
-        SMODS.additive_scaling(args.ref_table, args.ref_value, initial, scalar_value * scalar_factor)
+        SMODS.additive_scaling(args.ref_table, args.ref_value, value, change)
     end
 
-    scaling_message = scaling_message or {
-        message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or scalar_value * scalar_factor}} or 'k_upgrade_ex'),
+    args.scaling_message = SMODS.merge_defaults(args.scaling_message, {
+        message = localize(args.message_key and {type='variable',key=args.message_key,vars={args.message_key =='a_xmult' and args.ref_table[args.ref_value] or change}} or 'k_upgrade_ex'),
         colour = args.message_colour or G.C.FILTER,
         delay = args.message_delay,
-    }
-    if next(scaling_message) and not args.no_message then
-        SMODS.calculate_effect(scaling_message, card)
+    })
+    if next(args.scaling_message) and not args.no_message then
+        SMODS.calculate_effect(args.scaling_message, card)
     end
-    for _, ret in ipairs(scaling_responses) do
+    for _, ret in ipairs(flags.post_effects or {}) do
         SMODS.calculate_effect(ret, ret.source)
     end
-    return args.ref_table[args.ref_value], scalar_value * scalar_factor
+    return args.ref_table[args.ref_value], change
 end
 
 function SMODS.additive_scaling(ref_table, ref_value, initial, modifier)
@@ -3333,52 +3382,26 @@ function SMODS.reset_card(card, args)
     if not G.deck then return end
     args.block_overrides = args.block_overrides or {}
     args.ref_table = args.ref_table or card.ability.extra
-    local initial = args.ref_table[args.ref_value]
-    local reset_value = args.reset_value or 0
-    local reset_message = args.reset_message
-    local reset_responses = {}
-    for _, area in ipairs(SMODS.get_card_areas('jokers')) do
-        for _, _card in ipairs(area.cards) do
-            local obj = _card.config.center
-            if obj.calc_resetting and type(obj.calc_resetting) == "function" then
-                local ret = obj:calc_resetting(_card, card, initial, reset_value, args)
-                if ret then
-                    if ret.override_value and not args.block_overrides.value then reset_value = ret.override_value.value; SMODS.calculate_effect(ret.override_value, _card) end
-                    if ret.override_message and not args.block_overrides.message then reset_message = SMODS.merge_defaults(ret.override_message, reset_message) end
-                    if ret.post then ret.post.source = _card; reset_responses[#reset_responses + 1] = ret.post end
-                    SMODS.calculate_effect(ret, _card)
-                end
-            end
-        end
-    end
-    if card.edition then
-        local edition = G.P_CENTERS[card.edition.key]
-        if edition.calc_resetting and type(edition.calc_resetting) == 'function' then
-            local ret = edition:calc_resetting(card, card, initial, reset_value, args)
-            if ret then
-                if ret.override_value and not args.block_overrides.value then reset_value = ret.override_value.value; SMODS.calculate_effect(ret.override_value, card) end
-                if ret.override_message and not args.block_overrides.message then reset_message = SMODS.merge_defaults(ret.override_message, reset_message) end
-                if ret.post then ret.post.source = card; reset_responses[#reset_responses + 1] = ret.post end
-                SMODS.calculate_effect(ret, card)
-            end
-        end
-    end
-
+    args.initial_value = args.ref_table[args.ref_value]
+    args.reset_value = args.reset_value or 0
+    args.resetting_card = true
+    args.card = card
+    local flags = SMODS.calculate_context(args)
+    
     if type(args.operation) == 'function' then
-        args.operation(args.ref_table, args.ref_value, initial, reset_value)
+        args.operation(args.ref_table, args.ref_value, args.initial_value, args.reset_value)
     else
-        args.ref_table[args.ref_value] = reset_value
+        args.ref_table[args.ref_value] = args.reset_value
     end
-
-    reset_message = reset_message or {
+    args.reset_message = SMODS.merge_defaults(args.reset_message, {
         message = localize(args.message_key or 'k_reset'),
         colour = args.message_colour or G.C.FILTER,
         delay = args.message_delay,
-    }
-    if next(reset_message) and not args.no_message then
-        SMODS.calculate_effect(reset_message, card)
+    })
+    if next(args.reset_message) and not args.no_message then
+        SMODS.calculate_effect(args.reset_message, card)
     end
-    for _, ret in ipairs(reset_responses) do
+    for _, ret in ipairs(flags.post_effects or {}) do
         SMODS.calculate_effect(ret, ret.source)
     end
 end
@@ -4512,7 +4535,7 @@ end
 
 -- Util function to render one card to a .png file (usually saved to the mods folder's parent directory)
 function SMODS.card_to_image(card, scale, filename)
-	if not type(card) == "table" then return end
+	if type(card) ~= "table" then return end
     local key = ((card.config or {}).center or {}).key or "card_to_image"
     scale = scale or G.SETTINGS.GRAPHICS.texture_scaling
 	filename = (filename or key == "j_joker" and "jimbo" or key) .. ".png"
