@@ -59,8 +59,7 @@ end
 local old_get_canvas = love.graphics.getCanvas
 function love.graphics.getCanvas(...)
     local r = old_get_canvas(...)
-    if r.depthstencil then return r[1], r.depthstencil end
-    return r, nil
+    return r.depthstencil and r[1] or r
 end
 
 local old_resize = love.resize
