@@ -3,6 +3,7 @@ SMODS.GUI.DynamicUIManager = {}
 
 -- used to properly truncate overflow content inside another overflow content
 SMODS.stencil_stack = {}
+SMODS.stencil_canvas = nil
 
 function SMODS.push_to_stencil_stack(stencil_fn)
     assert(type(stencil_fn) == "function", "No stencil function passed to SMODS.push_to_stencil_stack")
@@ -46,17 +47,29 @@ function SMODS.reset_stencil_stack()
     love.graphics.stencil(function() end)
 end
 function SMODS.reload_stencil_stack()
-    local stack_snapshot = SMODS.shallow_copy(SMODS.stencil_stack)
-    SMODS.reset_stencil_stack()
-    for _, stencil_fn in ipairs(stack_snapshot) do
-        SMODS.push_to_stencil_stack(stencil_fn)
-    end
+    love.graphics.setCanvas({ love.graphics.getCanvas(), depthstencil = SMODS.stencil_canvas })
 end
 
 local gameDrawRef = Game.draw
 function Game:draw(...)
     SMODS.reset_stencil_stack()
     gameDrawRef(self, ...)
+end
+
+local old_get_canvas = love.graphics.getCanvas
+function love.graphics.getCanvas(...)
+    local r = old_get_canvas(...)
+    if r.depthstencil then return r[1], r.depthstencil end
+    return r, nil
+end
+
+local old_resize = love.resize
+function love.resize(w, h, ...)
+    old_resize(w, h, ...)
+    SMODS.stencil_canvas = love.graphics.newCanvas(w, h, {
+        format = "stencil8",
+        readable = false,
+    })
 end
 
 --
