@@ -2810,6 +2810,10 @@ function SMODS.GUI.scrollbar(args)
         error("Width of scrollbar or width of knob must be specified if scrollbar is vertical")
     end
     if not args.ref_table or not args.ref_value then
+        if not args.no_force_sync_mode then
+            args.scroll_collision_obj.scroll_args.sync_mode = "offset"
+            args.scroll_collision_obj.scroll_sync_mode = "offset"
+        end
         local mode = args.scroll_collision_obj.scroll_args.sync_mode
         local table_str = mode == "offset" and "scroll_offset" or "scroll_progress"
         args.ref_table = args.scroll_collision_obj[table_str]
