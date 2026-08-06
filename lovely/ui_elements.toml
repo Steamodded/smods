@@ -354,11 +354,11 @@ payload = '''
 if focused.config.focus_args.type == "scrollbar" then
     self.no_holdcap = true
     local was_moved = nil
-    if input_type == 'hold' and self.held_button_times[button] > 0.1 then
-        was_moved = G.FUNCS.controller_scroll(focused, G.real_dt*self.held_button_times[button] * G.TILESIZE * 2, button)
+    if input_type == 'hold' and self.held_button_times[button] > 0.2 then
+        was_moved = G.FUNCS.controller_scroll(focused, G.real_dt*self.held_button_times[button] * 500, button)
     end
     if input_type == 'press' then
-        was_moved = G.FUNCS.controller_scroll(focused, 0.1, button)
+        was_moved = G.FUNCS.controller_scroll(focused, 3, button)
     end
     ret = was_moved
 end

@@ -2803,28 +2803,22 @@ function SMODS.GUI.scrollbar(args)
     if not args.scroll_collision_obj and (not args.ref_table or not args.ref_value) then
         error("args must have a ref_table and a ref_value if args.scroll_collision_obj is nil")
     end
-    if not args.max then
-        args.max = 1
-    end
-    if not args.min then
-        args.min = 0
-    end
-    if args.horizontal then
-        if not args.knob_h and not args.h then
-            error("Height of scrollbar or height of knob must be specified if scrollbar is horizontal")
-        end
-    else
-        if not args.knob_w and not args.w then
-            error("Width of scrollbar or width of knob must be specified if scrollbar is vertical")
-        end
+    args = SMODS.merge_defaults(args, { min = 0, max = 1, scroll_mult = 1 })
+    if args.horizontal and not args.knob_h and not args.h then
+        error("Height of scrollbar or height of knob must be specified if scrollbar is horizontal")
+    elseif not args.horizontal and not args.knob_w and not args.w then
+        error("Width of scrollbar or width of knob must be specified if scrollbar is vertical")
     end
     if not args.ref_table or not args.ref_value then
-        args.ref_table = args.scroll_collision_obj.scroll_offset
+        local mode = args.scroll_collision_obj.scroll_args.sync_mode
+        local table_str = mode == "offset" and "scroll_offset" or "scroll_progress"
+        args.ref_table = args.scroll_collision_obj[table_str]
         args.ref_value = args.horizontal and "x" or "y"
         local dim = args.horizontal and "w" or "h"
-        args.max = args.scroll_collision_obj.content.T[dim] - args.scroll_collision_obj.T[dim]
-        args.scroll_collision_obj.scroll_args.sync_mode = "offset"
-        args.scroll_collision_obj.scroll_sync_mode = "offset"
+        if mode == "offset" then
+            args.max = (args.scroll_collision_obj.content.T[dim] - args.scroll_collision_obj.T[dim])
+            args.scroll_mult = args.scroll_mult * 7
+        end
     end
     if args.scroll_collision_obj and (not args.scroll_collision_obj.is or not args.scroll_collision_obj:is(SMODS.UIScrollBox)) then
         error("args.scroll_collision_obj is not an UIScrollBox")
@@ -2917,7 +2911,7 @@ function G.FUNCS.controller_scroll(root, velocity, button)
 			if button == "dpright" then
 				v = -v
 			end
-			local scroll_velocity = v * (e.config.scroll_mult or 1)
+			local scroll_velocity = v * e.config.scroll_mult * G.real_dt
 			percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
 			percent = math.max(0, math.min(1, percent))
 			ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
@@ -2926,7 +2920,7 @@ function G.FUNCS.controller_scroll(root, velocity, button)
 			if button == "dpdown" then
 				v = -v
 			end
-			local scroll_velocity = v * (e.config.scroll_mult or 1)
+			local scroll_velocity = v * e.config.scroll_mult * G.real_dt
 			percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
 			percent = math.max(0, math.min(1, percent))
 			ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
@@ -2974,7 +2968,7 @@ function G.FUNCS.scrollbar(e)
             percent = math.max(0, math.min(1, percent))
             ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
         elseif scrollbox and scrollbox:collides_with_point(G.CURSOR.T) or scrollbar_track:collides_with_point(G.CURSOR.T) then
-            local scroll_velocity = SMODS.wheel_velocity.y * (e.config.scroll_mult or 1) / G.TILESIZE
+            local scroll_velocity = SMODS.wheel_velocity.y * e.config.scroll_mult * G.real_dt
             percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
             percent = math.max(0, math.min(1, percent))
             ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
