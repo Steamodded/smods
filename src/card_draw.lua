@@ -562,3 +562,6 @@ function Card:draw(layer)
         if SMODS.DrawSteps[k]:check_conditions(self, layer) then SMODS.DrawSteps[k].func(self, layer) end
     end
 end
+
+-- Import Sprite Steps
+ assert(load(SMODS.NFS.read(SMODS.path..'src/utils/sprite_steps.lua'), ('=[SMODS _ "src/utils/sprite_steps.lua"]')))()
