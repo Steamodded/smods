@@ -67,6 +67,6 @@ payload = '''
 if SMODS.config.vanilla_run_select and #SMODS.RunSelect.Internals.pages == 2 then
     G:start_run({})
 else
-    G.FUNCS.run_select_quick_start()
+    G.FUNCS.run_select_quick_start(true)
 end
 '''

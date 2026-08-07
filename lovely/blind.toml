@@ -47,6 +47,7 @@ position = 'before'
 match_indent = true
 payload = '''
 local obj = self.config.blind
+if self.children.animatedSprite then self.children.animatedSprite:remove() end
 self.children.animatedSprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, obj.atlas or 'blind_chips', obj.pos or G.P_BLINDS.bl_small.pos, obj.sprite_args)
 self.children.animatedSprite.states = self.states
 '''
@@ -268,13 +269,17 @@ local loc_target = localize(target)'''
 [[patches]]
 [patches.pattern]
 target = 'blind.lua'
-pattern = 'if G.P_BLINDS[blindTable.config_blind] then'
-position = 'after'
+pattern = '''
+self.children.animatedSprite.states.visible = true
+self.children.animatedSprite:set_sprite_pos(self.config.blind.pos)
+'''
+position = 'at'
 match_indent = true
 payload = '''
-if self.config.blind.atlas then
-    self.children.animatedSprite.atlas = SMODS.get_atlas(self.config.blind.atlas)
-end'''
+if self.children.animatedSprite then self.children.animatedSprite:remove() end
+self.children.animatedSprite = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, self.config.blind.atlas or 'blind_chips', self.config.blind.pos or G.P_BLINDS.bl_small.pos, self.config.blind.sprite_args)
+self.children.animatedSprite.states.visible = true
+'''
 
 # create_UIBox_blind_choice()
 # create_UIBox_round_scores_row()
