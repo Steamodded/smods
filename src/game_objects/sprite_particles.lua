@@ -2,7 +2,7 @@ SMODS.SPRITE_PARTICLES = {}
 
 local _sprite_update_hook = function (self, ...)
     local obj = SMODS.SpriteParticles[self.sprite_particle_key]
-    getmetatable(self).update(self, ...)
+    self:_old_update(...)
     obj:update(self, self.particle_parent)
 end
 
@@ -42,6 +42,7 @@ SMODS.SpriteParticle = SMODS.GameObject:extend {
         local sprite = SMODS.create_sprite(x, y, w, h, self.atlas, self.pos, self.sprite_args)
         sprite.sprite_particle_key = self.key
         sprite.custom_draw = true
+        sprite._old_update = sprite.update or getmetatable(self).update
         sprite.update = _sprite_update_hook
         sprite.spawn_time = G.TIMERS.REAL
         sprite.game_speed_dependent = args.game_speed_dependent
