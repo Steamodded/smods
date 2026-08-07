@@ -10,7 +10,7 @@
 ---@field mult? number Required score multiplier relative to the Ante's Base score. 
 ---@field boss? table|{min: integer, max: integer, showdown: boolean} Marks this Blind as a Boss Blind. `min` indicates minimum Ante for this Blind to appear. `showdown` indicates this Blind is a Final Boss Blind. For complex conditions, use `in_pool`. 
 ---@field boss_colour? table HEX color for the background when playing this Blind. 
----@field debuff? table Configures vanilla blind effects related to debuffing, see [SMODS.Blind](https://github.com/Steamodded/smods/wiki/SMODS.Blind#api-documentation-smodsblind) Documentation. Ignored if Blind defines `debuff_hand` or `debuff_card`. 
+---@field debuff? table Configures vanilla blind effects related to debuffing, see [SMODS.Blind](https://docs.smods.dev/Game%20Objects/SMODS.Blind#api-methods) Documentation. Ignored if Blind defines `debuff_hand` or `debuff_card`. 
 ---@field ignore_showdown_check? boolean Sets if `in_pool` should be respected regardless of whether a showdown Boss Blind was requested or not. 
 ---@field vars? table Variables for this Blind's description in the collection. 
 ---@field __call? fun(self: SMODS.Blind|table, o: SMODS.Blind|table): nil|table|SMODS.Blind
@@ -38,10 +38,10 @@
 ---@field stay_flipped? fun(self: SMODS.Blind|table, area: CardArea|table, card: Card|table): boolean? Determines if a card is drawn face down. 
 ---@field modify_hand? fun(self: SMODS.Blind|table, cards: table, poker_hands: table, text: PokerHands|string, mult: number, hand_chips: number): number?, number?, boolean? Handles modifications of the base score for played poker hand. 
 ---@field get_loc_debuff_text? fun(self: SMODS.Blind|table): string? Handles text displayed for debuff warnings or invalid hands. 
----@field loc_vars? fun(self: SMODS.Blind|table): table? Provides control over displaying the Blind descriptions. See [SMODS.Blind `loc_vars` implementation](https://github.com/Steamodded/smods/wiki/SMODS.Blind#api-methods) documentation for return value details. 
+---@field loc_vars? fun(self: SMODS.Blind|table): table? Provides control over displaying the Blind descriptions. See [SMODS.Blind `loc_vars` implementation](https://docs.smods.dev/Game%20Objects/SMODS.Blind#api-methods) documentation for return value details. 
 ---@field collection_loc_vars? fun(self: SMODS.Blind|table): table? Provides control over displaying the Blind description in the collections menu. 
 ---@field in_pool? fun(self: SMODS.Blind|table): boolean Allows configuring if the Blind is allowed to appear. 
----@field calculate? fun(self: SMODS.Blind|table, blind: Blind|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
+---@field calculate? fun(self: SMODS.Blind|table, blind: Blind|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://docs.smods.dev/API%20Documentation/Calculate-Functions) docs for details. 
 ---@field calc_dollar_bonus? fun(self: SMODS.Blind|table, blind: Blind|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money. 
 ---@overload fun(self: SMODS.Blind): SMODS.Blind
 SMODS.Blind = setmetatable({}, {

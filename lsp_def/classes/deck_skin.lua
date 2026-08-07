@@ -5,7 +5,7 @@
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field loc_txt? string|table String displayed as the name of this DeckSkin. 
 ---@field suit? string Suit this DeckSkin is tied to. 
----@field palettes? table[]|{key: string, ranks: string[], atlas: string, pos_style?: string|{[string]: string}, colour?: table, suit_icon?: {atlas: string, pos: number|{x: number, y: number}, loc_txt?: string}}[] List of tables representing each palette. See [SMODS DeckSkin](https://github.com/Steamodded/smods/wiki/SMODS.DeckSkin) documentation for details. 
+---@field palettes? table[]|{key: string, ranks: string[], atlas: string, pos_style?: string|{[string]: string}, colour?: table, suit_icon?: {atlas: string, pos: number|{x: number, y: number}, loc_txt?: string}}[] List of tables representing each palette. See [SMODS DeckSkin](https://docs.smods.dev/Game%20Objects/SMODS.DeckSkin) documentation for details. 
 ---@field __call? fun(self: SMODS.DeckSkin|table, o: SMODS.DeckSkin|table): nil|table|SMODS.DeckSkin
 ---@field extend? fun(self: SMODS.DeckSkin|table, o: SMODS.DeckSkin|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.DeckSkin|table): boolean? Ensures objects already registered will not register. 

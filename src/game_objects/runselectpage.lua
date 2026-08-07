@@ -22,12 +22,10 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
         self.page = self.page or (#SMODS.RunSelect.Internals.pages + 1)
         self.grid_size = self.grid_size or {2, 5}
         self.amount = self.grid_size[1] * self.grid_size[2] 
-        if self.generate_pool then
-            self.pool = self:generate_pool()
-        end
+        self.pool = self.generate_pool and self:generate_pool()
         if not self.injected then
             if self.quick_start_text then
-                table.insert(SMODS.RunSelect.Internals.quick_start_text_functions, self.quick_start_text)
+                table.insert(SMODS.RunSelect.Internals.quick_start_text_functions, self.page, self.quick_start_text)
             end
             table.insert(SMODS.RunSelect.Internals.pages, self.page, self.key)
             for i = self.page + 1, #SMODS.RunSelect.Internals.pages do
@@ -114,7 +112,9 @@ SMODS.RunSelectPage({
     area_type = 'deck',
     automatic_preview = true,
     random_select = true,
-    pool = G.P_CENTER_POOLS.Back,
+    generate_pool = function(self)
+        return G.P_CENTER_POOLS.Back
+    end,
     stack_size = 10,
     preview_size = 52,
     quick_start_text = function()
@@ -151,11 +151,11 @@ SMODS.RunSelectPage({
     end,
     sprite_size = {w = 0.99, h = 0.99},
     quick_start_text = function()
-        if (G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice or 1) > #G.P_CENTER_POOLS.Stake then G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice = 1 end
-        return localize({type = 'name_text', set = 'Stake', key = G.P_CENTER_POOLS.Stake[(G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice or 1)].key})
+        if not G.P_STAKES[G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice] then G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice = 'stake_white' end
+        return localize({type = 'name_text', set = 'Stake', key = G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice})
     end,
     set_default = function(self, choice)
-        if not choice or choice > #G.P_CENTER_POOLS.Stake then return 1 else return self.is_stake_unlocked(G.P_CENTER_POOLS.Stake[choice]) and choice or 1 end
+        if not choice or not G.P_STAKES[choice] then return 'stake_white' else return self.is_stake_unlocked(G.P_STAKES[choice]) and choice or 'stake_white' end
     end,
     handle_choice = function(self, choice, remove)
         SMODS.RunSelect.Setup.choices[self.key] = choice
@@ -163,6 +163,7 @@ SMODS.RunSelectPage({
         SMODS.RunSelect.Functions.populate_stake_tower(choice)
     end,
     is_stake_unlocked = function(stake)
+        if not stake then return false end
         local unlocked = true
         local save_data = G.PROFILES[G.SETTINGS.profile].deck_usage[SMODS.RunSelect.Setup.choices.deck_choice] and G.PROFILES[G.SETTINGS.profile].deck_usage[SMODS.RunSelect.Setup.choices.deck_choice].wins_by_key or {}
         for _,v in ipairs(stake.applied_stakes or {}) do
@@ -218,7 +219,7 @@ SMODS.RunSelectPage({
             -- TODO: check this with new save strucutre
             
             if unlocked then
-                options[#options + 1] = i
+                options[#options + 1] = G.P_CENTER_POOLS.Stake[i].key
             end
         end
         while not selected do

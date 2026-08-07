@@ -328,8 +328,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             local file_path = self.path
             if file_path == 'DEFAULT' then return end
 
-            self.full_path = (self.path_mod or self.mod or SMODS).path ..
-                'assets/fonts/' .. file_path
+            self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
+                'assets/fonts/' .. file_path)
             local file_data = assert(NFS.newFileData(self.full_path),
                 ('Failed to collect file data for Font %s'):format(self.key))
             self.FONT = assert(love.graphics.newFont(file_data, self.render_scale or G.TILESIZE),
@@ -425,6 +425,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     ----- API CODE GameObject.Atlas
     -------------------------------------------------------------------------------------------------
 
+    local atlas_table_map = {
+        ASSET_ATLAS = "ASSET_ATLAS",
+        ANIMATION_ATLAS = "ANIMATION_ATLAS",
+        STATE_ATLAS = "ANIMATION_ATLAS",
+    }
+
     SMODS.Atlases = {}
     SMODS.Atlas = SMODS.GameObject:extend {
         obj_table = SMODS.Atlases,
@@ -458,15 +464,37 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             -- language specific sprites override fully defined sprites only if that language is set
             if self.language and G.SETTINGS.language ~= self.language and G.SETTINGS.real_language ~= self.language then return end
             if not self.language and (self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.language)] or self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.real_language)]) then return end
-            self.full_path = (self.path_mod or self.mod or SMODS).path ..
-                'assets/' .. G.SETTINGS.GRAPHICS.texture_scaling .. 'x/' .. file_path
-            local file_data = assert(NFS.newFileData(self.full_path),
-                ('Failed to collect file data for Atlas %s'):format(self.key))
-            self.image_data = assert(love.image.newImageData(file_data),
-                ('Failed to initialize image data for Atlas %s'):format(self.key))
+            self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
+                'assets/' .. G.SETTINGS.GRAPHICS.texture_scaling .. 'x/' .. file_path)
+            local file_data = NFS.newFileData(self.full_path)
+            if file_data then
+                self.image_data = assert(love.image.newImageData(file_data),
+                    ('Failed to initialize image data for Atlas %s'):format(self.key))
+            else
+                self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
+                    'assets/' .. (3 - G.SETTINGS.GRAPHICS.texture_scaling) .. 'x/' .. file_path)
+                file_data = assert(NFS.newFileData(self.full_path),
+                    ('Failed to collect file data for Atlas %s'):format(self.key))
+                self.image_data = assert(love.image.newImageData(file_data),
+                    ('Failed to initialize image data for Atlas %s'):format(self.key))
+                local shifts = { bit.rshift, bit.lshift }
+                local shift_dim, shift_pixel = shifts[G.SETTINGS.GRAPHICS.texture_scaling], shifts[3-G.SETTINGS.GRAPHICS.texture_scaling]
+                local imageData2 = love.image.newImageData(
+                    shift_dim(self.image_data:getWidth(), 1),
+                    shift_dim(self.image_data:getHeight(), 1),
+                    self.image_data:getFormat()
+                )
+                imageData2:mapPixel(function(x, y)
+                    return self.image_data:getPixel(shift_pixel(x, 1), shift_pixel(y, 1))
+                end)
+                self.image_data:release()
+                self.image_data = imageData2
+        	end
             self.image = love.graphics.newImage(self.image_data,
                 { mipmaps = true, dpiscale = G.SETTINGS.GRAPHICS.texture_scaling })
-            G[self.atlas_table][self.key_noloc or self.key] = self
+            self.columns = self.image:getWidth() / self.px
+            self.rows = self.image:getHeight() / self.py
+            G[atlas_table_map[self.atlas_table]][self.key_noloc or self.key] = self
 
             local mipmap_level = SMODS.config.graphics_mipmap_level_options[SMODS.config.graphics_mipmap_level]
             if not self.disable_mipmap and mipmap_level and mipmap_level > 0 then
@@ -476,8 +504,29 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         process_loc_text = function() end,
         pre_inject_class = function(self)
             G:set_render_settings() -- restore originals first in case a texture pack was disabled
-        end
+        end,
+        post_inject_class = function(self)
+            for _, v in pairs(G.I.SPRITE) do
+                v:reset()
+            end
+        end,
     }
+
+    local game_set_render_settings = Game.set_render_settings
+    function Game:set_render_settings()
+        local ret = game_set_render_settings(self)
+        for _, atlas in pairs(G.ASSET_ATLAS) do
+            atlas.atlas_table = "ASSET_ATLAS"
+            atlas.columns = atlas.image:getWidth() / atlas.px
+            atlas.rows = atlas.image:getHeight() / atlas.py
+        end
+        for _, atlas in pairs(G.ANIMATION_ATLAS) do
+            atlas.atlas_table = "ANIMATION_ATLAS"
+            atlas.columns = atlas.image:getWidth() / atlas.px
+            atlas.rows = atlas.image:getHeight() / atlas.py
+        end
+        return ret
+    end
 
     SMODS.Atlas {
         key = 'mod_tags',
@@ -538,8 +587,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 ((G.SETTINGS.real_language and self.path[G.SETTINGS.real_language]) or self.path[G.SETTINGS.language] or self.path['default'] or self.path['en-us']) or self.path
             if file_path == 'DEFAULT' then return end
             local prev_path = self.full_path
-            self.full_path = (self.path_mod or self.mod or SMODS).path ..
-                'assets/sounds/' .. file_path
+            self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
+                'assets/sounds/' .. file_path)
             if prev_path == self.full_path then return end
             self.data = NFS.read('data', self.full_path)
             --self.decoder = love.sound.newDecoder(self.data)
@@ -704,7 +753,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 -- Sticker sprites (stake_ prefix is removed for vanilla compatiblity)
                 if self.sticker_pos ~= nil then
                     G.STAGE_OBJECT_INTERRUPT = true
-                    G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos)
+                    G.shared_stickers[self.key:sub(7)] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.sticker_atlas) or SMODS.get_atlas("stickers"), self.sticker_pos, self.sprite_args)
                     G.STAGE_OBJECT_INTERRUPT = false
                     G.sticker_map[self.key] = self.key:sub(7)
                 else
@@ -1112,7 +1161,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         create_UIBox_your_collection = function(self)
             local type_buf = {}
             for _, v in ipairs(SMODS.ConsumableType.visible_buffer) do
-                if (not v.no_collection or (type(v.no_collection) == 'function' and not v:no_collection())) and (not G.ACTIVE_MOD_UI or modsCollectionTally(G.P_CENTER_POOLS[v]).of > 0) then type_buf[#type_buf + 1] = v end
+                if (not SMODS.hide_from_collection(v)) and (not G.ACTIVE_MOD_UI or modsCollectionTally(G.P_CENTER_POOLS[v]).of > 0) then type_buf[#type_buf + 1] = v end
             end
             return SMODS.card_collection_UIBox(G.P_CENTER_POOLS[self.key], self.collection_rows, { back_func = #type_buf>3 and 'your_collection_consumables' or nil })
         end,
@@ -1801,7 +1850,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         inject = function(self)
             if self.overlay_pos then
                 G.STAGE_OBJECT_INTERRUPT = true
-                self.overlay_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.overlay_pos)
+                self.overlay_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.overlay_pos, self.sprite_args)
                 G.STAGE_OBJECT_INTERRUPT = false
                 self.no_overlay = true
             end
@@ -1858,7 +1907,7 @@ SMODS.UndiscoveredCompat = {
         inject = function(self)
             G.P_SEALS[self.key] = self
             G.STAGE_OBJECT_INTERRUPT = true
-            G.shared_seals[self.key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas) or SMODS.get_atlas('centers'), self.pos)
+            G.shared_seals[self.key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, SMODS.get_atlas(self.atlas) or SMODS.get_atlas('centers'), self.pos, self.sprite_args)
             G.STAGE_OBJECT_INTERRUPT = false
             self.badge_to_key[self.key:lower() .. '_seal'] = self.key
             SMODS.insert_pool(G.P_CENTER_POOLS[self.set], self)
@@ -3128,7 +3177,7 @@ SMODS.UndiscoveredCompat = {
         end,
         inject = function(self)
             G.STAGE_OBJECT_INTERRUPT = true
-            self.sticker_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.pos)
+            self.sticker_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.pos, self.sprite_args)
             G.STAGE_OBJECT_INTERRUPT = false
             G.shared_stickers[self.key] = self.sticker_sprite
         end,
@@ -3264,6 +3313,7 @@ SMODS.UndiscoveredCompat = {
         set = 'Enhanced',
         class_prefix = 'm',
         atlas = 'centers',
+        sprite_args = nil, -- Used by StateSprite (when the atlas' atlas_table == "STATE_ATLAS"), see state_sprite.lua for table structure
         pos = { x = 0, y = 0 },
         required_params = {
             'key',
@@ -3376,8 +3426,8 @@ SMODS.UndiscoveredCompat = {
         set = 'Shader',
         send_vars = nil, -- function (sprite) - get custom externs to send to shader.
         inject = function(self)
-            self.full_path = (self.path_mod or self.mod or SMODS).path ..
-                'assets/shaders/' .. self.path
+            self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
+                'assets/shaders/' .. self.path)
 
             local file = assert(NFS.read(self.full_path),
                 ('Failed to collect file data for Shader %s'):format(self.key))
@@ -3709,13 +3759,29 @@ SMODS.UndiscoveredCompat = {
         end
     }
 
-        SMODS.Keybind {
+    SMODS.Keybind {
         key_pressed = 'f5',
         held_keys = { "lalt" },
         event = 'pressed',
         action = function(self)
             SMODS.save_all_config()
 		    SMODS.restart_game()
+        end
+    }
+
+    SMODS.Keybind {
+        key_pressed = 'f2',
+        event = 'pressed',
+        action = function(self)
+            local target = G.CONTROLLER.hovering.target or G.CONTROLLER.focused.target
+            if not _RELEASE_MODE and target and type(target.is) == "function" and target:is(Card) then
+                local scale = 0
+                for i=0,9,1 do
+                    if love.keyboard.isDown(""..i) then scale = scale + (i == 0 and 10 or i) end
+                end
+                if scale <= 0 then scale = G.SETTINGS.GRAPHICS.texture_scaling end
+                SMODS.card_to_image(target, scale)
+            end
         end
     }
 
@@ -4000,6 +4066,12 @@ SMODS.UndiscoveredCompat = {
         text = '^'
     }
 
+
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT Object.Node.Moveable.Sprite.AnimatedSprite.StateSprite
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(NFS.read(SMODS.path..'src/game_objects/state_sprite.lua'), ('=[SMODS _ "src/game_objects/state_sprite.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep

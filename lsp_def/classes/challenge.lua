@@ -4,12 +4,12 @@
 ---@field obj_table? table<string, SMODS.Challenge|table> Table of objects registered to this class.
 ---@field loc_txt? table|{name: string} Contains strings used for displaying text related to this object.
 ---@field super? SMODS.GameObject|table Parent class.
----@field rules? table|{custom?: table[]|{id: string, value?: any, no_ui?: boolean}[], modifiers?: table[]|{id: string, value?: any, no_ui?: boolean}} List of tables setting custom rules and modifiers. Each rule/modifier has an `id`, with optional `value` param (defaults to `true`) and optional `no_ui` parameter (not set by default). See [SMODS.Challenge](https://github.com/Steamodded/smods/wiki/SMODS.Challenge) Documentation for default rules/modifiers.
+---@field rules? table|{custom?: table[]|{id: string, value?: any, no_ui?: boolean}[], modifiers?: table[]|{id: string, value?: any, no_ui?: boolean}} List of tables setting custom rules and modifiers. Each rule/modifier has an `id`, with optional `value` param (defaults to `true`) and optional `no_ui` parameter (not set by default). See [SMODS.Challenge](https://docs.smods.dev/Game%20Objects/SMODS.Challenge) Documentation for default rules/modifiers.
 ---@field jokers? table[]|{id: string, edition?: string, eternal?: boolean, pinned?: boolean}[] List of tables setting jokers to start with.
 ---@field consumeables? table[]|{id: string, edition?: string, eternal?: boolean}[] List of tables setting consumables to start with.
 ---@field vouchers? table[]|{id: string}[] List of tables setting vouchers to start with.
 ---@field restrictions? table|{banned_cards?: table[]|{id: string}[], banned_tags?: table[]|{id: string}[], banned_other?: table[]|{id: string, type: "blind"}[]} Contains IDs to objects to ban from the challenge.
----@field deck? table|{type?: string|"Challenge Deck", cards?: table[], yes_ranks?: table<string, true>, yes_suits?: table<string, true>, no_ranks?: table<string, true>, no_suits?: table<string, true>, enhancement?: string, edition?: string, seal?: string} Defines the Challenge's deck. See [SMODS.Challenge](https://github.com/Steamodded/smods/wiki/SMODS.Challenge) Documentation for details.
+---@field deck? table|{type?: string|"Challenge Deck", cards?: table[], yes_ranks?: table<string, true>, yes_suits?: table<string, true>, no_ranks?: table<string, true>, no_suits?: table<string, true>, enhancement?: string, edition?: string, seal?: string} Defines the Challenge's deck. See [SMODS.Challenge](https://docs.smods.dev/Game%20Objects/SMODS.Challenge) Documentation for details.
 ---@field __call? fun(self: SMODS.Challenge|table, o: SMODS.Challenge|table): nil|table|SMODS.Challenge
 ---@field extend? fun(self: SMODS.Challenge|table, o: SMODS.Challenge|table): table Primary method of creating a class.
 ---@field check_duplicate_register? fun(self: SMODS.Challenge|table): boolean? Ensures objects already registered will not register.
@@ -27,7 +27,7 @@
 ---@field unlocked? fun(self: SMODS.Challenge|table): boolean | boolean
 ---@field text_colour? table Colour of the text on the challenge list.
 ---@field button_colour? table Colour of the button on the challenge list.
----@field calculate? fun(self: SMODS.Challenge|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
+---@field calculate? fun(self: SMODS.Challenge|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://docs.smods.dev/API%20Documentation/Calculate-Functions) docs for details. 
 ---@field apply? fun(self: SMODS.Challenge|table) Applied modifiers at the start of a run. 
 ---@field calc_dollar_bonus? fun(self: SMODS.Challenge|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money. 
 ---@overload fun(self: SMODS.Challenge): SMODS.Challenge

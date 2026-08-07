@@ -276,6 +276,7 @@ end
 match_indent = true
 
 # Apply shaders on text elements
+# Also draw text outline
 # UIElement:draw_self
 [[patches]]
 [patches.pattern]
@@ -294,6 +295,9 @@ payload = """
 local text_shaders = SMODS.resolve_ui_shaders(self, self.states.visible and self.config.shader, nil)
 for _, v in ipairs(text_shaders) do
     if v then self:set_text_shader(v.shader, v.send, false) end
+    if self.config.text_outline then
+        self:draw_text_outline(button_active)
+    end
     love.graphics.draw(
         self.config.text_drawable,
         self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
@@ -335,4 +339,55 @@ pattern = '''
 '''
 payload = '''
 {n=G.UIT.C, config={align = "cl", minw = args.w, r = 0.1,min_h = args.h,collideable = true, hover = true, colour = args.background_colour or G.C.BLACK,emboss = 0.05,func = 'slider', refresh_movement = true}, nodes={
+'''
+
+# Handle controller for scrollbars
+[[patches]]
+[patches.pattern]
+target = 'engine/controller.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if focused.config.focus_args.type == 'slider' then
+'''
+payload = '''
+if focused.config.focus_args.type == "scrollbar" then
+    self.no_holdcap = true
+    local was_moved = nil
+    if input_type == 'hold' and self.held_button_times[button] > 0.2 then
+        was_moved = G.FUNCS.controller_scroll(focused, G.real_dt*self.held_button_times[button] * 500, button)
+    end
+    if input_type == 'press' then
+        was_moved = G.FUNCS.controller_scroll(focused, 3, button)
+    end
+    ret = was_moved
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'engine/controller.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+self.focused.target.config.focus_args and
+'''
+payload = '''
+self.focused.target.config.focus_args.type == "scrollbar" and
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'engine/controller.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if eligible then
+'''
+payload = '''
+if self.focused.target and self.focused.target.UIBox and self.focused.target.UIBox.config.instance_type == "DROPDOWN" then
+    if not (v.config.dropdown_button ~= nil or self.focused.target.config.dropdown_button == v or v.config._attached_dropdown_button == self.focused.target.config.dropdown_button) then
+        eligible = false
+    end
+end
 '''
