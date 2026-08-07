@@ -1891,6 +1891,34 @@ payload = '''
 SMODS.destroy_cards(self, nil, nil, true)
 '''
 
+# Adjust Mr. Bones
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.E_MANAGER:add_event(Event({
+    func = function()
+        G.hand_text_area.blind_chips:juice_up()
+        G.hand_text_area.game_chips:juice_up()
+        play_sound('tarot1')
+        self:start_dissolve()
+        return true
+    end
+}))
+'''
+payload = '''
+G.E_MANAGER:add_event(Event({
+    func = function()
+        G.hand_text_area.blind_chips:juice_up()
+        G.hand_text_area.game_chips:juice_up()
+        return true
+    end
+}))
+SMODS.destroy_cards(self, nil, nil, nil)
+'''
+
 # Joker-type removed context added
 [[patches]]
 [patches.pattern]
