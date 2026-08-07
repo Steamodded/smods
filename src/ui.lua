@@ -1943,11 +1943,14 @@ function create_UIBox_mods_button()
                                                 ref_value = 'vanilla_run_select',
                                                 info = {localize('b_vanilla_run_select_info')}
                                             },
-                                            create_toggle {
-                                                label = localize('b_run_select_reduce'),
-                                                ref_table = SMODS.config,
-                                                ref_value = 'run_select_performance',
-                                                info = {localize('b_run_select_reduce_info')}
+                                            create_option_cycle {
+                                                w = 4.5,
+                                                scale = 0.8,
+                                                label = localize('b_quality_level'),
+                                                options = localize('ml_quality_level_settings'),
+                                                opt_callback = 'update_quality_settings',
+                                                current_option = SMODS.config.quality,
+                                                cycle_shoulders = true,
                                             },
                                         }
                                     }
@@ -1965,6 +1968,11 @@ G.FUNCS.update_achievement_settings = function(e)
     local opt = (e.cycle_config or {}).current_option or 1
     SMODS.config.achievements = opt
     G.F_NO_ACHIEVEMENTS = opt == 1
+end
+
+G.FUNCS.update_quality_settings = function(e)
+    local opt = (e.cycle_config or {}).current_option or 1
+    SMODS.config.quality = opt
 end
 
 G.FUNCS.browse_search = function(e)
