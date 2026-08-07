@@ -368,6 +368,13 @@ return {
                 'Enabled',
                 'Bypass Restrictions'
             },
+			b_quality_level = "Quality",
+			ml_quality_level_settings = {
+				"Low",
+				"Medium",
+				"High",
+				"Very High"
+			},
             b_deckskins_lc = 'Low Contrast Colours',
             b_deckskins_hc = 'High Contrast Colours',
             b_deckskins_def = 'Default Colours',
