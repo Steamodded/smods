@@ -4,4 +4,5 @@ return {
     ["graphics_mipmap_level_options"] = {0, 2, 4, 8},
     ["achievements"] = 1,
     ["seeded_unlocks"] = false,
+    ["quality"] = 3,
 }
