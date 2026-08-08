@@ -8,7 +8,7 @@ Steamodded is a mod loader and injector for the game Balatro. Much like the [LÖ
 
 ### How to Install Steamodded
 
-Click [here](https://github.com/Steamopollys/Steamodded/wiki).
+Click [here](https://docs.smods.dev/).
 
 ## How to Install a Mod
 
@@ -18,7 +18,7 @@ Click [here](https://github.com/Steamopollys/Steamodded/wiki).
 
 ## Creating a Mod
 
-Useful resources for creating your first mod can be found [here](https://github.com/Steamodded/smods/wiki/Your-First-Mod).
+Useful resources for creating your first mod can be found [here](https://docs.smods.dev/Guides/Your-First-Mod/).
 
 ## Features
 
@@ -34,4 +34,4 @@ If you have any suggestions for this project, would like to report a bug, or jus
 
 ## License
 
-This project is licensed under the GNU General Public License. This ensures that the software is free to use, modify, and distribute. For more details, click [here](https://github.com/Steamopollys/Steamodded/actions?tab=GPL-3.0-1-ov-file)
+This project is licensed under the GNU General Public License. This ensures that the software is free to use, modify, and distribute. For more details, click [here](https://github.com/Steamodded/smods/?tab=GPL-3.0-1-ov-file)

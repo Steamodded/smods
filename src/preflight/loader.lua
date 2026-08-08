@@ -250,7 +250,6 @@ function loadMods(modsDirectory)
         local isDirLovely = false
 
         for _, filename in ipairs(NFS.getDirectoryItems(directory)) do
-            if depth == 1 then print(directory, filename, depth) end
             local file_path = directory .. "/" .. filename
 
             -- Check if the current file is a directory
@@ -750,19 +749,24 @@ local function load_mods()
             SMODS.current_mod = mod
             if mod.icon_path then
                 local data = SMODS.NFS.newFileData(mod.path.."/assets/1x/"..mod.icon_path)
-                local image_data = love.graphics.newImage(data)
-                local atlas_table = mod.icon_width and mod.icon_width ~= image_data:getWidth() and 'ANIMATION_ATLAS' or "ASSET_ATLAS"
-                local frames = atlas_table == 'ANIMATION_ATLAS' and math.floor(image_data:getWidth() / mod.icon_width)
-                SMODS.Atlas {
-                    key = "modicon",
-                    path = mod.icon_path,
-                    px = mod.icon_width or image_data:getWidth(),
-                    py = image_data:getHeight(),
-                    atlas_table = atlas_table,
-                    fps = mod.icon_fps,
-                    image = image_data,
-                    frames = frames
-                }
+                local succ, image_data = pcall(love.graphics.newImage, data)
+                if succ then
+                    local atlas_table = mod.icon_width and mod.icon_width ~= image_data:getWidth() and 'ANIMATION_ATLAS' or "ASSET_ATLAS"
+                    local frames = atlas_table == 'ANIMATION_ATLAS' and math.floor(image_data:getWidth() / mod.icon_width)
+                    SMODS.Atlas {
+                        key = "modicon",
+                        path = mod.icon_path,
+                        px = mod.icon_width or image_data:getWidth(),
+                        py = image_data:getHeight(),
+                        atlas_table = atlas_table,
+                        fps = mod.icon_fps,
+                        image = image_data,
+                        frames = frames
+                    }
+                else
+                    sendWarnMessage("Could not load modicon image from JSON icon_path (" .. mod.id .. "): " .. tostring(image_data), "Loader")
+                    mod.icon_path = nil -- prevent it from trying to load on mod menu
+                end
             end
             if mod.can_load and not mod.lovely_only then
                 if mod.outdated then

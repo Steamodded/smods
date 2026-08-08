@@ -163,6 +163,26 @@ function Node:inside_overflow_boundaries(point)
     return set_value(Node.inside_overflow_boundaries(self.parent, point) or false)
 end
 
+SMODS.inside_overflow = function (node)
+    if node.config and node.config.no_overflow then
+        return true
+    elseif node.parent then
+        return SMODS.inside_overflow(node.parent)
+    end
+end
+
+local is_focusable_hook = Controller.is_node_focusable
+function Controller:is_node_focusable(node, ...)
+    local ret = is_focusable_hook(self, node, ...)
+    if ret and node and SMODS.inside_overflow(node) then
+        local x = node.T.x + node.container.T.x + node.T.w / 2
+        local y = node.T.y + node.container.T.y + node.T.h / 2
+        if not node:inside_overflow_boundaries({ x = x, y = y }) then
+            ret = false
+        end
+    end
+    return ret
+end
 --
 
 SMODS.UIScrollBox = UIBox:extend()
@@ -2783,28 +2803,26 @@ function SMODS.GUI.scrollbar(args)
     if not args.scroll_collision_obj and (not args.ref_table or not args.ref_value) then
         error("args must have a ref_table and a ref_value if args.scroll_collision_obj is nil")
     end
-    if not args.max then
-        args.max = 1
-    end
-    if not args.min then
-        args.min = 0
-    end
-    if args.horizontal then
-        if not args.knob_h and not args.h then
-            error("Height of scrollbar or height of knob must be specified if scrollbar is horizontal")
-        end
-    else
-        if not args.knob_w and not args.w then
-            error("Width of scrollbar or width of knob must be specified if scrollbar is vertical")
-        end
+    args = SMODS.merge_defaults(args, { min = 0, max = 1, scroll_mult = 1 })
+    if args.horizontal and not args.knob_h and not args.h then
+        error("Height of scrollbar or height of knob must be specified if scrollbar is horizontal")
+    elseif not args.horizontal and not args.knob_w and not args.w then
+        error("Width of scrollbar or width of knob must be specified if scrollbar is vertical")
     end
     if not args.ref_table or not args.ref_value then
-        args.ref_table = args.scroll_collision_obj.scroll_offset
+        if not args.no_force_sync_mode then
+            args.scroll_collision_obj.scroll_args.sync_mode = "offset"
+            args.scroll_collision_obj.scroll_sync_mode = "offset"
+        end
+        local mode = args.scroll_collision_obj.scroll_args.sync_mode
+        local table_str = mode == "offset" and "scroll_offset" or "scroll_progress"
+        args.ref_table = args.scroll_collision_obj[table_str]
         args.ref_value = args.horizontal and "x" or "y"
         local dim = args.horizontal and "w" or "h"
-        args.max = args.scroll_collision_obj.content.T[dim] - args.scroll_collision_obj.T[dim]
-        args.scroll_collision_obj.scroll_args.sync_mode = "offset"
-        args.scroll_collision_obj.scroll_sync_mode = "offset"
+        if mode == "offset" then
+            args.max = (args.scroll_collision_obj.content.T[dim] - args.scroll_collision_obj.T[dim])
+            args.scroll_mult = args.scroll_mult * 7
+        end
     end
     if args.scroll_collision_obj and (not args.scroll_collision_obj.is or not args.scroll_collision_obj:is(SMODS.UIScrollBox)) then
         error("args.scroll_collision_obj is not an UIScrollBox")
@@ -2817,9 +2835,10 @@ function SMODS.GUI.scrollbar(args)
 				minh = not args.horizontal and args.h or nil,
 				minw = args.horizontal and args.w or nil,
 				colour = args.bg_colour or G.C.CLEAR,
-				focus_args = { type = "slider" },
+				focus_args = { type = "scrollbar", nav = args.horizontal and "wide" or "tall" },
 				collideable = true,
 				hover = true,
+                _attached_dropdown_button = args._attached_dropdown_button,
 			},
 			nodes = {
 				{
@@ -2870,6 +2889,57 @@ function SMODS.GUI.scrollbar(args)
 	}
 end
 
+function G.FUNCS.controller_scroll(root, velocity, button)
+    local e = root.children[2]
+    e.states.drag.can = true
+	local scrollbar_track = e.UIBox
+	scrollbar_track.states.drag.can = true
+	local ref_table = e.config.ref_table
+    local ref_value = e.config.ref_value
+    local scrollbox = e.config.scroll_collision_obj
+    local percent = (ref_table[ref_value] - e.config.min) / (e.config.max - e.config.min)
+    local should_scroll = true
+    local was_scrolled = nil
+    if scrollbox then
+		if e.config.scroll_dir == "v" then
+            local h = scrollbox.scroll_args.overflow.node_config.h or scrollbox.scroll_args.overflow.node_config.maxh
+			should_scroll = scrollbox.content.T.h > (h or math.huge)
+		else
+            local w = scrollbox.scroll_args.overflow.node_config.w or scrollbox.scroll_args.overflow.node_config.maxw
+			should_scroll = scrollbox.content.T.w > (w or math.huge)
+		end
+    end
+	if should_scroll and scrollbox then
+		local v = velocity
+		if e.config.scroll_dir == "h" and (button == "dpright" or button == "dpleft") then
+			if button == "dpright" then
+				v = -v
+			end
+			local scroll_velocity = v * e.config.scroll_mult * G.real_dt
+			percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
+			percent = math.max(0, math.min(1, percent))
+			ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
+            was_scrolled = true
+		elseif e.config.scroll_dir == "v" and (button == "dpup" or button == "dpdown") then
+			if button == "dpdown" then
+				v = -v
+			end
+			local scroll_velocity = v * e.config.scroll_mult * G.real_dt
+			percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
+			percent = math.max(0, math.min(1, percent))
+			ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
+            was_scrolled = true
+		end
+	end
+    if e.config.scroll_dir == "h" then
+        scrollbar_track.UIRoot.children[1].config.minw = percent * (scrollbar_track.T.w - e.T.w)
+    else
+        scrollbar_track.UIRoot.children[1].config.minh = percent * (scrollbar_track.T.h - e.T.h)
+    end
+    scrollbar_track:recalculate()
+    return was_scrolled
+end
+
 function G.FUNCS.scrollbar(e)
 	e.states.drag.can = true
 	local scrollbar_track = e.UIBox
@@ -2902,7 +2972,7 @@ function G.FUNCS.scrollbar(e)
             percent = math.max(0, math.min(1, percent))
             ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
         elseif scrollbox and scrollbox:collides_with_point(G.CURSOR.T) or scrollbar_track:collides_with_point(G.CURSOR.T) then
-            local scroll_velocity = SMODS.wheel_velocity.y * (e.config.scroll_mult or 1) / G.TILESIZE
+            local scroll_velocity = SMODS.wheel_velocity.y * e.config.scroll_mult * G.real_dt
             percent = (ref_table[ref_value] - e.config.min - scroll_velocity) / (e.config.max - e.config.min)
             percent = math.max(0, math.min(1, percent))
             ref_table[ref_value] = percent * (e.config.max - e.config.min) + e.config.min
@@ -2923,6 +2993,8 @@ function SMODS.GUI.dropdown_select(args)
     args.ref_table[args.ref_value] = args.ref_table[args.ref_value] or args.init_value
     args.default = args.default or args.options[1]
     args.scale = args.scale or 0.4
+    args.close_on_select = args.close_on_select ~= false
+    args.no_unselect = args.no_unselect ~= false
     local needs_default = true
     for _, v in ipairs(args.options) do
         if args.ref_table[args.ref_value] == v then
@@ -3131,7 +3203,7 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
 					},
 				},
 			},
-            config = { align = "cm" },
+            config = { align = "cm", instance_type = "DROPDOWN" },
 		},
         overflow = {
             node_config = {
@@ -3214,6 +3286,7 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
                                 scroll_collision_obj = scrollbox,
                                 knob_h = args.max_menu_h / 6,
                                 bg_colour = { 0, 0, 0, 0.15 },
+                                _attached_dropdown_button = parent
                             })
                         }
                     } or nil,

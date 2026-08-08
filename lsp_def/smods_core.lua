@@ -34,7 +34,7 @@ SMODS.path = ""
 ---@field config_file? string Path to the config file of this mod. Defaults to "config.lua" if not provided.
 ---@field config? table Config values for this mod.
 ---@field can_load? boolean `true` if the mod is able to load.
----@field calculate? fun(self: Mod|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
+---@field calculate? fun(self: Mod|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://docs.smods.dev/API%20Documentation/Calculate-Functions) docs for details. 
 ---@field calc_dollar_bonus? fun(self: Mod|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money. 
 ---@field config_tab? fun(): table Creates this mod's config tab UI.
 ---@field extra_tabs? fun(): table[] Creates additional tabs within this mod's menu.
@@ -47,6 +47,7 @@ SMODS.path = ""
 ---@field set_debuff? fun(card: Card|table): boolean|string? Allows controlling when a card is debuffed or not. Return `"prevent_debuff"` to force a card to be undebuffable.
 ---@field menu_cards? fun(): table? Allows adding custom cards to the title screen, as well as passing a custom function to modify the cards on the title screen after all cards have been added.
 ---@field quip_filter? fun(quip: SMODS.JimboQuip|table, quip_type: string): boolean?, table? Allows configuring a quip is allowed to appear.
+---@field set_mod_badge? fun(obj: table): table? Allows replacing the mod's badge
 ---@field optional_features? SMODS.optional_features|(fun(): SMODS.optional_features) Table of optional SMODS features to enable inserted into `SMODS.optional_features`. If function, returns table.
 ---@field save_mod_config? fun(mod: Mod) If defined, this funciton will be called over `SMODS.save_mod_config` when SMODS goes to save this mod's config.
 ---@field meta_mod? boolean Marked as a "meta mod" by SMODS. Only "Steamodded", "Lovely", and "Balatro" are provided by default.

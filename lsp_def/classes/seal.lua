@@ -26,12 +26,12 @@
 ---@field inject? fun(self: SMODS.Seal|table, i?: number) Called during `inject_class`. Injects the object into the game. 
 ---@field take_ownership? fun(self: SMODS.Seal|table, key: string, obj: SMODS.Seal|table, silent?: boolean): nil|table|SMODS.Seal Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.Seal|table, key: string): SMODS.Seal|table? Returns an object if one matches the `key`. 
----@field loc_vars? fun(self: SMODS.Seal|table, info_queue: table, card: Card|table): table? Provides control over displaying the tooltip of this seal. See [`loc_vars`](https://github.com/Steamodded/smods/wiki/Localization#loc_vars) documentation for details. 
----@field calculate? fun(self: SMODS.Seal|table, card: Card|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://github.com/Steamodded/smods/wiki/calculate_functions) docs for details. 
+---@field loc_vars? fun(self: SMODS.Seal|table, info_queue: table, card: Card|table): table? Provides control over displaying the tooltip of this seal. See [`loc_vars`](https://docs.smods.dev/API%20Documentation/Localization#loc_vars) documentation for details. 
+---@field calculate? fun(self: SMODS.Seal|table, card: Card|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://docs.smods.dev/API%20Documentation/Calculate-Functions) docs for details. 
 ---@field get_p_dollars? fun(self: SMODS.Seal|table, card: Card|table): number? Gives money when a card with this seal is played. 
 ---@field draw? fun(self: SMODS.Seal|table, card: Card|table, layer: string) Draws the sprite and shader of the seal. 
 ---@field update? fun(self: SMODS.Seal|table, card: Card|table, dt: number) Allows logic for this card to be run per-frame. 
----@field generate_ui? fun(self: SMODS.Seal|table, info_queue: table, card: Card|table, desc_nodes: table, specific_vars: table, full_UI_table: table) Provides complex control over the UI display of the seal. See [`generate_ui`](https://github.com/Steamodded/smods/wiki/Localization#generate_ui-advanced) documentation for details. 
+---@field generate_ui? fun(self: SMODS.Seal|table, info_queue: table, card: Card|table, desc_nodes: table, specific_vars: table, full_UI_table: table) Provides complex control over the UI display of the seal. See [`generate_ui`](https://docs.smods.dev/API%20Documentation/Localization#generate_ui-advanced) documentation for details. 
 ---@field create_fake_card? fun(self: SMODS.Seal|table): table Creates a fake card with this seal. Used internally for `generate_ui` in cases where recieved `card` param is nil. 
 ---@field new? fun(self, name, label, full_name, pos, loc_txt, atlas, discovered, color): any DEPRECATED. DO NOT USE
 ---@overload fun(self: SMODS.Seal): SMODS.Seal

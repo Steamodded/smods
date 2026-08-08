@@ -3,7 +3,7 @@
 --- Util Classes
 
 --- Internal class referring args passed as `context` in a SMODS object's `calculate` function.
---- Not all arguments typed here are present in all contexts, see [Calculate Function](https://github.com/Steamodded/smods/wiki/calculate_functions#contexts) for details.
+--- Not all arguments typed here are present in all contexts, see [Calculate Function](https://docs.smods.dev/API%20Documentation/Calculate-Functions#contexts) for details.
 ---@class CalcContext: table
 ---@field cardarea? CardArea|PlayAreas|table The CardArea currently being checked.
 ---@field full_hand? Card[]|table[] All played or selected cards.
@@ -137,6 +137,22 @@
 ---@field old_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand before the alteration.
 ---@field new_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand after the alteration.
 ---@field modify_final_cashout? true Check if `true` for modifying the amount of money at the end of cashout.
+---@field scaling_card? true Check if `true` for reacting to a card's values being scaled.
+---@field resetting_card? true Check if `true` for reacting to a card's values being reset.
+---@field ref_table? table Used in scaling/resetting contexts as the table containing the affected value.
+---@field ref_value? string Used in scaling/resetting contexts as the key of the affected value.
+---@field value? number Used in scaling context as the current (unscaled) affected value.
+---@field initial_value number Used in resetting context as the initial affected value.
+---@field scalar_table? table Used in scaling context as the table containing the scalar value.
+---@field scalar_value? string Used in scaling context as the key of the scalar value.
+---@field scalar? number Used in scaling context as the current scalar value.
+---@field scalar_factor? number Used in scaling context as the scaling operation's scalar factor.
+---@field reset_value? number Used in resetting context as the target value after the reset.
+---@field operation? '+'|'X'|'-'|string|fun(ref_table:table, ref_value:string, initial:number, change:number)|fun(ref_table:table, ref_value:string, initial:number, reset:number) Used in scaling/resetting context, indicates the operation that will be performed to set the newly scaled value.
+---@field block_overrides? {value:boolean?, scalar:boolean?, message:boolean?}|table Used in scaling/resetting contexts. Set keys cannot by overridden by returned effects.
+---@field scaling_message? table Used in scaling context as message that will be displayed when the operation has been performed.
+---@field reset_message? table Used in resetting context as message that will be displayed when the operation has been performed.
+---@field no_message? true Used in scaling/resetting contexts. If `true`, no message will be displayed when the operation has been performed.
 
 --- Util Functions
 
@@ -760,7 +776,7 @@ function SMODS.lowest_and_highest_rank(cards) end
 function SMODS.scale_card(card, args) end
 
 ---@param card Card|table
----@param args? table|{ref_table: table, ref_value: string, reset_value: number, operation: fun(ref_table: table, ref_value: string, initial: number, reset: number)?, block_override: boolean?, reset_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
+---@param args? table|{ref_table: table, ref_value: string, reset_value: number, operation: fun(ref_table: table, ref_value: string, initial: number, reset: number)?, block_overrides: boolean?, reset_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
 --- Tells Jokers that this card is resetting allowing for resetting detection
 --- Args must contain `ref_table`, `ref_value`, and `reset_value`. It may optionally contain an `operation` function to define the behavior of resetting
 function SMODS.reset_card(card, args) end

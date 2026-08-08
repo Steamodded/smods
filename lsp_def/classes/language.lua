@@ -4,7 +4,7 @@
 ---@field obj_table? table<string, SMODS.Language|table> Table of objects registered to this class. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field label? string Label displayed in the language selection screen. 
----@field font? number|table Font the in-game text uses. Using the number 1-9 uses vanilla fonts, and specifying a table uses custom font. See [SMODS.Language](https://github.com/Steamodded/smods/wiki/SMODS.Language) docs for details.
+---@field font? number|table Font the in-game text uses. Using the number 1-9 uses vanilla fonts, and specifying a table uses custom font. See [SMODS.Language](https://docs.smods.dev/Game%20Objects/SMODS.Language) docs for details.
 ---@field loc_key? string Key to another language. Treats it as a base, keeping any unchanged localization strings intact and adding changes to the language and fonts. 
 ---@field __call? fun(self: SMODS.Language|table, o: SMODS.Language|table): nil|table|SMODS.Language
 ---@field extend? fun(self: SMODS.Language|table, o: SMODS.Language|table): table Primary method of creating a class. 
