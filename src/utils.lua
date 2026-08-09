@@ -4194,16 +4194,16 @@ function SMODS.get_badge_text_colour(key)
     end
 end
 
-
+SMODS.empty_ui_shaders_table = { false }
 function SMODS.resolve_ui_shaders(node, shader, send)
+    if not shader then
+        return SMODS.empty_ui_shaders_table
+    end
+
     node.resolved_ui_shaders = node.resolved_ui_shaders or {}
     local shaders = node.resolved_ui_shaders
     EMPTY(shaders)
 
-    if not shader then
-        shaders[#shaders+1] = false
-        return shaders
-    end
     -- simple single shader
     if type(shader) == "string" then
         shaders[#shaders+1] = { shader = shader, send = send }
@@ -4226,24 +4226,21 @@ function SMODS.resolve_ui_shaders(node, shader, send)
         end
     end
     if #shaders == 0 then
-        shaders[#shaders+1] = false
-        return shaders
+        return SMODS.empty_ui_shaders_table
     end
     return shaders
 end
 function SMODS.set_ui_element_shader(element, input_args)
     input_args = input_args or {}
     local shader, send = input_args.shader, input_args.send
-    local default_send_func = input_args.default_send_func or function() end
-    local extra = input_args.extra or {}
 
 	local shadered = true
-    
+
     if not shader or shader == "none" or shader == "dissolve" then
         shadered = false
 	elseif send then
 		for _, v in ipairs(send) do
-			local val = v.val or (v.func and v.func(element, unpack(extra))) or v.ref_table[v.ref_value]
+			local val = v.val or (v.func and v.func(element, unpack(input_args.extra or {}))) or v.ref_table[v.ref_value]
 			-- TARGET: SMODS.set_ui_element_shader - Convert val to a number if your mod adds an alternate number data type (ala Talisman)
 
 			G.SHADERS[shader]:send(v.name, val)
@@ -4257,7 +4254,10 @@ function SMODS.set_ui_element_shader(element, input_args)
             G.TIMERS.REAL/28,
             G.TIMERS.REAL
         })
-        default_send_func(element, shader, unpack(extra))
+
+        if input_args.default_send_func then
+            input_args.default_send_func(element, shader, unpack(input_args.extra or {}))
+        end
 	end
 
     if shadered then
