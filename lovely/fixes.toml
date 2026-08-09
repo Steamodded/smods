@@ -70,6 +70,32 @@ position = 'at'
 payload = 'if not self.alignment.type_list then return end'
 line_prepend = '$indent'
 
+## Decrease alignment calculations amount by checking is element's position changed
+# Moveable:align_to_major()
+[[patches]]
+[patches.pattern]
+target = 'engine/moveable.lua'
+pattern = '''
+self.T.x = self.role.major.T.x + self.role.offset.x
+self.T.y = self.role.major.T.y + self.role.offset.y
+
+self.alignment.prev_offset = self.alignment.prev_offset or {}
+self.alignment.prev_offset.x, self.alignment.prev_offset.y = self.alignment.offset.x, self.alignment.offset.y
+'''
+position = 'at'
+payload = '''
+self.alignment.prev_offset = self.alignment.prev_offset or {}
+self.alignment.prev_offset.x, self.alignment.prev_offset.y = self.alignment.offset.x, self.alignment.offset.y
+
+local new_x, new_y = self.role.major.T.x + self.role.offset.x, self.role.major.T.y + self.role.offset.y
+if new_x == self.T.x and new_y == self.T.y then self.NEW_ALIGNMENT = false return end
+
+self.T.x = new_x
+self.T.y = new_y
+'''
+match_indent = true
+
+
 ## Don't save run while booster pack opened (always softlocks)
 # save_run()
 [[patches]]
