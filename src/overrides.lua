@@ -2662,7 +2662,7 @@ function Card:set_base(card, initial, manual_sprites)
         if card and card.suit and self.base.suit ~= card.suit then
             SMODS.merge_defaults(contexts, {change_suit = true, other_card = self, new_suit = card.suit, old_suit = self.base.suit})
         end
-        if next(contexts) then
+        if not initial and next(contexts) then
 			contexts.ignore_other_debuff = true
             SMODS.calculate_context(contexts)
         end
