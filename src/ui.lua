@@ -108,13 +108,14 @@ end
 
 local old_collides_with_point = Node.collides_with_point
 function Node:collides_with_point(point)
+    if not self.container then return false end
     if self.collide_check_timer == G.TIMERS.REAL and self.collide_check_point == point then
 		return self.collide_check_result or false
 	end
     self.collide_check_timer = G.TIMERS.REAL
     self.collide_check_point = point
     local r = old_collides_with_point(self, point)
-    self.collide_check_result = r
+    self.collide_check_result = r or false
     return r
 end
 
