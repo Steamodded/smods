@@ -1078,10 +1078,7 @@ function SMODS.has_enhancement(card, key)
 end
 
 function SMODS.shatters(card)
-    local enhancements = SMODS.get_enhancements(card)
-    for key, _ in pairs(enhancements) do
-        if G.P_CENTERS[key].shatters or key == 'm_glass' then return true end
-    end
+    return SMODS.has_playing_card_property(card, 'shatters')
 end
 
 function SMODS.get_ability_reset_keys(card)
@@ -1129,44 +1126,32 @@ function SMODS.calculate_quantum_enhancements(card, effects, context)
     SMODS.extra_enhancement_calc_in_progress = nil
 end
 
-function SMODS.has_no_suit(card)
-    local is_stone = false
-    local is_wild = false
+function SMODS.has_playing_card_property(card, key) 
     for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].no_suit then is_stone = true end
-        if k == 'm_wild' or G.P_CENTERS[k].any_suit then is_wild = true end
+        if G.P_CENTERS[k][key] then return true end
     end
-    return is_stone and not is_wild
+    if (G.P_CENTERS[(card.edition or {}).key] or {})[key] then return true end
+    if (G.P_SEALS[card.seal or {}] or {})[key] then return true end
+    for k, v in pairs(SMODS.Stickers) do
+        if v[key] and card.ability[k] then return true end
+    end
+    return false
+end
+
+function SMODS.has_no_suit(card)
+    return SMODS.has_playing_card_property(card, 'no_suit') and not SMODS.has_playing_card_property(card, 'any_suit')
 end
 function SMODS.has_any_suit(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_wild' or G.P_CENTERS[k].any_suit then return true end
-    end
+    return SMODS.has_playing_card_property(card, 'any_suit')
 end
 function SMODS.has_no_rank(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].no_rank then return true end
-    end
+    return SMODS.has_playing_card_property(card, 'no_rank')
 end
 function SMODS.always_scores(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].always_scores then return true end
-    end
-    if (G.P_CENTERS[(card.edition or {}).key] or {}).always_scores then return true end
-    if (G.P_SEALS[card.seal or {}] or {}).always_scores then return true end
-    for k, v in pairs(SMODS.Stickers) do
-        if v.always_scores and card.ability[k] then return true end
-    end
+    return SMODS.has_playing_card_property(card, 'always_scores')
 end
 function SMODS.never_scores(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if G.P_CENTERS[k].never_scores then return true end
-    end
-    if (G.P_CENTERS[(card.edition or {}).key] or {}).never_scores then return true end
-    if (G.P_SEALS[card.seal or {}] or {}).never_scores then return true end
-    for k, v in pairs(SMODS.Stickers) do
-        if v.never_scores and card.ability[k] then return true end
-    end
+    return SMODS.has_playing_card_property(card, 'never_scores')
 end
 
 SMODS.collection_pool = function(_base_pool)
@@ -3234,8 +3219,8 @@ G.FUNCS.update_blind_debuff_text = function(e)
 end
 
 function Card:should_hide_front()
-    local center = self.delay_center or self.config.center
-    return center.effect == "Stone Card" or center.replace_base_card
+    if (self.delay_center or {}).replace_base_card then return true end
+    return SMODS.has_playing_card_property(self, 'replace_base_card')
 end
 
 function SMODS.is_eternal(card, trigger)

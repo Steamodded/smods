@@ -1904,6 +1904,10 @@ SMODS.UndiscoveredCompat = {
             'key',
             'pos',
         },
+        register = function(self)
+            assert(not (self.no_suit and self.any_suit), "Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Seal object.")
+            SMODS.Seal.super.register(self)
+        end,
         inject = function(self)
             G.P_SEALS[self.key] = self
             G.STAGE_OBJECT_INTERRUPT = true
@@ -2477,7 +2481,7 @@ SMODS.UndiscoveredCompat = {
                             pseudorandom_element(SMODS.Suits, pseudoseed('grim_create')).card_key, 'A'
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
@@ -2514,7 +2518,7 @@ SMODS.UndiscoveredCompat = {
                             pseudorandom_element(SMODS.Suits, pseudoseed('familiar_create')).card_key
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
@@ -2551,7 +2555,7 @@ SMODS.UndiscoveredCompat = {
                             pseudorandom_element(SMODS.Suits, pseudoseed('incantation_create')).card_key
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
@@ -3172,6 +3176,7 @@ SMODS.UndiscoveredCompat = {
                 sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
                 return
             end
+            assert(not (self.no_suit and self.any_suit), "Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Sticker object.")
             SMODS.Sticker.super.register(self)
             self.order = #self.obj_buffer
         end,
@@ -3375,26 +3380,19 @@ SMODS.UndiscoveredCompat = {
     -- For example, Card:set_ability sets the card's enhancement, which is not immediately
     -- obvious.
 
-    -- local stone_card = SMODS.Enhancement:take_ownership('m_stone', {
-    --     replace_base_card = true,
-    --     no_suit = true,
-    --     no_rank = true,
-    --     always_scores = true,
-    --     loc_txt = {
-    --         name = "Stone Card",
-    --         text = {
-    --             "{C:chips}+#1#{} Chips",
-    --             "no rank or suit"
-    --         }
-    --     },
-    --     loc_vars = function(self)
-    --         return {
-    --             vars = { self.config.bonus }
-    --         }
-    --     end
-    -- })
+    SMODS.Enhancement:take_ownership('stone', {
+        replace_base_card = true,
+        no_suit = true,
+        no_rank = true,
+        always_scores = true,
+    })
+
+    SMODS.Enhancement:take_ownership('wild', {
+        any_suit = true,
+    })
 
     SMODS.Enhancement:take_ownership('glass', {
+        shatters = true,
         calculate = function(self, card, context)
             if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and SMODS.pseudorandom_probability(card, 'glass', 1, card.ability.extra) then
                 card.glass_trigger = true
@@ -3545,6 +3543,7 @@ SMODS.UndiscoveredCompat = {
                     generic = string.sub(self.key, 3) .. '_generic' .. '_SMODS_INTERNAL'
                 }
             end
+            assert(not (self.no_suit and self.any_suit), "Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Edition object.")
             SMODS.Edition.super.register(self)
         end,
         process_loc_text = function(self)
