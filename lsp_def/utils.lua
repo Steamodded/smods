@@ -305,6 +305,11 @@ function SMODS.has_enhancement(card, key) end
 function SMODS.calculate_quantum_enhancements(card, effects, context) end
 
 ---@param card Card|table
+---@param key string
+--- Check if the card has an enhancement, edition, seal or sticker with the given property.
+function SMODS.has_playing_card_property(card, key) end
+
+---@param card Card|table
 ---@return boolean?
 --- Check if the card should shatter.
 function SMODS.shatters(card) end
