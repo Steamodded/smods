@@ -134,7 +134,7 @@
 ---@field ref_table? table Used in scaling/resetting contexts as the table containing the affected value.
 ---@field ref_value? string Used in scaling/resetting contexts as the key of the affected value.
 ---@field value? number Used in scaling context as the current (unscaled) affected value.
----@field initial_value number Used in resetting context as the initial affected value.
+---@field initial_value? number Used in resetting context as the initial affected value.
 ---@field scalar_table? table Used in scaling context as the table containing the scalar value.
 ---@field scalar_value? string Used in scaling context as the key of the scalar value.
 ---@field scalar? number Used in scaling context as the current scalar value.
