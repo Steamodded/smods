@@ -23,7 +23,7 @@ pattern = '''
 [\t ]*    return self\.ability\.bonus \+ \(self\.ability\.perma_bonus or 0\)
 [\t ]*end'''
 position = "at"
-payload = '''self.config.center.replace_base_card then
+payload = '''if self.config.center.replace_base_card then
     return self.ability.bonus + (self.ability.perma_bonus or 0)
 end'''
 line_prepend = '$indent'
