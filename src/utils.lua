@@ -1078,10 +1078,7 @@ function SMODS.has_enhancement(card, key)
 end
 
 function SMODS.shatters(card)
-    local enhancements = SMODS.get_enhancements(card)
-    for key, _ in pairs(enhancements) do
-        if G.P_CENTERS[key].shatters or key == 'm_glass' then return true end
-    end
+    return SMODS.has_playing_card_property(card, 'shatters')
 end
 
 function SMODS.get_ability_reset_keys(card)
