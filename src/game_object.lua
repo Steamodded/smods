@@ -2477,7 +2477,7 @@ SMODS.UndiscoveredCompat = {
                             pseudorandom_element(SMODS.Suits, pseudoseed('grim_create')).card_key, 'A'
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
@@ -2514,7 +2514,7 @@ SMODS.UndiscoveredCompat = {
                             pseudorandom_element(SMODS.Suits, pseudoseed('familiar_create')).card_key
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
@@ -2551,7 +2551,7 @@ SMODS.UndiscoveredCompat = {
                             pseudorandom_element(SMODS.Suits, pseudoseed('incantation_create')).card_key
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
@@ -3375,26 +3375,20 @@ SMODS.UndiscoveredCompat = {
     -- For example, Card:set_ability sets the card's enhancement, which is not immediately
     -- obvious.
 
-    -- local stone_card = SMODS.Enhancement:take_ownership('m_stone', {
-    --     replace_base_card = true,
-    --     no_suit = true,
-    --     no_rank = true,
-    --     always_scores = true,
-    --     loc_txt = {
-    --         name = "Stone Card",
-    --         text = {
-    --             "{C:chips}+#1#{} Chips",
-    --             "no rank or suit"
-    --         }
-    --     },
-    --     loc_vars = function(self)
-    --         return {
-    --             vars = { self.config.bonus }
-    --         }
-    --     end
-    -- })
+    SMODS.Enhancement:take_ownership('stone', {
+        replace_base_card = true,
+        overrides_base_rank = true,
+        no_suit = true,
+        no_rank = true,
+        always_scores = true,
+    })
+
+    SMODS.Enhancement:take_ownership('wild', {
+        any_suit = true,
+    })
 
     SMODS.Enhancement:take_ownership('glass', {
+        shatters = true,
         calculate = function(self, card, context)
             if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and SMODS.pseudorandom_probability(card, 'glass', 1, card.ability.extra) then
                 card.glass_trigger = true

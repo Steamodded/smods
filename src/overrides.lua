@@ -2537,7 +2537,7 @@ G.FUNCS.change_collab = function(args)
     end
 
 	for k, v in pairs(G.I.CARD) do
-		if v.config and v.config.card and v.children.front and v.ability.effect ~= 'Stone Card' then
+		if v.config and v.config.card and v.children.front and not v:should_hide_front() then
 			v:set_sprites(nil, v.config.card)
 		end
 	end
@@ -2549,7 +2549,7 @@ G.FUNCS.change_colour_palette = function(args)
 	G.FUNCS.update_suit_colours(args.cycle_config.curr_suit, args.cycle_config.curr_skin)
 	G.FUNCS.update_collab_cards(args.cycle_config.curr_skin, args.cycle_config.curr_suit)
 	for k, v in pairs(G.I.CARD) do
-		if v.config and v.config.card and v.children.front and v.ability.effect ~= 'Stone Card' then
+		if v.config and v.config.card and v.children.front and not v:should_hide_front() then
 			v:set_sprites(nil, v.config.card)
 		end
 	end
