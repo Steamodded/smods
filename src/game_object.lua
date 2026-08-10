@@ -1904,6 +1904,10 @@ SMODS.UndiscoveredCompat = {
             'key',
             'pos',
         },
+        register = function(self)
+            assert(not (self.no_suit and self.any_suit), "Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Seal object.")
+            SMODS.Seal.super.register(self)
+        end,
         inject = function(self)
             G.P_SEALS[self.key] = self
             G.STAGE_OBJECT_INTERRUPT = true
@@ -3172,6 +3176,7 @@ SMODS.UndiscoveredCompat = {
                 sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
                 return
             end
+            assert(not (self.no_suit and self.any_suit), "Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Sticker object.")
             SMODS.Sticker.super.register(self)
             self.order = #self.obj_buffer
         end,
@@ -3377,7 +3382,6 @@ SMODS.UndiscoveredCompat = {
 
     SMODS.Enhancement:take_ownership('stone', {
         replace_base_card = true,
-        overrides_base_rank = true,
         no_suit = true,
         no_rank = true,
         always_scores = true,
@@ -3539,6 +3543,7 @@ SMODS.UndiscoveredCompat = {
                     generic = string.sub(self.key, 3) .. '_generic' .. '_SMODS_INTERNAL'
                 }
             end
+            assert(not (self.no_suit and self.any_suit), "Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Edition object.")
             SMODS.Edition.super.register(self)
         end,
         process_loc_text = function(self)

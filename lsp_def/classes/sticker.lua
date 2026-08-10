@@ -3,8 +3,9 @@
 ---@class SMODS.Sticker: SMODS.GameObject
 ---@field obj_buffer? Stickers[]|string[] Array of keys to all objects registered to this class. 
 ---@field obj_table? table<Stickers|string, SMODS.Sticker|table> Table of objects registered to this class. 
----@field no_rank? boolean Playing cards with this sticker have no rank
----@field no_suit? boolean Playing cards with this sticker have no suit. 
+---@field replace_base_card? boolean Don't draw base card sprite or give base chips.
+---@field no_rank? boolean Playing cards with this sticker have no rank.
+---@field no_suit? boolean Playing cards with this sticker have no suit.
 ---@field any_suit? boolean Playing cards with this sticker have all suits. 
 ---@field always_scores? boolean Playing cards with this sticker always score. May be overridden by `context.modify_scoring_hand` effects.
 ---@field never_scores? boolean Playing cards with this sticker never score. Takes priority over `always_scores`. May be overridden by `context.modify_scoring_hand` effects.

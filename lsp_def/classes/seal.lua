@@ -3,8 +3,9 @@
 ---@class SMODS.Seal: SMODS.GameObject
 ---@field obj_buffer? Seals[]|string[] Array of keys to all objects registered to this class. 
 ---@field obj_table? table<Seals|string, SMODS.Seal|table> Table of objects registered to this class. 
----@field no_rank? boolean Playing cards with this seal have no rank
----@field no_suit? boolean Playing cards with this seal have no suit. 
+---@field replace_base_card? boolean Don't draw base card sprite or give base chips. 
+---@field no_rank? boolean Playing cards with this seal have no rank.
+---@field no_suit? boolean Playing cards with this seal have no suit.
 ---@field any_suit? boolean Playing cards with this seal have all suits. 
 ---@field always_scores? boolean Playing cards with this seal always score. May be overridden by `context.modify_scoring_hand` effects.
 ---@field never_scores? boolean Playing cards with this seal never score. Takes priority over `always_scores`. May be overridden by `context.modify_scoring_hand` effects.

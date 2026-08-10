@@ -3219,8 +3219,8 @@ G.FUNCS.update_blind_debuff_text = function(e)
 end
 
 function Card:should_hide_front()
-    local center = self.delay_center or self.config.center
-    return center.replace_base_card
+    if (self.delay_center or {}).replace_base_card then return true end
+    return SMODS.has_playing_card_property(self, 'replace_base_card')
 end
 
 function SMODS.is_eternal(card, trigger)
