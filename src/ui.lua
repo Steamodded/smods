@@ -122,9 +122,7 @@ end
 -- collision check
 function Node:inside_overflow_boundaries(point)
     -- No parent = no overflow can be done so collide as usual
-    if not self.parent then
-        return true
-    end
+    if not self.parent then return true end
 
     -- Use cached value if present for current point
 	if self.overflow_check_timer == G.TIMERS.REAL and self.overflow_check_point == point then
@@ -142,7 +140,7 @@ function Node:inside_overflow_boundaries(point)
             local T = self.parent.CT or self.parent.T
             local _p = self.parent.ARGS.collides_with_point_point
             local _b = self.parent.states.hover.is and G.COLLISION_BUFFER or 0
-            
+
             -- Both directions = use default collision check
             if v and h then
             -- Vertical = only y coordinate
