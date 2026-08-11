@@ -4264,8 +4264,8 @@ function SMODS.set_ui_element_shader(element, input_args)
         local p_shader = SMODS.Shader.obj_table[shader or 'dissolve']
         if p_shader and type(p_shader.send_vars) == "function" then
             local sh = G.SHADERS[shader or 'dissolve']
-            local send_vars = p_shader.send_vars(element, unpack(extra))
-        
+            local send_vars = p_shader.send_vars(element, unpack(input_args.extra or {}))
+
             if type(send_vars) == "table" then
                 for key, value in pairs(send_vars) do
                     sh:send(key, value)
