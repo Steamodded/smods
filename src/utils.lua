@@ -2861,7 +2861,25 @@ function SMODS.localize_box(lines, args)
         local desc_scale = (thunk.font or G.LANG.font).DESCSCALE
         if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
 
+        -- tooltip modifier
+        local T
+        if part.control.T then
+            T = type(part.control.T) == 'table' and part.control.T or { key = part.control.T }
+            T.set = T.set or part.control.T_set or 'Other'
+            T.vars = {}
+            if T["1"] then
+                local i = 1
+                while T[tostring(i)] do
+                    T.vars[i] = T[tostring(i)]
+                    i = i+1
+                end
+            elseif part.control.T_vars then
+                T.vars = parse_tooltip_vars(part.control.T_vars)
+            end
+        end
+
         local base_config = function(t)
+            
             return SMODS.merge_defaults(t, {
                 button = part.control.button,
                 underline = thunk.underline,
@@ -2875,15 +2893,7 @@ function SMODS.localize_box(lines, args)
                 font = thunk.font,
                 scale = 0.32*thunk.scale_mod*desc_scale,
                 text = assembled_string,
-                detailed_tooltip = part.control.T and (
-                    G.P_CENTERS[part.control.T]
-                    or G.P_TAGS[part.control.T]
-                    or {
-                        set = part.control.T_set or 'Other',
-                        key = part.control.T,
-                        vars = part.control.T_vars and parse_tooltip_vars(part.control.T_vars) or {}
-                    }
-                ) or nil,
+                detailed_tooltip = T and (G.P_CENTERS[T.key] or G.P_TAGS[T.key] or T) or nil
             })
         end
         
