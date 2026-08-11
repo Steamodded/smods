@@ -1,0 +1,83 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 100
+
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+pattern = '''CardArea = Moveable:extend()'''
+position = 'after'
+match_indent = true
+payload = '''
+
+local function sort_by_x(a, b)
+    return a.T.x + a.T.w/2 < b.T.x + b.T.w/2
+end
+
+local function sort_by_order(a, b)
+    return a.ability.order < b.ability.order
+end
+
+local function sort_by_x_pinned(a, b)
+    return a.T.x + a.T.w/2 - 100*((a.pinned and not a.ignore_pinned) and a.sort_id or 0) < b.T.x + b.T.w/2 - 100*((b.pinned and not b.ignore_pinned) and b.sort_id or 0)
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+pattern = '''    self.ARGS.invisible_area_types = self.ARGS.invisible_area_types or {discard=1, voucher=1, play=1, consumeable=1, title = 1, title_2 = 1}
+    if self.ARGS.invisible_area_types[self.config.type] or
+        (self.config.type == 'hand' and ({[G.STATES.SHOP]=1, [G.STATES.TAROT_PACK]=1, [G.STATES.SPECTRAL_PACK]=1, [G.STATES.STANDARD_PACK]=1,[G.STATES.BUFFOON_PACK]=1,[G.STATES.PLANET_PACK]=1, [G.STATES.ROUND_EVAL]=1, [G.STATES.BLIND_SELECT]=1})[state]) or
+        (self.config.type == 'hand' and state == G.STATES.SMODS_BOOSTER_OPENED) or
+        (self.config.type == 'deck' and self ~= G.deck) or'''
+position = 'at'
+match_indent = true
+payload = '''    self.ARGS.invisible_area_types = self.ARGS.invisible_area_types or {discard=1, voucher=1, play=1, consumeable=1, title = 1, title_2 = 1}
+    self.ARGS.invisible_hand_states = self.ARGS.invisible_hand_states or {[G.STATES.SHOP]=1, [G.STATES.TAROT_PACK]=1, [G.STATES.SPECTRAL_PACK]=1, [G.STATES.STANDARD_PACK]=1,[G.STATES.BUFFOON_PACK]=1,[G.STATES.PLANET_PACK]=1, [G.STATES.ROUND_EVAL]=1, [G.STATES.BLIND_SELECT]=1}
+    if self.ARGS.invisible_area_types[self.config.type] or
+        (self.config.type == 'hand' and self.ARGS.invisible_hand_states[state]) or
+        (self.config.type == 'hand' and state == G.STATES.SMODS_BOOSTER_OPENED) or
+        (self.config.type == 'deck' and self ~= G.deck) or'''
+
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+pattern = '''        table.sort(self.cards, function (a, b) return a.T.x + a.T.w/2 < b.T.x + b.T.w/2 end)'''
+position = 'at'
+match_indent = true
+payload = '''        table.sort(self.cards, sort_by_x)'''
+
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+pattern = '''        table.sort(self.cards, function (a, b) return a.ability.order < b.ability.order end)'''
+position = 'at'
+match_indent = true
+payload = '''        table.sort(self.cards, sort_by_order)'''
+
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+pattern = '''        table.sort(self.cards, function (a, b) return a.T.x + a.T.w/2 - 100*((a.pinned and not a.ignore_pinned) and a.sort_id or 0) < b.T.x + b.T.w/2 - 100*((b.pinned and not b.ignore_pinned) and b.sort_id or 0) end)'''
+position = 'at'
+match_indent = true
+payload = '''        table.sort(self.cards, sort_by_x_pinned)'''
+
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+pattern = '''function CardArea:align_cards()
+    if (self == G.hand or self == G.deck or self == G.discard or self == G.play) and G.view_deck and G.view_deck[1] and G.view_deck[1].cards then return end'''
+position = 'after'
+match_indent = true
+payload = '''    local max_cards = math.max(#self.cards, self.config.temp_limit or 0)'''
+
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+pattern = '''                local max_cards = math.max(#self.cards, self.config.temp_limit)'''
+position = 'at'
+match_indent = true
+payload = '''                -- max_cards hoisted'''
