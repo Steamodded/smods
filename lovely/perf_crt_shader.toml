@@ -6,22 +6,26 @@ priority = 100
 [[patches]]
 [patches.pattern]
 target = 'CRT.fs'
-pattern = '''        for (int i = -BLOOM_AMT; i <= BLOOM_AMT; ++i)
-            for (int j = -BLOOM_AMT; j <= BLOOM_AMT; ++j){
-                samp = Texel( tex, tc + (bloom_dist/float(BLOOM_AMT))*vec2(float(i), float(j)));
-                samp.r = max(1./(1.-cutoff)*samp.r - 1./(1.-cutoff) + 1., 0.);
-                samp.g = max(1./(1.-cutoff)*samp.g - 1./(1.-cutoff) + 1., 0.);
-                samp.b = max(1./(1.-cutoff)*samp.b - 1./(1.-cutoff) + 1., 0.);
-                col += min(min(samp.r,samp.g),samp.b) * (2. - float(abs(float(i+j)))/float(BLOOM_AMT+BLOOM_AMT));
-        }'''
+pattern = '''
+for (int i = -BLOOM_AMT; i <= BLOOM_AMT; ++i)
+    for (int j = -BLOOM_AMT; j <= BLOOM_AMT; ++j){
+        samp = Texel( tex, tc + (bloom_dist/float(BLOOM_AMT))*vec2(float(i), float(j)));
+        samp.r = max(1./(1.-cutoff)*samp.r - 1./(1.-cutoff) + 1., 0.);
+        samp.g = max(1./(1.-cutoff)*samp.g - 1./(1.-cutoff) + 1., 0.);
+        samp.b = max(1./(1.-cutoff)*samp.b - 1./(1.-cutoff) + 1., 0.);
+        col += min(min(samp.r,samp.g),samp.b) * (2. - float(abs(float(i+j)))/float(BLOOM_AMT+BLOOM_AMT));
+}
+'''
 position = 'at'
 match_indent = true
-payload = '''        MY_HIGHP_OR_MEDIUMP float dist_scale = bloom_dist / float(BLOOM_AMT);
-        for (int i = -BLOOM_AMT; i <= BLOOM_AMT; ++i) {
-            MY_HIGHP_OR_MEDIUMP float fx = float(i);
-            for (int j = -BLOOM_AMT; j <= BLOOM_AMT; ++j){
-                samp = Texel( tex, tc + dist_scale * vec2(fx, float(j)));
-                samp.rgb = max(samp.rgb * 2.5 - 1.5, vec3(0.0));
-                col += min(min(samp.r,samp.g),samp.b) * (2.0 - abs(fx + float(j)) / 6.0);
-            }
-        }'''
+payload = '''
+MY_HIGHP_OR_MEDIUMP float dist_scale = bloom_dist / float(BLOOM_AMT);
+for (int i = -BLOOM_AMT; i <= BLOOM_AMT; ++i) {
+    MY_HIGHP_OR_MEDIUMP float fx = float(i);
+    for (int j = -BLOOM_AMT; j <= BLOOM_AMT; ++j){
+        samp = Texel( tex, tc + dist_scale * vec2(fx, float(j)));
+        samp.rgb = max(samp.rgb * 2.5 - 1.5, vec3(0.0));
+        col += min(min(samp.r,samp.g),samp.b) * (2.0 - abs(fx + float(j)) / 6.0);
+    }
+}
+'''
