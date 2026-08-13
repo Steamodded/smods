@@ -1446,6 +1446,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 self.type:delete_card(self)
             end
             SMODS.remove_pool(G.P_CENTER_POOLS['Consumeables'], self.key)
+            if self.hidden then
+                SMODS.remove_pool(self.legendaries, self.key)
+            end
             SMODS.Consumable.super.delete(self)
         end,
         create_fake_card = function(self)
