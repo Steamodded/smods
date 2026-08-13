@@ -60,7 +60,7 @@ function StateSprite:load_sprite_args(args)
 		end
 	end
     if not self.sprite_args.states or not next(self.sprite_args.states) then
-        sendWarnMessage(string.format("StateSprite initialized without states, atlas = '%s'", new_sprite_atlas.name), "utils")
+        sendWarnMessage(string.format("StateSprite initialized without states, atlas = '%s'", self.atlas.name), "utils")
     else
         self.states_offset = self.sprite_args.states_offset and {x = self.sprite_args.states_offset.x or 0, y = self.sprite_args.states_offset.y or 0} or {x = 0, y = 0}
         self.default_state = self.sprite_args.default_state or next(self.sprite_args.states)
