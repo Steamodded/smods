@@ -972,3 +972,8 @@ function SMODS.card_to_image(card, scale, filename) end
 ---@param bypass_debuff boolean? Whether to ignore the card's debuff status
 ---@return boolean
 function Card.is_suit_shade(card, shade, bypass_debuff) end
+
+---Process element passed via loc_vars' `vars.elements` table
+---@param element? UINode | Node | table | nil | fun(): UINode | Node | table | nil
+---@return UINode | nil
+function SMODS.process_loc_element(element) end
