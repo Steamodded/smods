@@ -321,8 +321,8 @@ function SMODS.get_active_q_ability(abilities, qfield_key, obj_key)
     end
 end
 
-function SMODS.set_quantum_cache(card)
-    _general_quantum_getter(card)
+function SMODS.set_quantum_cache(card, args)
+    _general_quantum_getter(card, args)
     return SMODS.qfield_cache[card]
 end
 

@@ -441,8 +441,9 @@ SMODS.QuantumCardFields = {}
 -- .get[qfield.return_flag] = [table map of values] 
 -- .has[qfield.key] = {any = [boolean?], no = [boolean?]} 
 -- (if cached) .abilities = [list of structs:] {{t = [ability table], key = [obj.key that cached the ability], qfield_key = [qfield the obj belongs to]}, ...}
+---@param args? table The args as passed to the quantum getter.
 ---@return table cache The cached values, {has = ..., get = ...} ^ see above.
-function SMODS.set_quantum_cache(card) end
+function SMODS.set_quantum_cache(card, args) end
 
 -------------------------------
 ----- Rank

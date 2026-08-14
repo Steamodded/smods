@@ -1018,8 +1018,11 @@ end
 function SMODS.never_scores(card)
     return SMODS.has_playing_card_property(card, 'never_scores')
 end
-function SMODS.has_playing_card_property(card, key) 
-    if not SMODS.set_quantum_cache(card) then return end
+function SMODS.has_playing_card_property(card, args) 
+    if type(args) == "string" then 
+        args = {key = args}
+    end
+    if not SMODS.set_quantum_cache(card, args) then return end
     for _, q_field in pairs(SMODS.QuantumCardFields) do
         for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k] or {}
@@ -3164,7 +3167,7 @@ end
 
 function Card:should_hide_front()
     if (self.delay_center or {}).replace_base_card then return true end
-    return SMODS.has_playing_card_property(self, 'replace_base_card')
+    return SMODS.has_playing_card_property(self, {key = 'replace_base_card', _no_contexts = true})
 end
 
 function SMODS.is_eternal(card, trigger)

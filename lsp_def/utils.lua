@@ -295,9 +295,9 @@ function SMODS.smart_level_up_hand(card, hand, instant, amount) end
 function SMODS.get_card_areas(_type, _context) end
 
 ---@param card Card|table
----@param key string
+---@param args table {key = "property"}, passed to SMODS.set_quantum_cache()
 --- Check if the card has an enhancement, edition, seal or sticker with the given property. (Checks all SMODS.QuantumCardFields)
-function SMODS.has_playing_card_property(card, key) end
+function SMODS.has_playing_card_property(card, args) end
 
 ---@param card Card|table
 ---@return boolean?
