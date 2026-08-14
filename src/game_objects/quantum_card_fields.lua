@@ -841,16 +841,6 @@ SMODS.Joker:take_ownership("flower_pot", {
     end
 })
 
-SMODS.Enhancement:take_ownership("m_stone", {
-    no_rank = true,
-    no_suit = true,
-    always_scores = true,
-})
-
-SMODS.Enhancement:take_ownership("m_wild", {
-    any_suit = true,
-})
-
 
 -- Todo : Currently the _quantum_getter context is called every time a card is hovered (probably due to SMODS.has_no_suit() for the card name), this causes quite a bit of lag when done (very) rapidly. Consider looking into fixing this.
 

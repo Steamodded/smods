@@ -142,7 +142,7 @@ SMODS.CardAbilityField{
         local ret = 0
         for _, ability_t in ipairs(abilities) do
             local ability = ability_t.t or {}
-            if ability.effect == "Stone Card" or ((ability_t.qfield_key and SMODS.QuantumCardFields[ability_t.qfield_key].g_obj_table[ability_t.key] or {}).replace_base_card) then
+            if SMODS.has_playing_card_property(card, 'replace_base_card') then
                 base = 0
             end
             ret = ret + (ability.chips or 0) + (ability.bonus or 0)
