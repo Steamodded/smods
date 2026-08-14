@@ -1672,7 +1672,8 @@ function create_UIBox_current_hands(simple, in_collection)
 						colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or
 						G.C.RED,
 						no_pips = true,
-						in_collection = in_collection
+						in_collection = in_collection,
+						simple = simple
 					}) }
 			} or nil }
 	}
@@ -1695,6 +1696,7 @@ G.FUNCS.your_hands_page = function(args)
 	if not args or not args.cycle_config then return end
 	G.current_hands = {}
 	local in_collection = args.cycle_config.in_collection
+	local simple = args.cycle_config.simple
 	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
 	local handlist = in_collection and {} or nil
 	if _pool then
