@@ -3,6 +3,7 @@ SMODS.GUI.DynamicUIManager = {}
 
 -- used to properly truncate overflow content inside another overflow content
 SMODS.stencil_stack = {}
+SMODS.stencil_canvas = nil
 
 function SMODS.push_to_stencil_stack(stencil_fn)
     assert(type(stencil_fn) == "function", "No stencil function passed to SMODS.push_to_stencil_stack")
@@ -45,11 +46,14 @@ function SMODS.reset_stencil_stack()
     love.graphics.setStencilTest()
     love.graphics.stencil(function() end)
 end
-function SMODS.reload_stencil_stack()
-    local stack_snapshot = SMODS.shallow_copy(SMODS.stencil_stack)
-    SMODS.reset_stencil_stack()
-    for _, stencil_fn in ipairs(stack_snapshot) do
-        SMODS.push_to_stencil_stack(stencil_fn)
+function SMODS.reload_stencil_stack(full)
+    love.graphics.setCanvas({ love.graphics.getCanvas(), depthstencil = SMODS.stencil_canvas })
+    if full then
+        local stack_snapshot = SMODS.shallow_copy(SMODS.stencil_stack)
+        SMODS.reset_stencil_stack()
+        for _, stencil_fn in ipairs(stack_snapshot) do
+            SMODS.push_to_stencil_stack(stencil_fn)
+        end
     end
 end
 
@@ -57,6 +61,21 @@ local gameDrawRef = Game.draw
 function Game:draw(...)
     SMODS.reset_stencil_stack()
     gameDrawRef(self, ...)
+end
+
+local old_get_canvas = love.graphics.getCanvas
+function love.graphics.getCanvas(...)
+    local r = old_get_canvas(...)
+    return r.depthstencil and r[1] or r
+end
+
+local old_resize = love.resize
+function love.resize(w, h, ...)
+    old_resize(w, h, ...)
+    SMODS.stencil_canvas = love.graphics.newCanvas(w, h, {
+        format = "stencil8",
+        readable = false,
+    })
 end
 
 --
@@ -3340,7 +3359,7 @@ G.FUNCS.HUD_blind_badge = function(e)
     if G.GAME.blind.in_blind then
         if G.GAME.blind.config.blind.mod then
             if G.GAME.blind.config.blind.mod.display_name ~= G.GAME.blind_badge.name then 
-                if e.children[1] then e.children[1]:remove(); e.children[1] = nil end
+                if e.children[1] then e.children[1]:remove(); e.children[1] = nil else ease_value(G.HUD.alignment.offset, 'y', 0.4) end
                 local mod = G.GAME.blind.config.blind.mod
                 G.GAME.blind_badge.name = mod.display_name
                 local badge = SMODS.create_mod_badge(mod, G.GAME.blind.config.blind, 4.4, 0.36)
@@ -3355,9 +3374,14 @@ G.FUNCS.HUD_blind_badge = function(e)
                 e.UIBox:add_child(badge, e)
             end
         elseif e.children[1] then
-            e.states.visible = false
-            e.children[1]:remove()
-            e.children[1] = nil
+            local blind = G.GAME.blind:save()
+            G.HUD_blind:remove()
+            G.GAME.blind = Blind(0,0,2,1)
+            G.HUD_blind = UIBox{
+                definition = create_UIBox_HUD_blind(),
+                config = {major = G.HUD:get_UIE_by_ID('row_blind_bottom'), align = 'bmi', offset = {x=0,y=-10}, bond = 'Weak'}
+            }
+            G.GAME.blind:load(blind)
             G.GAME.blind_badge = {}
         end
     end

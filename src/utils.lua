@@ -998,17 +998,6 @@ function Card:can_calculate(ignore_debuff, ignore_sliced)
     return is_available
 end
 
-function SMODS.shatters(card)
-    if not SMODS.set_quantum_cache(card) then return end
-    for key, q_field in pairs(SMODS.QuantumCardFields) do
-        for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
-            local obj = q_field.g_obj_table[k] or {}
-            if obj.shatters then return true end
-        end
-    end
-    return false
-end
-
 function SMODS.get_ability_reset_keys(card)
     local reset_keys = {'name', 'effect', 'set', 'extra', 'played_this_ante', 'perma_debuff', 'Xmult'}
     for _, mod in ipairs(SMODS.mod_list) do
@@ -1019,26 +1008,27 @@ function SMODS.get_ability_reset_keys(card)
     end
     return reset_keys
 end
+
+function SMODS.shatters(card)
+    return SMODS.has_playing_card_property(card, 'shatters')
+end
 function SMODS.always_scores(card)
-    if not SMODS.set_quantum_cache(card) then return end
-    for _, q_field in pairs(SMODS.QuantumCardFields) do
-        for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
-            local obj = q_field.g_obj_table[k] or {}
-            if obj.always_scores then return true end
-        end
-    end
-    return false
+    return SMODS.has_playing_card_property(card, 'always_scores')
 end
 function SMODS.never_scores(card)
+    return SMODS.has_playing_card_property(card, 'never_scores')
+end
+function SMODS.has_playing_card_property(card, key) 
     if not SMODS.set_quantum_cache(card) then return end
     for _, q_field in pairs(SMODS.QuantumCardFields) do
         for k, _ in pairs(SMODS.qfield_cache[card].get[q_field.return_flag]) do
             local obj = q_field.g_obj_table[k] or {}
-            if obj.never_scores then return true end
+            if obj[key] then return true end
         end
     end
     return false
 end
+
 
 SMODS.collection_pool = function(_base_pool)
     local pool = {}
@@ -1736,6 +1726,20 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                 end
                 ::skip::
             end
+            if area == G.consumeables and SMODS.currently_used_consumable and not SMODS.currently_used_consumable.area and not SMODS.check_looping_context(SMODS.currently_used_consumable) then
+                local eval, post = eval_card(SMODS.currently_used_consumable, context)
+                local effects = {eval}
+                for _,v in ipairs(post) do effects[#effects+1] = v end
+                if return_table then
+                    for _,v in ipairs(effects) do
+                        return_table[#return_table+1] = v
+                    end
+                else
+                    local f = SMODS.trigger_effects(effects, SMODS.currently_used_consumable)
+                    for k,v in pairs(f) do flags[k] = v end
+                    SMODS.update_context_flags(context, flags)
+                end
+            end
         end
     end
 
@@ -1865,8 +1869,14 @@ function SMODS.update_context_flags(context, flags)
         no_mod_changed = true
     end
     if context._quantum_getter or context.card_has_check then
-        SMODS.update_context_flags_qfields(context, flags)
+        SMODS.update_context_flags_qfields(context, flags, no_mod_changed)
     end
+    if context.scaling_card or context.resetting_card then
+        SMODS.update_context_flags_scaling_resetting(context, flags)
+    end
+end
+
+function SMODS.update_context_flags_scaling_resetting(context, flags)
     if context.scaling_card then
         if not context.block_overrides.value and flags.override_value then
             if type(flags.override_value) == 'table' then
@@ -1888,13 +1898,6 @@ function SMODS.update_context_flags(context, flags)
         if not context.block_overrides.message and flags.override_message then
             context.scaling_message = SMODS.merge_defaults(flags.override_message, context.scaling_message)
         end
-        if flags.post then
-            flags.post.source = flags.scored_card
-            flags.post_effects = flags.post_effects or {}
-            table.insert(flags.post_effects, flags.post)
-        end
-        ---@diagnostic disable-next-line: unbalanced-assignments
-        flags.override_value, flags.override_scalar, flags.override_scalar_value, flags.override_message, flags.post = nil
     end
     if context.resetting_card then
         local override_value = flags.override_value or flags.override_reset_value
@@ -1909,18 +1912,17 @@ function SMODS.update_context_flags(context, flags)
         if not context.block_overrides.message and flags.override_message then
             context.reset_message = SMODS.merge_defaults(flags.override_message, context.reset_message)
         end
-        if flags.post then
-            flags.post.source = flags.scored_card
-            flags.post_effects = flags.post_effects or {}
-            table.insert(flags.post_effects, flags.post)
-        end
-        ---@diagnostic disable-next-line: unbalanced-assignments
-        flags.override_value, flags.override_reset_value, flags.override_message, flags.post = nil
     end
+    if flags.post then
+        flags.post.source = flags.scored_card
+        flags.post_effects = flags.post_effects or {}
+        table.insert(flags.post_effects, flags.post)
+    end
+    flags.override_value, flags.override_scalar, flags.override_scalar_value, flags.override_message, flags.post = nil, nil, nil, nil, nil
 end
 
 -- Subfunction of the above, updates a [context] with QuantumCardFields related [flags].
-function SMODS.update_context_flags_qfields(context, flags)
+function SMODS.update_context_flags_qfields(context, flags, no_mod_changed)
     for key, q_field in pairs(SMODS.QuantumCardFields) do
         if SMODS.optional_features.quantum_fields[key] then
             local has_no_flag = "no_" .. key 
@@ -2733,16 +2735,21 @@ function SMODS.get_loc_colour(ctrl, vars)
     return (vars or {})[tonumber(ctrl) or {}] or loc_colour(ctrl)
 end
 
+function SMODS.process_loc_element(elem)
+    if type(elem) == "function" then elem = elem() end
+    if elem and elem.is and elem:is(Node) then
+        elem = { n=G.UIT.O, config = { object = elem }}
+    end
+    return elem
+end
+
 function SMODS.localize_box(lines, args)
     args.vars = args.vars or {}
     local final_line = {}
     for _, part in ipairs(lines) do
         if part.control.element then
             local elem = (args.vars.elements or {})[tonumber(part.control.element)]
-            if elem and elem.is and elem:is(Node) then
-                elem = { n=G.UIT.O, config = { object = elem }}
-            end
-            final_line[#final_line+1] = elem
+            final_line[#final_line+1] = SMODS.process_loc_element(elem)
         end
         local assembled_string = ''
         for _, subpart in ipairs(part.strings) do
@@ -2766,7 +2773,25 @@ function SMODS.localize_box(lines, args)
         local desc_scale = (thunk.font or G.LANG.font).DESCSCALE
         if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
 
+        -- tooltip modifier
+        local T
+        if part.control.T then
+            T = type(part.control.T) == 'table' and part.control.T or { key = part.control.T }
+            T.set = T.set or part.control.T_set or 'Other'
+            T.vars = {}
+            if T["1"] then
+                local i = 1
+                while T[tostring(i)] do
+                    T.vars[i] = T[tostring(i)]
+                    i = i+1
+                end
+            elseif part.control.T_vars then
+                T.vars = parse_tooltip_vars(part.control.T_vars)
+            end
+        end
+
         local base_config = function(t)
+            
             return SMODS.merge_defaults(t, {
                 button = part.control.button,
                 underline = thunk.underline,
@@ -2780,15 +2805,7 @@ function SMODS.localize_box(lines, args)
                 font = thunk.font,
                 scale = 0.32*thunk.scale_mod*desc_scale,
                 text = assembled_string,
-                detailed_tooltip = part.control.T and (
-                    G.P_CENTERS[part.control.T]
-                    or G.P_TAGS[part.control.T]
-                    or {
-                        set = part.control.T_set or 'Other',
-                        key = part.control.T,
-                        vars = part.control.T_vars and parse_tooltip_vars(part.control.T_vars) or {}
-                    }
-                ) or nil,
+                detailed_tooltip = T and (G.P_CENTERS[T.key] or G.P_TAGS[T.key] or T) or nil
             })
         end
         
@@ -2885,14 +2902,15 @@ function SMODS.is_playing_card(card)
 	return card.playing_card or set == "Default" or set == "Enhanced"
 end
 
-function SMODS.pinch_and_remove(card)
+function SMODS.pinch_and_remove(card, args)
+    args = args or {}
     if not SMODS.is_playing_card(card) then
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = card})
         if flags.no_destroy then card.getting_sliced = nil; return false end
     end
-    play_sound('tarot1')
+    if not args.silent then play_sound('tarot1') end
     card.T.r = -0.2
-    card:juice_up(0.3, 0.4)
+    if not args.no_juice then card:juice_up(0.3, 0.4) end
     card.states.drag.is = true
     card.children.center.pinch.x = true
     G.E_MANAGER:add_event(Event({
@@ -2950,11 +2968,11 @@ function SMODS.destroy_cards(cards, args, ...)
         if args.destroy_func then 
             return args.destroy_func(card, args) ~= false
         elseif args.pinch_anim then
-            return SMODS.pinch_and_remove(card)
+            return SMODS.pinch_and_remove(card, args)
         elseif card.shattered then
-            return card:shatter() ~= false
+            return card:shatter(args) ~= false
         elseif card.destroyed then
-            return card:start_dissolve(args.colours) ~= false
+            return card:start_dissolve(args.colours, args.silent, args.dissolve_time_fac, args.no_juice) ~= false
         end
         return false
     end
@@ -3145,8 +3163,8 @@ G.FUNCS.update_blind_debuff_text = function(e)
 end
 
 function Card:should_hide_front()
-    local center = self.delay_center or self.config.center
-    return center.effect == "Stone Card" or center.replace_base_card
+    if (self.delay_center or {}).replace_base_card then return true end
+    return SMODS.has_playing_card_property(self, 'replace_base_card')
 end
 
 function SMODS.is_eternal(card, trigger)
