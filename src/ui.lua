@@ -3383,3 +3383,146 @@ G.FUNCS.HUD_blind_badge = function(e)
 end
 
 -- #endregion
+
+function SMODS.GUI.extended_text_input(args)
+    args = args or {}
+    args.colour = copy_table(args.colour) or copy_table(G.C.BLUE)
+    args.text_colour = copy_table(args.text_colour) or copy_table(G.C.UI.TEXT_LIGHT)
+    args.hooked_colour = copy_table(args.hooked_colour) or darken(copy_table(G.C.BLUE), 0.3)
+    args.w = args.w or 2.5
+    args.h = args.h or 0.7
+    args.text_scale = args.text_scale or 0.4
+    args.max_length = args.max_length or 16
+    args.all_caps = args.all_caps or false
+    args.prompt_text = args.prompt_text or localize('k_enter_text')
+    args.prompt_colour = args.prompt_colour or lighten(copy_table(args.colour), 0.4)
+    args.current_prompt_text = ''
+    args.id = args.id or "text_input"
+    args.multi_language = args.multi_language or false
+    args.smods_extended_input = true
+
+    local text = {ref_table = args.ref_table, ref_value = args.ref_value, letters = {}, current_position = utf8Len(args.ref_table[args.ref_value])}
+    local ui_letters = {}
+    for i = 1, args.max_length do
+        text.letters[i] = (args.ref_table[args.ref_value] and (utf8CharAt(args.ref_table[args.ref_value], i) or '')) or ''
+        ui_letters[i] = {n=G.UIT.T, config={ref_table = text.letters, ref_value = i, scale = args.text_scale, colour = args.text_colour, id = args.id..'_letter_'..i, font = args.font}}
+    end
+    args.text = text
+
+    local position_text_colour = lighten(copy_table(G.C.BLUE), 0.4)
+
+    ui_letters[#ui_letters+1] = {n=G.UIT.T, config={ref_table = args, ref_value = 'current_prompt_text', scale = args.text_scale, colour = args.prompt_colour, id = args.id..'_prompt', font = args.font}}
+    ui_letters[#ui_letters+1] = {n=G.UIT.B, config={r = 0.03,w=0, h=0.4, colour = position_text_colour, id = args.id..'_position', func = 'flash'}}
+
+    local t = 
+        {n=G.UIT.C, config={align = "cm", colour = G.C.CLEAR}, nodes = {
+            {n=G.UIT.C, config={id = args.id, align = "cm", padding = 0.05, r = 0.1, hover = true, colour = args.colour,minw = args.w, min_h = args.h, button = 'select_text_input', shadow = true}, nodes={
+                {n=G.UIT.R, config={ref_table = args, padding = 0.05, align = "cm", r = 0.1, colour = G.C.CLEAR}, nodes={
+                    {n=G.UIT.R, config={ref_table = args, align = "cm", r = 0.1, colour = G.C.CLEAR, func = 'text_input'}, nodes=
+                        ui_letters
+                    }
+                }}
+            }}
+        }}
+    return t
+end
+
+G.FUNCS.smods_extended_text_input_key = function(args)
+    args = args or {}
+    if not args.key then return end
+
+    local keymap = {
+        backspace = 'BACKSPACE',
+        delete = 'DELETE',
+        ['return'] = 'RETURN',
+        right = 'RIGHT',
+        left = 'LEFT'
+    }
+
+    local hook = G.CONTROLLER.text_input_hook
+    local hook_config = hook.config.ref_table
+    local text = hook_config.text
+
+    -- Prevent inputs from textinput if we dont need them
+    if not keymap[args.key] and (not not args.textinput ~= not not hook_config.multi_language) then return end
+
+    args.caps = (args.caps or G.CONTROLLER.capslock or hook_config.all_caps) and not hook_config.no_caps
+    if args.caps then args.key = string.upper(args.key) end
+    if args.modify then args.key = args.modify(args.key, keymap[args.key], text.ref_table[text.ref_value]) or "" end
+    if args.key == "" then return end
+
+    if keymap[args.key] then
+        args.key = keymap[args.key]
+    else
+        if args.filter and not args.filter(args.key, text.ref_table[text.ref_value]) then return end
+        if args.whitelist and not args.whitelist[args.key] then return end
+        if args.blacklist and args.blacklist[args.key] then return end
+        if args.corpus and not utf8Offset(args.corpus, args.key) then return end
+    end
+
+    hook_config.orig_colour = hook_config.orig_colour or copy_table(hook_config.colour)
+
+    --Start by setting the cursor position to the correct location
+    TRANSPOSE_TEXT_INPUT(0)
+
+    if utf8Len(text.ref_table[text.ref_value]) > 0 and args.key == 'BACKSPACE' then --If not at start, remove preceding letter
+        MODIFY_TEXT_INPUT{
+            letter = '',
+            text_table = text,
+            pos = text.current_position,
+            delete = true
+        }
+        TRANSPOSE_TEXT_INPUT(-1)
+    elseif utf8Len(text.ref_table[text.ref_value]) > 0 and args.key == 'DELETE' then --if not at end, remove following letter
+        MODIFY_TEXT_INPUT{
+            letter = '',
+            text_table = text,
+            pos = text.current_position+1,
+            delete = true
+        }
+        TRANSPOSE_TEXT_INPUT(0)
+    elseif args.key == 'RETURN' then --Release the hook
+        if hook.config.ref_table.callback then hook.config.ref_table.callback() end
+        hook.parent.parent.config.colour = hook_config.colour
+        local temp_colour = copy_table(hook_config.orig_colour)
+        hook_config.colour[1] = G.C.WHITE[1]
+        hook_config.colour[2] = G.C.WHITE[2]
+        hook_config.colour[3] = G.C.WHITE[3]
+        ease_colour(hook_config.colour, temp_colour)
+        G.CONTROLLER.text_input_hook = nil
+    elseif args.key == 'LEFT' then --Move cursor position to the left
+        TRANSPOSE_TEXT_INPUT(-1)
+    elseif args.key == 'RIGHT' then --Move cursor position to the right
+        TRANSPOSE_TEXT_INPUT(1)
+    elseif hook_config.max_length > utf8Len(text.ref_table[text.ref_value]) and (utf8Len(args.key) == 1) then --check to make sure the key is in the valid corpus, add it to the string
+        MODIFY_TEXT_INPUT{
+            letter = args.key,
+            text_table = text,
+            pos = text.current_position+1
+        }
+        TRANSPOSE_TEXT_INPUT(1)
+    end
+end
+
+local old_text_input_key = G.FUNCS.text_input_key
+function G.FUNCS.text_input_key(args, ...)
+    local e = G.CONTROLLER.text_input_hook
+    if e and not e.REMOVED and e.config.ref_table and e.config.ref_table.smods_extended_input then
+        return G.FUNCS.smods_extended_text_input_key(args, ...)
+    end
+    return old_text_input_key(args, ...)
+end
+
+local love_textinput = love.textinput or function() end
+function love.textinput(text, ...)
+	local e = G.CONTROLLER.text_input_hook
+	if e and not e.REMOVED and e.config.ref_table and e.config.ref_table.smods_extended_input and e.config.ref_table.multi_language then
+		G.FUNCS.smods_extended_text_input_key({
+			e = e,
+			key = text,
+			caps = G.CONTROLLER.held_keys["lshift"] or G.CONTROLLER.held_keys["rshift"],
+            textinput = true,
+		})
+	end
+	love_textinput(text, ...)
+end
