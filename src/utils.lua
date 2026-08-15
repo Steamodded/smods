@@ -2668,7 +2668,14 @@ function SMODS.get_next_vouchers(vouchers)
 
         -- Use SMODS object weight system when enabled
         if SMODS.optional_features.object_weights then
-            center = SMODS.poll_object({type = 'Voucher', seed = _pool_key})
+            center = SMODS.poll_object({type = 'Voucher', seed = _pool_key, filter = function(pool)
+                for _, v in ipairs(pool) do
+                    if vouchers.spawn[v.key] then
+                        v.key = 'UNAVAILABLE'
+                    end
+                end
+                return pool
+            end})
         else
             center = pseudorandom_element(_pool, pseudoseed(_pool_key))
             local it = 1
