@@ -757,7 +757,7 @@ function SMODS.RunSelect.Functions.grab_tooltips(set, key)
     local loc_target = G.localization.descriptions[set][key]
     for _, lines in ipairs(loc_target.text_parsed) do
         for _, part in ipairs(lines) do
-            if part.control.T then 
+            if part.control and part.control.T then 
                 info_queue[#info_queue+1] = G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T] or {
                     set = part.control.T_set or 'Other',
                     key = part.control.T,
