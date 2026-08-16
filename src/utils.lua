@@ -2227,11 +2227,21 @@ function SMODS.score_card(card, context)
             percent = percent + percent_delta
         end
 
-        context.main_scoring = true
+        
+        if context.debuffed_calculation then
+            context.debuffed_main_scoring = true
+        else
+            context.main_scoring = true
+        end
         local effects = { eval_card(card, context) }
         SMODS.calculate_quantum_enhancements(card, effects, context)
         context.main_scoring = nil
-        context.individual = true
+        context.debuffed_main_scoring = nil
+        if context.debuffed_calculation then
+            context.debuffed_individual = true
+        else
+            context.individual = true
+        end
         context.other_card = card
 
         if next(effects) then
@@ -2242,11 +2252,18 @@ function SMODS.score_card(card, context)
         local flags = SMODS.trigger_effects(effects, card)
 
         context.individual = nil
+        context.debuffed_individual = nil
+
         if reps[j] == 1 and flags.calculated then
-            context.repetition = true
+            if context.debuffed_calculation then
+                context.debuffed_repetition = true
+            else
+                context.repetition = true
+            end
             context.card_effects = effects
             SMODS.calculate_repetitions(card, context, reps)
             context.repetition = nil
+            context.debuffed_repetition = nil
             context.card_effects = nil
         end
         j = j + (flags.calculated and 1 or #reps)
@@ -2276,6 +2293,12 @@ function SMODS.calculate_main_scoring(context, scoring_hand)
                 }))
                 card_eval_status_text(card, 'debuff')
             end
+            if scoring_hand then
+                if in_scoring then context.cardarea = G.play else context.cardarea = 'unscored' end
+            end
+            context.debuffed_calculation = true
+            SMODS.score_card(card, context)
+            context.debuffed_calculation = nil
         else
             if scoring_hand then
                 if in_scoring then context.cardarea = G.play else context.cardarea = 'unscored' end
@@ -2304,7 +2327,11 @@ function SMODS.calculate_end_of_round_effects(context)
             SMODS.calculate_quantum_enhancements(card, effects, context)
 
             context.playing_card_end_of_round = nil
-            context.individual = true
+            if context.debuffed_calculation then
+                context.debuffed_individual = true
+            else
+                context.individual = true
+            end
             context.other_card = card
             -- context.end_of_round individual calculations
 
@@ -2314,13 +2341,19 @@ function SMODS.calculate_end_of_round_effects(context)
             local flags = SMODS.trigger_effects(effects, card)
 
             context.individual = nil
-            context.repetition = true
+            context.debuffed_individual = nil
+            if context.debuffed_calculation then
+                context.debuffed_repetition = true
+            else
+                context.repetition = true
+            end
             context.card_effects = effects
             if reps[j] == 1 then
                 SMODS.calculate_repetitions(card, context, reps)
             end
 
             context.repetition = nil
+            context.debuffed_repetition = nil
             context.card_effects = nil
             context.other_card = nil
             j = j + (flags.calculated and 1 or #reps)
@@ -3271,6 +3304,7 @@ local game_start_run = Game.start_run
 function Game:start_run(args)
     game_start_run(self, args)
     G.SCORE_DISPLAY_QUEUE = nil
+    G.BLIND_SIZE_DISPLAY_QUEUE = nil
     G.E_MANAGER:add_event(Event({
         trigger = 'immediate',
         func = function()
@@ -4635,4 +4669,20 @@ function SMODS.split_string(_string, parts)
     end
 
     return text_output
+end
+
+-- card will always override center and that will override vars
+function SMODS.should_use_debuffed_description( conf )
+    local conf = conf or {}
+    local vars = conf.vars or {}
+    local center = conf.center
+    local card = conf.card
+    if card then 
+        center = card.config.center
+    end
+    if center then 
+        vars = (center.loc_vars and type(center.loc_vars) == 'function' and 
+                ((center:loc_vars({}, card) or {}).vars or {}))
+    end
+    return not (vars or {}).no_debuffed_description
 end
