@@ -3101,8 +3101,7 @@ function _G.create_UIBox_your_collection_decks()
     SMODS.RunSelect.Functions.build_selection_areas(key)
 
 
-    local page_ui = page_def.definition or
-    page_def.pool and function()
+    local page_ui = function()
         return {n=G.UIT.C, config = {padding = 0.1}, nodes ={
                 SMODS.RunSelect.Functions.build_selection_ui(key, true),
                 SMODS.RunSelect.Functions.create_page_cycle(key, page_def.amount)
