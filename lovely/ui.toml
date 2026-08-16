@@ -562,7 +562,9 @@ match_indent = true
 position = 'after'
 pattern = '''        local res = self.config.res or math.min(self.VT.w, self.VT.h + math.abs(ext_up)/G.TILESIZE) > 3.5 and 0.8 or math.min(self.VT.w, self.VT.h + math.abs(ext_up)/G.TILESIZE) > 0.3 and 0.6 or 0.15'''
 payload = '''
-local corner_radius_config_table, smoothness = self.config.res, self.config.smoothness
+local corner_radius_config_table = self.config.res
+local corner_radius_corners = self.config.corners or {}
+
 local vanilla_res = false
 if type(self.config.res) == 'table' then
   corner_radius_config_table = self.config.res
@@ -570,14 +572,10 @@ else
   vanilla_res = true
   corner_radius_config_table = { res }
 end
-if type(self.config.smoothness) == 'table' then
-  smoothness = self.config.smoothness
-else
-  smoothness = { self.config.smoothness }
-end
 corner_radius_config_table.default = math.min(self.VT.w, self.VT.h + math.abs(ext_up)/G.TILESIZE) > 3.5 and 0.8 or math.min(self.VT.w, self.VT.h + math.abs(ext_up)/G.TILESIZE) > 0.3 and 0.6 or 0.15
+corner_radius_corners.default = SMODS.default_box_corner
 local parsed_res_config = SMODS.parse_ui_config_table(corner_radius_config_table, {"tl", "tr", "br", "bl"})
-local parsed_smth_config = SMODS.parse_ui_config_table(smoothness, {"tl", "tr", "br", "bl"})
+local parsed_corners_config = SMODS.parse_ui_config_table(corner_radius_corners, {"tl", "tr", "br", "bl"})
 --[[
 '''
 
@@ -596,65 +594,52 @@ local vertices = {
 if parsed_res_config.tl then
   local res = vanilla_res and res or parsed_res_config.tl
   local subw, subh = self.VT.w*G.TILESIZE-4*res, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE-4*res
-  for _, k in ipairs{
-    subw/2, subh/2-ext_up, 
-    -- from 0, res*4 to res*4, 0
-    0,4*res-ext_up,
-    1*res,4*res-ext_up,
-    1*res,2*res-ext_up,
-    2*res,2*res-ext_up,
-    2*res,1*res-ext_up,
-    4*res,1*res-ext_up,
-    4*res,0*res-ext_up,
-  } do vertices[#vertices+1] = k end
+  vertices[#vertices+1] = subw/2
+  vertices[#vertices+1] = subh/2-ext_up
+  SMODS.calculate_corners(vertices, {
+    ext_up = ext_up,
+    res = res,
+    corners = parsed_corners_config.tl,
+    corner_from = {0, 0}
+  })
 end
 if parsed_res_config.tr then
   local res = vanilla_res and res or parsed_res_config.tr
-  local subw, subh = self.VT.w*G.TILESIZE-4*res, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE-4*res
-  for _, k in ipairs{
-    -- from totw - res*4, 0 to totw, res*4
-    subw,0*res-ext_up,
-    subw,1*res-ext_up,
-    subw+2*res,1*res-ext_up,
-    subw+2*res,2*res-ext_up,
-    subw+3*res,2*res-ext_up,
-    subw+3*res,4*res-ext_up,
-    totw,4*res-ext_up,
-  } do vertices[#vertices+1] = k end
+  SMODS.calculate_corners(vertices, {
+    ext_up = ext_up,
+    res = res,
+    inverted = true,
+    x_neg = true,
+    corners = parsed_corners_config.tr,
+    corner_from = {totw, 0}
+  })
 end
 if parsed_res_config.br then
   local res = vanilla_res and res or parsed_res_config.br
   local subw, subh = self.VT.w*G.TILESIZE-4*res, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE-4*res
-  for _, k in ipairs{
-    -- from totw, toth - 4*res to totw - res*4, toth
-    totw,subh-ext_up,
-    subw+3*res, subh-ext_up,
-    subw+3*res, subh+2*res-ext_up,
-    subw+2*res, subh+2*res-ext_up,
-    subw+2*res, subh+3*res-ext_up,
-    subw, subh+3*res-ext_up,
-    subw, toth-ext_up,
-  } do vertices[#vertices+1] = k end
+  SMODS.calculate_corners(vertices, {
+    ext_up = ext_up,
+    res = res,
+    x_neg = true,
+    y_neg = true,
+    corners = parsed_corners_config.br,
+    corner_from = {totw, toth}
+  })
 end
+
 if parsed_res_config.bl then
   local res = vanilla_res and res or parsed_res_config.bl
-  local subw, subh = self.VT.w*G.TILESIZE-4*res, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE-4*res
-  for _, k in ipairs{
-    -- from 4*res, toth to 0, toth - 4*res
-    4*res, toth-ext_up,
-    4*res, subh+3*res-ext_up,
-    2*res, subh+3*res-ext_up,
-    2*res, subh+2*res-ext_up,
-    1*res, subh+2*res-ext_up,
-    1*res, subh-ext_up,
-    0, subh-ext_up,
-  } do vertices[#vertices+1] = k end
+  SMODS.calculate_corners(vertices, {
+    ext_up = ext_up,
+    res = res,
+    inverted = true,
+    y_neg = true,
+    corners = parsed_corners_config.bl,
+    corner_from = {0, toth}
+  })
 end
-if parsed_res_config.tl then
-  local res = vanilla_res and res or parsed_res_config.tl
-  local subw, subh = self.VT.w*G.TILESIZE-4*res, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE-4*res
-  vertices[#vertices+1] = 0
-  vertices[#vertices+1] = 4*res-ext_up
-end
+vertices[#vertices+1] = vertices[3]
+vertices[#vertices+1] = vertices[4]
+
 
 '''

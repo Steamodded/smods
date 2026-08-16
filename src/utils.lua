@@ -4637,8 +4637,6 @@ function SMODS.split_string(_string, parts)
     return text_output
 end
 
-
-
 ---@param config table? table that contains config to be parsed. `default` may be passed to properly assign default value
 ---@param key_tables table? table that contains list of keys and that order determines the default order if no key is provided
 function SMODS.parse_ui_config_table(config, key_tables)
@@ -4653,17 +4651,25 @@ function SMODS.parse_ui_config_table(config, key_tables)
     return return_table
 end
 
+SMODS.default_box_corner = { 0, 1, 1, 2, 2, 4, 4, }
+
 function SMODS.calculate_corners(vertices, config)
     config = config or {}
     local ext_up = config.ext_up or 0
-    local corners = config.corners or { 0, 1, 1, 2, 2, 4, 4, }
+    local x_neg = config.x_neg
+    local y_neg = config.y_neg
+    local corners = config.corners or SMODS.default_box_corner
+    local inverted = config.inverted
     local res = config.res or 1
-    local bottom = config.bottom or false
-    local ext_up = config.ext_up or 0
     local corner_from = config.corner_from or { 0 , 0 }
     for i = 1, #corners do
-        local xcorner, ycorner = corners[i], corners[#corners - i + 1]
-        vertices[#vertices+1] = corner_from[0] + xcorner*res
-        vertices[#vertices+1] = corner_from[1] + ycorner*res - ext_up
+        local xcorner, ycorner
+        if inverted then 
+            xcorner, ycorner = corners[#corners - i + 1], corners[i]
+        else
+            xcorner, ycorner = corners[i], corners[#corners - i + 1]
+        end
+        vertices[#vertices+1] = corner_from[1] + (x_neg and -1 or 1)*xcorner*res
+        vertices[#vertices+1] = corner_from[2] + (y_neg and -1 or 1)*ycorner*res - ext_up
     end
 end
