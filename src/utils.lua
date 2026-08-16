@@ -4636,3 +4636,34 @@ function SMODS.split_string(_string, parts)
 
     return text_output
 end
+
+
+
+---@param config table? table that contains config to be parsed. `default` may be passed to properly assign default value
+---@param key_tables table? table that contains list of keys and that order determines the default order if no key is provided
+function SMODS.parse_ui_config_table(config, key_tables)
+    if not config or not type(config) == 'table' or not next(config) then return end -- if config is empty
+    if not key_tables or not type(key_tables) == 'table' or not next(key_tables) then return end -- if key_tables is empty
+    local defaults = config.default or 0
+    if not config.default then defaults = config[1] end -- gets default from first element
+    local return_table = {}
+    for index, key in ipairs(key_tables) do
+        return_table[key] = config[key] or config[index] or defaults
+    end
+    return return_table
+end
+
+function SMODS.calculate_corners(vertices, config)
+    config = config or {}
+    local ext_up = config.ext_up or 0
+    local corners = config.corners or { 0, 1, 1, 2, 2, 4, 4, }
+    local res = config.res or 1
+    local bottom = config.bottom or false
+    local ext_up = config.ext_up or 0
+    local corner_from = config.corner_from or { 0 , 0 }
+    for i = 1, #corners do
+        local xcorner, ycorner = corners[i], corners[#corners - i + 1]
+        vertices[#vertices+1] = corner_from[0] + xcorner*res
+        vertices[#vertices+1] = corner_from[1] + ycorner*res - ext_up
+    end
+end
