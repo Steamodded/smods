@@ -1174,7 +1174,7 @@ function G.UIDEF.view_deck(unplayed_only)
 									object = DynaText({ string = G.GAME.selected_back.loc_name, colours = {G.C.WHITE}, bump = true, rotate = true, shadow = true, scale = 0.6 - string.len(G.GAME.selected_back.loc_name) * 0.01 })
 								}},
 						}},
-						{n = G.UIT.R, config = {align = "cm", r = 0.1, padding = 0.1, minw = 2.5, minh = 1.3, colour = G.C.WHITE, emboss = 0.05}, nodes = {
+						{n = G.UIT.R, config = {align = "cm", r = 0.1, padding = 0.1, minw = 2.5, minh = 1.3, emboss = 0.05}, nodes = {
 							{n = G.UIT.O, config = {
 									object = UIBox {
 										definition = G.GAME.selected_back:generate_UI(nil, 0.7, 0.5, G.GAME.challenge), config = {offset = { x = 0, y = 0 } }
@@ -1819,17 +1819,22 @@ function Card:set_sprites(_center, _front)
 					self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Joker", G.j_locked.pos)
 				end
 			elseif not self.params.bypass_discovery_center and (_center.consumeable or SMODS.UndiscoveredCompat[_center.set]) and not _center.discovered then
-				local undiscovered_sprite = SMODS.UndiscoveredSprites[_center.set]
 				local atlas = SMODS.get_atlas(
 					(_center.undiscovered and
 						(_center.undiscovered[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
 						_center.undiscovered.atlas)
 					) or
-					(undiscovered_sprite and undiscovered_sprite[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or undiscovered_sprite.atlas)
-				) or _center.set or SMODS.get_atlas("Joker")
-				local pos = (_center.undiscovered and _center.undiscovered.pos) or (undiscovered_sprite and undiscovered_sprite.pos) or G.j_undiscovered.pos
-				local sprite_args = (_center.undiscovered and _center.undiscovered.sprite_args) or (undiscovered_sprite and undiscovered_sprite.sprite_args) or G.j_undiscovered.sprite_args
-				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos, sprite_args)
+					(
+						SMODS.UndiscoveredSprites[_center.set] and
+						(SMODS.UndiscoveredSprites[_center.set][G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
+						SMODS.UndiscoveredSprites[_center.set].atlas)
+					) or
+					_center.set
+				) or SMODS.get_atlas("Joker")
+				local pos = (_center.undiscovered and _center.undiscovered.pos) or
+					(SMODS.UndiscoveredSprites[_center.set] and SMODS.UndiscoveredSprites[_center.set].pos) or
+					G.j_undiscovered.pos
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
 			elseif _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' then
 				local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
 				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, _center.pos or {x=0, y=0}, _center.sprite_args)
@@ -3087,4 +3092,54 @@ function AnimatedSprite:get_pos_pixel()
     self.RETS.get_pos_pixel[3] = self.animation.w
     self.RETS.get_pos_pixel[4] = self.animation.h
     return self.RETS.get_pos_pixel
+end
+
+function _G.create_UIBox_your_collection_decks()
+	key = "deck_choice"
+	local page_def = SMODS.RunSelect.Pages[key]
+    SMODS.RunSelect.Setup.choices[key] = SMODS.RunSelect.Setup.choices[key] or page_def:set_default(G.PROFILES[G.SETTINGS.profile].last_choices[key])
+    SMODS.RunSelect.Functions.build_selection_areas(key)
+
+
+    local page_ui = page_def.definition or
+    page_def.pool and function()
+        return {n=G.UIT.C, config = {padding = 0.1}, nodes ={
+                SMODS.RunSelect.Functions.build_selection_ui(key),
+                SMODS.RunSelect.Functions.create_page_cycle(key, page_def.amount)
+            }}
+        end
+    or page_def.settings and function()
+        local settings = page_def:settings()
+        for _, node in ipairs(settings) do
+            settings[_] = {n=G.UIT.R, config = {align = 'cm', padding = 0.1}, nodes = {node}}
+        end
+        return {n=G.UIT.C, config = {padding = 0.1}, nodes = {
+                {n=G.UIT.R, config={align = "cm", minh = 0.5+G.CARD_H+G.CARD_H, minw = 8.7, colour = G.C.BLACK, padding = 0.15, r = 0.1, emboss = 0.05}, nodes = settings},
+                {n=G.UIT.R, config={minh=0.8}}
+            }}
+        end
+
+	local t = create_UIBox_generic_options({
+		colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
+		(G.ACTIVE_MOD_UI.ui_config or {}).colour),
+		bg_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_bg_colour or
+		(G.ACTIVE_MOD_UI.ui_config or {}).bg_colour),
+		back_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_back_colour or
+		(G.ACTIVE_MOD_UI.ui_config or {}).back_colour),
+		outline_colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_outline_colour or
+		(G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
+		back_func = G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', contents = {
+			{n = G.UIT.C, config = {align = "cm"}, nodes = {
+				{n=G.UIT.R, config = {align = "cm", minw = 3}, nodes ={
+					{n = G.UIT.O, config = {id = 'run_select', object = UIBox{
+						definition = {n=G.UIT.ROOT, config={align = "tm", minh = 3.8, colour = G.C.CLEAR}, nodes={
+							page_ui(page_def)
+						}},
+						config = {align = "cm", offset = {x=0,y=0}}
+					}}},
+				}},
+			}}
+		}
+	})
+    return t
 end
