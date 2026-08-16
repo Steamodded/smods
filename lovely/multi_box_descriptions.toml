@@ -239,3 +239,15 @@ if true then
     }}
 end
 '''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = '''
+args.AUT = args.AUT or {}
+'''
+position = 'after'
+match_indent = true
+payload = '''
+args.AUT.info = args.AUT.info or {}
+'''
