@@ -433,6 +433,8 @@ function SMODS.RunSelect.Functions.populate_selection_ui(key, page, ignore_click
             or Card(areas[i].T.x, areas[i].T.y, card_size.w, card_size.h, nil, page_def.pool[count])
             if not ignore_click then
                 card.params.run_select_selection_choice = {i, key}
+            else
+                card.params.run_select_description = true
             end
 
             areas[i]:emplace(card)
@@ -811,7 +813,7 @@ end
 
 local card_hover_ref = Card.hover
 function Card:hover()
-    if (self.params.run_select_selection_choice or self.params.run_select_preview_card) and self.config.center.set == 'Back' and (not self.states.drag.is or G.CONTROLLER.HID.touch) and not self.no_ui and not G.debug_tooltip_toggle then
+    if (self.params.run_select_selection_choice or self.params.run_select_preview_card or self.params.run_select_description) and self.config.center.set == 'Back' and (not self.states.drag.is or G.CONTROLLER.HID.touch) and not self.no_ui and not G.debug_tooltip_toggle then
         self:juice_up(0.05, 0.03)
         play_sound('paper1', math.random()*0.2 + 0.99, 0.35)
 

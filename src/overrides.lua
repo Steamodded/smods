@@ -3107,16 +3107,6 @@ function _G.create_UIBox_your_collection_decks()
                 SMODS.RunSelect.Functions.create_page_cycle(key, page_def.amount)
             }}
         end
-    or page_def.settings and function()
-        local settings = page_def:settings()
-        for _, node in ipairs(settings) do
-            settings[_] = {n=G.UIT.R, config = {align = 'cm', padding = 0.1}, nodes = {node}}
-        end
-        return {n=G.UIT.C, config = {padding = 0.1}, nodes = {
-                {n=G.UIT.R, config={align = "cm", minh = 0.5+G.CARD_H+G.CARD_H, minw = 8.7, colour = G.C.BLACK, padding = 0.15, r = 0.1, emboss = 0.05}, nodes = settings},
-                {n=G.UIT.R, config={minh=0.8}}
-            }}
-        end
 
 	local t = create_UIBox_generic_options({
 		colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or
