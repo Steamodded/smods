@@ -4652,6 +4652,8 @@ end
 
 SMODS.default_box_corner = { 0, 1, 1, 2, 2, 4, 4, }
 
+SMODS.CUSTOM_UI_SHAPES_FUNCTION = {}
+
 function SMODS.calculate_corners(vertices, config)
     config = config or {}
     local ext_up = config.ext_up or 0
