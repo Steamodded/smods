@@ -4642,8 +4642,7 @@ end
 function SMODS.parse_ui_config_table(config, key_tables)
     if not config or not type(config) == 'table' or not next(config) then return end -- if config is empty
     if not key_tables or not type(key_tables) == 'table' or not next(key_tables) then return end -- if key_tables is empty
-    local defaults = config.default or 0
-    if not config.default then defaults = config[1] end -- gets default from first element
+    local defaults = config.default or config[1] or 0
     local return_table = {}
     for index, key in ipairs(key_tables) do
         return_table[key] = config[key] or config[index] or defaults

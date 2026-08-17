@@ -573,7 +573,7 @@ else
   corner_radius_config_table = { res }
 end
 corner_radius_config_table.default = math.min(self.VT.w, self.VT.h + math.abs(ext_up)/G.TILESIZE) > 3.5 and 0.8 or math.min(self.VT.w, self.VT.h + math.abs(ext_up)/G.TILESIZE) > 0.3 and 0.6 or 0.15
-corner_radius_corners.default = SMODS.default_box_corner
+corner_radius_corners.default = #corner_radius_corners == 0 and SMODS.default_box_corner
 local parsed_res_config = SMODS.parse_ui_config_table(corner_radius_config_table, {"tl", "tr", "br", "bl"})
 local parsed_corners_config = SMODS.parse_ui_config_table(corner_radius_corners, {"tl", "tr", "br", "bl"})
 --[[
