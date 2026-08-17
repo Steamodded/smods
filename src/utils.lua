@@ -4652,7 +4652,31 @@ end
 
 SMODS.default_box_corner = { 0, 1, 1, 2, 2, 4, 4, }
 
-SMODS.CUSTOM_UI_SHAPES_FUNCTION = {}
+-- automatically generate superellipse corner
+function SMODS.superellipse(n, res, counts)
+    local ret = {}
+    local n = n or 2
+    local res = res or 4
+    local angle = 0
+    local step_val = 90 / (counts or 18) 
+    while angle <= 90 do
+        -- i want x component of something rotating from -x axis to +y axis
+        local t = (angle - 90) * math.pi / 180 -- convert to radians
+        local a = math.abs( math.cos ( t ) / 1 ) ^ n
+        local b = math.abs( math.sin ( t ) / 1 ) ^ n
+        local c = 1 / ( ( a + b ) ^ ( 1 / n ) )
+        ret[#ret+1] = res + c * math.sin ( t ) * res
+        angle = angle + step_val
+    end
+    return ret
+end
+
+-- these should preferrably max out at 4 but it's quite flexible
+SMODS.CUSTOM_UI_SHAPES_FUNCTION = {
+    default = { 0, 1, 1, 2, 2, 4, 4, },
+    bevel = {0, 4,},
+    fast_rounded = {0, 1, 2, 4,},
+}
 
 function SMODS.calculate_corners(vertices, config)
     config = config or {}
