@@ -477,6 +477,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             -- language specific sprites override fully defined sprites only if that language is set
             if self.language and G.SETTINGS.language ~= self.language and G.SETTINGS.real_language ~= self.language then return end
             local texture_scaling = G.SETTINGS.GRAPHICS.texture_scaling
+            if self.force_pixel then
+                print("gjejgergjergj")
+                texture_scaling = 1
+            end
             if not self.language and (self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.language)] or self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.real_language)]) then return end
             self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
                 'assets/' .. texture_scaling .. 'x/' .. file_path)
@@ -509,7 +513,10 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 self.image_data = imageData2
             end
             self.image = love.graphics.newImage(self.image_data,
-                { mipmaps = true, dpiscale = G.SETTINGS.GRAPHICS.texture_scaling })
+                { mipmaps = true, dpiscale = texture_scaling })
+            if self.force_pixel then
+                self.image:setFilter("nearest", "nearest")
+            end
             self.columns = self.image:getWidth() / self.px
             self.rows = self.image:getHeight() / self.py
             G[atlas_table_map[self.atlas_table]][self.key_noloc or self.key] = self
