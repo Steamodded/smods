@@ -274,7 +274,7 @@ G.FUNCS.run_select_start_run = function(e)
 end
 
 G.FUNCS.run_select_quick_start = function(skip_wipe)
-    SMODS.RunSelect.Functions.start_run(true, skip_wipe)
+    SMODS.RunSelect.Functions.start_run(true, type(skip_wipe) == 'boolean')
 end
 
 G.FUNCS.random_type = function(e)

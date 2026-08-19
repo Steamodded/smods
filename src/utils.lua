@@ -2685,7 +2685,14 @@ function SMODS.get_next_vouchers(vouchers)
 
         -- Use SMODS object weight system when enabled
         if SMODS.optional_features.object_weights then
-            center = SMODS.poll_object({type = 'Voucher', seed = _pool_key})
+            center = SMODS.poll_object({type = 'Voucher', seed = _pool_key, filter = function(pool)
+                for _, v in ipairs(pool) do
+                    if vouchers.spawn[v.key] then
+                        v.key = 'UNAVAILABLE'
+                    end
+                end
+                return pool
+            end})
         else
             center = pseudorandom_element(_pool, pseudoseed(_pool_key))
             local it = 1
@@ -2845,16 +2852,21 @@ function SMODS.get_loc_colour(ctrl, vars)
     return (vars or {})[tonumber(ctrl) or {}] or loc_colour(ctrl)
 end
 
+function SMODS.process_loc_element(elem)
+    if type(elem) == "function" then elem = elem() end
+    if elem and elem.is and elem:is(Node) then
+        elem = { n=G.UIT.O, config = { object = elem }}
+    end
+    return elem
+end
+
 function SMODS.localize_box(lines, args)
     args.vars = args.vars or {}
     local final_line = {}
     for _, part in ipairs(lines) do
         if part.control.element then
             local elem = (args.vars.elements or {})[tonumber(part.control.element)]
-            if elem and elem.is and elem:is(Node) then
-                elem = { n=G.UIT.O, config = { object = elem }}
-            end
-            final_line[#final_line+1] = elem
+            final_line[#final_line+1] = SMODS.process_loc_element(elem)
         end
         local assembled_string = ''
         for _, subpart in ipairs(part.strings) do
@@ -3009,7 +3021,7 @@ end
 
 function SMODS.pinch_and_remove(card, args)
     args = args or {}
-    if not SMODS.is_playing_card(card) then
+    if not SMODS.is_playing_card(card) and not args.skip_calc then
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = card})
         if flags.no_destroy then card.getting_sliced = nil; return false end
     end
@@ -3077,6 +3089,13 @@ function SMODS.destroy_cards(cards, args, ...)
         elseif card.shattered then
             return card:shatter(args) ~= false
         elseif card.destroyed then
+            SMODS.skip_destroy_calc = args.skip_calc
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    SMODS.skip_destroy_calc = nil
+                    return true
+                end
+            }))
             return card:start_dissolve(args.colours, args.silent, args.dissolve_time_fac, args.no_juice) ~= false
         end
         return false

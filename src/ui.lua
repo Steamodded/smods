@@ -70,12 +70,16 @@ function love.graphics.getCanvas(...)
 end
 
 local old_resize = love.resize
-function love.resize(w, h, ...)
-    old_resize(w, h, ...)
-    SMODS.stencil_canvas = love.graphics.newCanvas(w, h, {
-        format = "stencil8",
-        readable = false,
-    })
+function love.resize(...)
+    old_resize(...)
+    SMODS.stencil_canvas = love.graphics.newCanvas(
+        G.WINDOWTRANS.real_window_w*G.CANV_SCALE,
+        G.WINDOWTRANS.real_window_h*G.CANV_SCALE,
+        { 
+            format = "stencil8",
+            readable = false,
+        }
+    )
 end
 
 --
@@ -3359,7 +3363,7 @@ G.FUNCS.HUD_blind_badge = function(e)
     if G.GAME.blind.in_blind then
         if G.GAME.blind.config.blind.mod then
             if G.GAME.blind.config.blind.mod.display_name ~= G.GAME.blind_badge.name then 
-                if e.children[1] then e.children[1]:remove(); e.children[1] = nil end
+                if e.children[1] then e.children[1]:remove(); e.children[1] = nil else ease_value(G.HUD.alignment.offset, 'y', 0.4) end
                 local mod = G.GAME.blind.config.blind.mod
                 G.GAME.blind_badge.name = mod.display_name
                 local badge = SMODS.create_mod_badge(mod, G.GAME.blind.config.blind, 4.4, 0.36)
@@ -3374,9 +3378,14 @@ G.FUNCS.HUD_blind_badge = function(e)
                 e.UIBox:add_child(badge, e)
             end
         elseif e.children[1] then
-            e.states.visible = false
-            e.children[1]:remove()
-            e.children[1] = nil
+            local blind = G.GAME.blind:save()
+            G.HUD_blind:remove()
+            G.GAME.blind = Blind(0,0,2,1)
+            G.HUD_blind = UIBox{
+                definition = create_UIBox_HUD_blind(),
+                config = {major = G.HUD:get_UIE_by_ID('row_blind_bottom'), align = 'bmi', offset = {x=0,y=-10}, bond = 'Weak'}
+            }
+            G.GAME.blind:load(blind)
             G.GAME.blind_badge = {}
         end
     end

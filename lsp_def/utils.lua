@@ -721,7 +721,7 @@ function SMODS.is_playing_card(card) end
 function SMODS.pinch_and_remove(card, args) end
 
 ---@param cards Card|Card[]
----@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], silent?: boolean, delay?: number, destroy_func?: fun(card: Card, args: table<>)}
+---@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], silent?: boolean, delay?: number, destroy_func?: fun(card: Card, args: table<>), skip_calc? boolean}
 ---@param ... ... Old signature arguments in the above order, up to and including colours
 ---@return Card[] destroy_queued
 --- Destroys the cards passed to the function, handling calculation events that need to happen.
@@ -972,3 +972,8 @@ function SMODS.card_to_image(card, scale, filename) end
 ---@param bypass_debuff boolean? Whether to ignore the card's debuff status
 ---@return boolean
 function Card.is_suit_shade(card, shade, bypass_debuff) end
+
+---Process element passed via loc_vars' `vars.elements` table
+---@param element? UINode | Node | table | nil | fun(): UINode | Node | table | nil
+---@return UINode | nil
+function SMODS.process_loc_element(element) end

@@ -84,3 +84,6 @@ function SMODS.injectItems() end
 ---@param class SMODS.GameObject|table
 --- Inject all SMODS Objects that are part of this class or a subclass.
 function SMODS.injectObjects(class) end
+
+SMODS.NFS = require "SMODS.nativefs"
+JSON = require "json"

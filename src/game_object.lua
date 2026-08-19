@@ -493,7 +493,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 local image = love.graphics.newImage(file_data)
                 local newScale = texture_scaling/other_scale
                 local w, h = image:getWidth(), image:getHeight()
-                local nw, nh = w * newScale, h * newScale
+                local nw, nh = love.window.fromPixels(w * newScale, h * newScale)
                 local canvas = love.graphics.newCanvas(nw, nh)
                 image:setFilter("nearest", "nearest")
                 love.graphics.setCanvas(canvas)
@@ -1446,6 +1446,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 self.type:delete_card(self)
             end
             SMODS.remove_pool(G.P_CENTER_POOLS['Consumeables'], self.key)
+            if self.hidden then
+                SMODS.remove_pool(self.legendaries, self.key)
+            end
             SMODS.Consumable.super.delete(self)
         end,
         create_fake_card = function(self)

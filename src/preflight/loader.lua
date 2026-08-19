@@ -900,6 +900,7 @@ local function doGameHooks()
         init_item_prototypes_ref(self)
         if SMODS.booted then
             SMODS.injectItems()
+            SMODS.populate_attributes()
         end
     end
 
