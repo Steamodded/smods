@@ -478,7 +478,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if self.language and G.SETTINGS.language ~= self.language and G.SETTINGS.real_language ~= self.language then return end
             local texture_scaling = G.SETTINGS.GRAPHICS.texture_scaling
             if self.force_pixel then
-                print("gjejgergjergj")
                 texture_scaling = 1
             end
             if not self.language and (self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.language)] or self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.real_language)]) then return end
