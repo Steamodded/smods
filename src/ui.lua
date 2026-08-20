@@ -3393,7 +3393,7 @@ end
 
 -- #endregion
 
-function SMODS.GUI.extended_text_input(args)
+function SMODS.GUI.text_input(args)
     args = args or {}
     args.colour = copy_table(args.colour) or copy_table(G.C.BLUE)
     args.text_colour = copy_table(args.text_colour) or copy_table(G.C.UI.TEXT_LIGHT)
@@ -3408,7 +3408,7 @@ function SMODS.GUI.extended_text_input(args)
     args.current_prompt_text = ''
     args.id = args.id or "text_input"
     args.multi_language = args.multi_language or false
-    args.smods_extended_input = true
+    args.smods_gui_input = true
 
     local text = {ref_table = args.ref_table, ref_value = args.ref_value, letters = {}, current_position = utf8Len(args.ref_table[args.ref_value])}
     local ui_letters = {}
@@ -3436,9 +3436,9 @@ function SMODS.GUI.extended_text_input(args)
     return t
 end
 
-G.FUNCS.smods_extended_text_input_key = function(args)
-    args = args or {}
-    if not args.key then return end
+G.FUNCS.smods_gui_text_input_key = function(args)
+    if not args or not args.key then return end
+    args.input_key = args.key
 
     local keymap = {
         backspace = 'BACKSPACE',
@@ -3452,21 +3452,49 @@ G.FUNCS.smods_extended_text_input_key = function(args)
     local hook_config = hook.config.ref_table
     local text = hook_config.text
 
-    -- Prevent inputs from textinput if we dont need them
-    if not keymap[args.key] and (not not args.textinput ~= not not hook_config.multi_language) then return end
+    -- Always take control inputs
+    if not keymap[args.key] then
+        -- Ignore input from keypressed
+        if not args.textinput then return end
+        -- Ignore input longer than 1 symbol
+        if utf8Len(args.key) ~= 1 then return end
+        -- Ignore non-printable keys if input is not multi-language
+        if not (hook_config.multi_language or (utf8Codepoint(args.key) > 31 and utf8Codepoint(args.key) < 128)) then return end
+    end
 
+    -- Process capslock
     args.caps = (args.caps or G.CONTROLLER.capslock or hook_config.all_caps) and not hook_config.no_caps
-    if args.caps then args.key = string.upper(args.key) end
-    if args.modify then args.key = args.modify(args.key, keymap[args.key], text.ref_table[text.ref_value]) or "" end
-    if args.key == "" then return end
+    if not keymap[args.key] and args.caps then args.key = string.upper(args.key) end
+
+    -- Modify function
+    if hook_config.func then
+        -- Read-only fields
+        args.special_key = keymap[args.key]
+        args.text = text.ref_table[text.ref_value]
+        args.element = hook
+        args.config = hook_config
+
+        hook_config.func(args)
+    end
+    if not args.key or args.key == "" then return end
 
     if keymap[args.key] then
         args.key = keymap[args.key]
     else
-        if args.filter and not args.filter(args.key, text.ref_table[text.ref_value]) then return end
-        if args.whitelist and not args.whitelist[args.key] then return end
-        if args.blacklist and args.blacklist[args.key] then return end
-        if args.corpus and not utf8Offset(args.corpus, args.key) then return end
+        -- Various filters
+        if hook_config.corpus and not string.find(hook_config.corpus, args.key, 1, true) then return end
+        if hook_config.whitelist then
+            local found = false
+            for k, v in pairs(hook_config.whitelist) do
+                if k == args.key or v == args.key then found = true break end
+            end
+            if not found then return end
+        end
+        if hook_config.blacklist then
+            for k, v in pairs(hook_config.blacklist) do
+                if k == args.key or v == args.key then return end
+            end
+        end
     end
 
     hook_config.orig_colour = hook_config.orig_colour or copy_table(hook_config.colour)
@@ -3516,8 +3544,8 @@ end
 local old_text_input_key = G.FUNCS.text_input_key
 function G.FUNCS.text_input_key(args, ...)
     local e = G.CONTROLLER.text_input_hook
-    if e and not e.REMOVED and e.config.ref_table and e.config.ref_table.smods_extended_input then
-        return G.FUNCS.smods_extended_text_input_key(args, ...)
+    if e and not e.REMOVED and e.config.ref_table and e.config.ref_table.smods_gui_input then
+        return G.FUNCS.smods_gui_text_input_key(args)
     end
     return old_text_input_key(args, ...)
 end
@@ -3525,8 +3553,8 @@ end
 local love_textinput = love.textinput or function() end
 function love.textinput(text, ...)
 	local e = G.CONTROLLER.text_input_hook
-	if e and not e.REMOVED and e.config.ref_table and e.config.ref_table.smods_extended_input and e.config.ref_table.multi_language then
-		G.FUNCS.smods_extended_text_input_key({
+	if e and not e.REMOVED and e.config.ref_table and e.config.ref_table.smods_gui_input then
+		G.FUNCS.smods_gui_text_input_key({
 			e = e,
 			key = text,
 			caps = G.CONTROLLER.held_keys["lshift"] or G.CONTROLLER.held_keys["rshift"],

@@ -4,20 +4,26 @@
 local NFS = SMODS.NFS
 local utf8 = require("utf8")
 
+function utf8Len(...)
+    return utf8.len(...)
+end
+function utf8Offset(...)
+    return utf8.offset(...)
+end
+function utf8Codepoint(...)
+    return utf8.codepoint(...)
+end
 function utf8CharAt(text, i)
 	if not text or not i then
 		return nil
 	end
-	local start = utf8.offset(text, i)
+	local start = utf8Offset(text, i)
 	if not start then
 		return nil
 	end
 
-	local next_pos = utf8.offset(text, i + 1)
+	local next_pos = utf8Offset(text, i + 1)
 	return text:sub(start, next_pos and next_pos - 1 or -1)
-end
-function utf8Len(...)
-    return utf8.len(...)
 end
 
 function inspect(table)
