@@ -3454,8 +3454,8 @@ G.FUNCS.smods_gui_text_input_key = function(args)
 
     -- Always take control inputs
     if not keymap[args.key] then
-        -- Ignore input from keypressed
-        if not args.textinput then return end
+        -- Reject input from keypressed unless it's from in-game screen keyboard
+        if args.keypressed and not SMODS.keypress_from_os_keyboard then return end
         -- Ignore input longer than 1 symbol
         if utf8Len(args.key) ~= 1 then return end
         -- Ignore non-printable keys if input is not multi-language
@@ -3555,7 +3555,6 @@ function love.textinput(text, ...)
 	local e = G.CONTROLLER.text_input_hook
 	if e and not e.REMOVED and e.config.ref_table and e.config.ref_table.smods_gui_input then
 		G.FUNCS.smods_gui_text_input_key({
-			e = e,
 			key = text,
 			caps = G.CONTROLLER.held_keys["lshift"] or G.CONTROLLER.held_keys["rshift"],
             textinput = true,
@@ -3568,4 +3567,12 @@ local old_load = love.load or function() end
 function love.load(...)
     old_load(...)
     love.keyboard.setKeyRepeat(true)
+    love.keyboard.setTextInput(true)
+end
+
+local old_key_button = G.FUNCS.key_button
+G.FUNCS.key_button = function(...)
+    SMODS.keypress_from_os_keyboard = true
+    old_key_button(...)
+    SMODS.keypress_from_os_keyboard = nil
 end
