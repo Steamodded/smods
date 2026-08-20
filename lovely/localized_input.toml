@@ -5,28 +5,41 @@ priority = 100
 
 [[patches]]
 [patches.pattern]
+target = '''main.lua'''
+pattern = '''
+else
+    love.handlers[name](a,b,c,d,e,f)'''
+position = "at"
+payload = '''
+elseif name == "keypressed" and c then
+    local ihook = G.CONTROLLER.text_input_hook
+	if ihook and not ihook.REMOVED and ihook.config.ref_table and ihook.config.ref_table.smods_extended_input then
+		G.FUNCS.smods_extended_text_input_key({
+			e = ihook,
+			key = a,
+			caps = G.CONTROLLER.held_keys["lshift"] or G.CONTROLLER.held_keys["rshift"],
+            key_repeat = true
+		})
+	end
+else
+    love.handlers[name](a,b,c,d,e,f)
+'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
 target = '''engine/controller.lua'''
 pattern = '''
 elseif key == "capslock" then
     self.capslock = not self.capslock'''
 position = "after"
 payload = '''
-elseif self.text_input_hook.config.ref_table.localized then
-    self.special_input_keys = self.special_input_keys or {
-        space = ' ',
-        backspace = 'BACKSPACE',
-        delete = 'DELETE',
-        ['return'] = 'RETURN',
-        right = 'RIGHT',
-        left = 'LEFT'
-    }
-    if self.special_input_keys[key] then
-        G.FUNCS.text_input_key{
-            e=self.text_input_hook,
-            key = key,
-            caps = self.held_keys["lshift"] or self.held_keys["rshift"]
-        }
-    end
+elseif self.text_input_hook.config.ref_table.smods_extended_input then
+    G.FUNCS.smods_extended_text_input_key({
+        e = self.text_input_hook,
+        key = key,
+        caps = G.CONTROLLER.held_keys["lshift"] or G.CONTROLLER.held_keys["rshift"],
+    })
 '''
 match_indent = true
 

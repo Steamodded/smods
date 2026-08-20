@@ -3535,3 +3535,9 @@ function love.textinput(text, ...)
 	end
 	love_textinput(text, ...)
 end
+
+local old_load = love.load or function() end
+function love.load(...)
+    old_load(...)
+    love.keyboard.setKeyRepeat(true)
+end
