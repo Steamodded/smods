@@ -4650,3 +4650,65 @@ function SMODS.split_string(_string, parts)
 
     return text_output
 end
+
+---@param config table? table that contains config to be parsed. `default` may be passed to properly assign default value
+---@param key_tables table? table that contains list of keys and that order determines the default order if no key is provided
+function SMODS.parse_ui_config_table(config, key_tables)
+    if not config or not type(config) == 'table' or not next(config) then return end -- if config is empty
+    if not key_tables or not type(key_tables) == 'table' or not next(key_tables) then return end -- if key_tables is empty
+    local defaults = config.default or config[1] or 0
+    local return_table = {}
+    for index, key in ipairs(key_tables) do
+        return_table[key] = config[key] or config[index] or defaults
+    end
+    return return_table
+end
+
+SMODS.default_box_corner = { 0, 1, 1, 2, 2, 4, 4, }
+
+-- automatically generate superellipse corner
+function SMODS.superellipse(n, res, counts)
+    local ret = {}
+    local n = n or 2
+    local res = res or 4
+    local angle = 0
+    local step_val = 90 / (counts or 18) 
+    while angle <= 90 do
+        -- i want x component of something rotating from -x axis to +y axis
+        local t = (angle - 90) * math.pi / 180 -- convert to radians
+        local a = math.abs( math.cos ( t ) / 1 ) ^ n
+        local b = math.abs( math.sin ( t ) / 1 ) ^ n
+        local c = 1 / ( ( a + b ) ^ ( 1 / n ) )
+        ret[#ret+1] = res + c * math.sin ( t ) * res
+        angle = angle + step_val
+    end
+    return ret
+end
+
+-- these should preferrably max out at 4 but it's quite flexible
+SMODS.CUSTOM_UI_SHAPES_FUNCTION = {
+    default = { 0, 1, 1, 2, 2, 4, 4, },
+    bevel = {0, 4,},
+    fast_rounded = {0, 1, 2, 4,},
+}
+
+function SMODS.calculate_corners(vertices, config)
+    config = config or {}
+    local ext_up = config.ext_up or 0
+    local x_neg = config.x_neg
+    local y_neg = config.y_neg
+    local corners = config.corners or SMODS.default_box_corner
+    local inverted = config.inverted
+    local res = config.res or 1
+    local corner_from = config.corner_from or { 0 , 0 }
+    for i = 1, #corners do
+        local xcorner, ycorner
+        if inverted then 
+            xcorner, ycorner = corners[#corners - i + 1], corners[i]
+        else
+            xcorner, ycorner = corners[i], corners[#corners - i + 1]
+        end
+        vertices[#vertices+1] = corner_from[1] + (x_neg and -1 or 1)*xcorner*res
+        vertices[#vertices+1] = corner_from[2] + (y_neg and -1 or 1)*ycorner*res - ext_up
+    end
+end

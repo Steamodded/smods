@@ -552,3 +552,114 @@ pattern = '''
 G.HUD_blind.alignment.offset.y = -10'''
 payload = '''
 ease_value(G.HUD.alignment.offset, 'y', 0 - G.HUD.alignment.offset.y)'''
+
+# the following patches are made for custom corner radii
+# starting with nullifying the default
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'after'
+pattern = '''        local res = self.config.res or math.min(self.VT.w, self.VT.h + math.abs(ext_up)/G.TILESIZE) > 3.5 and 0.8 or math.min(self.VT.w, self.VT.h + math.abs(ext_up)/G.TILESIZE) > 0.3 and 0.6 or 0.15'''
+payload = '''
+local vanilla_res_number = res
+local corner_radius_config_table = self.config.res
+local corner_radius_corners = self.config.corners or {}
+local custom_shape = self.config.shape
+
+local vanilla_res = false
+if type(self.config.res) == 'table' then
+  corner_radius_config_table = self.config.res
+else
+  vanilla_res = true
+  corner_radius_config_table = { res }
+end
+corner_radius_config_table.default = math.min(self.VT.w, self.VT.h + math.abs(ext_up)/G.TILESIZE) > 3.5 and 0.8 or math.min(self.VT.w, self.VT.h + math.abs(ext_up)/G.TILESIZE) > 0.3 and 0.6 or 0.15
+corner_radius_corners.default = #corner_radius_corners == 0 and SMODS.default_box_corner
+local parsed_res_config = SMODS.parse_ui_config_table(corner_radius_config_table, {"tl", "tr", "br", "bl"})
+local parsed_corners_config = SMODS.parse_ui_config_table(corner_radius_corners, {"tl", "tr", "br", "bl"})
+--[[
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'before'
+pattern = '''        for k, v in ipairs(vertices) do'''
+payload = '''
+]]
+-- thanks foo54 and sleepyg11 for figuring this out for me and for bringing it to my attention
+local totw, toth = self.VT.w*G.TILESIZE, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE
+local vertices = { 
+}
+if custom_shape and type(custom_shape) == 'table' then
+  vertices = custom_shape
+elseif custom_shape and type(custom_shape) == 'string' and SMODS.CUSTOM_UI_SHAPES_FUNCTION[custom_shape] and type(SMODS.CUSTOM_UI_SHAPES_FUNCTION[custom_shape]) == 'table' then
+  vertices = SMODS.CUSTOM_UI_SHAPES_FUNCTION[custom_shape]
+else
+  if parsed_res_config.tl then
+    local res = vanilla_res and res or parsed_res_config.tl
+    local subw, subh = self.VT.w*G.TILESIZE-4*res, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE-4*res
+    vertices[#vertices+1] = subw/2
+    vertices[#vertices+1] = subh/2-ext_up
+    SMODS.calculate_corners(vertices, {
+      ext_up = ext_up,
+      res = res,
+      corners = parsed_corners_config.tl,
+      corner_from = {0, 0}
+    })
+  end
+  if parsed_res_config.tr then
+    local res = vanilla_res and res or parsed_res_config.tr
+    SMODS.calculate_corners(vertices, {
+      ext_up = ext_up,
+      res = res,
+      inverted = true,
+      x_neg = true,
+      corners = parsed_corners_config.tr,
+      corner_from = {totw, 0}
+    })
+  end
+  if parsed_res_config.br then
+    local res = vanilla_res and res or parsed_res_config.br
+    local subw, subh = self.VT.w*G.TILESIZE-4*res, (self.VT.h + math.abs(ext_up)/G.TILESIZE)*G.TILESIZE-4*res
+    SMODS.calculate_corners(vertices, {
+      ext_up = ext_up,
+      res = res,
+      x_neg = true,
+      y_neg = true,
+      corners = parsed_corners_config.br,
+      corner_from = {totw, toth}
+    })
+  end
+
+  if parsed_res_config.bl then
+    local res = vanilla_res and res or parsed_res_config.bl
+    SMODS.calculate_corners(vertices, {
+      ext_up = ext_up,
+      res = res,
+      inverted = true,
+      y_neg = true,
+      corners = parsed_corners_config.bl,
+      corner_from = {0, toth}
+    })
+  end
+  vertices[#vertices+1] = vertices[3]
+  vertices[#vertices+1] = vertices[4]
+end
+
+if custom_shape and type(custom_shape) == 'string' and SMODS.CUSTOM_UI_SHAPES_FUNCTION[custom_shape] and type(SMODS.CUSTOM_UI_SHAPES_FUNCTION[custom_shape]) == 'function' then
+  vertices = custom_shape({
+    vertices = vertices,
+    vanilla_res = vanilla_res_number,
+    corner_radius_config = parsed_res_config,
+    corner_shapes_config = parsed_corners_config,
+    ext_up = ext_up,
+    subw = subw,
+    subh = subh,
+    totw = totw,
+    toth = toth,
+  })
+end
+'''
