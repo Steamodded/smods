@@ -1,0 +1,85 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Buy and Use in shop config
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+if card.ability.consumeable then --and card:can_use_consumeable(true, true)
+'''
+position = 'at'
+payload = '''
+if card.ability.consumeable --and card:can_use_consumeable(true, true)
+    and (not card.config.center.button_config or card.config.center.button_config.buy_and_use ~= false)
+    and (not SMODS.ConsumableTypes[card.ability.set] or not SMODS.ConsumableTypes[card.ability.set].button_config or SMODS.ConsumableTypes[card.ability.set].button_config.buy_and_use ~= false ) then
+'''
+match_indent = true
+
+# Use and Sell Config
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = '''
+local t = {
+  n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+    {n=G.UIT.C, config={padding = 0.15, align = 'cl'}, nodes={
+      {n=G.UIT.R, config={align = 'cl'}, nodes={
+        sell
+      }},
+      {n=G.UIT.R, config={align = 'cl'}, nodes={
+        use
+      }},
+    }},
+}}
+'''
+position = "before"
+payload = '''
+if (card.config.center.button_config and type(card.config.center.button_config) == 'table')
+    or (SMODS.ConsumableTypes[card.ability.set] and SMODS.ConsumableTypes[card.ability.set].button_config and type(SMODS.ConsumableTypes[card.ability.set].button_config) == 'table') then
+    
+    local button_config = card.config.center.button_config or SMODS.ConsumableTypes[card.ability.set].button_config
+    return {
+    n=G.UIT.ROOT, config = {padding = 0, colour = G.C.CLEAR}, nodes={
+        {n=G.UIT.C, config={padding = 0.15, align = 'cl'}, nodes={
+        button_config.sell ~= false and {n=G.UIT.R, config={align = 'cl'}, nodes={
+            sell
+        }} or nil,
+        button_config.use ~= false and {n=G.UIT.R, config={align = 'cl'}, nodes={
+            use
+        }} or nil,
+        }},
+    }}
+end
+'''
+match_indent = true
+
+# Controller support
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+return base_background
+'''
+position = 'before'
+payload = '''
+if (card.config.center.button_config and type(card.config.center.button_config) == 'table')
+    or (SMODS.ConsumableTypes[card.ability.set] and SMODS.ConsumableTypes[card.ability.set].button_config and type(SMODS.ConsumableTypes[card.ability.set].button_config) == 'table') then
+    local button_config = card.config.center.button_config or SMODS.ConsumableTypes[card.ability.set].button_config
+
+    for k, v in pairs(button_config) do
+        if v == false and base_attach.children[k] then
+            base_attach.children[k] = nil
+        end
+    end
+
+    base_attach.children.buy = G.UIDEF.card_focus_button{
+      card = card, parent = base_attach, type = 'buy',
+      func = 'can_buy', button = 'buy_from_shop', card_width = card_width, buy_and_use = buy_and_use
+    }
+end
+
+'''
+match_indent = true
