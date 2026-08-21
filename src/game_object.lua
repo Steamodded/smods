@@ -4100,6 +4100,12 @@ SMODS.UndiscoveredCompat = {
     assert(load(NFS.read(SMODS.path..'src/game_objects/sprite_particles.lua'), ('=[SMODS _ "src/game_objects/sprite_particles.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
+    ------- API IMPORT SMODS.GameObject.AntePath
+    -------------------------------------------------------------------------------------------------
+    
+    assert(load(NFS.read(SMODS.path..'src/ante_path.lua'), ('=[SMODS _ "src/ante_path.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
     ----- API IMPORT GameObject.DrawStep
     -------------------------------------------------------------------------------------------------
 
