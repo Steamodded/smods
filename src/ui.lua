@@ -3527,6 +3527,8 @@ G.FUNCS.smods_gui_text_input_key = function(args)
         hook_config.colour[3] = G.C.WHITE[3]
         ease_colour(hook_config.colour, temp_colour)
         G.CONTROLLER.text_input_hook = nil
+        love.keyboard.setKeyRepeat(hook_config.game_key_repeat)
+        love.keyboard.setTextInput(hook_config.game_text_input)
     elseif args.key == 'LEFT' then --Move cursor position to the left
         TRANSPOSE_TEXT_INPUT(-1)
     elseif args.key == 'RIGHT' then --Move cursor position to the right
@@ -3538,6 +3540,26 @@ G.FUNCS.smods_gui_text_input_key = function(args)
             pos = text.current_position+1
         }
         TRANSPOSE_TEXT_INPUT(1)
+    end
+end
+
+local old_select_text_input = G.FUNCS.select_text_input
+function G.FUNCS.select_text_input(...)
+    old_select_text_input(...)
+    local e = G.CONTROLLER.text_input_hook
+    if e and not e.REMOVED and e.config.ref_table and e.config.ref_table.smods_gui_input then
+        e.config.ref_table.game_key_repeat = love.keyboard.hasKeyRepeat()
+        e.config.ref_table.game_text_input = love.keyboard.hasTextInput()
+        love.keyboard.setKeyRepeat(true)
+        love.keyboard.setTextInput(true)
+        local old_remove = e.remove
+        function e:remove(...)
+            if G.CONTROLLER.text_input_hook == self then
+                love.keyboard.setKeyRepeat(e.config.ref_table.game_key_repeat)
+                love.keyboard.setTextInput(e.config.ref_table.game_text_input)
+            end
+            old_remove(self, ...)
+        end
     end
 end
 
@@ -3561,13 +3583,6 @@ function love.textinput(text, ...)
 		})
 	end
 	love_textinput(text, ...)
-end
-
-local old_load = love.load or function() end
-function love.load(...)
-    old_load(...)
-    love.keyboard.setKeyRepeat(true)
-    love.keyboard.setTextInput(true)
 end
 
 local old_key_button = G.FUNCS.key_button

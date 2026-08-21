@@ -5,24 +5,6 @@ priority = 100
 
 [[patches]]
 [patches.pattern]
-target = '''main.lua'''
-pattern = '''
-else
-    love.handlers[name](a,b,c,d,e,f)'''
-position = "at"
-payload = '''
-elseif name == "keypressed" and c then
-    local ihook = G.CONTROLLER.text_input_hook
-	if ihook and not ihook.REMOVED and ihook.config.ref_table and ihook.config.ref_table.smods_gui_input then
-		G.FUNCS.smods_gui_text_input_key({ key = a, caps = G.CONTROLLER.held_keys["lshift"] or G.CONTROLLER.held_keys["rshift"], is_repeat = true, keypressed = true })
-	end
-else
-    love.handlers[name](a,b,c,d,e,f)
-'''
-match_indent = true
-
-[[patches]]
-[patches.pattern]
 target = '''engine/controller.lua'''
 pattern = '''
 elseif key == "capslock" then
