@@ -83,21 +83,32 @@ SMODS.DrawStep = SMODS.GameObject:extend {
         end
         SMODS.DrawStep.super.register(self)
     end,
-    inject = function() end,
+    inject = function(self)
+        for k, v in pairs(self.conditions) do
+            if k ~= "vortex" and k ~= "facing" and k ~= "front_hidden" then
+                self.has_custom_conditions = true
+                self.custom_conditions[k] = v
+            end
+        end
+    end,
     post_inject_class = function(self)
         table.sort(self.obj_buffer, function(_self, _other) return self.obj_table[_self].order < self.obj_table[_other].order end)
     end,
     conditions = {},
+    custom_conditions = {},
+    has_custom_conditions = false,
     check_individual_condition = function(self, card, layer, k, v)
-        if k == 'vortex' then return not not card.vortex == v end
-        if k == 'facing' then return card.sprite_facing == v end
-        if k == 'front_hidden' then return not not card.front_hidden == v end
         return true
     end,
     check_conditions = function(self, card, layer)
         if not self.layers[layer] then return end
-        for k,v in pairs(self.conditions) do
-            if not self:check_individual_condition(card, layer, k, v) then return end
+        if self.conditions.vortex ~= nil and self.conditions.vortex ~= card.pre_condition.vortex then return end
+        if self.conditions.facing and self.conditions.facing ~= card.pre_condition.facing then return end
+        if self.conditions.front_hidden ~= nil and self.conditions.front_hidden ~= card.pre_condition.front_hidden then return end
+        if self.has_custom_conditions then
+            for k,v in pairs(self.custom_conditions) do
+                if not self:check_individual_condition(card, layer, k, v) then return end
+            end
         end
         return true
     end
@@ -571,6 +582,12 @@ function Card:draw(layer)
     layer = layer or 'both'
     self.hover_tilt = 1
     if not self.states.visible then return end
+
+    self.pre_condition = self.pre_condition or {}
+    self.pre_condition.vortex = not not self.vortex
+    self.pre_condition.facing = self.sprite_facing
+    self.pre_condition.front_hidden = not not self.front_hidden
+
     for _, k in ipairs(SMODS.DrawStep.obj_buffer) do
         if SMODS.DrawSteps[k]:check_conditions(self, layer) then SMODS.DrawSteps[k].func(self, layer) end
     end

@@ -4,6 +4,8 @@
 ---@field order? number Sets the order. `DrawStep` objects are evaluated in order from lowest to highest. 
 ---@field layers? table<string, true> Strings corresponding to draw layers. The `DrawStep` object's `func` will only be called when the `layer` arg in `Card:draw()` matches a string in this table. 
 ---@field conditions? table<string, any> Table of conditions. This object will not draw if any condition is not `true` when evaluated. 
+---@field custom_conditions? table<string, any> Table of conditions except `vortex`, `facing` and `front_hidden`. This object will not draw if any condition is not `true` when evaluated. 
+---@field has_custom_conditions? boolean Is custom_conditions table contain any conditions.
 ---@field __call? fun(self: SMODS.DrawStep|table, o: SMODS.DrawStep|table): nil|table|SMODS.DrawStep
 ---@field extend? fun(self: SMODS.DrawStep|table, o: SMODS.DrawStep|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.DrawStep|table): boolean? Ensures objects already registered will not register. 

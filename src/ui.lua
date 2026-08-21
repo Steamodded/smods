@@ -131,32 +131,28 @@ end
 
 local old_collides_with_point = Node.collides_with_point
 function Node:collides_with_point(point)
+    if not self.container then return false end
     if self.collide_check_timer == G.TIMERS.REAL and self.collide_check_point == point then
 		return self.collide_check_result or false
 	end
     self.collide_check_timer = G.TIMERS.REAL
     self.collide_check_point = point
     local r = old_collides_with_point(self, point)
-    self.collide_check_result = r
+    self.collide_check_result = r or false
     return r
 end
 
 -- collision check
 function Node:inside_overflow_boundaries(point)
+    -- No parent = no overflow can be done so collide as usual
+    if not self.parent then return true end
+
     -- Use cached value if present for current point
 	if self.overflow_check_timer == G.TIMERS.REAL and self.overflow_check_point == point then
 		return self.overflow_check_result or false
 	end
 	self.overflow_check_timer = G.TIMERS.REAL
     self.overflow_check_point = point
-
-    local set_value = function(r)
-        self.overflow_check_result = r
-        return r
-    end
-
-    -- No parent = no overflow can be done so collide as usual
-    if not self.parent then return set_value(true) end
 
     -- Parent has overflow = should check do we collide with it, accounting overflow directions
     if self.parent.config and self.parent.config.no_overflow then
@@ -167,7 +163,7 @@ function Node:inside_overflow_boundaries(point)
             local T = self.parent.CT or self.parent.T
             local _p = self.parent.ARGS.collides_with_point_point
             local _b = self.parent.states.hover.is and G.COLLISION_BUFFER or 0
-            
+
             -- Both directions = use default collision check
             if v and h then
             -- Vertical = only y coordinate
@@ -179,11 +175,15 @@ function Node:inside_overflow_boundaries(point)
             end
 
             -- No collision = mark it and children as non-collideable
-            if not r then return set_value(false) end
+            if not r then
+                self.overflow_check_result = false
+                return false
+            end
         end
     end
 
-    return set_value(Node.inside_overflow_boundaries(self.parent, point) or false)
+    self.overflow_check_result = Node.inside_overflow_boundaries(self.parent, point) or false
+    return self.overflow_check_result
 end
 
 SMODS.inside_overflow = function (node)
