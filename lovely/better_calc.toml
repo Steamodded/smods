@@ -2235,3 +2235,36 @@ if saveTable then
 	end
 end
 '''
+
+# Draw to play area context
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "table.sort(G.hand.highlighted, function(a,b) return a.T.x < b.T.x end)"
+position = 'before'
+match_indent = true
+payload = '''
+for i=1, #G.hand.cards do
+    local effects = {}
+    SMODS.calculate_context({drawing_to_play_area = true, other_card = G.hand.cards[i], cardarea = G.hand, full_hand = G.hand.highlighted, ignore_other_debuff = true}, effects)
+    local flags = SMODS.trigger_effects(effects, G.hand.cards[i])
+    if flags.remove_from_hand then
+        G.hand:remove_from_highlighted(G.hand.cards[i])
+    elseif flags.add_to_hand then
+        G.hand:add_to_highlighted(G.hand.cards[i])
+    end
+    if flags.return_to_hand and G.hand.cards[i].highlighted then
+        G.hand.cards[i].ability.return_to_hand = true
+    end
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "v.ability.forced_selection = nil"
+position = 'after'
+match_indent = true
+payload = '''
+v.ability.return_to_hand = nil
+'''
