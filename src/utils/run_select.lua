@@ -427,7 +427,7 @@ function SMODS.RunSelect.Functions.populate_selection_ui(key, page)
     for i=1, (page_def.amount or 10) do
         if count > #page_def.pool then return end
         local stack_size = page_def.stack_size
-        if SMODS.config.run_select_performance then stack_size = math.min(5, stack_size) end
+        if SMODS.config.quality == 1 then stack_size = math.min(5, stack_size) end
         for j=1, stack_size do
             local card = page_def.create_selection_card and page_def:create_selection_card(page_def.pool[count].key, j, areas[i]) 
             or Card(areas[i].T.x, areas[i].T.y, card_size.w, card_size.h, nil, page_def.pool[count])
@@ -593,7 +593,7 @@ function SMODS.RunSelect.Functions.build_preview_ui(key, deck_preview)
 end 
 
 function SMODS.RunSelect.Functions.populate_preview_ui(key, to_add, silent, _remove)
-    if SMODS.config.run_select_performance then silent = true end
+    if SMODS.config.quality == 1 then silent = true end
     local page_def = SMODS.RunSelect.Pages[key]
     if page_def.selection_limit == 1 and not _remove then
         if G.E_MANAGER.queues.run_select then G.E_MANAGER:clear_queue('run_select') end
@@ -617,7 +617,7 @@ function SMODS.RunSelect.Functions.populate_preview_ui(key, to_add, silent, _rem
     local holding_area = SMODS.RunSelect.Internals.preview_area_holding
     
     local stack_size = page_def.preview_size or page_def.stack_size
-    if SMODS.config.run_select_performance then stack_size = math.min(5, stack_size) end
+    if SMODS.config.quality == 1 then stack_size = math.min(5, stack_size) end
     local card_size = page_def.sprite_size or {w = G.CARD_W, h = G.CARD_H}
     if type(to_add) == 'table' then
         local temp = {}
@@ -688,7 +688,7 @@ local function order_applied_stakes(stake_chain, stake)
 end
 
 function SMODS.RunSelect.Functions.populate_stake_tower(stake, silent)
-    if SMODS.config.run_select_performance then silent = true end
+    if SMODS.config.quality == 1 then silent = true end
     remove_all(SMODS.RunSelect.Internals.stake_tower.cards)
     SMODS.RunSelect.Internals.stake_tower.cards = {}
     remove_all(SMODS.RunSelect.Internals.stake_tower_holding.cards)
