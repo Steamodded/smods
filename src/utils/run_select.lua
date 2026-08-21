@@ -304,9 +304,21 @@ function SMODS.RunSelect.Functions.start_run(_quick_start, _skip_wipe)
     local run_args = {}
     SMODS.RunSelect.Functions.clean_up()
     
-    local access = _quick_start and G.PROFILES[G.SETTINGS.profile].last_choices or SMODS.RunSelect.Setup.choices
-    for k, v in pairs(access) do
+    run_args.deck_choice = "b_red"
+    run_args.stake_choice = "stake_white"
+    for k, v in pairs(SMODS.RunSelect.Setup.choices) do
         run_args[k] = v
+    end
+    if _quick_start and _skip_wipe ~= true then
+        for k, v in pairs(G.PROFILES[G.SETTINGS.profile].last_choices or {}) do
+            run_args[k] = v
+        end
+    end
+
+    if SMODS.RunSelect.Setup.choices.enable_seed then
+        run_args.seed = SMODS.RunSelect.Setup.choices.seed
+    else
+        run_args.seed = nil
     end
 
     if SMODS.RunSelect.Setup.choices.enable_seed then
