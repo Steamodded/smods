@@ -395,7 +395,7 @@ function SMODS.RunSelect.Functions.build_selection_areas(key)
     end
 end
 
-function SMODS.RunSelect.Functions.build_selection_ui(key)
+function SMODS.RunSelect.Functions.build_selection_ui(key, ignore_click)
     local page_def = SMODS.RunSelect.Pages[key]
     local dim = {math.min(page_def.grid_size[1], math.ceil(#page_def.pool/page_def.grid_size[2])), page_def.grid_size[2]}
     local ui_nodes = {}
@@ -412,12 +412,12 @@ function SMODS.RunSelect.Functions.build_selection_ui(key)
         table.insert(ui_nodes, row_container)
     end
 
-    SMODS.RunSelect.Functions.populate_selection_ui(key, 1)
+    SMODS.RunSelect.Functions.populate_selection_ui(key, 1, ignore_click)
 
     return {n=G.UIT.R, config={align = "cm", minh = 0.45+G.CARD_H+G.CARD_H, colour = G.C.BLACK, padding = 0.15, r = 0.1, emboss = 0.05}, nodes=ui_nodes}
 end
 
-function SMODS.RunSelect.Functions.populate_selection_ui(key, page)
+function SMODS.RunSelect.Functions.populate_selection_ui(key, page, ignore_click)
     local page_def = SMODS.RunSelect.Pages[key]
     local areas = SMODS.RunSelect.Internals.select_areas
     
@@ -431,7 +431,11 @@ function SMODS.RunSelect.Functions.populate_selection_ui(key, page)
         for j=1, stack_size do
             local card = page_def.create_selection_card and page_def:create_selection_card(page_def.pool[count].key, j, areas[i]) 
             or Card(areas[i].T.x, areas[i].T.y, card_size.w, card_size.h, nil, page_def.pool[count])
-            card.params.run_select_selection_choice = {i, key}
+            if not ignore_click then
+                card.params.run_select_selection_choice = {i, key}
+            else
+                card.params.run_select_description = true
+            end
 
             areas[i]:emplace(card)
         end
@@ -757,7 +761,7 @@ function SMODS.RunSelect.Functions.grab_tooltips(set, key)
     local loc_target = G.localization.descriptions[set][key]
     for _, lines in ipairs(loc_target.text_parsed) do
         for _, part in ipairs(lines) do
-            if part.control.T then 
+            if part.control and part.control.T then 
                 info_queue[#info_queue+1] = G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T] or {
                     set = part.control.T_set or 'Other',
                     key = part.control.T,
@@ -809,7 +813,7 @@ end
 
 local card_hover_ref = Card.hover
 function Card:hover()
-    if (self.params.run_select_selection_choice or self.params.run_select_preview_card) and self.config.center.set == 'Back' and (not self.states.drag.is or G.CONTROLLER.HID.touch) and not self.no_ui and not G.debug_tooltip_toggle then
+    if (self.params.run_select_selection_choice or self.params.run_select_preview_card or self.params.run_select_description) and self.config.center.set == 'Back' and (not self.states.drag.is or G.CONTROLLER.HID.touch) and not self.no_ui and not G.debug_tooltip_toggle then
         self:juice_up(0.05, 0.03)
         play_sound('paper1', math.random()*0.2 + 0.99, 0.35)
 
@@ -830,7 +834,7 @@ function Card:hover()
                     {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 3, maxw = 4, minh = 0.4}, nodes={
                         {n=G.UIT.O, config={object = DynaText({string = back:get_name(),maxw = 4, colours = {G.C.WHITE}, shadow = true, bump = true, scale = 0.5, pop_in = 0, silent = true})}}
                     }},
-                    {n=G.UIT.R, config={align = "cm", colour = G.C.WHITE, minh = 1.3, maxh = 3, minw = 3, maxw = 4, r = 0.1}, nodes={
+                    {n=G.UIT.R, config={align = "cm", minh = 1.3, maxh = 3, minw = 3, maxw = 4, r = 0.1}, nodes={
                         {n=G.UIT.O, config={object = UIBox{definition = back:generate_UI(), config = {offset = {x=0,y=0}}}}}
                     }},
                     badges.nodes[1] and {n=G.UIT.R, config={align = "cm", r = 0.1, minw = 3, maxw = 4, minh = 0.4}, nodes={badges}},
