@@ -552,3 +552,14 @@ pattern = '''
 G.HUD_blind.alignment.offset.y = -10'''
 payload = '''
 ease_value(G.HUD.alignment.offset, 'y', 0 - G.HUD.alignment.offset.y)'''
+
+# Tabbers becoming a cycle option instead of rolling offscreen
+[[patches]]
+[patches.regex]
+target = 'functions/UI_definitions.lua'
+position = 'at'
+pattern = '''(?:( +local tab_buttons = \{\}\n)((?:[\s]|.)+?\)\n  end))'''
+payload = '''$1 if #args.tabs < 8 then $2
+else
+error("TODO: Cycle option based tabber")
+end'''
