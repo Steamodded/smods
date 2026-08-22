@@ -561,5 +561,6 @@ position = 'at'
 pattern = '''(?:( +local tab_buttons = \{\}\n)((?:[\s]|.)+?\)\n  end))'''
 payload = '''$1 if #args.tabs < 8 then $2
 else
-SMODS.GUI.cycle_tabber_handle(tab_buttons, args)
+local cycle_conf = SMODS.GUI.cycle_tabber_handle(tab_buttons, args)
+args.current = {k = cycle_conf.current_option, v = args.tabs[cycle_conf.current_option]}
 end'''
