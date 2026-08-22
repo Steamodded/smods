@@ -743,5 +743,5 @@ pattern = "(self.ability.set == 'Voucher' and {G.C.SECONDARY_SET.Voucher, G.C.CL
 position = 'after'
 match_indent = true
 payload = '''
-(G.C.SECONDARY_SET[self.ability.set] and {G.C.SECONDARY_SET[self.ability.set]}) or
+(next(G.C.SECONDARY_SET[self.ability.set]) and {G.C.SECONDARY_SET[self.ability.set]}) or
 '''
