@@ -70,12 +70,16 @@ function love.graphics.getCanvas(...)
 end
 
 local old_resize = love.resize
-function love.resize(w, h, ...)
-    old_resize(w, h, ...)
-    SMODS.stencil_canvas = love.graphics.newCanvas(w, h, {
-        format = "stencil8",
-        readable = false,
-    })
+function love.resize(...)
+    old_resize(...)
+    SMODS.stencil_canvas = love.graphics.newCanvas(
+        G.WINDOWTRANS.real_window_w*G.CANV_SCALE,
+        G.WINDOWTRANS.real_window_h*G.CANV_SCALE,
+        { 
+            format = "stencil8",
+            readable = false,
+        }
+    )
 end
 
 --

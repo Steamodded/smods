@@ -2668,7 +2668,14 @@ function SMODS.get_next_vouchers(vouchers)
 
         -- Use SMODS object weight system when enabled
         if SMODS.optional_features.object_weights then
-            center = SMODS.poll_object({type = 'Voucher', seed = _pool_key})
+            center = SMODS.poll_object({type = 'Voucher', seed = _pool_key, filter = function(pool)
+                for _, v in ipairs(pool) do
+                    if vouchers.spawn[v.key] then
+                        v.key = 'UNAVAILABLE'
+                    end
+                end
+                return pool
+            end})
         else
             center = pseudorandom_element(_pool, pseudoseed(_pool_key))
             local it = 1
@@ -2997,7 +3004,7 @@ end
 
 function SMODS.pinch_and_remove(card, args)
     args = args or {}
-    if not SMODS.is_playing_card(card) then
+    if not SMODS.is_playing_card(card) and not args.skip_calc then
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = card})
         if flags.no_destroy then card.getting_sliced = nil; return false end
     end
@@ -3065,6 +3072,13 @@ function SMODS.destroy_cards(cards, args, ...)
         elseif card.shattered then
             return card:shatter(args) ~= false
         elseif card.destroyed then
+            SMODS.skip_destroy_calc = args.skip_calc
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    SMODS.skip_destroy_calc = nil
+                    return true
+                end
+            }))
             return card:start_dissolve(args.colours, args.silent, args.dissolve_time_fac, args.no_juice) ~= false
         end
         return false
@@ -3907,6 +3921,7 @@ function CardArea:handle_card_limit()
         if not G.TAROT_INTERRUPT then
             self.config.card_limits.extra_slots = self:count_property('card_limit')
             self.config.card_limits.total_slots = self.config.card_limits.extra_slots + (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
+            self.config.card_limits.display_slots = math.max(0, self.config.card_limits.total_slots)
             self.config.card_limits.extra_slots_used = self:count_property('extra_slots_used')
         end
         self.config.card_count = #self.cards + self.config.card_limits.extra_slots_used
@@ -3932,9 +3947,7 @@ function CardArea:handle_card_limit()
                     end
                 }))
             elseif G.STATE == G.STATES.SELECTING_HAND and #G.deck.cards > 0 and self.config.card_limits.old_slots < self.config.card_limits.total_slots then
-                if (self.config.card_limits.total_slots - self.config.card_limits.old_slots) > 0 then
-                    G.FUNCS.draw_from_deck_to_hand()
-                end
+                G.FUNCS.draw_from_deck_to_hand()
             end
             if self == G.hand and G.STATE == G.STATES.SELECTING_HAND or G.STATE == G.STATES.DRAW_TO_HAND then
                 self.config.card_limits.old_slots = self.config.card_limits.total_slots or 0
@@ -3944,6 +3957,7 @@ function CardArea:handle_card_limit()
     else
         self.config.card_count = #self.cards
         self.config.card_limits.total_slots = (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
+        self.config.card_limits.display_slots = math.max(0, self.config.card_limits.total_slots)
     end
 end
 

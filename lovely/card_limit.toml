@@ -189,7 +189,7 @@ pattern = '''
 {n=G.UIT.T, config={ref_table = self.config, ref_value = 'card_limit', scale = 0.3, colour = G.C.WHITE}},
 '''
 payload = '''
-{n=G.UIT.T, config={ref_table = self.config.card_limits, ref_value = 'total_slots', scale = 0.3, colour = G.C.WHITE}},
+{n=G.UIT.T, config={ref_table = self.config.card_limits, ref_value = 'display_slots', scale = 0.3, colour = G.C.WHITE}},
 '''
 
 # Add negative info_queue support

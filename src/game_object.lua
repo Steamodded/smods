@@ -3596,8 +3596,8 @@ SMODS.UndiscoveredCompat = {
         end
     }
 
-    function SMODS.Edition:get_card_limit_key()
-        return G.P_CENTERS[self.edition.key]:card_limit_key(self)
+    function SMODS.Edition.get_card_limit_key(card)
+        return G.P_CENTERS[card.edition.key]:card_limit_key(card)
     end
 
     -- TODO also, this should probably be a utility method in core

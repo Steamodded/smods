@@ -368,7 +368,7 @@ function SMODS.create_poll_pool(labels, args)
     if args.attributes and not args.rarity and args.rarity ~= false then
         args.rarity = SMODS_WEIGHTS_poll_rarity(final_pool, args)
         final_pool = SMODS.cull_pool(final_pool, args)
-    elseif args.types and not args.type == 'Blind' then
+    elseif args.types and args.type ~= 'Blind' then
         final_pool = SMODS.cull_pool(final_pool, args)
     end
 
@@ -392,7 +392,13 @@ function SMODS.create_poll_pool(labels, args)
         -- the following 3 are subjective choices i made, they can be changed later if needed
         elseif set == 'Enhanced' then default = "c_base"
         elseif set == 'Seal' then default = nil
-        elseif set == 'Blind' then default = "bl_hook"
+        elseif set == 'Blind' then 
+            local defaults = {
+                small = 'bl_small',
+                big = 'bl_big',
+                boss = 'bl_hook'
+            }
+            default = defaults[args.blind_type] or 'bl_hook'
         else default = 'j_joker' end
         if default then
             ret_pool = {{key = default, type = set}}
