@@ -1155,11 +1155,12 @@ function SMODS.never_scores(card)
 end
 
 -- On update, call G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}   /   SMODS.card_collection_UIBox (to update page options etc)
+-- Todo : UI (filter selection, "remaining/total" number of objs) + TernaryCheckbox (for "true", "false" and "nil" filtering)
 SMODS.collection_filters = {
     key = {
         value = nil, 
         func = function (self, obj)
-            return obj.key == self.value
+            return self.value == nil or obj.key == self.value
         end,
         ui_func = function (self)
             
@@ -1169,7 +1170,7 @@ SMODS.collection_filters = {
     name = {
         value = nil, 
         func = function (self, obj)
-            return localize({type = 'name_text', key = obj.key, set = obj.set }) == self.value
+            return self.value == nil or localize({type = 'name_text', key = obj.key, set = obj.set }) == self.value
         end,
         ui_func = function (self)
             
