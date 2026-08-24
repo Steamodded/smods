@@ -1154,13 +1154,60 @@ function SMODS.never_scores(card)
     return SMODS.has_playing_card_property(card, 'never_scores')
 end
 
+-- On update, call G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}   /   SMODS.card_collection_UIBox (to update page options etc)
+SMODS.collection_filters = {
+    key = {
+        value = nil, 
+        func = function (self, obj)
+            return obj.key == self.value
+        end,
+        ui_func = function (self)
+            
+        end,
+        ui_order = 1,
+    },
+    name = {
+        value = nil, 
+        func = function (self, obj)
+            return localize({type = 'name_text', key = obj.key, set = obj.set }) == self.value
+        end,
+        ui_func = function (self)
+            
+        end,
+        ui_order = 2,
+    },
+    attributes = {
+        value = {}, 
+        func = function (self, obj)
+            for attr, v in pairs(self.value) do
+                if SMODS.has_attribute(obj, attr) ~= v then
+                    return false
+                end
+            end
+            return true
+        end,
+        ui_func = function (self)
+            
+        end,
+        ui_order = 3,
+    },
+}
+function SMODS.check_collection_filters(obj)
+    for k, c_filter in pairs(SMODS.collection_filters) do
+        if not c_filter:func(obj) then
+            return false
+        end
+    end
+    return true
+end
+
 SMODS.collection_pool = function(_base_pool)
     local pool = {}
     if type(_base_pool) ~= 'table' then return pool end
     local is_array = _base_pool[1]
     local ipairs = is_array and ipairs or pairs
     for _, v in ipairs(_base_pool) do
-        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not SMODS.hide_from_collection(v)) then
+        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not SMODS.hide_from_collection(v)) and SMODS.check_collection_filters(v) then
             pool[#pool+1] = v
         end
     end
