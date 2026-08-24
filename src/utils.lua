@@ -1157,7 +1157,8 @@ end
 -- On update, call G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}   /   SMODS.card_collection_UIBox (to update page options etc)
 -- Todo : UI (filter selection, "remaining/total" number of objs) + TernaryCheckbox (for "true", "false" and "nil" filtering)
 SMODS.collection_filters = {
-    key = {
+    {
+        name = "key",
         value = nil, 
         func = function (self, obj)
             return self.value == nil or obj.key == self.value
@@ -1165,9 +1166,9 @@ SMODS.collection_filters = {
         ui_func = function (self)
             
         end,
-        ui_order = 1,
     },
-    name = {
+    {
+        name = "loc_name",
         value = nil, 
         func = function (self, obj)
             return self.value == nil or localize({type = 'name_text', key = obj.key, set = obj.set }) == self.value
@@ -1175,9 +1176,9 @@ SMODS.collection_filters = {
         ui_func = function (self)
             
         end,
-        ui_order = 2,
     },
-    attributes = {
+    {
+        name = "attributes",
         value = {}, 
         func = function (self, obj)
             for attr, v in pairs(self.value) do
@@ -1190,11 +1191,10 @@ SMODS.collection_filters = {
         ui_func = function (self)
             
         end,
-        ui_order = 3,
     },
 }
 function SMODS.check_collection_filters(obj)
-    for k, c_filter in pairs(SMODS.collection_filters) do
+    for i, c_filter in ipairs(SMODS.collection_filters) do
         if not c_filter:func(obj) then
             return false
         end
