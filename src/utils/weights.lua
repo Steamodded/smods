@@ -3,6 +3,8 @@
 -- Returns a `key` of the polled object type
 ---@param args table|{type: string?, attributes: string[]?, pool: string[]?, seed: string?, chance: number?, guaranteed: boolean?}
 function SMODS.poll_object(args)
+    args.type = args.type or args.set
+    args.types = args.types or args.sets
     assert(args, "SMODS.poll_object called with no args."..SMODS.log_crash_info(debug.getinfo(2)))
     assert((args.type or (args.types and type(args.types) == 'table') or (args.attributes and type(args.attributes) == 'table') or (args.pool and type(args.pool) == 'table')), "SMODS.poll_object called without a pool source." .. SMODS.log_crash_info(debug.getinfo(2)))
     if args.type == 'Base' then return 'INTERNAL_PLAYING_CARD' end

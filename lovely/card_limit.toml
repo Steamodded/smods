@@ -93,6 +93,9 @@ function CardArea:change_size(delta)
 payload = '''
     -- SMODS BYPASS ORIGINAL FUNCTION
     if true then
+        if delta > 0 and self == G.hand and self.config.card_limits.old_slots > self.config.card_limits.total_slots then
+            SMODS.draw_cards(delta)
+        end
         self.config.card_limits.mod = (self.config.card_limits.mod or 0) + delta
         return
     end
@@ -302,7 +305,7 @@ while n < #G.deck.cards and limit > 0 do
     end
     n = n + 1
 end
-hand_space = #cards_to_draw
+hand_space = math.min(#cards_to_draw, #G.deck.cards)
 """
 match_indent = true
 

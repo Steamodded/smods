@@ -426,9 +426,8 @@ function SMODS.RunSelect.Functions.populate_selection_ui(key, page)
     
     for i=1, (page_def.amount or 10) do
         if count > #page_def.pool then return end
-        local stack_size = page_def.stack_size
-        if SMODS.config.run_select_performance then stack_size = math.min(5, stack_size) end
-        for j=1, stack_size do
+        SMODS.RunSelect.Internals.stack_size = SMODS.config.run_select_performance and math.min(5, page_def.stack_size) or page_def.stack_size
+        for j=1, SMODS.RunSelect.Internals.stack_size do
             local card = page_def.create_selection_card and page_def:create_selection_card(page_def.pool[count].key, j, areas[i]) 
             or Card(areas[i].T.x, areas[i].T.y, card_size.w, card_size.h, nil, page_def.pool[count])
             card.params.run_select_selection_choice = {i, key}
@@ -616,16 +615,15 @@ function SMODS.RunSelect.Functions.populate_preview_ui(key, to_add, silent, _rem
     local preview_area = SMODS.RunSelect.Internals.preview_area
     local holding_area = SMODS.RunSelect.Internals.preview_area_holding
     
-    local stack_size = page_def.preview_size or page_def.stack_size
-    if SMODS.config.run_select_performance then stack_size = math.min(5, stack_size) end
+    SMODS.RunSelect.Internals.stack_size = SMODS.config.run_select_performance and math.min(5, page_def.preview_size or page_def.stack_size) or page_def.preview_size or page_def.stack_size
     local card_size = page_def.sprite_size or {w = G.CARD_W, h = G.CARD_H}
     if type(to_add) == 'table' then
         local temp = {}
         for k, _ in pairs(to_add) do table.insert(temp, k) end
         to_add = temp
-        stack_size = #to_add
+        SMODS.RunSelect.Internals.stack_size = #to_add
     end
-    for j=1, stack_size do
+    for j=1, SMODS.RunSelect.Internals.stack_size do
         local card = page_def.create_selection_card and page_def:create_selection_card(type(to_add) == 'table' and to_add[j] or to_add, j, preview_area) 
         or Card(preview_area.T.x, preview_area.T.y, card_size.w, card_size.h, nil, G.P_CENTERS[type(to_add) == 'table' and to_add[j] or to_add])
         card.params.run_select_preview_card = page_def.key
