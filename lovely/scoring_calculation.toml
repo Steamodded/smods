@@ -59,7 +59,7 @@ self.GAME.selected_back_key = selected_back
 '''
 payload = '''
 
-if saveTable then
+if saveTable and saveTable.SCORING_CALC then
     self.GAME.current_scoring_calculation = SMODS.Scoring_Calculations[saveTable.SCORING_CALC.key]:load({
         config = saveTable.SCORING_CALC.config
     })
