@@ -158,3 +158,96 @@ pattern = '''
 return {n=G.UIT.R, config={align = "cm", colour = empty and G.C.CLEAR or G.C.UI.BACKGROUND_WHITE, r = 0.1, padding = 0.04, minw = 2, minh = 0.8, emboss = not empty and 0.05 or nil, filler = true}, nodes={'''
 payload = '''
 return {n=G.UIT.R, config={align = "cm", colour = empty and G.C.CLEAR or G.C.UI.BACKGROUND_WHITE, r = 0.1, padding = 0.04, minw = 2, minh = 0.8, emboss = not empty and 0.05 or nil, filler = true, main_box_flag = desc_nodes.main_box_flag and true or nil}, nodes={'''
+
+# Allow decks to have multi_boxes
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+pattern = '''
+{n=G.UIT.R, config={align = "cm", r = 0.1, padding = 0.1, minw = 2.5, minh = 1.3, colour = G.C.WHITE, emboss = 0.05}, nodes={
+    {n=G.UIT.O, config={object = UIBox{
+'''
+position = 'at'
+match_indent = true
+payload = '''
+{n=G.UIT.R, config={align = "cm", r = 0.1, padding = 0.1, minw = 2.5, minh = 1.3, emboss = 0.05}, nodes={
+    {n=G.UIT.O, config={object = UIBox{
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = '''
+local loc_args, loc_nodes = nil, {}
+'''
+position = 'after'
+match_indent = true
+payload = '''
+local AUT = {}
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = '''
+localize{type = 'descriptions', key = back_config.key, set = 'Back', nodes = loc_nodes, vars = loc_args}
+'''
+position = 'at'
+match_indent = true
+payload = '''
+localize{type = 'descriptions', key = key_override or back_config.key, set = 'Back', nodes = loc_nodes, AUT = AUT, vars = loc_args}
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = '''
+return
+    {n=G.UIT.ROOT, config={align = "cm", minw = min_dims*5, minh = min_dims*2.5, id = self.name, colour = G.C.CLEAR}, nodes={
+'''
+position = 'before'
+match_indent = true
+payload = '''
+local config = {}
+config = {minh = (min_dims*2.5)/(1+#(AUT.multi_box or {})), emboss = 0.1*min_dims/0.8, r = 0.1, align = "cm", padding = 0.1, minw = min_dims*5}
+local conf = config
+for i, v in pairs(config) do
+    conf[i] = v
+end
+conf.colour = (AUT.main or loc_nodes).background_colour or AUT.box_colours and AUT.box_colours[1] or G.C.WHITE
+local nodes = {
+    {n=G.UIT.R, config=conf, nodes={
+        desc_from_rows(loc_nodes, true, min_dims*5)
+    }}
+}
+for i, v in pairs(AUT.multi_box or {}) do
+    local conf = config
+    for i, v in pairs(config) do
+        conf[i] = v
+    end
+    conf.colour = v.background_colour or AUT.box_colours and AUT.box_colours[i] or G.C.WHITE
+    nodes[#nodes+1] = {n=G.UIT.R, config={minh = min_dims/10, minw = min_dims*5}, nodes={
+    }}
+    nodes[#nodes+1] = {n=G.UIT.R, config=conf, nodes={
+        desc_from_rows(v, true, min_dims*5)
+    }}
+end
+if true then
+    return {n=G.UIT.ROOT, config={align = "cm", minw = min_dims*5, minh = min_dims*2.5, id = self.name, colour = G.C.CLEAR}, nodes={
+        challenge.id and UIBox_button({button = 'deck_view_challenge', label = {localize(challenge.id, 'challenge_names')},  minw = 2.2, minh = 1, scale = 0.6, id = challenge}),
+        unpack(nodes)
+    }}
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+pattern = '''
+args.AUT = args.AUT or {}
+'''
+position = 'after'
+match_indent = true
+payload = '''
+args.AUT.info = args.AUT.info or {}
+'''
