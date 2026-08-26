@@ -397,3 +397,18 @@ if #self.cards > self.config.card_limit then
     end
 end
 '''
+
+# comment
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+G.STATE = G.STATES.SELECTING_HAND
+'''
+payload = '''
+if G.hand.config.card_limits.old_slots < G.hand.config.card_limits.total_slots then
+    G.hand.config.card_limits.old_slots = G.hand.config.card_limits.total_slots
+end
+'''

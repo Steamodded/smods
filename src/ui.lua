@@ -1960,18 +1960,27 @@ function create_UIBox_mods_button()
                                                 current_option = SMODS.config.achievements,
                                                 cycle_shoulders = true,
                                             },
-                                            create_toggle {
-                                                label = localize('b_vanilla_run_select'),
-                                                ref_table = SMODS.config,
-                                                ref_value = 'vanilla_run_select',
-                                                info = {localize('b_vanilla_run_select_info')}
-                                            },
+                                            {n=G.UIT.R, config = {align='cm', padding = 0.1}, nodes = {
+                                                {n=G.UIT.C, nodes = {create_toggle {
+                                                    label = localize('b_vanilla_run_select'),
+                                                    ref_table = SMODS.config,
+                                                    ref_value = 'vanilla_run_select',
+                                                    info = localize('b_vanilla_run_select_info')
+                                                }}},
+                                                {n=G.UIT.C, nodes = {create_toggle {
+                                                        label = localize('b_vanilla_stake'),
+                                                        ref_table = SMODS.config,
+                                                        ref_value = 'vanilla_stake',
+                                                        info = localize('b_vanilla_stake_info')
+                                                    },
+                                                    }},
+                                            }},
                                             create_toggle {
                                                 label = localize('b_run_select_reduce'),
                                                 ref_table = SMODS.config,
                                                 ref_value = 'run_select_performance',
-                                                info = {localize('b_run_select_reduce_info')}
-                                            },
+                                                info = localize('b_run_select_reduce_info')
+                                            }
                                         }
                                     }
                                 end
@@ -3431,3 +3440,90 @@ G.FUNCS.SMODS_cycle_tabber_move = function(arg)
 	}
 	tab_contents.UIBox:recalculate()
 end
+
+--#region run stake display changes
+
+
+local function order_applied_stakes(stake_chain, stake)
+    local ordered_chain = {}
+    for i,v in ipairs(G.P_CENTER_POOLS.Stake) do
+        if stake_chain[i] and v.key ~= stake then
+            ordered_chain[#ordered_chain+1] = v.key
+        end
+    end
+    ordered_chain[#ordered_chain+1] = stake
+    return ordered_chain
+end
+
+function G.UIDEF.SMODS_current_stake()
+    local applied_stakes = order_applied_stakes(SMODS.build_stake_chain(G.P_STAKES[G.P_CENTER_POOLS.Stake[G.GAME.stake].key]), G.P_CENTER_POOLS.Stake[G.GAME.stake].key)
+    local stakes = {}
+    local applied_stake
+    for i, key in ipairs(applied_stakes) do
+        local order = G.P_STAKES[key].order
+        local stake_sprite = get_stake_sprite(order, 0.8)
+        local _stake_desc = {}
+        localize{type = 'descriptions', key = key, set = 'Stake', nodes = _stake_desc}
+        local _full_desc = {}
+        for k, v in ipairs(_stake_desc) do
+            _full_desc[#_full_desc+1] = {n=G.UIT.R, config={align = "cm"}, nodes=v}
+        end
+        if #_full_desc > 1 then _full_desc[#_full_desc] = nil end
+        local stake_node = {n=G.UIT.R, config={align = "cl", padding = 0.05}, nodes={
+            {n=G.UIT.C, config={align = "cm", padding = 0.1, r=true, colour=G.C.BLACK}, nodes={
+                {n=G.UIT.O, config={object = stake_sprite}}
+            }},
+            {n=G.UIT.C, config={align='cm'}, nodes = {
+                {n=G.UIT.C, config={align = "cm", padding = 0.05, colour = get_stake_col(order), r = 0.05, stretch = true, diff = i < #applied_stakes and 1.3 or 2.4}, nodes={
+                    {n=G.UIT.R, config={align = "cm", padding = 0.05, colour = adjust_alpha(G.C.WHITE, 0.95), r = 0.05, minw = 5.5, stretch = true, diff = i < #applied_stakes and 1.4 or 2.5}, nodes={
+                        {n=G.UIT.R, config={align = "cm", padding = 0.03, minh = 0.7, minw = 3.8}, nodes=_full_desc}
+                    }}
+                }}
+            }},
+            {n=G.UIT.C, config={minw = 0.1}}
+        }}
+        if i < #applied_stakes then
+            table.insert(stakes, 1, stake_node)
+        else
+            applied_stake = stake_node
+        end
+    end
+
+    local box = SMODS.UIScrollBox({
+		content = {
+			definition = {n = G.UIT.ROOT, config = { align = "cm", colour = G.C.CLEAR }, nodes = stakes},
+			config = { align = "cm" },
+		},
+		overflow = {node_config = {maxh = 4.7}},
+		sync_mode = "offset",
+	})
+	local current_col = {
+		{n=G.UIT.C, config = {align='tl', r=true, colour=G.C.BLACK}, nodes = {
+            applied_stake,
+            {n=G.UIT.R, config = {minh = 0.05, colour = G.C.L_BLACK}},
+			{n=G.UIT.R, nodes = {{n=G.UIT.O, config = { object = box }}}}
+		}}
+	}
+	if box then
+		local bar = SMODS.GUI.scrollbar({
+			h = 6,
+			w = 0.3,
+            knob_h = 0.8,
+			colour = G.C.RED,
+			bg_colour = { 0, 0, 0, 0.15 },
+			scroll_collision_obj = box,
+			scroll_mult = 1.6,
+		})
+		bar.config.align = "tm"
+		table.insert(current_col, bar)
+	end
+	
+    return {n=G.UIT.ROOT, config={align = "cm", colour = G.C.CLEAR, r = 0.1, padding = 0.1}, nodes={
+        {n=G.UIT.R, config={align = "cm", padding = 0.05}, nodes={
+            {n=G.UIT.T, config={text = 'Applied stakes', scale = 0.65, colour = G.C.WHITE}}
+        }},
+        {n=G.UIT.R, config = {align = 'cm', padding = 0.2}, nodes = current_col}
+    }}
+end
+
+-- #endregion
