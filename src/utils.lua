@@ -3946,7 +3946,7 @@ function CardArea:handle_card_limit()
                         return true
                     end
                 }))
-            elseif G.STATE == G.STATES.SELECTING_HAND and #G.deck.cards > 0 and self.config.card_limits.old_slots < self.config.card_limits.total_slots then
+            elseif G.STATE == G.STATES.SELECTING_HAND and #G.deck.cards > 0 and self.config.card_limits.old_slots and self.config.card_limits.old_slots < self.config.card_limits.total_slots then
                 G.FUNCS.draw_from_deck_to_hand()
             end
             if self == G.hand and G.STATE == G.STATES.SELECTING_HAND or G.STATE == G.STATES.DRAW_TO_HAND then
