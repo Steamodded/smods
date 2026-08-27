@@ -329,6 +329,7 @@ function SMODS.create_poll_pool(labels, args)
         local join_func = (args.attributes and not args.union) and SMODS.intersect_lists or join_lists
         for i=1, #(args.rarities or {true}) do
             if label == "Booster" then SMODS.poll_object_allow_duplicates = true end
+            if args.rarities and args.rarities[i] == 'Legendary' then args.allow_legendaries = true end
             local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or SMODS.Attributes[label] and SMODS.get_attribute_pool(label) or get_current_pool(label, args.rarities and args.rarities[i], nil, args.append)
             SMODS.poll_object_allow_duplicates = nil
             if SMODS.Attributes[label] then
