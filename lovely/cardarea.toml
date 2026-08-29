@@ -36,3 +36,20 @@ pattern = "if not card.states.drag.is then"
 position = "at"
 payload = "if not card.states.drag.is and not card.disable_align then"
 match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+pattern = '''    self.ARGS.invisible_area_types = self.ARGS.invisible_area_types or {discard=1, voucher=1, play=1, consumeable=1, title = 1, title_2 = 1}
+    if self.ARGS.invisible_area_types[self.config.type] or
+        (self.config.type == 'hand' and ({[G.STATES.SHOP]=1, [G.STATES.TAROT_PACK]=1, [G.STATES.SPECTRAL_PACK]=1, [G.STATES.STANDARD_PACK]=1,[G.STATES.BUFFOON_PACK]=1,[G.STATES.PLANET_PACK]=1, [G.STATES.ROUND_EVAL]=1, [G.STATES.BLIND_SELECT]=1})[state]) or
+        (self.config.type == 'hand' and state == G.STATES.SMODS_BOOSTER_OPENED) or
+        (self.config.type == 'deck' and self ~= G.deck) or'''
+position = 'at'
+match_indent = true
+payload = '''    self.ARGS.invisible_area_types = self.ARGS.invisible_area_types or {discard=1, voucher=1, play=1, consumeable=1, title = 1, title_2 = 1}
+    self.ARGS.invisible_hand_states = self.ARGS.invisible_hand_states or {[G.STATES.SHOP]=1, [G.STATES.TAROT_PACK]=1, [G.STATES.SPECTRAL_PACK]=1, [G.STATES.STANDARD_PACK]=1,[G.STATES.BUFFOON_PACK]=1,[G.STATES.PLANET_PACK]=1, [G.STATES.ROUND_EVAL]=1, [G.STATES.BLIND_SELECT]=1}
+    if self.ARGS.invisible_area_types[self.config.type] or
+        (self.config.type == 'hand' and self.ARGS.invisible_hand_states[state]) or
+        (self.config.type == 'hand' and state == G.STATES.SMODS_BOOSTER_OPENED) or
+        (self.config.type == 'deck' and self ~= G.deck) or'''
