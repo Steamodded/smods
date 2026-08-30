@@ -57,6 +57,8 @@
 ---@field other_drawn? Card[] List of cards that just got drawn outside a blind
 ---@field using_consumeable? true Check if `true` for effects after using a Consumable.
 ---@field skip_blind? true Check if `true` for effects after skipping a blind.
+---@field skipped_blind? string Key of the blind that just got skipped
+---@field skip_to? string Key of the new upcoming blind after a skip
 ---@field playing_card_added? true Check if `true` for effects after a playing card was added into the deck.
 ---@field card_added? true Check if `true` for effects after a non-playing card was added into the deck.
 ---@field check_enhancement? true Check if `true` for applying quantum enhancements.
