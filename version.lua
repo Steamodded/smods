@@ -1,1 +1,1 @@
-return "1.0.0~BETA-2008b-STEAMODDED"
+return "26.901.0"

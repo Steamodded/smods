@@ -1078,10 +1078,7 @@ function SMODS.has_enhancement(card, key)
 end
 
 function SMODS.shatters(card)
-    local enhancements = SMODS.get_enhancements(card)
-    for key, _ in pairs(enhancements) do
-        if G.P_CENTERS[key].shatters or key == 'm_glass' then return true end
-    end
+    return SMODS.has_playing_card_property(card, 'shatters')
 end
 
 function SMODS.get_ability_reset_keys(card)
@@ -1129,44 +1126,32 @@ function SMODS.calculate_quantum_enhancements(card, effects, context)
     SMODS.extra_enhancement_calc_in_progress = nil
 end
 
-function SMODS.has_no_suit(card)
-    local is_stone = false
-    local is_wild = false
+function SMODS.has_playing_card_property(card, key) 
     for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].no_suit then is_stone = true end
-        if k == 'm_wild' or G.P_CENTERS[k].any_suit then is_wild = true end
+        if G.P_CENTERS[k][key] then return true end
     end
-    return is_stone and not is_wild
+    if (G.P_CENTERS[(card.edition or {}).key] or {})[key] then return true end
+    if (G.P_SEALS[card.seal or {}] or {})[key] then return true end
+    for k, v in pairs(SMODS.Stickers) do
+        if v[key] and card.ability[k] then return true end
+    end
+    return false
+end
+
+function SMODS.has_no_suit(card)
+    return SMODS.has_playing_card_property(card, 'no_suit') and not SMODS.has_playing_card_property(card, 'any_suit')
 end
 function SMODS.has_any_suit(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_wild' or G.P_CENTERS[k].any_suit then return true end
-    end
+    return SMODS.has_playing_card_property(card, 'any_suit')
 end
 function SMODS.has_no_rank(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].no_rank then return true end
-    end
+    return SMODS.has_playing_card_property(card, 'no_rank')
 end
 function SMODS.always_scores(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if k == 'm_stone' or G.P_CENTERS[k].always_scores then return true end
-    end
-    if (G.P_CENTERS[(card.edition or {}).key] or {}).always_scores then return true end
-    if (G.P_SEALS[card.seal or {}] or {}).always_scores then return true end
-    for k, v in pairs(SMODS.Stickers) do
-        if v.always_scores and card.ability[k] then return true end
-    end
+    return SMODS.has_playing_card_property(card, 'always_scores')
 end
 function SMODS.never_scores(card)
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if G.P_CENTERS[k].never_scores then return true end
-    end
-    if (G.P_CENTERS[(card.edition or {}).key] or {}).never_scores then return true end
-    if (G.P_SEALS[card.seal or {}] or {}).never_scores then return true end
-    for k, v in pairs(SMODS.Stickers) do
-        if v.never_scores and card.ability[k] then return true end
-    end
+    return SMODS.has_playing_card_property(card, 'never_scores')
 end
 
 SMODS.collection_pool = function(_base_pool)
@@ -1867,6 +1852,20 @@ function SMODS.calculate_card_areas(_type, context, return_table, args)
                     SMODS.update_context_flags(context, flags)
                 end
                 ::skip::
+            end
+            if area == G.consumeables and SMODS.currently_used_consumable and not SMODS.currently_used_consumable.area and not SMODS.check_looping_context(SMODS.currently_used_consumable) then
+                local eval, post = eval_card(SMODS.currently_used_consumable, context)
+                local effects = {eval}
+                for _,v in ipairs(post) do effects[#effects+1] = v end
+                if return_table then
+                    for _,v in ipairs(effects) do
+                        return_table[#return_table+1] = v
+                    end
+                else
+                    local f = SMODS.trigger_effects(effects, SMODS.currently_used_consumable)
+                    for k,v in pairs(f) do flags[k] = v end
+                    SMODS.update_context_flags(context, flags)
+                end
             end
         end
     end
@@ -2669,7 +2668,14 @@ function SMODS.get_next_vouchers(vouchers)
 
         -- Use SMODS object weight system when enabled
         if SMODS.optional_features.object_weights then
-            center = SMODS.poll_object({type = 'Voucher', seed = _pool_key})
+            center = SMODS.poll_object({type = 'Voucher', seed = _pool_key, filter = function(pool)
+                for _, v in ipairs(pool) do
+                    if vouchers.spawn[v.key] then
+                        v.key = 'UNAVAILABLE'
+                    end
+                end
+                return pool
+            end})
         else
             center = pseudorandom_element(_pool, pseudoseed(_pool_key))
             local it = 1
@@ -2829,16 +2835,21 @@ function SMODS.get_loc_colour(ctrl, vars)
     return (vars or {})[tonumber(ctrl) or {}] or loc_colour(ctrl)
 end
 
+function SMODS.process_loc_element(elem)
+    if type(elem) == "function" then elem = elem() end
+    if elem and elem.is and elem:is(Node) then
+        elem = { n=G.UIT.O, config = { object = elem }}
+    end
+    return elem
+end
+
 function SMODS.localize_box(lines, args)
     args.vars = args.vars or {}
     local final_line = {}
     for _, part in ipairs(lines) do
         if part.control.element then
             local elem = (args.vars.elements or {})[tonumber(part.control.element)]
-            if elem and elem.is and elem:is(Node) then
-                elem = { n=G.UIT.O, config = { object = elem }}
-            end
-            final_line[#final_line+1] = elem
+            final_line[#final_line+1] = SMODS.process_loc_element(elem)
         end
         local assembled_string = ''
         for _, subpart in ipairs(part.strings) do
@@ -2862,7 +2873,25 @@ function SMODS.localize_box(lines, args)
         local desc_scale = (thunk.font or G.LANG.font).DESCSCALE
         if G.F_MOBILE_UI then desc_scale = desc_scale*1.5 end
 
+        -- tooltip modifier
+        local T
+        if part.control.T then
+            T = type(part.control.T) == 'table' and part.control.T or { key = part.control.T }
+            T.set = T.set or part.control.T_set or 'Other'
+            T.vars = {}
+            if T["1"] then
+                local i = 1
+                while T[tostring(i)] do
+                    T.vars[i] = T[tostring(i)]
+                    i = i+1
+                end
+            elseif part.control.T_vars then
+                T.vars = parse_tooltip_vars(part.control.T_vars)
+            end
+        end
+
         local base_config = function(t)
+            
             return SMODS.merge_defaults(t, {
                 button = part.control.button,
                 underline = thunk.underline,
@@ -2876,15 +2905,7 @@ function SMODS.localize_box(lines, args)
                 font = thunk.font,
                 scale = 0.32*thunk.scale_mod*desc_scale,
                 text = assembled_string,
-                detailed_tooltip = part.control.T and (
-                    G.P_CENTERS[part.control.T]
-                    or G.P_TAGS[part.control.T]
-                    or {
-                        set = part.control.T_set or 'Other',
-                        key = part.control.T,
-                        vars = part.control.T_vars and parse_tooltip_vars(part.control.T_vars) or {}
-                    }
-                ) or nil,
+                detailed_tooltip = T and (G.P_CENTERS[T.key] or G.P_TAGS[T.key] or T) or nil
             })
         end
         
@@ -2981,14 +3002,15 @@ function SMODS.is_playing_card(card)
 	return card.playing_card or set == "Default" or set == "Enhanced"
 end
 
-function SMODS.pinch_and_remove(card)
-    if not SMODS.is_playing_card(card) then
+function SMODS.pinch_and_remove(card, args)
+    args = args or {}
+    if not SMODS.is_playing_card(card) and not args.skip_calc then
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = card})
         if flags.no_destroy then card.getting_sliced = nil; return false end
     end
-    play_sound('tarot1')
+    if not args.silent then play_sound('tarot1') end
     card.T.r = -0.2
-    card:juice_up(0.3, 0.4)
+    if not args.no_juice then card:juice_up(0.3, 0.4) end
     card.states.drag.is = true
     card.children.center.pinch.x = true
     G.E_MANAGER:add_event(Event({
@@ -3046,11 +3068,18 @@ function SMODS.destroy_cards(cards, args, ...)
         if args.destroy_func then 
             return args.destroy_func(card, args) ~= false
         elseif args.pinch_anim then
-            return SMODS.pinch_and_remove(card)
+            return SMODS.pinch_and_remove(card, args)
         elseif card.shattered then
-            return card:shatter() ~= false
+            return card:shatter(args) ~= false
         elseif card.destroyed then
-            return card:start_dissolve(args.colours) ~= false
+            SMODS.skip_destroy_calc = args.skip_calc
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    SMODS.skip_destroy_calc = nil
+                    return true
+                end
+            }))
+            return card:start_dissolve(args.colours, args.silent, args.dissolve_time_fac, args.no_juice) ~= false
         end
         return false
     end
@@ -3219,8 +3248,8 @@ G.FUNCS.update_blind_debuff_text = function(e)
 end
 
 function Card:should_hide_front()
-    local center = self.delay_center or self.config.center
-    return center.effect == "Stone Card" or center.replace_base_card
+    if (self.delay_center or {}).replace_base_card then return true end
+    return SMODS.has_playing_card_property(self, 'replace_base_card')
 end
 
 function SMODS.is_eternal(card, trigger)
@@ -3892,6 +3921,7 @@ function CardArea:handle_card_limit()
         if not G.TAROT_INTERRUPT then
             self.config.card_limits.extra_slots = self:count_property('card_limit')
             self.config.card_limits.total_slots = self.config.card_limits.extra_slots + (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
+            self.config.card_limits.display_slots = math.max(0, self.config.card_limits.total_slots)
             self.config.card_limits.extra_slots_used = self:count_property('extra_slots_used')
         end
         self.config.card_count = #self.cards + self.config.card_limits.extra_slots_used
@@ -3907,7 +3937,7 @@ function CardArea:handle_card_limit()
                         G.E_MANAGER:add_event(Event({
                             trigger = 'immediate',
                             func = function()
-                                if (self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0)) > 0 and #G.deck.cards > (SMODS.cards_to_draw or 0) then
+                                if (self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0)) > 0 and #G.deck.cards > (SMODS.cards_to_draw or 0) and #G.deck.cards > 0 then
                                     G.FUNCS.draw_from_deck_to_hand()
                                 end
                                 return true
@@ -3917,9 +3947,7 @@ function CardArea:handle_card_limit()
                     end
                 }))
             elseif G.STATE == G.STATES.SELECTING_HAND and #G.deck.cards > 0 and self.config.card_limits.old_slots < self.config.card_limits.total_slots then
-                if (self.config.card_limits.total_slots - self.config.card_limits.old_slots) > 0 then
-                    G.FUNCS.draw_from_deck_to_hand()
-                end
+                G.FUNCS.draw_from_deck_to_hand()
             end
             if self == G.hand and G.STATE == G.STATES.SELECTING_HAND or G.STATE == G.STATES.DRAW_TO_HAND then
                 self.config.card_limits.old_slots = self.config.card_limits.total_slots or 0
@@ -3929,6 +3957,7 @@ function CardArea:handle_card_limit()
     else
         self.config.card_count = #self.cards
         self.config.card_limits.total_slots = (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
+        self.config.card_limits.display_slots = math.max(0, self.config.card_limits.total_slots)
     end
 end
 

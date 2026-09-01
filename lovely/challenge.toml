@@ -109,8 +109,8 @@ match_indent = true
 [[patches]]
 [patches.pattern]
 target = "game.lua"
-pattern = 'self.GAME.stake = args.stake or self.GAME.stake or 1'
-position = 'after'
+pattern = 'self.GAME.STOP_USE = 0'
+position = 'before'
 match_indent = true
 payload = '''
 if saveTable and self.GAME.challenge then

@@ -3,6 +3,8 @@
 -- Returns a `key` of the polled object type
 ---@param args table|{type: string?, attributes: string[]?, pool: string[]?, seed: string?, chance: number?, guaranteed: boolean?}
 function SMODS.poll_object(args)
+    args.type = args.type or args.set
+    args.types = args.types or args.sets
     assert(args, "SMODS.poll_object called with no args."..SMODS.log_crash_info(debug.getinfo(2)))
     assert((args.type or (args.types and type(args.types) == 'table') or (args.attributes and type(args.attributes) == 'table') or (args.pool and type(args.pool) == 'table')), "SMODS.poll_object called without a pool source." .. SMODS.log_crash_info(debug.getinfo(2)))
     if args.type == 'Base' then return 'INTERNAL_PLAYING_CARD' end
@@ -327,6 +329,7 @@ function SMODS.create_poll_pool(labels, args)
         local join_func = (args.attributes and not args.union) and SMODS.intersect_lists or join_lists
         for i=1, #(args.rarities or {true}) do
             if label == "Booster" then SMODS.poll_object_allow_duplicates = true end
+            if args.rarities and args.rarities[i] == 'Legendary' then args.allow_legendaries = true end
             local _p = label == 'Blind' and SMODS.create_blind_pool(args.blind_type or 'boss') or SMODS.Attributes[label] and SMODS.get_attribute_pool(label) or get_current_pool(label, args.rarities and args.rarities[i], nil, args.append)
             SMODS.poll_object_allow_duplicates = nil
             if SMODS.Attributes[label] then
@@ -368,7 +371,7 @@ function SMODS.create_poll_pool(labels, args)
     if args.attributes and not args.rarity and args.rarity ~= false then
         args.rarity = SMODS_WEIGHTS_poll_rarity(final_pool, args)
         final_pool = SMODS.cull_pool(final_pool, args)
-    elseif args.types and not args.type == 'Blind' then
+    elseif args.types and args.type ~= 'Blind' then
         final_pool = SMODS.cull_pool(final_pool, args)
     end
 
@@ -392,7 +395,13 @@ function SMODS.create_poll_pool(labels, args)
         -- the following 3 are subjective choices i made, they can be changed later if needed
         elseif set == 'Enhanced' then default = "c_base"
         elseif set == 'Seal' then default = nil
-        elseif set == 'Blind' then default = "bl_hook"
+        elseif set == 'Blind' then 
+            local defaults = {
+                small = 'bl_small',
+                big = 'bl_big',
+                boss = 'bl_hook'
+            }
+            default = defaults[args.blind_type] or 'bl_hook'
         else default = 'j_joker' end
         if default then
             ret_pool = {{key = default, type = set}}
@@ -542,6 +551,7 @@ function SMODS.cull_pool(pool, args)
             if args.types and (not args.types[v.set] and not (args.types['Consumeables'] and SMODS.ConsumableTypes[v.set])) then add = nil end
             if v.no_pool_flag and G.GAME.pool_flags[v.no_pool_flag] then add = nil end
             if v.yes_pool_flag and not G.GAME.pool_flags[v.yes_pool_flag] then add = nil end
+            if args.no_replace and v.set == 'Enhanced' and v.replace_base_card then add = nil end
             
             add = in_pool and (add or ((not _rarity or _rarity == v.rarity) and pool_opts.override_base_checks))
             

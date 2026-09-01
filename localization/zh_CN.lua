@@ -35,7 +35,7 @@ return {
             },
             load_failure_i = {
                 text = {
-                    '{C:attention}不兼容！',
+                    '{C:attention}不兼容！{}',
                     '所需Steamodded版本为#1#',
                     '但当前为#2#'
                 }
@@ -142,6 +142,86 @@ return {
                     "此卡牌{C:attention}#1#{} #2#",
                 },
             },
+            card_score = {
+                text = {
+                    "{C:purple}#1#{}得分",
+                },
+            },
+            card_h_score = {
+                text = {
+                    "留在手牌中时{C:purple}#1#{}得分",
+                },
+            },
+            card_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{}得分",
+                },
+            },
+            card_h_x_score = {
+                text = {
+                    "留在手牌中时{X:purple,C:white}X#1#{}得分",
+                },
+            },
+            card_extra_score = {
+                text = {
+                    "{C:purple}#1#{}额外得分",
+                },
+            },
+            card_extra_h_score = {
+                text = {
+                    "留在手牌中时{C:purple}#1#{}额外得分",
+                },
+            },
+            card_extra_x_score = {
+                text = {
+                    "{X:purple,C:white}X#1#{}额外得分",
+                },
+            },
+            card_extra_h_x_score = {
+                text = {
+                    "留在手牌中时{X:purple,C:white}X#1#{}额外得分",
+                },
+            },
+            card_blind_size = {
+                text = {
+                    "盲注要求{C:blind}#1#{}",
+                },
+            },
+            card_h_blind_size = {
+                text = {
+                    "留在手牌中时盲注要求{C:blind}#1#{}",
+                },
+            },
+            card_x_blind_size = {
+                text = {
+                    "盲注要求{X:blind,C:white}X#1#{}",
+                },
+            },
+            card_h_x_blind_size = {
+                text = {
+                    "留在手牌中时盲注要求{X:blind,C:white}X#1#{}",
+                },
+            },
+            card_extra_blind_size = {
+                text = {
+                    "盲注要求额外{C:blind}#1#{}",
+                },
+            },
+            card_extra_h_blind_size = {
+                text = {
+                    "留在手牌中时盲注要求额外{C:blind}#1#{}",
+                },
+            },
+            card_extra_x_blind_size = {
+                text = {
+                    "盲注要求额外{X:blind,C:white}X#1#{}",
+                },
+            },
+            card_extra_h_x_blind_size = {
+                text = {
+                    "留在手牌中时盲注要求额外{X:blind,C:white}X#1#{}",
+                },
+            },
             artist = {
                 text = {
                     "{C:inactive}艺术家",
@@ -154,21 +234,39 @@ return {
                 },
             },
             generic_card_limit = {
-                name = "卡限额",
+                name = "卡牌上限",
                 text = {
                     '{C:dark_edition}#1#{}个区域槽位'
                 }
             },
             generic_card_limit_plural = {
-                name = "卡限额",
+                name = "卡牌上限",
                 text = {
                     '{C:dark_edition}#1#{}个区域槽位'
+                }
+            },
+            generic_card_limit_pc = {
+                name = "手牌上限",
+                text = {
+                    '{C:dark_edition}#1#{}手牌上限'
+                }
+            },
+            generic_card_limit_pc_plural = {
+                name = "手牌上限",
+                text = {
+                    '{C:dark_edition}#1#{}手牌上限'
                 }
             },
             generic_extra_slots = {
                 name = "已使用槽位",
                 text = {
                     '填充{C:dark_edition}#1#{}个槽位'
+                }
+            },
+            generic_extra_slots_pc = {
+                name = "手牌占位",
+                text = {
+                    '占用{C:dark_edition}#1#{}个手牌槽位'
                 }
             },
             card_chips_minus = {
@@ -247,10 +345,14 @@ return {
             b_github_bugs_1 = '你可以在此汇报漏洞',
             b_github_bugs_2 = '和提交贡献',
             b_disable_mod_badges = '禁用模组横标',
+            b_vanilla_run_select = '原版牌局选择界面',
+            b_vanilla_run_select_info = '模组添加额外页面时此选项将被忽略',
+            b_run_select_reduce = '牌局选择性能模式',
+            b_run_select_reduce_info = '减少显示的卡牌数量并移除动画',
             b_author = '作者',
             b_authors = '作者',
             b_unknown = '未知',
-            b_lovely_mod = '(依赖Lovely加载器的补丁模组)',
+            b_lovely_mod = '(仅依赖Lovely加载器的模组)',
             b_by = '作者：',
             b_priority = '优先级：',
             b_config = "配置",
@@ -274,12 +376,33 @@ return {
             b_deckskins_hc = '高对比度配色',
             b_deckskins_def = '默认配色',
             b_limit = '最多',
+            b_retrigger_single = '次',
+            b_retrigger_plural = '次',
+            k_enhanced = '增强效果',
+            run_select_locked_stake = '未解锁',
+            run_select_locked_stake_message = '使用此牌组通过 ',
+            run_select_locked_stake_and = ' 和 ',
+            run_select_nothing = '无',
+            run_select_selected = '已选择',
+            run_select_quick_start = '快速开始',
+            run_select_play = '开始游戏',
+            run_setup_enable_seed = '启用种子',
+            run_select_deck_choice = '选择牌组',
+            run_select_stake_choice = '选择赌注',
+            run_select_deck_choice_random = '随机牌组',
+            run_select_stake_choice_random = '随机赌注',
         },
         v_dictionary = {
             c_types = '共有#1#种',
             cashout_hidden = '……还有#1#',
             a_xchips = "X#1# 筹码",
             a_xchips_minus = "-X#1# 筹码",
+            a_score = "#1#得分",
+            a_xscore = "X#1#得分",
+            a_xscore_minus = "-X#1#得分",
+            a_blind_size = "#1#盲注要求",
+            a_xblind_size = "X#1#盲注要求",
+            a_xblind_size_minus = "-X#1#盲注要求",
             smods_version_mismatch = {
                 "自本局游戏开始以来，",
                 "您的Steamodded版本已更改！",

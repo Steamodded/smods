@@ -23,7 +23,7 @@ pattern = '''
 [\t ]*    return self\.ability\.bonus \+ \(self\.ability\.perma_bonus or 0\)
 [\t ]*end'''
 position = "at"
-payload = '''if self.ability.effect == 'Stone Card' or self.config.center.replace_base_card then
+payload = '''if SMODS.has_playing_card_property(self, 'replace_base_card') then
     return self.ability.bonus + (self.ability.perma_bonus or 0)
 end'''
 line_prepend = '$indent'
@@ -149,7 +149,7 @@ target = "functions/common_events.lua"
 pattern = "if (_c.name == 'Stone Card') then full_UI_table.name = true end"
 match_indent = true
 position = "at"
-payload = "if _c.name == 'Stone Card' or _c.replace_base_card then full_UI_table.name = true"
+payload = "if _c.replace_base_card then full_UI_table.name = true"
 [[patches]]
 [patches.pattern]
 target = "functions/common_events.lua"
