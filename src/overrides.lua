@@ -1672,7 +1672,8 @@ function create_UIBox_current_hands(simple, in_collection)
 						colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or
 						G.C.RED,
 						no_pips = true,
-						in_collection = in_collection
+						in_collection = in_collection,
+						simple = simple
 					}) }
 			} or nil }
 	}
@@ -1695,6 +1696,7 @@ G.FUNCS.your_hands_page = function(args)
 	if not args or not args.cycle_config then return end
 	G.current_hands = {}
 	local in_collection = args.cycle_config.in_collection
+	local simple = args.cycle_config.simple
 	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
 	local handlist = in_collection and {} or nil
 	if _pool then
@@ -1819,22 +1821,18 @@ function Card:set_sprites(_center, _front)
 					self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Joker", G.j_locked.pos)
 				end
 			elseif not self.params.bypass_discovery_center and (_center.consumeable or SMODS.UndiscoveredCompat[_center.set]) and not _center.discovered then
+				local undiscovered_sprite = SMODS.UndiscoveredSprites[_center.set]
 				local atlas = SMODS.get_atlas(
 					(_center.undiscovered and
 						(_center.undiscovered[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
 						_center.undiscovered.atlas)
 					) or
-					(
-						SMODS.UndiscoveredSprites[_center.set] and
-						(SMODS.UndiscoveredSprites[_center.set][G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
-						SMODS.UndiscoveredSprites[_center.set].atlas)
-					) or
-					_center.set
+                    (undiscovered_sprite and (undiscovered_sprite[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or undiscovered_sprite.atlas))
+					or _center.set
 				) or SMODS.get_atlas("Joker")
-				local pos = (_center.undiscovered and _center.undiscovered.pos) or
-					(SMODS.UndiscoveredSprites[_center.set] and SMODS.UndiscoveredSprites[_center.set].pos) or
-					G.j_undiscovered.pos
-				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
+				local pos = (_center.undiscovered and _center.undiscovered.pos) or (undiscovered_sprite and undiscovered_sprite.pos) or G.j_undiscovered.pos
+				local sprite_args = (_center.undiscovered and _center.undiscovered.sprite_args) or (undiscovered_sprite and undiscovered_sprite.sprite_args) or G.j_undiscovered.sprite_args
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos, sprite_args)
 			elseif _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' then
 				local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
 				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, _center.pos or {x=0, y=0}, _center.sprite_args)
@@ -2537,7 +2535,7 @@ G.FUNCS.change_collab = function(args)
     end
 
 	for k, v in pairs(G.I.CARD) do
-		if v.config and v.config.card and v.children.front and v.ability.effect ~= 'Stone Card' then
+		if v.config and v.config.card and v.children.front and not v:should_hide_front() then
 			v:set_sprites(nil, v.config.card)
 		end
 	end
@@ -2549,7 +2547,7 @@ G.FUNCS.change_colour_palette = function(args)
 	G.FUNCS.update_suit_colours(args.cycle_config.curr_suit, args.cycle_config.curr_skin)
 	G.FUNCS.update_collab_cards(args.cycle_config.curr_skin, args.cycle_config.curr_suit)
 	for k, v in pairs(G.I.CARD) do
-		if v.config and v.config.card and v.children.front and v.ability.effect ~= 'Stone Card' then
+		if v.config and v.config.card and v.children.front and not v:should_hide_front() then
 			v:set_sprites(nil, v.config.card)
 		end
 	end
@@ -2673,6 +2671,7 @@ end
 
 local use_consumeable = Card.use_consumeable
 function Card:use_consumeable(area, copier)
+	SMODS.currently_used_consumable = self
 	local ret = use_consumeable(self, area, copier)
 	if SMODS.post_prob and next(SMODS.post_prob) then
         local prob_tables = SMODS.post_prob
@@ -2682,6 +2681,7 @@ function Card:use_consumeable(area, copier)
             SMODS.calculate_context(v)
         end
     end
+	SMODS.currently_used_consumable = nil
 	return ret
 end
 

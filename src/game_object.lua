@@ -431,6 +431,42 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         STATE_ATLAS = "ANIMATION_ATLAS",
     }
 
+    local scalingShader = love.graphics.newShader[[
+        extern Image sourceImage;
+        extern vec2 dim;
+
+        vec2 neigbours[8] = vec2[8](vec2(-1, -1),vec2(0, -1),vec2(1, -1),vec2(-1, 0),vec2(1, 0),vec2(-1, 1),vec2(0, 1),vec2(1, 1));
+
+        vec4 fixAlpha(Image img, vec2 uv){
+            vec4 result = vec4(0.0);
+            float count = 0.0;
+
+            for (int i = 0; i < 8; i++) {
+                vec2 c = uv + (neigbours[i] * dim);
+                if (c.x < 0 || c.x > 1) continue;
+                if (c.y < 0 || c.y > 1) continue;
+                vec4 d = Texel(img, c);
+                if (d.a == 0.0) continue;
+                result += d;
+                count += 1.0;
+            }
+            result = result / count;
+            result.a = 0.0;
+            return result;
+        }
+
+        vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
+            vec2 uv = screen_coords / love_ScreenSize.xy;
+
+            vec4 pixel = Texel(sourceImage, uv);
+            if (pixel.a == 0.0) {
+                pixel = fixAlpha(sourceImage, uv);
+            }
+
+            return pixel;
+        }
+    ]]
+
     SMODS.Atlases = {}
     SMODS.Atlas = SMODS.GameObject:extend {
         obj_table = SMODS.Atlases,
@@ -463,35 +499,50 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             if file_path == 'DEFAULT' then return end
             -- language specific sprites override fully defined sprites only if that language is set
             if self.language and G.SETTINGS.language ~= self.language and G.SETTINGS.real_language ~= self.language then return end
+            local texture_scaling = G.SETTINGS.GRAPHICS.texture_scaling
+            if self.force_pixel then
+                texture_scaling = 1
+            end
             if not self.language and (self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.language)] or self.obj_table[('%s_%s'):format(self.key, G.SETTINGS.real_language)]) then return end
             self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
-                'assets/' .. G.SETTINGS.GRAPHICS.texture_scaling .. 'x/' .. file_path)
+                'assets/' .. texture_scaling .. 'x/' .. file_path)
             local file_data = NFS.newFileData(self.full_path)
             if file_data then
                 self.image_data = assert(love.image.newImageData(file_data),
                     ('Failed to initialize image data for Atlas %s'):format(self.key))
             else
+                local other_scale = 3 - texture_scaling
                 self.full_path = NFS.getNormalizedPath((self.path_mod or self.mod or SMODS).path ..
-                    'assets/' .. (3 - G.SETTINGS.GRAPHICS.texture_scaling) .. 'x/' .. file_path)
+                    'assets/' .. other_scale .. 'x/' .. file_path)
                 file_data = assert(NFS.newFileData(self.full_path),
                     ('Failed to collect file data for Atlas %s'):format(self.key))
-                self.image_data = assert(love.image.newImageData(file_data),
-                    ('Failed to initialize image data for Atlas %s'):format(self.key))
-                local shifts = { bit.rshift, bit.lshift }
-                local shift_dim, shift_pixel = shifts[G.SETTINGS.GRAPHICS.texture_scaling], shifts[3-G.SETTINGS.GRAPHICS.texture_scaling]
-                local imageData2 = love.image.newImageData(
-                    shift_dim(self.image_data:getWidth(), 1),
-                    shift_dim(self.image_data:getHeight(), 1),
-                    self.image_data:getFormat()
-                )
-                imageData2:mapPixel(function(x, y)
-                    return self.image_data:getPixel(shift_pixel(x, 1), shift_pixel(y, 1))
-                end)
-                self.image_data:release()
+                local image = love.graphics.newImage(file_data)
+                local newScale = texture_scaling/other_scale
+                local w, h = image:getWidth(), image:getHeight()
+                local nw, nh = love.window.fromPixels(w * newScale, h * newScale)
+                local canvas = love.graphics.newCanvas(nw, nh)
+                image:setFilter("nearest", "nearest")
+                love.graphics.setCanvas(canvas)
+                love.graphics.setColor(1,1,1,1)
+                scalingShader:send("sourceImage", image)
+                scalingShader:send("dim", {1/w, 1/h})
+                love.graphics.setShader(scalingShader)
+                local bm, abm = love.graphics.getBlendMode()
+                love.graphics.setBlendMode("replace", "premultiplied")
+                love.graphics.rectangle("fill", 0, 0, nw, nh)
+                love.graphics.setBlendMode(bm, abm)
+                love.graphics.setShader()
+                love.graphics.setCanvas()
+                local imageData2 = canvas:newImageData()
+                image:release()
+                canvas:release()
                 self.image_data = imageData2
-        	end
+            end
             self.image = love.graphics.newImage(self.image_data,
-                { mipmaps = true, dpiscale = G.SETTINGS.GRAPHICS.texture_scaling })
+                { mipmaps = true, dpiscale = texture_scaling })
+            if self.force_pixel then
+                self.image:setFilter("nearest", "nearest")
+            end
             self.columns = self.image:getWidth() / self.px
             self.rows = self.image:getHeight() / self.py
             G[atlas_table_map[self.atlas_table]][self.key_noloc or self.key] = self
@@ -1428,6 +1479,9 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
                 self.type:delete_card(self)
             end
             SMODS.remove_pool(G.P_CENTER_POOLS['Consumeables'], self.key)
+            if self.hidden then
+                SMODS.remove_pool(self.legendaries, self.key)
+            end
             SMODS.Consumable.super.delete(self)
         end,
         create_fake_card = function(self)
@@ -1904,6 +1958,10 @@ SMODS.UndiscoveredCompat = {
             'key',
             'pos',
         },
+        register = function(self)
+            assert(not (self.no_suit and self.any_suit), "Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Seal object.")
+            SMODS.Seal.super.register(self)
+        end,
         inject = function(self)
             G.P_SEALS[self.key] = self
             G.STAGE_OBJECT_INTERRUPT = true
@@ -2477,7 +2535,7 @@ SMODS.UndiscoveredCompat = {
                             pseudorandom_element(SMODS.Suits, pseudoseed('grim_create')).card_key, 'A'
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
@@ -2514,7 +2572,7 @@ SMODS.UndiscoveredCompat = {
                             pseudorandom_element(SMODS.Suits, pseudoseed('familiar_create')).card_key
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
@@ -2551,7 +2609,7 @@ SMODS.UndiscoveredCompat = {
                             pseudorandom_element(SMODS.Suits, pseudoseed('incantation_create')).card_key
                         local cen_pool = {}
                         for k, v in pairs(G.P_CENTER_POOLS["Enhanced"]) do
-                            if v.key ~= 'm_stone' and not v.overrides_base_rank then
+                            if not v.overrides_base_rank then
                                 cen_pool[#cen_pool + 1] = v
                             end
                         end
@@ -3172,6 +3230,7 @@ SMODS.UndiscoveredCompat = {
                 sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
                 return
             end
+            assert(not (self.no_suit and self.any_suit), "Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Sticker object.")
             SMODS.Sticker.super.register(self)
             self.order = #self.obj_buffer
         end,
@@ -3375,26 +3434,19 @@ SMODS.UndiscoveredCompat = {
     -- For example, Card:set_ability sets the card's enhancement, which is not immediately
     -- obvious.
 
-    -- local stone_card = SMODS.Enhancement:take_ownership('m_stone', {
-    --     replace_base_card = true,
-    --     no_suit = true,
-    --     no_rank = true,
-    --     always_scores = true,
-    --     loc_txt = {
-    --         name = "Stone Card",
-    --         text = {
-    --             "{C:chips}+#1#{} Chips",
-    --             "no rank or suit"
-    --         }
-    --     },
-    --     loc_vars = function(self)
-    --         return {
-    --             vars = { self.config.bonus }
-    --         }
-    --     end
-    -- })
+    SMODS.Enhancement:take_ownership('stone', {
+        replace_base_card = true,
+        no_suit = true,
+        no_rank = true,
+        always_scores = true,
+    })
+
+    SMODS.Enhancement:take_ownership('wild', {
+        any_suit = true,
+    })
 
     SMODS.Enhancement:take_ownership('glass', {
+        shatters = true,
         calculate = function(self, card, context)
             if context.destroy_card and context.cardarea == G.play and context.destroy_card == card and SMODS.pseudorandom_probability(card, 'glass', 1, card.ability.extra) then
                 card.glass_trigger = true
@@ -3545,6 +3597,7 @@ SMODS.UndiscoveredCompat = {
                     generic = string.sub(self.key, 3) .. '_generic' .. '_SMODS_INTERNAL'
                 }
             end
+            assert(not (self.no_suit and self.any_suit), "Cannot have both \"no_suit\" and \"any_suit\" defined in a SMODS.Edition object.")
             SMODS.Edition.super.register(self)
         end,
         process_loc_text = function(self)
@@ -3576,8 +3629,8 @@ SMODS.UndiscoveredCompat = {
         end
     }
 
-    function SMODS.Edition:get_card_limit_key()
-        return G.P_CENTERS[self.edition.key]:card_limit_key(self)
+    function SMODS.Edition.get_card_limit_key(card)
+        return G.P_CENTERS[card.edition.key]:card_limit_key(card)
     end
 
     -- TODO also, this should probably be a utility method in core

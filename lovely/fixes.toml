@@ -706,6 +706,15 @@ if other.edition and strip_edition then
     new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.edition.extra_slots_used or 0)
 end'''
 
+# copy_card: call set_cost again at the end because the reordering makes prior calls inaccurate
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+position = 'before'
+match_indent = true
+pattern = 'return new_card'
+payload = '''new_card:set_cost()'''
+
 # copy_card edition config
 [[patches]]
 [patches.pattern]
@@ -928,4 +937,39 @@ pattern = '''
 '''
 payload = '''
 (self.ability.consumeable or SMODS.UndiscoveredCompat[self.ability.set]) and
+'''
+
+# Unlock All enabled if locked centers exist
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+(_profile == G.SETTINGS.profile and not G.PROFILES[G.SETTINGS.profile].all_unlocked) and {n=G.UIT.R, config={align = "cm", padding = 0, minh = 0.7}, nodes={
+'''
+payload = '''
+(_profile == G.SETTINGS.profile and (#G.P_LOCKED > 0 or not G.PROFILES[G.SETTINGS.profile].all_unlocked)) and {n=G.UIT.R, config={align = "cm", padding = 0, minh = 0.7}, nodes={
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if G.PROFILES[G.SETTINGS.profile].all_unlocked or e.config.disable_button then
+'''
+payload = '''
+if #G.P_LOCKED == 0 and (G.PROFILES[G.SETTINGS.profile].all_unlocked or e.config.disable_button) then
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+G.PROFILES[G.SETTINGS.profile].all_unlocked = true
+'''
+payload = '''
+EMPTY(G.P_LOCKED)
 '''

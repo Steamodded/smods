@@ -1198,7 +1198,7 @@ draw_card(G.deck,G.hand, i*100/hand_space,'up', true)
 '''
 payload = '''
 if cards_to_draw[i] and cards_to_draw[i].ability and (cards_to_draw[i].ability.extra_slots_used or cards_to_draw[i].ability.card_limit) then
-    SMODS.cards_to_draw = SMODS.cards_to_draw + (cards_to_draw[i].ability.extra_slots_used or 0) - (cards_to_draw[i].ability.card_limit or 0)
+    SMODS.cards_to_draw = SMODS.cards_to_draw + (SMODS.cards_to_draw < #G.deck.cards and (cards_to_draw[i].ability.extra_slots_used or 0) - (cards_to_draw[i].ability.card_limit or 0) or 0)
     G.E_MANAGER:add_event(Event({
         trigger = 'immediate',
         func = function()                
@@ -1891,6 +1891,34 @@ payload = '''
 SMODS.destroy_cards(self, nil, nil, true)
 '''
 
+# Adjust Mr. Bones
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.E_MANAGER:add_event(Event({
+    func = function()
+        G.hand_text_area.blind_chips:juice_up()
+        G.hand_text_area.game_chips:juice_up()
+        play_sound('tarot1')
+        self:start_dissolve()
+        return true
+    end
+}))
+'''
+payload = '''
+G.E_MANAGER:add_event(Event({
+    func = function()
+        G.hand_text_area.blind_chips:juice_up()
+        G.hand_text_area.game_chips:juice_up()
+        return true
+    end
+}))
+SMODS.destroy_cards(self, nil, nil, nil)
+'''
+
 # Joker-type removed context added
 [[patches]]
 [patches.pattern]
@@ -1901,7 +1929,7 @@ pattern = '''
 function Card:start_dissolve(dissolve_colours, silent, dissolve_time_fac, no_juice)
 '''
 payload = '''
-    if self.getting_sliced and not (self.ability.set == 'Default' or self.ability.set == 'Enhanced') then
+    if self.getting_sliced and not SMODS.is_playing_card(self) and not SMODS.skip_destroy_calc then
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self})
         if flags.no_destroy then self.getting_sliced = nil; return false end
     end
@@ -1915,12 +1943,53 @@ pattern = '''
 function Card:shatter()
 '''
 payload = '''
-    if self.getting_sliced and not (self.ability.set == 'Default' or self.ability.set == 'Enhanced') then
+    if self.getting_sliced and not SMODS.is_playing_card(self) and not args.skip_calc then
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self, shatters = true})
         if flags.no_destroy then self.getting_sliced = nil; return false end
     end
 '''
 
+# card.lua : Card:shatter() : Add args support
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+function Card:shatter()
+'''
+payload = '''
+function Card:shatter(args)
+    args = args or {}
+'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.dissolve_colours = {{1,1,1,0.8}}
+self:juice_up()
+'''
+payload = '''
+self.dissolve_colours = {{1,1,1,0.8}}
+if not args.no_juice then self:juice_up() end
+'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+play_sound('glass'..math.random(1, 6), math.random()*0.2 + 0.9,0.5)
+play_sound('generic1', math.random()*0.2 + 0.9,0.5)
+'''
+payload = '''
+if not args.silent then
+    play_sound('glass'..math.random(1, 6), math.random()*0.2 + 0.9,0.5)
+    play_sound('generic1', math.random()*0.2 + 0.9,0.5)
+end
+'''
 
 ## Change eternal checks
 # Ceremonial Dagger

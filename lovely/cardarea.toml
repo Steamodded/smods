@@ -37,6 +37,21 @@ position = "at"
 payload = "if not card.states.drag.is and not card.disable_align then"
 match_indent = true
 
+# Do not call remove_from_highlighted on an unhighlighted card
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self:remove_from_highlighted(card, true)
+'''
+payload = '''
+if card.highlighted then
+    self:remove_from_highlighted(card, true)
+end
+'''
+
 [[patches]]
 [patches.pattern]
 target = 'cardarea.lua'

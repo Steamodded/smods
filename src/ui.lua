@@ -3,6 +3,7 @@ SMODS.GUI.DynamicUIManager = {}
 
 -- used to properly truncate overflow content inside another overflow content
 SMODS.stencil_stack = {}
+SMODS.stencil_canvas = nil
 
 function SMODS.push_to_stencil_stack(stencil_fn)
     assert(type(stencil_fn) == "function", "No stencil function passed to SMODS.push_to_stencil_stack")
@@ -45,11 +46,14 @@ function SMODS.reset_stencil_stack()
     love.graphics.setStencilTest()
     love.graphics.stencil(function() end)
 end
-function SMODS.reload_stencil_stack()
-    local stack_snapshot = SMODS.shallow_copy(SMODS.stencil_stack)
-    SMODS.reset_stencil_stack()
-    for _, stencil_fn in ipairs(stack_snapshot) do
-        SMODS.push_to_stencil_stack(stencil_fn)
+function SMODS.reload_stencil_stack(full)
+    love.graphics.setCanvas({ love.graphics.getCanvas(), depthstencil = SMODS.stencil_canvas })
+    if full then
+        local stack_snapshot = SMODS.shallow_copy(SMODS.stencil_stack)
+        SMODS.reset_stencil_stack()
+        for _, stencil_fn in ipairs(stack_snapshot) do
+            SMODS.push_to_stencil_stack(stencil_fn)
+        end
     end
 end
 
@@ -57,6 +61,25 @@ local gameDrawRef = Game.draw
 function Game:draw(...)
     SMODS.reset_stencil_stack()
     gameDrawRef(self, ...)
+end
+
+local old_get_canvas = love.graphics.getCanvas
+function love.graphics.getCanvas(...)
+    local r = old_get_canvas(...)
+    return r.depthstencil and r[1] or r
+end
+
+local old_resize = love.resize
+function love.resize(...)
+    old_resize(...)
+    SMODS.stencil_canvas = love.graphics.newCanvas(
+        G.WINDOWTRANS.real_window_w*G.CANV_SCALE,
+        G.WINDOWTRANS.real_window_h*G.CANV_SCALE,
+        { 
+            format = "stencil8",
+            readable = false,
+        }
+    )
 end
 
 --
@@ -353,7 +376,7 @@ function Game:main_menu(change_context)
                     n = G.UIT.T,
                     config = {
                         scale = 0.3,
-                        text = MODDED_VERSION,
+                        text = "Steamodded v" .. MODDED_VERSION,
                         colour = G.C.UI.TEXT_LIGHT
                     }
                 }
@@ -1234,7 +1257,7 @@ function getModtagInfo(mod)
         if mod.load_issues.outdated then tag_message = 'load_failure_o' end
         if mod.load_issues.version_mismatch then
             tag_message = 'load_failure_i'
-            specific_vars = {mod.load_issues.version_mismatch, MODDED_VERSION:gsub('-STEAMODDED', '')}
+            specific_vars = {mod.load_issues.version_mismatch, MODDED_VERSION}
         end
         if mod.load_issues.main_file_not_found then
             tag_message = 'load_failure_m'
@@ -1632,7 +1655,7 @@ end
 
 function SMODS.load_mod_config(mod)
     local s1, config = pcall(function()
-        return load(NFS.read(('config/%s.jkr'):format(mod.id)), ('=[SMODS %s "config"]'):format(mod.id))()
+        return setfenv(load(NFS.read(('config/%s.jkr'):format(mod.id)), ('=[SMODS %s "config"]'):format(mod.id)), {})()
     end)
     local s2, default_config = pcall(function()
         return load(NFS.read(NFS.getNormalizedPath(mod.path..(mod.config_file or 'config.lua'))), ('=[SMODS %s "default_config"]'):format(mod.id))()
@@ -1937,18 +1960,27 @@ function create_UIBox_mods_button()
                                                 current_option = SMODS.config.achievements,
                                                 cycle_shoulders = true,
                                             },
-                                            create_toggle {
-                                                label = localize('b_vanilla_run_select'),
-                                                ref_table = SMODS.config,
-                                                ref_value = 'vanilla_run_select',
-                                                info = {localize('b_vanilla_run_select_info')}
-                                            },
+                                            {n=G.UIT.R, config = {align='cm', padding = 0.1}, nodes = {
+                                                {n=G.UIT.C, nodes = {create_toggle {
+                                                    label = localize('b_vanilla_run_select'),
+                                                    ref_table = SMODS.config,
+                                                    ref_value = 'vanilla_run_select',
+                                                    info = localize('b_vanilla_run_select_info')
+                                                }}},
+                                                {n=G.UIT.C, nodes = {create_toggle {
+                                                        label = localize('b_vanilla_stake'),
+                                                        ref_table = SMODS.config,
+                                                        ref_value = 'vanilla_stake',
+                                                        info = localize('b_vanilla_stake_info')
+                                                    },
+                                                    }},
+                                            }},
                                             create_toggle {
                                                 label = localize('b_run_select_reduce'),
                                                 ref_table = SMODS.config,
                                                 ref_value = 'run_select_performance',
-                                                info = {localize('b_run_select_reduce_info')}
-                                            },
+                                                info = localize('b_run_select_reduce_info')
+                                            }
                                         }
                                     }
                                 end
@@ -3340,7 +3372,7 @@ G.FUNCS.HUD_blind_badge = function(e)
     if G.GAME.blind.in_blind then
         if G.GAME.blind.config.blind.mod then
             if G.GAME.blind.config.blind.mod.display_name ~= G.GAME.blind_badge.name then 
-                if e.children[1] then e.children[1]:remove(); e.children[1] = nil end
+                if e.children[1] then e.children[1]:remove(); e.children[1] = nil else ease_value(G.HUD.alignment.offset, 'y', 0.4) end
                 local mod = G.GAME.blind.config.blind.mod
                 G.GAME.blind_badge.name = mod.display_name
                 local badge = SMODS.create_mod_badge(mod, G.GAME.blind.config.blind, 4.4, 0.36)
@@ -3355,12 +3387,111 @@ G.FUNCS.HUD_blind_badge = function(e)
                 e.UIBox:add_child(badge, e)
             end
         elseif e.children[1] then
-            e.states.visible = false
-            e.children[1]:remove()
-            e.children[1] = nil
+            local blind = G.GAME.blind:save()
+            G.HUD_blind:remove()
+            G.GAME.blind = Blind(0,0,2,1)
+            G.HUD_blind = UIBox{
+                definition = create_UIBox_HUD_blind(),
+                config = {major = G.HUD:get_UIE_by_ID('row_blind_bottom'), align = 'bmi', offset = {x=0,y=-10}, bond = 'Weak'}
+            }
+            G.GAME.blind:load(blind)
             G.GAME.blind_badge = {}
         end
     end
+end
+
+-- #endregion
+
+--#region run stake display changes
+
+
+local function order_applied_stakes(stake_chain, stake)
+    local ordered_chain = {}
+    for i,v in ipairs(G.P_CENTER_POOLS.Stake) do
+        if stake_chain[i] and v.key ~= stake then
+            ordered_chain[#ordered_chain+1] = v.key
+        end
+    end
+    ordered_chain[#ordered_chain+1] = stake
+    return ordered_chain
+end
+
+function G.UIDEF.SMODS_current_stake()
+    local applied_stakes = order_applied_stakes(SMODS.build_stake_chain(G.P_STAKES[G.P_CENTER_POOLS.Stake[G.GAME.stake].key]), G.P_CENTER_POOLS.Stake[G.GAME.stake].key)
+    local stakes = {}
+    local applied_stake
+    for i, key in ipairs(applied_stakes) do
+        local _stake_center = G.P_STAKES[key]
+        local order = _stake_center.order
+        local _stake_desc = {}
+        if _stake_center then
+            local t, res = {}, {}
+            if _stake_center.loc_vars and type(_stake_center.loc_vars) == 'function' then
+            res = _stake_center:loc_vars({}) or {}
+            end
+            t.vars = res.vars or {}
+            t.key = res.key or _stake_center.key
+            t.set = res.set or _stake_center.set
+            localize{type = 'descriptions', key = t.key, set = t.set, nodes = _stake_desc, vars = t.vars}
+            if _stake_center.applied_stakes and #_stake_center.applied_stakes > 0 then _stake_desc[#_stake_desc] = nil end
+        end
+        local stake_sprite = get_stake_sprite(order, 0.8)
+
+        local stake_node = {n=G.UIT.R, config={align = "cl", padding = 0.05}, nodes={
+            {n=G.UIT.C, config={align = "cm", padding = 0.1, r=true, colour=G.C.BLACK}, nodes={
+                {n=G.UIT.O, config={object = stake_sprite}}
+            }},
+            {n=G.UIT.C, config={align='cm'}, nodes = {
+                {n=G.UIT.C, config={align = "cm", padding = 0.05, colour = get_stake_col(order), r = 0.05, stretch = true, diff = i < #applied_stakes and 1.3 or 2.4}, nodes={
+                    {n=G.UIT.R, config={align = "cm", padding = 0.05, colour = adjust_alpha(G.C.WHITE, 0.95), r = 0.05, minw = 5.5, stretch = true, diff = i < #applied_stakes and 1.4 or 2.5}, nodes={
+                        {n=G.UIT.R, config={align = "cm", padding = 0.03, minh = 0.7, minw = 3.8}, nodes={transparent_multiline_text(_stake_desc)}}
+                    }}
+                }}
+            }},
+            {n=G.UIT.C, config={minw = 0.1}}
+        }}
+        if i < #applied_stakes then
+            table.insert(stakes, 1, stake_node)
+        else
+            applied_stake = stake_node
+        end
+    end
+
+    local box = SMODS.UIScrollBox({
+		content = {
+			definition = {n = G.UIT.ROOT, config = { align = "cm", colour = G.C.CLEAR }, nodes = stakes},
+			config = { align = "cm" },
+		},
+		overflow = {node_config = {maxh = 4.7}},
+		sync_mode = "offset",
+	})
+	local current_col = {
+		{n=G.UIT.C, config = {align='tl', r=true, colour=G.C.BLACK}, nodes = {
+            applied_stake,
+            {n=G.UIT.R, config = {minh = 0.05, colour = G.C.L_BLACK}},
+			{n=G.UIT.R, nodes = {{n=G.UIT.O, config = { object = box }}}}
+		}}
+	}
+	if box then
+		local bar = SMODS.GUI.scrollbar({
+			h = 6,
+			w = 0.3,
+            knob_h = 0.8,
+			colour = G.C.RED,
+			bg_colour = { 0, 0, 0, 0.15 },
+			scroll_collision_obj = box,
+			scroll_mult = 1.6,
+		})
+		bar.config.align = "tm"
+		table.insert(current_col, bar)
+	end
+	
+    return {n=G.UIT.ROOT, config={align = "cm", colour = G.C.CLEAR, r = 0.1, padding = 0.1}, nodes={
+        {n=G.UIT.R, config={align = "cm", padding = 0.05}, nodes={
+            {n=G.UIT.T, config={text = 'Applied stakes', scale = 0.65, colour = G.C.WHITE}}
+        }},
+        {n=G.UIT.R, config = {align = 'cm', padding = 0.2}, nodes = current_col}
+    }}
 end
 
 -- #endregion

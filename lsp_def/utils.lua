@@ -134,7 +134,7 @@
 ---@field ref_table? table Used in scaling/resetting contexts as the table containing the affected value.
 ---@field ref_value? string Used in scaling/resetting contexts as the key of the affected value.
 ---@field value? number Used in scaling context as the current (unscaled) affected value.
----@field initial_value number Used in resetting context as the initial affected value.
+---@field initial_value? number Used in resetting context as the initial affected value.
 ---@field scalar_table? table Used in scaling context as the table containing the scalar value.
 ---@field scalar_value? string Used in scaling context as the key of the scalar value.
 ---@field scalar? number Used in scaling context as the current scalar value.
@@ -303,6 +303,11 @@ function SMODS.has_enhancement(card, key) end
 ---@param context CalcContext|table
 --- Calculates quantum Enhancements. Require `SMODS.optional_features.quantum_enhancements` to be `true`.
 function SMODS.calculate_quantum_enhancements(card, effects, context) end
+
+---@param card Card|table
+---@param key string
+--- Check if the card has an enhancement, edition, seal or sticker with the given property.
+function SMODS.has_playing_card_property(card, key) end
 
 ---@param card Card|table
 ---@return boolean?
@@ -710,12 +715,13 @@ function SMODS.get_multi_boxes(multi_box) end
 function SMODS.is_playing_card(card) end
 
 ---@param card Card 
+---@param args? {silent?: boolean, no_juice?: boolean} 
 ---@return boolean success
 -- Pinches and :removes() a card. (context.joker_type_destroyed is calculated, and may prevent destruction)
-function SMODS.pinch_and_remove(card) end
+function SMODS.pinch_and_remove(card, args) end
 
 ---@param cards Card|Card[]
----@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], delay?: number, destroy_func?: fun(card: Card, args: table<>)}
+---@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], silent?: boolean, delay?: number, destroy_func?: fun(card: Card, args: table<>), skip_calc? boolean}
 ---@param ... ... Old signature arguments in the above order, up to and including colours
 ---@return Card[] destroy_queued
 --- Destroys the cards passed to the function, handling calculation events that need to happen.
@@ -966,3 +972,8 @@ function SMODS.card_to_image(card, scale, filename) end
 ---@param bypass_debuff boolean? Whether to ignore the card's debuff status
 ---@return boolean
 function Card.is_suit_shade(card, shade, bypass_debuff) end
+
+---Process element passed via loc_vars' `vars.elements` table
+---@param element? UINode | Node | table | nil | fun(): UINode | Node | table | nil
+---@return UINode | nil
+function SMODS.process_loc_element(element) end

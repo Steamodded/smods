@@ -202,7 +202,7 @@ function Card:get_nominal(mod)
     local rank_mult = 1
     if mod == 'suit' then mult = 10000 end
     local no_suit, no_rank = SMODS.has_no_suit(self), SMODS.has_no_rank(self)
-    if self.ability.effect == 'Stone Card' or (no_suit and no_rank) then
+    if no_suit and no_rank then
         mult = -10000
     elseif no_suit then
         mult = 0
