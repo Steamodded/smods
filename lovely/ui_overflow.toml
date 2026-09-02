@@ -89,55 +89,6 @@ target = "engine/controller.lua"
 pattern = '''if v:collides_with_point(cursor_trans) and not v.REMOVED then'''
 position = "at"
 payload = '''
-local point = v.container == G.ROOM and _p or cursor_trans
-if v:collides_with_point(point) and not v.REMOVED and v:inside_overflow_boundaries(point) then
-'''
-match_indent = true
-
-# Calculate G.ROOM point beforehand
-# Controller:get_cursor_collision()
-[[patches]]
-[patches.pattern]
-target = "engine/controller.lua"
-pattern = '''local DRAW_HASH_SQUARE = G.DRAW_HASH'''
-position = "before"
-payload = '''
-self.ARGS = self.ARGS or {}
-self.ARGS.room_collides_with_point_point = self.ARGS.room_collides_with_point_point or { smods_is_room_point = true }
-self.ARGS.room_collides_with_point_translation = self.ARGS.room_collides_with_point_translation or {}
-self.ARGS.room_collides_with_point_rotation = self.ARGS.room_collides_with_point_rotation or {}
-local _p = self.ARGS.room_collides_with_point_point
-local _t = self.ARGS.room_collides_with_point_translation
-local _r = self.ARGS.room_collides_with_point_rotation
-_p.x, _p.y = cursor_trans.x, cursor_trans.y
-
-if math.abs(G.ROOM.T.r) < 0.1 then
-    --Translate to normalize this Node to the center of the container
-    _t.x, _t.y = -G.ROOM.T.w/2, -G.ROOM.T.h/2
-    point_translate(_p, _t)
-
-    --Rotate node about the center of the container
-    point_rotate(_p, G.ROOM.T.r)
-    
-    --Translate node to undo the container translation, essentially reframing it in 'container' space
-    _t.x, _t.y = G.ROOM.T.w/2-G.ROOM.T.x, G.ROOM.T.h/2-G.ROOM.T.y
-    point_translate(_p, _t)
-else
-    --Translate node to undo the container translation, essentially reframing it in 'container' space
-    _t.x, _t.y = -G.ROOM.T.x, -G.ROOM.T.y
-    point_translate(_p, _t)
-end
-'''
-match_indent = true
-
-# Use room point to speedup collision calculations
-# Node:collides_with_point()
-[[patches]]
-[patches.pattern]
-target = "engine/node.lua"
-pattern = '''if self.container ~= self then --if there is some valid container, we need to apply all translations and rotations for the container first'''
-position = "at"
-payload = '''
-if self.container ~= self and not point.smods_is_room_point then --if there is some valid container, we need to apply all translations and rotations for the container first
+if v:collides_with_point(cursor_trans) and not v.REMOVED and v:inside_overflow_boundaries(cursor_trans) then
 '''
 match_indent = true
