@@ -86,9 +86,12 @@ SMODS.DrawStep = SMODS.GameObject:extend {
     inject = function(self)
         for k, v in pairs(self.conditions) do
             if k ~= "vortex" and k ~= "facing" and k ~= "front_hidden" then
-                self.has_custom_conditions = true
                 self.custom_conditions[k] = v
             end
+        end
+        for k,v in pairs(self.custom_conditions) do
+            self.has_custom_conditions = true
+            break
         end
     end,
     post_inject_class = function(self)
