@@ -89,10 +89,6 @@ SMODS.DrawStep = SMODS.GameObject:extend {
                 self.custom_conditions[k] = v
             end
         end
-        for k,v in pairs(self.custom_conditions) do
-            self.has_custom_conditions = true
-            break
-        end
     end,
     post_inject_class = function(self)
         table.sort(self.obj_buffer, function(_self, _other) return self.obj_table[_self].order < self.obj_table[_other].order end)
@@ -108,10 +104,8 @@ SMODS.DrawStep = SMODS.GameObject:extend {
         if self.conditions.vortex ~= nil and self.conditions.vortex ~= card.pre_condition.vortex then return end
         if self.conditions.facing and self.conditions.facing ~= card.pre_condition.facing then return end
         if self.conditions.front_hidden ~= nil and self.conditions.front_hidden ~= card.pre_condition.front_hidden then return end
-        if self.has_custom_conditions then
-            for k,v in pairs(self.custom_conditions) do
-                if not self:check_individual_condition(card, layer, k, v) then return end
-            end
+        for k,v in pairs(self.custom_conditions) do
+            if not self:check_individual_condition(card, layer, k, v) then return end
         end
         return true
     end
