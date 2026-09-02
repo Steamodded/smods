@@ -95,7 +95,6 @@ SMODS.DrawStep = SMODS.GameObject:extend {
     end,
     conditions = {},
     custom_conditions = {},
-    has_custom_conditions = false,
     check_individual_condition = function(self, card, layer, k, v)
         return true
     end,
