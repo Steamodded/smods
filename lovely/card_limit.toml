@@ -93,7 +93,7 @@ function CardArea:change_size(delta)
 payload = '''
     -- SMODS BYPASS ORIGINAL FUNCTION
     if true then
-        if delta > 0 and self == G.hand and self.config.card_limits.old_slots > self.config.card_limits.total_slots then
+        if delta > 0 and self == G.hand and G.STATE == G.STATES.SELECTING_HAND and self.config.card_limits.old_slots > self.config.card_limits.total_slots then
             SMODS.draw_cards(delta)
         end
         self.config.card_limits.mod = (self.config.card_limits.mod or 0) + delta
@@ -395,5 +395,20 @@ if #self.cards > self.config.card_limit then
     if self == G.deck and G.GAME.blind then
         self.config.card_limit = #self.cards
     end
+end
+'''
+
+# Update old_slots when required
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+G.STATE = G.STATES.SELECTING_HAND
+'''
+payload = '''
+if G.hand.config.card_limits.old_slots < G.hand.config.card_limits.total_slots then
+    G.hand.config.card_limits.old_slots = G.hand.config.card_limits.total_slots
 end
 '''

@@ -7,6 +7,7 @@
 ---@field pos? table|{x: integer, y: integer} Position of the center's sprite. 
 ---@field min_ante? number Minimum ante needed for this tag to appear. For more complex restrictions, use `SMODS.Tag:in_pool()`. 
 ---@field discovered? boolean Sets the discovery state of the tag. 
+---@field attributes? string[]|table<string,true> Array of Attributes this tag has. Converted into a dictionary after injection.
 ---@field __call? fun(self: SMODS.Tag|table, o: SMODS.Tag|table): nil|table|SMODS.Tag
 ---@field extend? fun(self: SMODS.Tag|table, o: SMODS.Tag|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Tag|table): boolean? Ensures objects already registered will not register. 
@@ -25,7 +26,8 @@
 ---@field set_ability? fun(self: SMODS.Tag|table, tag: Tag|table) Sets up initial ability for the tag. Values should be stored in `tag.ability`. 
 ---@field generate_ui? fun(self: SMODS.Tag|table, info_queue: table, tag: Tag|table, desc_nodes: table, specific_vars: table, full_UI_table: table) Provides complex control over the UI display of the tag. See [`generate_ui`](https://docs.smods.dev/API%20Documentation/Localization#generate_ui-advanced) documentation for details. 
 ---@field loc_vars? fun(self: SMODS.Tag|table, info_queue: table, tag: Tag|table): table? Provides simple control over displaying descriptions and tooltips of the tag. See [`loc_vars`](https://docs.smods.dev/API%20Documentation/Localization#loc_vars) documentation for details. 
----@field in_pool? fun(self: SMODS.Tag|table, args: table): nil|boolean, table? Allows configuring if the tag is allowed to spawn. 
+---@field in_pool? fun(self: SMODS.Tag|table, args: table): nil|boolean, table? Allows configuring if the tag is allowed to spawn.
+---@field get_weight? fun(self: SMODS.Tag|table, weight: number, args: table?): number Used for finer control over this tag's weight with the object weights optional feature is enabled. 
 ---@overload fun(self: SMODS.Tag): SMODS.Tag
 SMODS.Tag = setmetatable({}, {
     __call = function(self)

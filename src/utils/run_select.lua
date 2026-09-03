@@ -304,9 +304,21 @@ function SMODS.RunSelect.Functions.start_run(_quick_start, _skip_wipe)
     local run_args = {}
     SMODS.RunSelect.Functions.clean_up()
     
-    local access = _quick_start and G.PROFILES[G.SETTINGS.profile].last_choices or SMODS.RunSelect.Setup.choices
-    for k, v in pairs(access) do
+    run_args.deck_choice = "b_red"
+    run_args.stake_choice = "stake_white"
+    for k, v in pairs(SMODS.RunSelect.Setup.choices) do
         run_args[k] = v
+    end
+    if _quick_start and _skip_wipe ~= true then
+        for k, v in pairs(G.PROFILES[G.SETTINGS.profile].last_choices or {}) do
+            run_args[k] = v
+        end
+    end
+
+    if SMODS.RunSelect.Setup.choices.enable_seed then
+        run_args.seed = SMODS.RunSelect.Setup.choices.seed
+    else
+        run_args.seed = nil
     end
 
     if SMODS.RunSelect.Setup.choices.enable_seed then
@@ -426,9 +438,8 @@ function SMODS.RunSelect.Functions.populate_selection_ui(key, page)
     
     for i=1, (page_def.amount or 10) do
         if count > #page_def.pool then return end
-        local stack_size = page_def.stack_size
-        if SMODS.config.run_select_performance then stack_size = math.min(5, stack_size) end
-        for j=1, stack_size do
+        SMODS.RunSelect.Internals.stack_size = SMODS.config.run_select_performance and math.min(5, page_def.stack_size) or page_def.stack_size
+        for j=1, SMODS.RunSelect.Internals.stack_size do
             local card = page_def.create_selection_card and page_def:create_selection_card(page_def.pool[count].key, j, areas[i]) 
             or Card(areas[i].T.x, areas[i].T.y, card_size.w, card_size.h, nil, page_def.pool[count])
             card.params.run_select_selection_choice = {i, key}
@@ -616,16 +627,15 @@ function SMODS.RunSelect.Functions.populate_preview_ui(key, to_add, silent, _rem
     local preview_area = SMODS.RunSelect.Internals.preview_area
     local holding_area = SMODS.RunSelect.Internals.preview_area_holding
     
-    local stack_size = page_def.preview_size or page_def.stack_size
-    if SMODS.config.run_select_performance then stack_size = math.min(5, stack_size) end
+    SMODS.RunSelect.Internals.stack_size = SMODS.config.run_select_performance and math.min(5, page_def.preview_size or page_def.stack_size) or page_def.preview_size or page_def.stack_size
     local card_size = page_def.sprite_size or {w = G.CARD_W, h = G.CARD_H}
     if type(to_add) == 'table' then
         local temp = {}
         for k, _ in pairs(to_add) do table.insert(temp, k) end
         to_add = temp
-        stack_size = #to_add
+        SMODS.RunSelect.Internals.stack_size = #to_add
     end
-    for j=1, stack_size do
+    for j=1, SMODS.RunSelect.Internals.stack_size do
         local card = page_def.create_selection_card and page_def:create_selection_card(type(to_add) == 'table' and to_add[j] or to_add, j, preview_area) 
         or Card(preview_area.T.x, preview_area.T.y, card_size.w, card_size.h, nil, G.P_CENTERS[type(to_add) == 'table' and to_add[j] or to_add])
         card.params.run_select_preview_card = page_def.key
@@ -732,18 +742,28 @@ function SMODS.RunSelect.Functions.clean_up(early)
     if SMODS.RunSelect.Internals.stake_tower and SMODS.RunSelect.Internals.stake_tower.cards then
         remove_all(SMODS.RunSelect.Internals.stake_tower.cards)
         SMODS.RunSelect.Internals.stake_tower.cards = {}
+    end
+    if SMODS.RunSelect.Internals.stake_tower_holding and SMODS.RunSelect.Internals.stake_tower_holding.cards then
         remove_all(SMODS.RunSelect.Internals.stake_tower_holding.cards)
         SMODS.RunSelect.Internals.stake_tower_holding.cards = {}
     end
     if SMODS.RunSelect.Internals.preview_area and SMODS.RunSelect.Internals.preview_area.cards then
         remove_all(SMODS.RunSelect.Internals.preview_area.cards)
         SMODS.RunSelect.Internals.preview_area.cards = {}
+    end
+    if SMODS.RunSelect.Internals.preview_area_holding and SMODS.RunSelect.Internals.preview_area_holding.cards then
         remove_all(SMODS.RunSelect.Internals.preview_area_holding.cards)
         SMODS.RunSelect.Internals.preview_area_holding.cards = {}
     end
 end
 
 -- Function Hooks
+local exit_overlay = G.FUNCS.exit_overlay_menu
+G.FUNCS.exit_overlay_menu = function()
+  exit_overlay()
+  SMODS.RunSelect.Functions.clean_up()
+end
+
 local card_stop_hover = Card.stop_hover
 function Card:stop_hover()
     if self.params.stake then

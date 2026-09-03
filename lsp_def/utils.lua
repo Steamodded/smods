@@ -57,6 +57,8 @@
 ---@field other_drawn? Card[] List of cards that just got drawn outside a blind
 ---@field using_consumeable? true Check if `true` for effects after using a Consumable.
 ---@field skip_blind? true Check if `true` for effects after skipping a blind.
+---@field skipped_blind? string Key of the blind that just got skipped
+---@field skip_to? string Key of the new upcoming blind after a skip
 ---@field playing_card_added? true Check if `true` for effects after a playing card was added into the deck.
 ---@field card_added? true Check if `true` for effects after a non-playing card was added into the deck.
 ---@field check_enhancement? true Check if `true` for applying quantum enhancements.
@@ -145,6 +147,7 @@
 ---@field scaling_message? table Used in scaling context as message that will be displayed when the operation has been performed.
 ---@field reset_message? table Used in resetting context as message that will be displayed when the operation has been performed.
 ---@field no_message? true Used in scaling/resetting contexts. If `true`, no message will be displayed when the operation has been performed.
+---@field drawing_to_play_area? true Check if `true` for effects before cards are moved to the play area for scoring.
 
 --- Util Functions
 
@@ -977,3 +980,7 @@ function Card.is_suit_shade(card, shade, bypass_debuff) end
 ---@param element? UINode | Node | table | nil | fun(): UINode | Node | table | nil
 ---@return UINode | nil
 function SMODS.process_loc_element(element) end
+
+--- Returns if the current ante would have a showdown boss blind.
+---@return boolean
+function SMODS.is_showdown_ante() end

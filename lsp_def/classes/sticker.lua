@@ -40,7 +40,8 @@
 ---@field loc_vars? fun(self: SMODS.Sticker|table, info_queue: table, card: Card|table): table? Provides control over displaying descriptions and tooltips of the sticker's tooltip. See [SMODS.Sticker `loc_vars` implementation](https://docs.smods.dev/Game%20Objects/SMODS.Sticker#api-methods) documentation for details. 
 ---@field calculate? fun(self: SMODS.Sticker|table, card: Card|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://docs.smods.dev/API%20Documentation/Calculate-Functions) docs for details. 
 ---@field should_apply? boolean|fun(self: SMODS.Sticker|table, card: Card, center: table, area: CardArea, bypass_roll?: boolean): boolean Determines if the sticker applies onto the card. If `bypass_roll` is true, ignore RNG check. 
----@field apply? fun(self: SMODS.Sticker|table, card: Card|table, val: any) Handles applying and removing the sticker. By default, sets `card.ability[self.key] = val`. 
+---@field apply? fun(self: SMODS.Sticker|table, card: Card|table, val: any) Handles applying and removing the sticker. By default, sets `card.ability[self.key] = val`.
+---@field get_weight? fun(self: SMODS.Sticker|table, weight: number, args: table?): number Used for finer control over this sticker's weight with the object weights optional feature is enabled. 
 ---@field draw? fun(self: SMODS.Sticker|table, card: Card|table, layer: string) Draws the sprite and shader of the sticker. 
 ---@overload fun(self: SMODS.Sticker): SMODS.Sticker
 SMODS.Sticker = setmetatable({}, {

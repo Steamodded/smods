@@ -22,7 +22,7 @@ Useful resources for creating your first mod can be found [here](https://docs.sm
 
 ## Features
 
-Documentation for this project is currently incomplete. A collection of documentation pages and guides that are currently available can be found [here](https://github.com/Steamopollys/Steamodded/wiki).
+Documentation for this project is currently incomplete. A collection of documentation pages and guides that are currently available can be found [here](https://docs.smods.dev/).
 
 ## Contributing
 
