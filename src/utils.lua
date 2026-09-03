@@ -1156,30 +1156,53 @@ end
 
 -- On update, call G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}   /   SMODS.card_collection_UIBox (to update page options etc)
 -- Todo : UI (filter selection, "remaining/total" number of objs) + TernaryCheckbox (for "true", "false" and "nil" filtering)
+SMODS.collection_filter_ui_def = function (filter, args)
+    local nodes = {
+        {n=G.UIT.T, config = { text = localize("b_collection_filters_"..filter.name), colour = G.C.WHITE, scale = 0.3, shadow = true }}, -- Title
+        -- Input
+    } 
+    if filter.input_type == "text" then
+        table.insert(nodes, create_text_input({ref_table = filter, ref_value = 'value'}))
+    elseif filter.input_type == "ternarycheckbox" then
+        -- Todo : Implement TernaryCheckbox and this
+        for _, v in ipairs(filter.input_values) do
+            local text = v[filter.input_values_text_ref]
+        end
+    end
+    local t = {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.01}, nodes={
+        {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.01}, nodes=nodes}
+    }}
+    return t
+end
 SMODS.collection_filters = {
     {
         name = "key",
         value = nil, 
+        input_type = "text",
         func = function (self, obj)
             return self.value == nil or obj.key == self.value
         end,
-        ui_func = function (self)
-            
+        ui_def = function (self, args)
+            return SMODS.collection_filter_ui_def(self, args)
         end,
     },
     {
         name = "loc_name",
         value = nil, 
+        input_type = "text",
         func = function (self, obj)
             return self.value == nil or localize({type = 'name_text', key = obj.key, set = obj.set }) == self.value
         end,
-        ui_func = function (self)
-            
+        ui_def = function (self, args)
+            return SMODS.collection_filter_ui_def(self, args)
         end,
     },
     {
         name = "attributes",
         value = {}, 
+        input_type = "ternarycheckbox",
+        input_values = SMODS.Attributes,
+        input_values_text_ref = "key",
         func = function (self, obj)
             for attr, v in pairs(self.value) do
                 if SMODS.has_attribute(obj, attr) ~= v then
@@ -1188,8 +1211,8 @@ SMODS.collection_filters = {
             end
             return true
         end,
-        ui_func = function (self)
-            
+        ui_def = function (self, args)
+            return SMODS.collection_filter_ui_def(self, args)
         end,
     },
 }

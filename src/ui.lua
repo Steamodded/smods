@@ -2423,6 +2423,38 @@ G.FUNCS.SMODS_change_mipmap = function(args)
     SMODS:save_mod_config()
 end
 
+local g_funcs_overlay_menu_ref = G.FUNCS.overlay_menu
+function G.FUNCS.overlay_menu(args)
+    args = args or {}
+    local filterable = (args.config or {}).filterable
+    local ret = g_funcs_overlay_menu_ref(args)
+    if filterable then
+        -- Create the Filters UIBox
+        G.SMODS_COLLECTION_FILTERS_UIBOX = UIBox {
+            definition = SMODS.collection_filters_uibox(),
+            config = { align = "tr", offset = { x = 0.1, y = 0.1 }, parent = G.OVERLAY_MENU }
+        } 
+        -- G.OVERLAY_MENU._remove_ref = G.OVERLAY_MENU.remove
+        -- G.OVERLAY_MENU.remove = function(self)
+        --     G.OVERLAY_MENU:_remove_ref()
+        --     G.SMODS_COLLECTION_FILTERS_UIBOX:remove()
+        -- end
+    end
+    return ret
+end
+
+function SMODS.collection_filters_uibox(args)
+    args = args or {}
+    local nodes = {
+        {n=G.UIT.T, config = { text = localize("b_collection_filters_button"), colour = G.C.WHITE, scale = 0.3, shadow = true }},
+    }
+    for _, filter in ipairs(SMODS.collection_filters) do
+        table.insert(nodes, filter:ui_def(args))
+    end
+    local t = {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=nodes}
+    return t
+end
+
 SMODS.card_collection_UIBox = function(_pool, rows, args)
     args = args or {}
     args.w_mod = args.w_mod or 1
@@ -2456,6 +2488,9 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
     local options = {}
     for i = 1, math.ceil(#pool/cards_per_page) do
         table.insert(options, localize('k_page')..' '..tostring(i)..'/'..tostring(math.ceil(#pool/cards_per_page)))
+    end
+    if not next(options) then
+        table.insert(options, localize('k_page')..' 0/0')
     end
 
     G.FUNCS.SMODS_card_collection_page = function(e)
@@ -2493,7 +2528,8 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
           (not args.hide_single_page or cards_per_page < #pool) and {n=G.UIT.R, config={align = "cm"}, nodes={
             create_option_cycle({options = options, w = 4.5, cycle_shoulders = true, opt_callback = 'SMODS_card_collection_page', current_option = 1, colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED, no_pips = true, focus_args = {snap_to = true, nav = 'wide'}})
           }} or nil,
-      }})
+    }})
+    t.config.filterable = args.filterable
     return t
 end
 

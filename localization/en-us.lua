@@ -367,6 +367,7 @@ return {
 			b_browse = 'Browse',
 			b_search_prompt = 'Search for mods',
 			b_search_button = 'Search',
+            b_collection_filters_button = 'Filters',
             b_seeded_unlocks = 'Seeded unlocks',
             b_seeded_unlocks_info = 'Enable unlocks and discoveries in seeded runs',
             ml_achievement_settings = {
