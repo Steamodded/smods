@@ -1155,7 +1155,7 @@ function SMODS.never_scores(card)
 end
 
 -- On update, call G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}   /   SMODS.card_collection_UIBox (to update page options etc)
--- Todo : UI (filter selection, "remaining/total" number of objs) + TernaryCheckbox (for "true", "false" and "nil" filtering)
+-- Todo : UI (filter selection, "remaining/total" number of objs) + TernaryToggle (for "true", "false" and "nil" filtering)
 SMODS.collection_filter_ui_def = function (filter, args)
     local nodes = {
         {n=G.UIT.T, config = { text = localize("b_collection_filters_"..filter.name), colour = G.C.WHITE, scale = 0.3, shadow = true }}, -- Title
@@ -1163,10 +1163,78 @@ SMODS.collection_filter_ui_def = function (filter, args)
     } 
     if filter.input_type == "text" then
         table.insert(nodes, create_text_input({ref_table = filter, ref_value = 'value'}))
-    elseif filter.input_type == "ternarycheckbox" then
-        -- Todo : Implement TernaryCheckbox and this
+    elseif filter.input_type == "ternarytoggle" then
+        local value_list = {
+            n = G.UIT.C,
+            config = {
+                padding = 0.05,
+            },
+            nodes = {}
+        }
+        local scrollbox = SMODS.UIScrollBox({
+		    content = {
+                definition = {
+                    n = G.UIT.ROOT,
+                    config = { colour = G.C.CLEAR },
+                    nodes = {
+                        value_list
+                    },
+                },
+                config = { align = "cm" },
+            },
+            overflow = {
+                node_config = {
+                    maxh = args.max_menu_h,
+                    r = 0.1,
+                },
+            },
+            sync_mode = "offset",
+        })
+        table.insert(nodes, {
+            n=G.UIT.R,
+            config = {},
+            nodes = {
+                {
+                    n = G.UIT.C,
+                    config = {},
+                    nodes = {
+                        {
+                            n = G.UIT.O,
+                            config = {
+                                object = scrollbox,
+                            },
+                        }
+                    }
+                },
+                {
+                    n = G.UIT.C,
+                    config = {
+                        padding = 0.05,
+                    },
+                    nodes = {
+                        SMODS.GUI.scrollbar({
+                            w = 0.1,
+                            h = math.min(args.max_menu_h, scrollbox.content.UIRoot.T.h) - 0.1,
+                            scroll_collision_obj = scrollbox,
+                            knob_h = args.max_menu_h / 6,
+                            bg_colour = { 0, 0, 0, 0.15 },
+                            _attached_dropdown_button = parent
+                        })
+                    }
+                }
+            }
+        })
         for _, v in ipairs(filter.input_values) do
             local text = v[filter.input_values_text_ref]
+            local ternary_toggle = SMODS.GUI.ternary_toggle({})
+            table.insert(value_list.nodes, {
+                n=G.UIT.R,
+                config = {},
+                nodes = {
+                    {n=G.UIT.T, config = { text = text, colour = G.C.WHITE, scale = 0.2, shadow = false }},
+                    ternary_toggle
+                }
+            })
         end
     end
     local t = {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.01}, nodes={
@@ -1174,13 +1242,15 @@ SMODS.collection_filter_ui_def = function (filter, args)
     }}
     return t
 end
+
 SMODS.collection_filters = {
     {
         name = "key",
         value = nil, 
         input_type = "text",
         func = function (self, obj)
-            return self.value == nil or obj.key == self.value
+            -- if self.value == "" then self.value = nil end
+            return self.value == nil or obj.key == self.value or (#obj.key > #self.value and string.sub(obj.key, 1, #self.value) == self.value)
         end,
         ui_def = function (self, args)
             return SMODS.collection_filter_ui_def(self, args)
@@ -1191,7 +1261,9 @@ SMODS.collection_filters = {
         value = nil, 
         input_type = "text",
         func = function (self, obj)
-            return self.value == nil or localize({type = 'name_text', key = obj.key, set = obj.set }) == self.value
+            if self.value == nil then return true end
+            local loc_name = string.lower(localize({type = 'name_text', key = obj.key, set = obj.set }))
+            return loc_name == string.lower(self.value) or (#loc_name > #self.value and string.sub(loc_name, 1, #self.value) == string.lower(self.value))
         end,
         ui_def = function (self, args)
             return SMODS.collection_filter_ui_def(self, args)
@@ -1200,7 +1272,7 @@ SMODS.collection_filters = {
     {
         name = "attributes",
         value = {}, 
-        input_type = "ternarycheckbox",
+        input_type = "ternarytoggle",
         input_values = SMODS.Attributes,
         input_values_text_ref = "key",
         func = function (self, obj)

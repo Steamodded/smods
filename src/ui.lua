@@ -2423,6 +2423,10 @@ G.FUNCS.SMODS_change_mipmap = function(args)
     SMODS:save_mod_config()
 end
 
+function SMODS.GUI.ternary_toggle(args)
+
+end
+
 local g_funcs_overlay_menu_ref = G.FUNCS.overlay_menu
 function G.FUNCS.overlay_menu(args)
     args = args or {}
