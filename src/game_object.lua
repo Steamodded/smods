@@ -592,8 +592,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         py = 66,
     }
     SMODS.Atlas {
-        key = 'dropdown_arrow',
-        path = 'dropdown_arrow.png',
+        key = 'ui_icons',
+        path = 'ui_icons.png',
         px = 66,
         py = 66,
     }
