@@ -2552,9 +2552,11 @@ function SMODS.GUI.collection_filter_ternarytoggles_scrollbox_content(filter, ar
         end
     end
     for _, v in ipairs(filtered_input_values) do
-        table.insert(value_list.nodes, {n=G.UIT.R, config = { align = "cl", padding = 0.0, }, nodes = {
-            {n=G.UIT.T, config = { text = v, colour = G.C.WHITE, scale = 0.25, shadow = false }},                                                                   -- Label
-            SMODS.GUI.ternary_toggle({h = 0.3, ref_table = filter.value, ref_value = v, scale = 0.5, callback = G.FUNCS.SMODS_update_current_collection_pool})      -- Ternary Toggle
+        table.insert(value_list.nodes, {n=G.UIT.R, config = { align = "cl", padding = 0.02, }, nodes = {
+            {n=G.UIT.T, config = { align = "cr", minw = 1.7, text = v, colour = G.C.WHITE, scale = 0.25, shadow = false }},   -- Label
+            {n=G.UIT.R, config = { align = "cl", padding = 0.0 }, nodes = {
+                SMODS.GUI.ternary_toggle({h = 0.3, ref_table = filter.value, ref_value = v, scale = 0.5, callback = G.FUNCS.SMODS_update_current_collection_pool})  -- Ternary Toggle
+            }}
         }})
     end
     local content = { 
