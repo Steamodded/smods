@@ -3838,6 +3838,21 @@ SMODS.UndiscoveredCompat = {
         end
     }
 
+    SMODS.Keybind {
+        key_pressed = 'f',
+        event = 'pressed',
+        action = function(self)
+            SMODS.collection_filters_toggled = not SMODS.collection_filters_toggled
+            if G.OVERLAY_MENU and SMODS.current_collection_filterable then
+                if SMODS.collection_filters_toggled then
+                    SMODS.create_collection_filters_uibox()
+                else
+                    SMODS.remove_collection_filters_uibox()
+                end
+            end
+        end
+    }
+
     -------------------------------------------------------------------------------------------------
     ------- API CODE GameObject.Achievement
     -------------------------------------------------------------------------------------------------

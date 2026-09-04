@@ -1219,6 +1219,7 @@ SMODS.collection_filters = {
     },
 }
 function SMODS.check_collection_filters(obj)
+    if not SMODS.collection_filters_toggled then return true end
     for i, c_filter in ipairs(SMODS.collection_filters) do
         if not c_filter:func(obj) then
             return false

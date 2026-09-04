@@ -2474,26 +2474,43 @@ function SMODS.GUI.ternary_toggle(args)
     return t
 end
 
+function SMODS.create_collection_filters_uibox()
+    -- Create the Filters UIBox
+    if G.SMODS_COLLECTION_FILTERS_UIBOX then SMODS.remove_collection_filters_uibox() end
+    local p = G.OVERLAY_MENU.UIRoot.children[1]
+    G.SMODS_COLLECTION_FILTERS_UIBOX = UIBox {
+        definition = SMODS.GUI.collection_filters_UIBox(),
+        config = { align = "r", offset = { x = 0.3, y = 0.1 }, parent = p, major = p }
+    } 
+    table.insert(p.parent.children, 1, G.SMODS_COLLECTION_FILTERS_UIBOX)
+    G.OVERLAY_MENU._remove_ref = G.OVERLAY_MENU.remove
+    G.OVERLAY_MENU.remove = function(self)
+        G.OVERLAY_MENU:_remove_ref()
+        if G.SMODS_COLLECTION_FILTERS_UIBOX then G.SMODS_COLLECTION_FILTERS_UIBOX:remove() end
+        G.SMODS_COLLECTION_FILTERS_UIBOX = nil
+    end
+    G.FUNCS.SMODS_update_current_collection_pool()
+end
+
+function SMODS.remove_collection_filters_uibox()
+    if G.SMODS_COLLECTION_FILTERS_UIBOX then G.SMODS_COLLECTION_FILTERS_UIBOX:remove(); G.FUNCS.SMODS_update_current_collection_pool() end
+    if G.OVERLAY_MENU then
+        for i, child in ipairs(G.OVERLAY_MENU.UIRoot.children) do
+            if child == G.SMODS_COLLECTION_FILTERS_UIBOX then table.remove(G.OVERLAY_MENU.UIRoot.children, i); break end
+        end
+        if G.OVERLAY_MENU._remove_ref then G.OVERLAY_MENU.remove = G.OVERLAY_MENU._remove_ref; G.OVERLAY_MENU._remove_ref = nil end
+    end
+    G.SMODS_COLLECTION_FILTERS_UIBOX = nil
+end
+
+SMODS.collection_filters_toggled = false
 local g_funcs_overlay_menu_ref = G.FUNCS.overlay_menu
 function G.FUNCS.overlay_menu(args)
     args = args or {}
-    local filterable = ((args.definition or {}).config or {}).filterable
+    SMODS.current_collection_filterable = ((args.definition or {}).config or {}).filterable
     local ret = g_funcs_overlay_menu_ref(args)
-    if filterable then
-        -- Create the Filters UIBox
-        if G.SMODS_COLLECTION_FILTERS_UIBOX then G.SMODS_COLLECTION_FILTERS_UIBOX:remove() end
-        local p = G.OVERLAY_MENU.UIRoot.children[1]
-        G.SMODS_COLLECTION_FILTERS_UIBOX = UIBox {
-            definition = SMODS.GUI.collection_filters_UIBox(),
-            config = { align = "r", offset = { x = 0.3, y = 0.1 }, parent = p, major = p }
-        } 
-        table.insert(p.parent.children, 1, G.SMODS_COLLECTION_FILTERS_UIBOX)
-        G.OVERLAY_MENU._remove_ref = G.OVERLAY_MENU.remove
-        G.OVERLAY_MENU.remove = function(self)
-            G.OVERLAY_MENU:_remove_ref()
-            if G.SMODS_COLLECTION_FILTERS_UIBOX then G.SMODS_COLLECTION_FILTERS_UIBOX:remove() end
-            G.SMODS_COLLECTION_FILTERS_UIBOX = nil
-        end
+    if SMODS.current_collection_filterable and SMODS.collection_filters_toggled then
+        SMODS.create_collection_filters_uibox()
     end
     return ret
 end
@@ -2698,6 +2715,7 @@ function SMODS.GUI.card_collection_option_cycle(pool, cards_per_page)
 end
 
 SMODS.filterable_collection = true
+SMODS.current_collection_filterable = SMODS.filterable_collection
 SMODS.current_collection_pool_unfiltered = nil
 SMODS.current_collection_pool = nil
 SMODS.current_collection_cards_per_page = 0
