@@ -2484,7 +2484,7 @@ function G.FUNCS.overlay_menu(args)
         if G.SMODS_COLLECTION_FILTERS_UIBOX then G.SMODS_COLLECTION_FILTERS_UIBOX:remove() end
         local p = G.OVERLAY_MENU.UIRoot.children[1]
         G.SMODS_COLLECTION_FILTERS_UIBOX = UIBox {
-            definition = SMODS.collection_filters_uibox(),
+            definition = SMODS.GUI.collection_filters_UIBox(),
             config = { align = "r", offset = { x = 0.3, y = 0.1 }, parent = p, major = p }
         } 
         table.insert(p.parent.children, 1, G.SMODS_COLLECTION_FILTERS_UIBOX)
@@ -2509,8 +2509,13 @@ local g_funcs_text_input_key_ref = G.FUNCS.text_input_key
 function G.FUNCS.text_input_key(args)
     local ret = g_funcs_text_input_key_ref(args)
     local hook = G.CONTROLLER.text_input_hook
-    if hook and hook.config.update_collection and not no_update_keys[string.lower(args.key)] then
-        G.FUNCS.SMODS_update_current_collection_pool()
+    if hook and not no_update_keys[string.lower(args.key)] then
+        if hook.config.update_collection then
+            G.FUNCS.SMODS_update_current_collection_pool()
+        end
+        if hook.config.update_collection_filter then
+            hook.config.update_collection_filter:update_values(hook)
+        end
     end
     return ret
 end
@@ -2520,7 +2525,46 @@ function G.FUNCS.SMODS_update_current_collection_pool(e)
     G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
 end
 
-function SMODS.collection_filter_ui_def(filter, args)
+-- Just the label + ternary toggle for each value of the filter 
+function SMODS.GUI.collection_filter_ternarytoggles_scrollbox(filter, args)
+    local value_list = {
+        n = G.UIT.ROOT,
+        config = {
+            minw = 2.4,
+            minh = 2.0,
+            padding = 0.05,
+        },
+        nodes = {}
+    }
+    for _, v in ipairs(filter:get_input_values()) do
+        table.insert(value_list.nodes, {n=G.UIT.R, config = { align = "cm", padding = 0.02, }, nodes = {
+            {n=G.UIT.T, config = { text = v, colour = G.C.WHITE, scale = 0.2, shadow = false }},    -- Label
+            SMODS.GUI.ternary_toggle({ref_table = filter.value, ref_value = v, scale = 0.3})                     -- Ternary Toggle
+        }})
+    end
+    local maxh = 2.3
+    local scrollbox = SMODS.UIScrollBox({ 
+        content = { 
+            definition = value_list,
+            config = { align = "cm", padding = 0.02 },
+        },
+        overflow = {
+            node_config = {
+                maxh = maxh,
+                r = 0.1,
+            },
+        },
+        sync_mode = "offset",
+    })
+    local t = {n=G.UIT.R, config = {align = "cm", padding = 0.02}, nodes = {
+        {n = G.UIT.O, config = { object = scrollbox, },},
+        SMODS.GUI.scrollbar({w = 0.1, h = math.min(maxh, scrollbox.content.UIRoot.T.h) - 0.1, scroll_collision_obj = scrollbox, knob_h = 0.05, bg_colour = { 0, 0, 0, 0.15 },})
+    }}
+    return t
+end
+
+-- A collection filter's UI
+function SMODS.GUI.collection_filter(filter, args)
     local nodes = {
         {n=G.UIT.R,config={align="cm", padding = 0.02},nodes={
             {n=G.UIT.T, config = { text = localize("b_collection_filters_"..filter.name), colour = G.C.WHITE, scale = 0.3, padding = 0.04, shadow = true }}
@@ -2540,41 +2584,16 @@ function SMODS.collection_filter_ui_def(filter, args)
                 contains_toggle
             }})
         end
-    elseif filter.input_type == "ternarytoggle" then
-        local value_list = {
-            n = G.UIT.C,
-            config = {
-                padding = 0.05,
-            },
-            nodes = {}
-        }
-        for _, v in ipairs(filter:get_input_values()) do
-            table.insert(value_list.nodes, {n=G.UIT.R, config = { padding = 0.02, }, nodes = {
-                {n=G.UIT.T, config = { text = v, colour = G.C.WHITE, scale = 0.2, shadow = false }}, -- Label
-                SMODS.GUI.ternary_toggle({ref_table = filter.value, ref_value = v}) -- Ternary Toggle
+    elseif filter.input_type == "ternarytoggles" then
+        if filter.searchable then
+            local text_input = create_text_input({ref_table = filter, ref_value = 'search_value', w = 2.1, h = 0.3, text_scale = 0.2, extended_corpus = true})
+            text_input.nodes[1].nodes[1].nodes[1].config.update_collection_filter = filter
+            table.insert(nodes, {n=G.UIT.R,config={align="cm", padding = 0.02}, nodes={
+                text_input
             }})
         end
-        local scrollbox = SMODS.UIScrollBox({ 
-            content = { 
-                definition = value_list,
-                config = { align = "cm", padding = 0.02 },
-            },
-            overflow = {
-                node_config = {
-                    maxh = 0.3,
-                    r = 0.1,
-                },
-            },
-            sync_mode = "offset",
-        })
-        table.insert(nodes, {
-            n=G.UIT.R,
-            config = {align = "cm", padding = 0.02},
-            nodes = {
-                {n = G.UIT.O, config = { object = scrollbox, },},
-                SMODS.GUI.scrollbar({w = 0.1, h = math.min(0.3, scrollbox.content.UIRoot.T.h) - 0.1, scroll_collision_obj = scrollbox, knob_h = 0.05, bg_colour = { 0, 0, 0, 0.15 },})
-            }
-        })
+        local scroll_values = SMODS.GUI.collection_filter_ternarytoggles_scrollbox(filter, args)
+        table.insert(nodes, scroll_values)
     end
     local t = {n=G.UIT.R, config={align="cm"}, nodes={
         {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, padding = 0.05}, nodes = nodes}
@@ -2592,7 +2611,7 @@ function G.FUNCS.SMODS_collection_filter_label(e)
     if not e.config.prev_value or string.len(e.config.prev_value) ~= string.len(e.config.text) then e.UIBox:recalculate() end
 end
 
-function SMODS.collection_filters_uibox(args)
+function SMODS.GUI.collection_filters_UIBox(args)
     args = args or {}
     local nodes = {
         {n=G.UIT.R, config = {align = "cm"}, nodes = {

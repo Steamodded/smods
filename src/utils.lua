@@ -1154,8 +1154,10 @@ function SMODS.never_scores(card)
     return SMODS.has_playing_card_property(card, 'never_scores')
 end
 
--- On update, call G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}   /   SMODS.card_collection_UIBox (to update page options etc)
--- Todo : UI (filter selection, "remaining/total" number of objs) + TernaryToggle (for "true", "false" and "nil" filtering)
+function SMODS.check_search_values(input, check, contains)
+    return check == input or (#check > #input and string.sub(check, 1, #input) == input) or (contains and string.find(check, self.value))
+end
+
 SMODS.collection_filters = {
     {
         name = "key_or_loc_name",
@@ -1163,36 +1165,49 @@ SMODS.collection_filters = {
         contains = false,
         input_type = "text",
         func = function (self, obj)
-            local is_key = obj.key == self.value or (#obj.key > #self.value and string.sub(obj.key, 1, #self.value) == self.value) or (self.contains and string.find(obj.key, self.value))
+            local is_key = SMODS.check_search_values(self.value, obj.key, self.contains)
             local loc_name = string.lower(localize({type = 'name_text', key = obj.key, set = obj.set }))
-            local is_loc_name = loc_name == string.lower(self.value) or (#loc_name > #self.value and string.sub(loc_name, 1, #self.value) == string.lower(self.value)) or (self.contains and string.find(loc_name, string.lower(self.value)))
+            local is_loc_name = SMODS.check_search_values(string.lower(self.value), loc_name, self.contains)
             return is_key or is_loc_name
         end,
         ui_def = function (self, args)
-            return SMODS.collection_filter_ui_def(self, args)
+            return SMODS.GUI.collection_filter(self, args)
         end,
     },
     {
         name = "attributes",
         value = {}, 
-        input_type = "ternarytoggle",
+        input_type = "ternarytoggles",
+        searchable = true,
+        search_value = "",
+        any = false,
         get_input_values = function (self)
             local ret = {}
             for _, v in ipairs(SMODS.Attribute.obj_buffer) do
-                table.insert(ret, v.key)
+                table.insert(ret, v)
             end
             return ret
+        end,
+        search_func = function (self, value)
+            local is_attr = SMODS.check_search_values(self.search_value, value.key)
+            for _, alias in ipairs(value.alias) do
+                is_attr = is_attr or SMODS.check_search_values(self.search_value, alias)
+            end
+            return is_attr
+        end,
+        update_values = function (self, text_input)
+            local p = text_input.parent.parent
         end,
         func = function (self, obj)
             for attr, v in pairs(self.value) do
                 if SMODS.has_attribute(obj, attr) ~= v then
-                    return false
-                end
+                    if not self.any then return false end
+                elseif self.any then return true end
             end
-            return true
+            return not self.any
         end,
         ui_def = function (self, args)
-            return SMODS.collection_filter_ui_def(self, args)
+            return SMODS.GUI.collection_filter(self, args)
         end,
     },
 }
