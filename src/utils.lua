@@ -1155,7 +1155,7 @@ function SMODS.never_scores(card)
 end
 
 function SMODS.check_search_values(input, check, contains)
-    return check == input or (#check > #input and string.sub(check, 1, #input) == input) or (contains and string.find(check, self.value))
+    return check == input or (#check > #input and string.sub(check, 1, #input) == input) or (contains and string.find(check, input))
 end
 
 SMODS.collection_filters = {
@@ -1189,14 +1189,20 @@ SMODS.collection_filters = {
             return ret
         end,
         search_func = function (self, value)
-            local is_attr = SMODS.check_search_values(self.search_value, value.key)
-            for _, alias in ipairs(value.alias) do
+            local is_attr = SMODS.check_search_values(self.search_value, value)
+            local attr = SMODS.Attributes[value]
+            for _, alias in ipairs(attr.alias or {}) do
                 is_attr = is_attr or SMODS.check_search_values(self.search_value, alias)
             end
             return is_attr
         end,
-        update_values = function (self, text_input)
-            local p = text_input.parent.parent
+        update_values = function (self)
+            local scrollbox = G.SMODS_COLLECTION_FILTERS_UIBOX:get_UIE_by_ID("ternarytoggles_scrollbox_"..self.name)
+            local obj = scrollbox.config.object
+            obj.content_container:remove()
+            obj.scroll_args.content = SMODS.GUI.collection_filter_ternarytoggles_scrollbox_content(self, {major = obj, parent = obj})
+            obj:init(obj.scroll_args)
+            scrollbox.UIBox:recalculate()
         end,
         func = function (self, obj)
             for attr, v in pairs(self.value) do
