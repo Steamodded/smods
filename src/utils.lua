@@ -1154,13 +1154,87 @@ function SMODS.never_scores(card)
     return SMODS.has_playing_card_property(card, 'never_scores')
 end
 
+function SMODS.check_search_values(input, check, contains)
+    return check == input or (#check > #input and string.sub(check, 1, #input) == input) or (contains and string.find(check, input))
+end
+
+SMODS.collection_filters = {
+    {
+        name = "key_or_loc_name",
+        value = "",
+        contains = false,
+        input_type = "text",
+        func = function (self, obj)
+            local is_key = SMODS.check_search_values(self.value, obj.key, self.contains)
+            local loc_name = string.lower(localize({type = 'name_text', key = obj.key, set = obj.set }))
+            local is_loc_name = SMODS.check_search_values(string.lower(self.value), loc_name, self.contains)
+            return is_key or is_loc_name
+        end,
+        ui_def = function (self, args)
+            return SMODS.GUI.collection_filter(self, args)
+        end,
+    },
+    {
+        name = "attributes",
+        value = {}, 
+        input_type = "ternarytoggles",
+        searchable = true,
+        search_value = "",
+        any = false,
+        get_input_values = function (self)
+            local ret = {}
+            for _, v in ipairs(SMODS.Attribute.obj_buffer) do
+                table.insert(ret, v)
+            end
+            return ret
+        end,
+        search_func = function (self, value)
+            local is_attr = SMODS.check_search_values(self.search_value, value)
+            local attr = SMODS.Attributes[value]
+            for _, alias in ipairs(attr.alias or {}) do
+                is_attr = is_attr or SMODS.check_search_values(self.search_value, alias)
+            end
+            return is_attr
+        end,
+        update_values = function (self)
+            local scrollbox = G.SMODS_COLLECTION_FILTERS_UIBOX:get_UIE_by_ID("ternarytoggles_scrollbox_"..self.name)
+            local obj = scrollbox.config.object
+            obj.content_container:remove()
+            obj.scroll_args.content = SMODS.GUI.collection_filter_ternarytoggles_scrollbox_content(self, {major = obj, parent = obj})
+            obj:init(obj.scroll_args)
+            obj:set_scroll_progress({y = 0})
+            scrollbox.UIBox:recalculate()
+        end,
+        func = function (self, obj)
+            for attr, v in pairs(self.value) do
+                if SMODS.has_attribute(obj, attr) ~= v then
+                    if not self.any then return false end
+                elseif self.any then return true end
+            end
+            return next(self.value) == nil or not self.any
+        end,
+        ui_def = function (self, args)
+            return SMODS.GUI.collection_filter(self, args)
+        end,
+    },
+}
+function SMODS.check_collection_filters(obj)
+    if not SMODS.collection_filters_toggled then return true end
+    for i, c_filter in ipairs(SMODS.collection_filters) do
+        if not c_filter:func(obj) then
+            return false
+        end
+    end
+    return true
+end
+
 SMODS.collection_pool = function(_base_pool)
     local pool = {}
     if type(_base_pool) ~= 'table' then return pool end
     local is_array = _base_pool[1]
     local ipairs = is_array and ipairs or pairs
     for _, v in ipairs(_base_pool) do
-        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not SMODS.hide_from_collection(v)) then
+        if (not G.ACTIVE_MOD_UI or v.mod == G.ACTIVE_MOD_UI) and (not SMODS.hide_from_collection(v)) and SMODS.check_collection_filters(v) then
             pool[#pool+1] = v
         end
     end
