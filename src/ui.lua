@@ -2500,10 +2500,18 @@ function G.FUNCS.overlay_menu(args)
     return ret
 end
 
+local no_update_keys = {
+    lshift = true, rshift = true,
+    right = true, left = true, 
+    tab = true,
+    lalt = true, ralt = true,
+    lctrl = true, rctrl = true,
+}
 local g_funcs_text_input_key_ref = G.FUNCS.text_input_key
 function G.FUNCS.text_input_key(args)
     local ret = g_funcs_text_input_key_ref(args)
-    if G.CONTROLLER.text_input_hook and G.CONTROLLER.text_input_hook.config.update_collection then
+    local hook = G.CONTROLLER.text_input_hook
+    if hook and hook.config.update_collection and not no_update_keys[string.lower(args.key)] then
         if SMODS.current_collection_pool_unfiltered then SMODS.current_collection_pool = SMODS.collection_pool(SMODS.current_collection_pool_unfiltered) end
         G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
     end
@@ -2605,7 +2613,7 @@ function G.FUNCS.SMODS_collection_filter_label(e)
     end
     e.config.text = filtered.."/"..total
     e.config.text_drawable:set(e.config.text)
-    if not e.config.prev_value or string.len(e.config.prev_value) ~= string.len(e.config.text) then e.UIBox:recalculate() end 
+    if not e.config.prev_value or string.len(e.config.prev_value) ~= string.len(e.config.text) then e.UIBox:recalculate() end
 end
 
 function SMODS.collection_filters_uibox(args)
