@@ -2474,7 +2474,7 @@ function SMODS.GUI.ternary_toggle(args)
     return t
 end
 
-function SMODS.create_collection_filters_uibox()
+function SMODS.create_collection_filters_uibox(menu_opened)
     -- Create the Filters UIBox
     if G.SMODS_COLLECTION_FILTERS_UIBOX then SMODS.remove_collection_filters_uibox() end
     local p = G.OVERLAY_MENU.UIRoot.children[1]
@@ -2489,7 +2489,7 @@ function SMODS.create_collection_filters_uibox()
         if G.SMODS_COLLECTION_FILTERS_UIBOX then G.SMODS_COLLECTION_FILTERS_UIBOX:remove() end
         G.SMODS_COLLECTION_FILTERS_UIBOX = nil
     end
-    G.FUNCS.SMODS_update_current_collection_pool()
+    if not menu_opened then G.FUNCS.SMODS_update_current_collection_pool() end
 end
 
 function SMODS.remove_collection_filters_uibox()
@@ -2510,7 +2510,7 @@ function G.FUNCS.overlay_menu(args)
     SMODS.current_collection_filterable = ((args.definition or {}).config or {}).filterable
     local ret = g_funcs_overlay_menu_ref(args)
     if SMODS.current_collection_filterable and SMODS.collection_filters_toggled then
-        SMODS.create_collection_filters_uibox()
+        SMODS.create_collection_filters_uibox(true)
     end
     return ret
 end
