@@ -2592,10 +2592,20 @@ function SMODS.collection_filter_ui_def(filter, args)
             })
         end
     end
-    local t = {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.01, padding = 0.05}, nodes={
-        {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.01, padding = 0.05}, nodes=nodes}
+    local t = {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, padding = 0.05}, nodes={
+        {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, padding = 0.05}, nodes=nodes}
     }}
     return t
+end
+
+function G.FUNCS.SMODS_collection_filter_label(e)
+    local filtered, total = 0, 0
+    if SMODS.current_collection_pool and SMODS.current_collection_pool_unfiltered then
+        filtered, total = #SMODS.current_collection_pool, #SMODS.current_collection_pool_unfiltered
+    end
+    e.config.text = filtered.."/"..total
+    e.config.text_drawable:set(e.config.text)
+    if not e.config.prev_value or string.len(e.config.prev_value) ~= string.len(e.config.text) then e.UIBox:recalculate() end 
 end
 
 function SMODS.collection_filters_uibox(args)
@@ -2608,6 +2618,12 @@ function SMODS.collection_filters_uibox(args)
     for _, filter in ipairs(SMODS.collection_filters) do
         table.insert(nodes, filter:ui_def(args))
     end
+    local filtered, total = #SMODS.current_collection_pool, #SMODS.current_collection_pool_unfiltered
+    table.insert(nodes, {
+        n=G.UIT.R, config = {align = "cm"}, nodes = {
+            {n=G.UIT.T, config = { text = filtered.."/"..total, func = "SMODS_collection_filter_label", colour = G.C.BLUE, scale = 0.3, shadow = true }},
+        }
+    })
     local t = {n=G.UIT.ROOT, config={align = "cm", r = 0.1, colour = G.C.JOKER_GREY, emboss = 0.05, padding = 0.06 }, nodes={
         {n=G.UIT.C, config={align="tm", r=0.1, padding=0.05, colour = G.C.L_BLACK}, nodes=nodes}
     }}
