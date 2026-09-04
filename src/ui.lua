@@ -2535,8 +2535,7 @@ function SMODS.collection_filter_ui_def(filter, args)
             },
             nodes = {}
         }
-        local scrollbox = SMODS.UIScrollBox({
-		    content = {
+        local scrollbox = SMODS.UIScrollBox({ content = { 
                 definition = {
                     n = G.UIT.ROOT,
                     config = { colour = G.C.CLEAR },
@@ -2558,46 +2557,19 @@ function SMODS.collection_filter_ui_def(filter, args)
             n=G.UIT.R,
             config = {},
             nodes = {
-                {
-                    n = G.UIT.C,
-                    config = {},
-                    nodes = {
-                        {
-                            n = G.UIT.O,
-                            config = {
-                                object = scrollbox,
-                            },
-                        }
-                    }
-                },
-                {
-                    n = G.UIT.C,
-                    config = {
-                        padding = 0.05,
-                    },
-                    nodes = {
-                        SMODS.GUI.scrollbar({
-                            w = 0.1,
-                            h = math.min(0.3, scrollbox.content.UIRoot.T.h) - 0.1,
-                            scroll_collision_obj = scrollbox,
-                            knob_h = 0.05,
-                            bg_colour = { 0, 0, 0, 0.15 },
-                        })
-                    }
-                }
+                {n = G.UIT.C, config = {}, nodes = {
+                    {n = G.UIT.O, config = { object = scrollbox, },}
+                }},
+                {n = G.UIT.C, config = { padding = 0.05, }, nodes = {
+                    SMODS.GUI.scrollbar({w = 0.1, h = math.min(0.3, scrollbox.content.UIRoot.T.h) - 0.1, scroll_collision_obj = scrollbox, knob_h = 0.05, bg_colour = { 0, 0, 0, 0.15 },})
+                }}
             }
         })
         for _, v in ipairs(filter:get_input_values()) do
-            table.insert(value_list.nodes, {
-                n=G.UIT.R,
-                config = {
-                    padding = 0.02,
-                },
-                nodes = {
-                    {n=G.UIT.T, config = { text = v, colour = G.C.WHITE, scale = 0.2, shadow = false }}, -- Label
-                    SMODS.GUI.ternary_toggle({ref_table = filter.value, ref_value = v}) -- Ternary Toggle
-                }
-            })
+            table.insert(value_list.nodes, {n=G.UIT.R, config = { padding = 0.02, }, nodes = {
+                {n=G.UIT.T, config = { text = v, colour = G.C.WHITE, scale = 0.2, shadow = false }}, -- Label
+                SMODS.GUI.ternary_toggle({ref_table = filter.value, ref_value = v}) -- Ternary Toggle
+            }})
         end
     end
     local t = {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, padding = 0.05}, nodes={
