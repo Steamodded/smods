@@ -2448,14 +2448,13 @@ function SMODS.GUI.ternary_toggle(args)
     args.true_colour = args.true_colour or G.C.GREEN
     args.false_colour = args.false_colour or G.C.RED
     args.nil_colour = args.nil_colour or G.C.BLACK
-    args.w = args.w or 3
+    args.w = args.w or 0.5
     args.h = args.h or 0.5
     args.scale = args.scale or 1
     args.ref_table = args.ref_table or {}
     args.ref_value = args.ref_value or 'test'
 
     local check = SMODS.create_sprite(0,0,0.5*args.scale,0.5*args.scale, "ui_icons", {x=1, y=0})
-    --check:set_sprite_pos({x=2, y=0})
     check.states.drag.can = false
     check.states.visible = false
 
@@ -2488,7 +2487,6 @@ function G.FUNCS.overlay_menu(args)
             definition = SMODS.collection_filters_uibox(),
             config = { align = "r", offset = { x = 0.3, y = 0.1 }, parent = p, major = p }
         } 
-        G.SMODS_COLLECTION_FILTERS_UIBOX.states.drag.can = true
         table.insert(p.parent.children, 1, G.SMODS_COLLECTION_FILTERS_UIBOX)
         G.OVERLAY_MENU._remove_ref = G.OVERLAY_MENU.remove
         G.OVERLAY_MENU.remove = function(self)
@@ -2512,21 +2510,36 @@ function G.FUNCS.text_input_key(args)
     local ret = g_funcs_text_input_key_ref(args)
     local hook = G.CONTROLLER.text_input_hook
     if hook and hook.config.update_collection and not no_update_keys[string.lower(args.key)] then
-        if SMODS.current_collection_pool_unfiltered then SMODS.current_collection_pool = SMODS.collection_pool(SMODS.current_collection_pool_unfiltered) end
-        G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
+        G.FUNCS.SMODS_update_current_collection_pool()
     end
     return ret
 end
 
+function G.FUNCS.SMODS_update_current_collection_pool(e) 
+    if SMODS.current_collection_pool_unfiltered then SMODS.current_collection_pool = SMODS.collection_pool(SMODS.current_collection_pool_unfiltered) end
+    G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
+end
+
 function SMODS.collection_filter_ui_def(filter, args)
     local nodes = {
-        {n=G.UIT.T, config = { text = localize("b_collection_filters_"..filter.name), colour = G.C.WHITE, scale = 0.3, padding = 0.04, shadow = true }}, -- Title
+        {n=G.UIT.R,config={align="cm", padding = 0.02},nodes={
+            {n=G.UIT.T, config = { text = localize("b_collection_filters_"..filter.name), colour = G.C.WHITE, scale = 0.3, padding = 0.04, shadow = true }}
+        }}, -- Title
         -- Input
     } 
     if filter.input_type == "text" then
-        local text_input = create_text_input({ref_table = filter, ref_value = 'value', h = 0.5, text_scale = 0.25, extended_corpus = true})
+        local contains = filter.contains ~= nil
+        local text_input = create_text_input({ref_table = filter, ref_value = 'value', w = 2.5, h = 0.5, text_scale = 0.3, extended_corpus = true})
         text_input.nodes[1].nodes[1].nodes[1].config.update_collection = true
-        table.insert(nodes, text_input)
+        table.insert(nodes, {n=G.UIT.R,config={align="cm", padding = 0.02}, nodes={
+            text_input
+        }})
+        if contains then
+            local contains_toggle = create_toggle({w = 1.5, scale = 0.4, label = localize("b_collection_filters_key_or_loc_name_contains"), label_scale = 0.25, ref_table = filter, ref_value = "contains", callback = G.FUNCS.SMODS_update_current_collection_pool})
+            table.insert(nodes, {n=G.UIT.R,config={align="cm", padding = 0.02}, nodes={
+                contains_toggle
+            }})
+        end
     elseif filter.input_type == "ternarytoggle" then
         local value_list = {
             n = G.UIT.C,
@@ -2535,15 +2548,16 @@ function SMODS.collection_filter_ui_def(filter, args)
             },
             nodes = {}
         }
-        local scrollbox = SMODS.UIScrollBox({ content = { 
-                definition = {
-                    n = G.UIT.ROOT,
-                    config = { colour = G.C.CLEAR },
-                    nodes = {
-                        value_list
-                    },
-                },
-                config = { align = "cm" },
+        for _, v in ipairs(filter:get_input_values()) do
+            table.insert(value_list.nodes, {n=G.UIT.R, config = { padding = 0.02, }, nodes = {
+                {n=G.UIT.T, config = { text = v, colour = G.C.WHITE, scale = 0.2, shadow = false }}, -- Label
+                SMODS.GUI.ternary_toggle({ref_table = filter.value, ref_value = v}) -- Ternary Toggle
+            }})
+        end
+        local scrollbox = SMODS.UIScrollBox({ 
+            content = { 
+                definition = value_list,
+                config = { align = "cm", padding = 0.02 },
             },
             overflow = {
                 node_config = {
@@ -2555,25 +2569,15 @@ function SMODS.collection_filter_ui_def(filter, args)
         })
         table.insert(nodes, {
             n=G.UIT.R,
-            config = {},
+            config = {align = "cm", padding = 0.02},
             nodes = {
-                {n = G.UIT.C, config = {}, nodes = {
-                    {n = G.UIT.O, config = { object = scrollbox, },}
-                }},
-                {n = G.UIT.C, config = { padding = 0.05, }, nodes = {
-                    SMODS.GUI.scrollbar({w = 0.1, h = math.min(0.3, scrollbox.content.UIRoot.T.h) - 0.1, scroll_collision_obj = scrollbox, knob_h = 0.05, bg_colour = { 0, 0, 0, 0.15 },})
-                }}
+                {n = G.UIT.O, config = { object = scrollbox, },},
+                SMODS.GUI.scrollbar({w = 0.1, h = math.min(0.3, scrollbox.content.UIRoot.T.h) - 0.1, scroll_collision_obj = scrollbox, knob_h = 0.05, bg_colour = { 0, 0, 0, 0.15 },})
             }
         })
-        for _, v in ipairs(filter:get_input_values()) do
-            table.insert(value_list.nodes, {n=G.UIT.R, config = { padding = 0.02, }, nodes = {
-                {n=G.UIT.T, config = { text = v, colour = G.C.WHITE, scale = 0.2, shadow = false }}, -- Label
-                SMODS.GUI.ternary_toggle({ref_table = filter.value, ref_value = v}) -- Ternary Toggle
-            }})
-        end
     end
-    local t = {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, padding = 0.05}, nodes={
-        {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, padding = 0.05}, nodes=nodes}
+    local t = {n=G.UIT.R, config={align="cm"}, nodes={
+        {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, padding = 0.05}, nodes = nodes}
     }}
     return t
 end

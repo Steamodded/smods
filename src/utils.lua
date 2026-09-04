@@ -1159,12 +1159,13 @@ end
 SMODS.collection_filters = {
     {
         name = "key_or_loc_name",
-        value = "", 
+        value = "",
+        contains = false,
         input_type = "text",
         func = function (self, obj)
-            local is_key = obj.key == self.value or (#obj.key > #self.value and string.sub(obj.key, 1, #self.value) == self.value)
+            local is_key = obj.key == self.value or (#obj.key > #self.value and string.sub(obj.key, 1, #self.value) == self.value) or (self.contains and string.find(obj.key, self.value))
             local loc_name = string.lower(localize({type = 'name_text', key = obj.key, set = obj.set }))
-            local is_loc_name = loc_name == string.lower(self.value) or (#loc_name > #self.value and string.sub(loc_name, 1, #self.value) == string.lower(self.value))
+            local is_loc_name = loc_name == string.lower(self.value) or (#loc_name > #self.value and string.sub(loc_name, 1, #self.value) == string.lower(self.value)) or (self.contains and string.find(loc_name, string.lower(self.value)))
             return is_key or is_loc_name
         end,
         ui_def = function (self, args)

@@ -369,6 +369,7 @@ return {
 			b_search_button = 'Search',
             b_collection_filters_button = 'Filters',
             b_collection_filters_key_or_loc_name = 'Key/Name',
+            b_collection_filters_key_or_loc_name_contains = 'Contains',
             b_collection_filters_attributes = 'Attributes',
             b_seeded_unlocks = 'Seeded unlocks',
             b_seeded_unlocks_info = 'Enable unlocks and discoveries in seeded runs',
