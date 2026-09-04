@@ -2522,6 +2522,12 @@ end
 
 function G.FUNCS.SMODS_update_current_collection_pool(e) 
     if SMODS.current_collection_pool_unfiltered then SMODS.current_collection_pool = SMODS.collection_pool(SMODS.current_collection_pool_unfiltered) end
+    local option_cycle = G.OVERLAY_MENU.UIRoot.UIBox:get_UIE_by_ID("card_collection_option_cycle")
+    local option_cycle_parent = G.OVERLAY_MENU.UIRoot.UIBox:get_UIE_by_ID("option_cycle_parent")
+    option_cycle:remove()
+    option_cycle_parent.children[1] = nil
+    local new_cycle = SMODS.GUI.card_collection_option_cycle(SMODS.current_collection_pool, SMODS.current_collection_cards_per_page)
+    G.OVERLAY_MENU.UIRoot.UIBox:add_child(new_cycle, option_cycle_parent)
     G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
 end
 
@@ -2677,9 +2683,22 @@ function SMODS.GUI.collection_filters_UIBox(args)
     return t
 end
 
+function SMODS.GUI.card_collection_option_cycle(pool, cards_per_page)
+    local options = {}
+    for i = 1, math.ceil(#pool/cards_per_page) do
+        table.insert(options, localize('k_page')..' '..tostring(i)..'/'..tostring(math.ceil(#pool/cards_per_page)))
+    end
+    if not next(options) then
+        table.insert(options, localize('k_page')..' 0/0')
+    end
+    local option_cycle = create_option_cycle({id = "card_collection_option_cycle", options = options, w = 4.5, cycle_shoulders = true, opt_callback = 'SMODS_card_collection_page', current_option = 1, colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED, no_pips = true, focus_args = {snap_to = true, nav = 'wide'}})
+    return option_cycle
+end
+
 SMODS.filterable_collection = true
 SMODS.current_collection_pool_unfiltered = nil
 SMODS.current_collection_pool = nil
+SMODS.current_collection_cards_per_page = 0
 SMODS.card_collection_UIBox = function(_pool, rows, args)
     args = args or {}
     args.w_mod = args.w_mod or 1
@@ -2691,14 +2710,14 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
     SMODS.current_collection_pool = SMODS.collection_pool(_pool)
 
     G.your_collection = {}
-    local cards_per_page = 0
+    SMODS.current_collection_cards_per_page = 0
     local row_totals = {}
     for j = 1, #rows do
-        if cards_per_page >= #SMODS.current_collection_pool and args.collapse_single_page then
+        if SMODS.current_collection_cards_per_page >= #SMODS.current_collection_pool and args.collapse_single_page then
             rows[j] = nil
         else
-            row_totals[j] = cards_per_page
-            cards_per_page = cards_per_page + rows[j]
+            row_totals[j] = SMODS.current_collection_cards_per_page
+            SMODS.current_collection_cards_per_page = SMODS.current_collection_cards_per_page + rows[j]
             G.your_collection[j] = CardArea(
                 G.ROOM.T.x + 0.2*G.ROOM.T.w/2,G.ROOM.T.h,
                 (args.w_mod*rows[j]+0.25)*G.CARD_W,
@@ -2712,14 +2731,6 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
         end
     end
 
-    local options = {}
-    for i = 1, math.ceil(#SMODS.current_collection_pool/cards_per_page) do
-        table.insert(options, localize('k_page')..' '..tostring(i)..'/'..tostring(math.ceil(#SMODS.current_collection_pool/cards_per_page)))
-    end
-    if not next(options) then
-        table.insert(options, localize('k_page')..' 0/0')
-    end
-
     G.FUNCS.SMODS_card_collection_page = function(e)
         if not e or not e.cycle_config then return end
         for j = 1, #G.your_collection do
@@ -2731,7 +2742,7 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
         end
         for j = 1, #rows do
             for i = 1, rows[j] do
-            local center = SMODS.current_collection_pool[i+row_totals[j] + (cards_per_page*(e.cycle_config.current_option - 1))]
+            local center = SMODS.current_collection_pool[i+row_totals[j] + (SMODS.current_collection_cards_per_page*(e.cycle_config.current_option - 1))]
             if not center then break end
             local card = Card(G.your_collection[j].T.x + G.your_collection[j].T.w/2, G.your_collection[j].T.y, G.CARD_W*args.card_scale, G.CARD_H*args.card_scale, G.P_CARDS.empty, (args.center and G.P_CENTERS[args.center]) or center)
             if args.modify_card then args.modify_card(card, center, i, j) end
@@ -2752,8 +2763,8 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
                 (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
         back_func = (args and args.back_func) or G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', snap_back = args.snap_back, infotip = args.infotip, contents = {
           {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables},
-          (not args.hide_single_page or cards_per_page < #SMODS.current_collection_pool) and {n=G.UIT.R, config={align = "cm"}, nodes={
-            create_option_cycle({options = options, w = 4.5, cycle_shoulders = true, opt_callback = 'SMODS_card_collection_page', current_option = 1, colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED, no_pips = true, focus_args = {snap_to = true, nav = 'wide'}})
+          (not args.hide_single_page or SMODS.current_collection_cards_per_page < #SMODS.current_collection_pool) and {n=G.UIT.R, config={id = "option_cycle_parent", align = "cm"}, nodes={
+            SMODS.GUI.card_collection_option_cycle(SMODS.current_collection_pool, SMODS.current_collection_cards_per_page)
           }} or nil,
     }})
     t.config.filterable = args.filterable
