@@ -2540,11 +2540,13 @@ end
 function G.FUNCS.SMODS_update_current_collection_pool(e) 
     if SMODS.current_collection_pool_unfiltered then SMODS.current_collection_pool = SMODS.collection_pool(SMODS.current_collection_pool_unfiltered) end
     local option_cycle = G.OVERLAY_MENU.UIRoot.UIBox:get_UIE_by_ID("card_collection_option_cycle")
-    local option_cycle_parent = G.OVERLAY_MENU.UIRoot.UIBox:get_UIE_by_ID("option_cycle_parent")
-    option_cycle:remove()
-    option_cycle_parent.children[1] = nil
-    local new_cycle = SMODS.GUI.card_collection_option_cycle(SMODS.current_collection_pool, SMODS.current_collection_cards_per_page)
-    G.OVERLAY_MENU.UIRoot.UIBox:add_child(new_cycle, option_cycle_parent)
+    if option_cycle then
+        local option_cycle_parent = G.OVERLAY_MENU.UIRoot.UIBox:get_UIE_by_ID("option_cycle_parent")
+        option_cycle:remove()
+        option_cycle_parent.children[1] = nil
+        local new_cycle = SMODS.GUI.card_collection_option_cycle(SMODS.current_collection_pool, SMODS.current_collection_cards_per_page)
+        G.OVERLAY_MENU.UIRoot.UIBox:add_child(new_cycle, option_cycle_parent)
+    end
     G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
 end
 
