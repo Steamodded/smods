@@ -1202,6 +1202,7 @@ SMODS.collection_filters = {
             obj.content_container:remove()
             obj.scroll_args.content = SMODS.GUI.collection_filter_ternarytoggles_scrollbox_content(self, {major = obj, parent = obj})
             obj:init(obj.scroll_args)
+            obj:set_scroll_progress({y = 0})
             scrollbox.UIBox:recalculate()
         end,
         func = function (self, obj)
