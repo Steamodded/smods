@@ -371,6 +371,8 @@ return {
             b_collection_filters_key_or_loc_name = 'Key/Name',
             b_collection_filters_key_or_loc_name_contains = 'Contains',
             b_collection_filters_attributes = 'Attributes',
+            b_collection_filters_attributes_any = 'Any',
+            b_collection_filters_clear_button = 'Clear All',
             b_seeded_unlocks = 'Seeded unlocks',
             b_seeded_unlocks_info = 'Enable unlocks and discoveries in seeded runs',
             ml_achievement_settings = {

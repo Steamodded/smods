@@ -1210,7 +1210,7 @@ SMODS.collection_filters = {
                     if not self.any then return false end
                 elseif self.any then return true end
             end
-            return not self.any
+            return next(self.value) == nil or not self.any
         end,
         ui_def = function (self, args)
             return SMODS.GUI.collection_filter(self, args)

@@ -2564,7 +2564,7 @@ function SMODS.GUI.collection_filter_ternarytoggles_scrollbox(filter, args)
         content = SMODS.GUI.collection_filter_ternarytoggles_scrollbox_content(filter, args),
         overflow = {
             node_config = {
-                maxh = 2.3,
+                maxh = 2.5,
                 r = 0.1,
             },
             config = args.config,
@@ -2577,13 +2577,22 @@ end
 -- Just the label + ternary toggle for each value of the filter 
 function SMODS.GUI.collection_filter_ternarytoggles(filter, args)
     local scrollbox = SMODS.GUI.collection_filter_ternarytoggles_scrollbox(filter, args)
-    local scrollbar = SMODS.GUI.scrollbar({w = 0.1, h = math.min(2.3, scrollbox.content.UIRoot.T.h) - 0.1, scroll_collision_obj = scrollbox, knob_h = 0.05, bg_colour = { 0, 0, 0, 0.15 },})
+    local scrollbar = SMODS.GUI.scrollbar({w = 0.1, h = math.min(2.5, scrollbox.content.UIRoot.T.h) - 0.1, scroll_collision_obj = scrollbox, knob_h = 0.05, bg_colour = { 0, 0, 0, 0.15 },})
     scrollbar.nodes[1].config.id = "ternarytoggles_scrollbar_"..filter.name
     local t = {n=G.UIT.R, config = {align = "cm", padding = 0.02}, nodes = {
         {n = G.UIT.O, config = {id = "ternarytoggles_scrollbox_"..filter.name, object = scrollbox, },},
         scrollbar
     }}
     return t
+end
+
+function G.FUNCS.SMODS_clear_ternarytoggles(e)
+    if e.config.filter then
+        for attr, _ in pairs(e.config.filter.value) do
+            e.config.filter.value[attr] = nil
+        end
+        G.FUNCS.SMODS_update_current_collection_pool(e)
+    end
 end
 
 -- A collection filter's UI
@@ -2615,8 +2624,19 @@ function SMODS.GUI.collection_filter(filter, args)
                 text_input
             }})
         end
+        local clear_button = UIBox_button({button = "SMODS_clear_ternarytoggles", label = {localize("b_collection_filters_clear_button")}, padding = 0.01, minw = 1.4, minh = 0.3, scale = 0.3})
+        clear_button.nodes[1].config.filter = filter
+        table.insert(nodes, {n=G.UIT.R,config={align="cm", padding = 0.02}, nodes={
+            clear_button
+        }})
         local scroll_values = SMODS.GUI.collection_filter_ternarytoggles(filter, args)
         table.insert(nodes, scroll_values)
+        if filter.any ~= nil then
+            local any_toggle = create_toggle({w = 1.5, scale = 0.4, label = localize("b_collection_filters_attributes_any"), label_scale = 0.25, ref_table = filter, ref_value = "any", callback = G.FUNCS.SMODS_update_current_collection_pool})
+            table.insert(nodes, {n=G.UIT.R,config={align="cm", padding = 0.02}, nodes={
+                any_toggle
+            }})
+        end
     end
     local t = {n=G.UIT.R, config={align="cm"}, nodes={
         {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, padding = 0.05}, nodes = nodes}
