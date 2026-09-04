@@ -1158,23 +1158,14 @@ end
 -- Todo : UI (filter selection, "remaining/total" number of objs) + TernaryToggle (for "true", "false" and "nil" filtering)
 SMODS.collection_filters = {
     {
-        name = "key",
+        name = "key_or_loc_name",
         value = "", 
         input_type = "text",
         func = function (self, obj)
-            return obj.key == self.value or (#obj.key > #self.value and string.sub(obj.key, 1, #self.value) == self.value)
-        end,
-        ui_def = function (self, args)
-            return SMODS.collection_filter_ui_def(self, args)
-        end,
-    },
-    {
-        name = "loc_name",
-        value = "", 
-        input_type = "text",
-        func = function (self, obj)
+            local is_key = obj.key == self.value or (#obj.key > #self.value and string.sub(obj.key, 1, #self.value) == self.value)
             local loc_name = string.lower(localize({type = 'name_text', key = obj.key, set = obj.set }))
-            return loc_name == string.lower(self.value) or (#loc_name > #self.value and string.sub(loc_name, 1, #self.value) == string.lower(self.value))
+            local is_loc_name = loc_name == string.lower(self.value) or (#loc_name > #self.value and string.sub(loc_name, 1, #self.value) == string.lower(self.value))
+            return is_key or is_loc_name
         end,
         ui_def = function (self, args)
             return SMODS.collection_filter_ui_def(self, args)

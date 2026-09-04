@@ -2483,26 +2483,42 @@ function G.FUNCS.overlay_menu(args)
     if filterable then
         -- Create the Filters UIBox
         if G.SMODS_COLLECTION_FILTERS_UIBOX then G.SMODS_COLLECTION_FILTERS_UIBOX:remove() end
+        local p = G.OVERLAY_MENU.UIRoot.children[1]
         G.SMODS_COLLECTION_FILTERS_UIBOX = UIBox {
             definition = SMODS.collection_filters_uibox(),
-            config = { align = "cm", offset = { x = 0.1, y = 0.1 }, parent = G.OVERLAY_MENU }
+            config = { align = "r", offset = { x = 0.3, y = 0.1 }, parent = p, major = p }
         } 
-        -- G.OVERLAY_MENU._remove_ref = G.OVERLAY_MENU.remove
-        -- G.OVERLAY_MENU.remove = function(self)
-        --     G.OVERLAY_MENU:_remove_ref()
-        --     G.SMODS_COLLECTION_FILTERS_UIBOX:remove()
-        -- end
+        G.SMODS_COLLECTION_FILTERS_UIBOX.states.drag.can = true
+        table.insert(p.parent.children, 1, G.SMODS_COLLECTION_FILTERS_UIBOX)
+        G.OVERLAY_MENU._remove_ref = G.OVERLAY_MENU.remove
+        G.OVERLAY_MENU.remove = function(self)
+            G.OVERLAY_MENU:_remove_ref()
+            if G.SMODS_COLLECTION_FILTERS_UIBOX then G.SMODS_COLLECTION_FILTERS_UIBOX:remove() end
+            G.SMODS_COLLECTION_FILTERS_UIBOX = nil
+        end
+    end
+    return ret
+end
+
+local g_funcs_text_input_key_ref = G.FUNCS.text_input_key
+function G.FUNCS.text_input_key(args)
+    local ret = g_funcs_text_input_key_ref(args)
+    if G.CONTROLLER.text_input_hook and G.CONTROLLER.text_input_hook.config.update_collection then
+        if SMODS.current_collection_pool_unfiltered then SMODS.current_collection_pool = SMODS.collection_pool(SMODS.current_collection_pool_unfiltered) end
+        G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
     end
     return ret
 end
 
 function SMODS.collection_filter_ui_def(filter, args)
     local nodes = {
-        {n=G.UIT.T, config = { text = localize("b_collection_filters_"..filter.name), colour = G.C.WHITE, scale = 0.3, shadow = true }}, -- Title
+        {n=G.UIT.T, config = { text = localize("b_collection_filters_"..filter.name), colour = G.C.WHITE, scale = 0.3, padding = 0.04, shadow = true }}, -- Title
         -- Input
     } 
     if filter.input_type == "text" then
-        table.insert(nodes, create_text_input({ref_table = filter, ref_value = 'value'}))
+        local text_input = create_text_input({ref_table = filter, ref_value = 'value', h = 0.5, text_scale = 0.25, extended_corpus = true})
+        text_input.nodes[1].nodes[1].nodes[1].config.update_collection = true
+        table.insert(nodes, text_input)
     elseif filter.input_type == "ternarytoggle" then
         local value_list = {
             n = G.UIT.C,
@@ -2576,8 +2592,8 @@ function SMODS.collection_filter_ui_def(filter, args)
             })
         end
     end
-    local t = {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.01}, nodes={
-        {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.01}, nodes=nodes}
+    local t = {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.01, padding = 0.05}, nodes={
+        {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.01, padding = 0.05}, nodes=nodes}
     }}
     return t
 end
@@ -2585,16 +2601,22 @@ end
 function SMODS.collection_filters_uibox(args)
     args = args or {}
     local nodes = {
-        {n=G.UIT.T, config = { text = localize("b_collection_filters_button"), colour = G.C.WHITE, scale = 0.3, shadow = true }},
+        {n=G.UIT.R, config = {align = "cm"}, nodes = {
+            {n=G.UIT.T, config = { text = localize("b_collection_filters_button"), colour = G.C.WHITE, scale = 0.3, shadow = true }},
+        }}
     }
     for _, filter in ipairs(SMODS.collection_filters) do
         table.insert(nodes, filter:ui_def(args))
     end
-    local t = {n=G.UIT.C, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=nodes}
+    local t = {n=G.UIT.ROOT, config={align = "cm", r = 0.1, colour = G.C.JOKER_GREY, emboss = 0.05, padding = 0.06 }, nodes={
+        {n=G.UIT.C, config={align="tm", r=0.1, padding=0.05, colour = G.C.L_BLACK}, nodes=nodes}
+    }}
     return t
 end
 
 SMODS.filterable_collection = true
+SMODS.current_collection_pool_unfiltered = nil
+SMODS.current_collection_pool = nil
 SMODS.card_collection_UIBox = function(_pool, rows, args)
     args = args or {}
     args.w_mod = args.w_mod or 1
@@ -2602,13 +2624,14 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
     args.card_scale = args.card_scale or 1
     args.filterable = args.filterable or args.filterable == nil and SMODS.filterable_collection
     local deck_tables = {}
-    local pool = SMODS.collection_pool(_pool)
+    SMODS.current_collection_pool_unfiltered = _pool
+    SMODS.current_collection_pool = SMODS.collection_pool(_pool)
 
     G.your_collection = {}
     local cards_per_page = 0
     local row_totals = {}
     for j = 1, #rows do
-        if cards_per_page >= #pool and args.collapse_single_page then
+        if cards_per_page >= #SMODS.current_collection_pool and args.collapse_single_page then
             rows[j] = nil
         else
             row_totals[j] = cards_per_page
@@ -2627,8 +2650,8 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
     end
 
     local options = {}
-    for i = 1, math.ceil(#pool/cards_per_page) do
-        table.insert(options, localize('k_page')..' '..tostring(i)..'/'..tostring(math.ceil(#pool/cards_per_page)))
+    for i = 1, math.ceil(#SMODS.current_collection_pool/cards_per_page) do
+        table.insert(options, localize('k_page')..' '..tostring(i)..'/'..tostring(math.ceil(#SMODS.current_collection_pool/cards_per_page)))
     end
     if not next(options) then
         table.insert(options, localize('k_page')..' 0/0')
@@ -2645,7 +2668,7 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
         end
         for j = 1, #rows do
             for i = 1, rows[j] do
-            local center = pool[i+row_totals[j] + (cards_per_page*(e.cycle_config.current_option - 1))]
+            local center = SMODS.current_collection_pool[i+row_totals[j] + (cards_per_page*(e.cycle_config.current_option - 1))]
             if not center then break end
             local card = Card(G.your_collection[j].T.x + G.your_collection[j].T.w/2, G.your_collection[j].T.y, G.CARD_W*args.card_scale, G.CARD_H*args.card_scale, G.P_CARDS.empty, (args.center and G.P_CENTERS[args.center]) or center)
             if args.modify_card then args.modify_card(card, center, i, j) end
@@ -2666,7 +2689,7 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
                 (G.ACTIVE_MOD_UI.ui_config or {}).outline_colour),
         back_func = (args and args.back_func) or G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', snap_back = args.snap_back, infotip = args.infotip, contents = {
           {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables},
-          (not args.hide_single_page or cards_per_page < #pool) and {n=G.UIT.R, config={align = "cm"}, nodes={
+          (not args.hide_single_page or cards_per_page < #SMODS.current_collection_pool) and {n=G.UIT.R, config={align = "cm"}, nodes={
             create_option_cycle({options = options, w = 4.5, cycle_shoulders = true, opt_callback = 'SMODS_card_collection_page', current_option = 1, colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED, no_pips = true, focus_args = {snap_to = true, nav = 'wide'}})
           }} or nil,
     }})
