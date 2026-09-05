@@ -350,25 +350,30 @@ function SMODS.in_scoring(card, scoring_hand) end
 ---@nodiscard
 ---@param path string Path to the file (excluding `mod.path`)
 ---@param id? string Key to Mod ID. Default to `SMODS.current_mod` if not provided.
+---@param aliases? string|string[] A sequence of alternative buffer names that will be used to patch the file.
 ---@return function|nil
 ---@return nil|string err
 --- Loads the lua/json file from provided path.
-function SMODS.load_file(path, id) end
+function SMODS.load_file(path, id, aliases) end
 
 ---@class LoadFolderConfig
 ---@field traversal? "postorder"|"inorder"|"preorder"|"files_only"|"custom" Strategy used to traverse files in the folder. Defaults to postorder.
 ---@field files? LoadFolderFilesEntry[] In case of custom traversal, you must specify what files to load in what order. Each entry must specify a `path` and can additionally use all allowed config options.
 ---@field catch_errors? true If set to `true`, errors are reflected in the returned table in the format `{failed = true, error = error_message}`. Otherwise, errors propagate to the caller, aborting the loading of other files. This flag extends to custom `files` entries. 
----@field reverse? true If `true`, use reverse alphabetical order for non-custom traversal strategies. Otherwise, alphabetical order is used.
+---@field reverse? boolean If `true`, reverses loading order of the files. This means non-custom traversal strategies are performed in reverse alphabetical order instead of alphabetical order. For custom traversal, the last specified entry is loaded first. This flag extends to custom `files` entries unless they specify it as `false`.
+---@field exclude? string[]|table<string,boolean> A map of paths to exclude from loading.
 
 ---@class LoadFolderFilesEntry: LoadFolderConfig
 ---@field path string The path of the file or folder to load for this entry.
-
+---@field aliases? string[] A sequence of alternative buffer names that will be used to patch the file.
 
 ---@nodiscard
 ---@param path string Path to the folder (excluding `mod.path`)
----@param config? string|LoadFolderConfig
+---@param config? string|LoadFolderConfig|LoadFolderFilesEntry A table specifying configuration for this loading task, or a file path (excluding `mod.path) to a Lua or JSON file containing this configuration.
 ---@param id? string Key to Mod ID. Default to `SMODS.current_mod` if not provided.
+---@param seen_paths? table Keeps track of already visited directories internally.
+---@return function|nil
+---@return nil|string err
 function SMODS.load_folder(path, config, id, seen_paths) end
 
 ---@param table table

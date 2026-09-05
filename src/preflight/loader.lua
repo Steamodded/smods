@@ -297,7 +297,7 @@ function loadMods(modsDirectory)
             elseif depth == 2 and filename == "lovely.toml" and not isDirLovely then
                 isDirLovely = true
                 table.insert(lovely_directories, flags)
-            elseif filename:lower():match('%.json') and depth > 1 then
+            elseif filename:lower():match('%.json$') and depth > 1 then
                 local json_str = NFS.read(file_path)
                 local parsed, mod = pcall(JSON.decode, json_str)
                 if mod and mod.name and mod.name:find('Steamodded') then smods_dupe = directory end
@@ -891,7 +891,7 @@ local function validate_load_args(path, id)
     return mod
 end
 
-function SMODS.load_file(path, id)
+function SMODS.load_file(path, id, aliases)
     local mod, err = validate_load_args(path, id)
     if not mod then return nil, err end
     local file_path = NFS.getNormalizedPath(mod.path .. path)
@@ -900,9 +900,16 @@ function SMODS.load_file(path, id)
     end
     local file_content, err = NFS.read(file_path)
     if not file_content then return  nil, "Error reading file '" .. path .. "' for mod with ID '" .. mod.id .. "': " .. err end
+
+    if type(aliases) == 'string' then aliases = {aliases} end
+    if type(aliases) ~= 'table' then aliases = {} end
+    for _,alias in ipairs(aliases) do
+        file_content = assert(lovely.apply_patches(alias, file_content))
+    end
+
     local chunk, err
     local chunk_name = "=[SMODS " .. mod.id .. ' "' .. path .. '"]'
-    if file_path:lower():match("%.json") then
+    if file_path:lower():match("%.json$") then
         file_content = assert(lovely.apply_patches(chunk_name, file_content))
         local success, result = pcall(JSON.decode, file_content)
         chunk, err = success and function() return result end, not success and result
@@ -914,6 +921,7 @@ function SMODS.load_file(path, id)
 end
 
 function SMODS.load_folder(path, config, id, seen_paths)
+    path = path:gsub("\\","/"):gsub("/$","")
     local mod, err = validate_load_args(path, id)
     if not mod then return nil, err end
     local dir_path = NFS.getNormalizedPath(mod.path .. path)
@@ -937,28 +945,91 @@ function SMODS.load_folder(path, config, id, seen_paths)
     if config.traversal == 'custom' and type(config.files) ~= 'table' then
         return nil, "Invalid configuration! With a custom `traversal`, it is required to specify an array of `files`!"
     end
+    if config.reverse and config.files then
+        local len = #config.files
+        for i = 1, math.floor(len/2) do
+            config.files[i], config.files[len+1-i] = config.files[len+1-i], config.files[i]
+        end
+    end
+
+    -- Sanitize the exclude table
+    config.exclude = config.exclude or {}
+    if type(config.exclude) ~= "table" then
+        if type(config.exclude) == "string" then
+            config.exclude = { [config.exclude] = true }
+        else
+            config.exclude = {}
+        end
+    end
+    if #config.exclude > 0 then
+        for i = #config.exclude, 1, -1 do
+            config.exclude[config.exclude[i]] = true
+            config.exclude[i] = nil
+        end
+    end
+    local exclude = {}
+    for _,k in ipairs(config.exclude) do 
+        if type(k) == "string" then exclude[k:lower()] = true end
+    end
+    for k,v in pairs(config.exclude) do
+        if type(k) == "string" then exclude[k:lower()] = v end
+    end
+    config.exclude = exclude
+
     local results = {}
     if config.traversal == 'custom' then
+        local custom_paths = {}
+        local has_catchall
         for _, entry in ipairs(config.files) do
-            entry.catch_errors = entry.catch_errors or config.catch_errors
-            entry.reverse = entry.reverse ~= nil and entry.reverse or config.reverse
-            local file_name = entry.path
-            local file_path = dir_path .. '/' .. file_name
-            local file_type = NFS.getInfo(file_path).type
-            if file_type == 'file' then
-                results[entry.path] = {SMODS.load_file(path..'/'..file_name, id), is_file = true}
-            elseif file_type == 'directory' or file_type == 'symlink' then
-                results[entry.path] = SMODS.load_folder(path..'/'..file_name, entry, id, seen_paths)
+            if not config.exclude[entry.path:lower()] then -- why would you do that
+                entry.catch_errors = entry.catch_errors or config.catch_errors
+                entry.reverse = entry.reverse ~= nil and entry.reverse or config.reverse
+                local file_name = entry.path
+                custom_paths[file_name] = true
+                local file_path = dir_path .. '/' .. file_name
+                local file_type = NFS.getInfo(file_path).type
+                if file_type == 'file' and (file_name:lower():match("%.lua$") or file_name:lower():match("%.json")) then
+                    results[entry.path] = {SMODS.load_file(path..'/'..file_name, id), is_file = true}
+                elseif file_type == 'directory' or file_type == 'symlink' then
+                    entry.exclude = entry.exclude or {}
+                    for k,v in pairs(config.exclude) do
+                        if v and string.sub(k, 1, #file_name) == file_name:lower() then
+                            entry.exclude[string.sub(k, #file_name+2)] = v
+                        end
+                    end
+                    if file_name == "" then
+                        has_catchall = true
+                    else
+                        results[entry.path] = SMODS.load_folder(path..'/'..file_name, entry, id, seen_paths)
+                    end
+                end
             end
+        end
+        if has_catchall then
+            seen_paths[path] = nil -- In this specific case it's okay to revisit the same directory
+            for k,v in pairs(custom_paths) do
+                config.files[""].exclude[k] = v
+            end
+            results[""] = SMODS.load_folder(path, config.files[""], id, seen_paths)
         end
     else
         for _, file_name in ipairs(NFS.getDirectoryItems(dir_path)) do
-            local file_path = dir_path .. '/' .. file_name
-            local file_type = NFS.getInfo(file_path).type
-            if file_type == 'file' then
-                results[file_name] = {SMODS.load_file(path..'/'..file_name, id), is_file = true}
-            elseif (file_type == 'directory' or file_type == 'symlink') and config.traversal ~= 'files_only' then
-                results[file_name] = SMODS.load_folder(path..'/'..file_name, config, id, seen_paths)
+            if not config.exclude[file_name:lower()] then
+                local file_path = dir_path .. '/' .. file_name
+                local file_type = NFS.getInfo(file_path).type
+                if file_type == 'file' and file_name then
+                    results[file_name] = {SMODS.load_file(path..'/'..file_name, id), is_file = true}
+                elseif (file_type == 'directory' or file_type == 'symlink') and config.traversal ~= 'files_only' then
+                    local cur_exclude = config.exclude
+                    config.exclude = {}
+                    for k,v in pairs(cur_exclude) do
+                        if v and string.sub(k, 1, #file_name) == file_name:lower() then
+                            config.exclude[string.sub(k, #file_name+2)] = v
+                        end
+                    end
+                    results[file_name] = SMODS.load_folder(path..'/'..file_name, config, id, seen_paths)
+                    config.exclude = cur_exclude
+                end
             end
         end
     end
@@ -973,12 +1044,16 @@ function SMODS.load_folder(path, config, id, seen_paths)
                     return table.remove(res, 1) and res or { failed = true, error = res[1]}
                 end
                 if err then error(err, 0) end
-                return chunk(...)
+                return {chunk(...)}
             end
             if config.traversal == 'custom' then
                 for _, entry in ipairs(config.files) do
                     if self[entry.path].is_file then
                         ret[entry.path] = call_file(entry.path, ...)
+                    elseif entry.path == "" then -- unwrap same-level catchall
+                        for k,v in pairs(self[entry.path](...)) do
+                            ret[k] = v
+                        end
                     else
                         ret[entry.path] = self[entry.path](...)
                     end
@@ -990,7 +1065,11 @@ function SMODS.load_folder(path, config, id, seen_paths)
                 end
                 table.sort(files_and_dirs, config.reverse and function(a,b) return a > b end)
                 for _,k in ipairs(files_and_dirs) do
-                    ret[k] = self[k].is_file and call_file(k, ...) or self[k](...)
+                    if self[k].is_file then
+                        ret[k] = call_file(k, ...)
+                    else
+                        ret[k] = self[k](...)
+                    end
                 end
             else
                 local files = {}
