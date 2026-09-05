@@ -473,7 +473,7 @@ function SMODS.find_card(key, count_debuffed) end
 ---@field enhanced_poll? number Chance to pick 'Base' over 'Enhanced' with set 'Playing Card'.
 ---@field silent? true|{edition?:true, seal?:true} Applies edition and/or seal silently
 ---@field attributes? string[] Creates a card with these attributes. All other arguments will be passed to SMODS.poll_object
----@field create_event? boolean Adds the card in an event instead of immediately. Automatically increments the area's buffer unless `ignore_buffer` is `true`
+---@field create_event? boolean|table Adds the card in an event instead of immediately. Can be a table with the event's parameters. Automatically increments the area's buffer unless `ignore_buffer` is `true`
 ---@field ignore_buffer? boolean Doesn't increment the area's buffer when called with `create_event` set to `true`
 ---@field buffer_increment? integer Increments buffer by this specific value instead of calculating it automatically when called with `create_event` set to `true`
 

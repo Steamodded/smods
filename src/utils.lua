@@ -4533,13 +4533,14 @@ function SMODS.add_to_deck(card, args)
             area.config.buffer = (area.config.buffer or 0) +
                 (args.buffer_increment or (1 + (card.ability.extra_slots_used or 0)))
         end
-        G.E_MANAGER:add_event(Event({
-            func = function()
-                add_card()
-                area.config.buffer = 0
-                return true
-            end
-        }))
+        local event_args = type(args.create_event) == "table" and args.create_event or {}
+        local event_func = event_args.func or function() return true end
+        event_args.func = function()
+            add_card()
+            area.config.buffer = 0
+            return event_func()
+        end
+        G.E_MANAGER:add_event(Event(event_args))
     else
         add_card()
     end
