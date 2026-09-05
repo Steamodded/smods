@@ -4674,6 +4674,6 @@ function SMODS.split_string(_string, parts)
     return text_output
 end
 
-function SMODS.get_slots_available(area)
-    return area and (area.config.card_limit - (#area.cards + (area.config.buffer or 0))) or 0
+function SMODS.get_slots_available(area, ignore_buffer)
+    return area and (area.config.card_limit - (#area.cards + (not ignore_buffer and area.config.buffer or 0))) or 0
 end

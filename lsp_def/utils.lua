@@ -987,3 +987,9 @@ function SMODS.process_loc_element(element) end
 --- Returns if the current ante would have a showdown boss blind.
 ---@return boolean
 function SMODS.is_showdown_ante() end
+
+--- Returns the amount of free slots in the CardArea, 0 if it doesn't exist
+---@param area? CardArea|PlayAreas|table 
+---@param ignore_buffer? boolean
+---@return number
+function SMODS.get_slots_available(area, ignore_buffer) end
