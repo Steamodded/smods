@@ -4531,7 +4531,7 @@ function SMODS.add_to_deck(card, args)
     if args.create_event then
         if not args.ignore_buffer then
             area.config.buffer = (area.config.buffer or 0) +
-                (args.buffer_increment or (1 + (card.ability.extra_slots_used or 0)))
+                (args.buffer_increment or 1)
         end
         local event_args = type(args.create_event) == "table" and args.create_event or {}
         local event_func = event_args.func or function() return true end
