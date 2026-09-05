@@ -3403,6 +3403,45 @@ end
 
 -- #endregion
 
+SMODS.GUI.cycle_tabber_handle = function(tab_buttons, args)
+	local options = {}
+	local c_option = 0
+	for k,v in pairs(args.tabs) do
+		if v.chosen then c_option = k end
+		options[k] = v.label
+	end
+	local conf = {
+		options = options,
+		w = 7,
+		cycle_shoulders = true,
+		opt_callback = 'SMODS_cycle_tabber_move',
+		current_option = c_option,
+		colour = G.C.RED,
+		focus_args = {snap_to = true, nav = 'wide'},
+		tabs = args.tabs
+	}
+	tab_buttons[1] = create_option_cycle(conf)
+	return conf
+end
+
+G.FUNCS.SMODS_cycle_tabber_move = function(arg)
+	if not arg then return end
+	local _infotip_object = G.OVERLAY_MENU:get_UIE_by_ID('overlay_menu_infotip')
+	if _infotip_object and _infotip_object.config.object then 
+		_infotip_object.config.object:remove() 
+		_infotip_object.config.object = Moveable()
+	end
+
+	local tab_contents = G.OVERLAY_MENU:get_UIE_by_ID('tab_contents') --this should be e.UIBox but that's not accessible here
+	local tab_option = arg.cycle_config.tabs[arg.cycle_config.current_option]
+	tab_contents.config.object:remove()
+	tab_contents.config.object = UIBox{
+		definition = tab_option.tab_definition_function(tab_option.tab_definition_function_args),
+		config = {offset = {x=0,y=0}, parent = tab_contents, type = 'cm'}
+	}
+	tab_contents.UIBox:recalculate()
+end
+
 --#region run stake display changes
 
 
