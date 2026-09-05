@@ -4516,13 +4516,34 @@ function SMODS.add_to_deck(card, args)
     if not args.area and SMODS.ConsumableTypes[card.ability.set] then
         args.area = G.consumeables
     end
-    card:add_to_deck()
-    if is_playing_card then
-        G.deck.config.card_limit = G.deck.config.card_limit + 1
-        table.insert(G.playing_cards, card)
-    end
+
     local area = args.area or G.jokers
-    area:emplace(card)
+
+    local add_card = function()
+        card:add_to_deck()
+        if is_playing_card then
+            G.deck.config.card_limit = G.deck.config.card_limit + 1
+            table.insert(G.playing_cards, card)
+        end
+        area:emplace(card)
+    end
+
+    if args.create_event then
+        if not args.ignore_buffer then
+            area.config.buffer = (area.config.buffer or 0) +
+                (args.buffer_increment or (1 + (card.ability.extra_slots_used or 0)))
+        end
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                add_card()
+                area.config.buffer = 0
+                return true
+            end
+        }))
+    else
+        add_card()
+    end
+
     return card
 end
 
@@ -4650,4 +4671,8 @@ function SMODS.split_string(_string, parts)
     end
 
     return text_output
+end
+
+function SMODS.get_slots_available(area)
+    return area and (area.config.card_limit - (#area.cards + (area.config.buffer or 0))) or 0
 end
