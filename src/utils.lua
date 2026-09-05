@@ -4500,7 +4500,10 @@ function SMODS.copy_card(card, args)
 
     if args.new_card or args.no_add then return copy end
 
-    return SMODS.add_to_deck(copy, {area = args.area or card.area, playing_card = playing_card})
+    args.area = args.area or card.area
+    args.playing_card = playing_card
+
+    return SMODS.add_to_deck(copy, args)
 end
 
 function SMODS.add_to_deck(card, args)
