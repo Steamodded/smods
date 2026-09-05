@@ -4539,6 +4539,7 @@ function SMODS.add_to_deck(card, args)
         local event_args = type(args.create_event) == "table" and args.create_event or {}
         local event_func = event_args.func or function() return true end
         event_args.func = function()
+            if event_args.pre_func then event_args.pre_func(card) end
             add_card()
             area.config.buffer = 0
             return event_func()
