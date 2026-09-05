@@ -352,8 +352,24 @@ function SMODS.in_scoring(card, scoring_hand) end
 ---@param id? string Key to Mod ID. Default to `SMODS.current_mod` if not provided.
 ---@return function|nil
 ---@return nil|string err
---- Loads the file from provided path.
+--- Loads the lua/json file from provided path.
 function SMODS.load_file(path, id) end
+
+---@class LoadFolderConfig
+---@field traversal? "postorder"|"inorder"|"preorder"|"files_only"|"custom" Strategy used to traverse files in the folder. Defaults to postorder.
+---@field files? LoadFolderFilesEntry[] In case of custom traversal, you must specify what files to load in what order. Each entry must specify a `path` and can additionally use all allowed config options.
+---@field catch_errors? true If set to `true`, errors are reflected in the returned table in the format `{failed = true, error = error_message}`. Otherwise, errors propagate to the caller, aborting the loading of other files. This flag extends to custom `files` entries. 
+---@field reverse? true If `true`, use reverse alphabetical order for non-custom traversal strategies. Otherwise, alphabetical order is used.
+
+---@class LoadFolderFilesEntry: LoadFolderConfig
+---@field path string The path of the file or folder to load for this entry.
+
+
+---@nodiscard
+---@param path string Path to the folder (excluding `mod.path`)
+---@param config? string|LoadFolderConfig
+---@param id? string Key to Mod ID. Default to `SMODS.current_mod` if not provided.
+function SMODS.load_folder(path, config, id, seen_paths) end
 
 ---@param table table
 ---@return string
