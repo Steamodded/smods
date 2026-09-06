@@ -921,7 +921,7 @@ local card_click_ref = Card.click
 function Card:click() 
     if self.params.stake and not self.params.stake_chip_locked and self.params.run_select_selection_choice then
         SMODS.RunSelect.Pages.stake_choice:handle_choice(self.params.stake)
-    elseif self.params.run_select_selection_choice and self.config.center.unlocked ~= false and self.config.center.discovered ~= false then
+    elseif self.params.run_select_selection_choice and self.config.center.unlocked ~= false and (self.config.center.discovered ~= false or self.bypass_discovery_center) then
         local page = SMODS.RunSelect.Pages[self.params.run_select_selection_choice[2]]
         if page.card_click and type(page.card_click) == 'function' then
             return page:card_click(self)
