@@ -812,6 +812,17 @@ pattern = 'G.STATE = -1'
 position = 'after'
 payload = 'G.in_delete_run = false'
 match_indent = true
+
+## Re-apply save data conversion on profile load to restore stake/sticker progress
+# Game:load_profile()
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = 'recursive_init(temp_profile, G.PROFILES[G.SETTINGS.profile])'
+payload = '''if convert_save_data and G.P_STAKES then convert_save_data(G.PROFILES[G.SETTINGS.profile], true) end'''
+
 # Card:remove()
 [[patches]]
 [patches.pattern]

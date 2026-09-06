@@ -833,6 +833,7 @@ function SMODS.stake_from_index(index)
 end
 
 function convert_usage_entry(entry)
+    if type(entry) ~= 'table' then return entry end
     for _,keys in ipairs{ {"wins","wins_by_key"},{"losses","losses_by_key"}} do
         entry[keys[1]] = entry[keys[1]] or {}
         entry[keys[2]] = entry[keys[2]] or {}
@@ -840,20 +841,20 @@ function convert_usage_entry(entry)
         local data_by_key = entry[keys[2]]
         setmetatable(data_by_key, {
             __index = function(t, k) 
-                if (G.P_STAKES[k] or {}).vanilla_index then
+                if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                     return data[G.P_STAKES[k].vanilla_index]
                 end
                 return rawget(t,k)
             end,
             __newindex = function(t,k,w)
-                if (G.P_STAKES[k] or {}).vanilla_index then
+                if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                     data[G.P_STAKES[k].vanilla_index] = w
                 end
                 rawset(t,k,w)
             end,
         })
         for k,w in pairs(data_by_key) do
-            if (G.P_STAKES[k] or {}).vanilla_index then
+            if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                 data[G.P_STAKES[k].vanilla_index] = math.max(data[G.P_STAKES[k].vanilla_index] or 0, w)
                 rawset(data_by_key, k, nil)
             end
@@ -862,14 +863,20 @@ function convert_usage_entry(entry)
     return entry
 end
 
-function convert_save_data()
-    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
+-- Convert usage tables. silent=true only fixes the in-memory wins_by_key <-> wins
+-- metatable bridge (used on profile load); omit it to also queue a profile save.
+function convert_save_data(profile, silent)
+    profile = profile or G.PROFILES[G.SETTINGS.profile]
+    for _, v in pairs(profile.deck_usage or {}) do
         convert_usage_entry(v)
     end
-    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
+    for _, v in pairs(profile.joker_usage or {}) do
         convert_usage_entry(v)
     end
-    G:save_settings()
+    for _, v in pairs(profile.sleeve_usage or {}) do
+        convert_usage_entry(v)
+    end
+    if not silent then G:save_settings() end
 end
 
 
