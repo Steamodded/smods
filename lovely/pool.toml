@@ -91,7 +91,12 @@ pattern = "if _type == 'Tarot' or _type == 'Tarot_Planet' then _pool[#_pool + 1]
 match_indent = true
 position = 'at'
 payload = '''
-if _rarity and SMODS.Rarities[_rarity] and SMODS.Rarities[_rarity].disable_if_empty then _pool[#_pool + 1] = "empty_rarity"
+local vanilla_rarities = { "Common", "Uncommon", "Rare", "Legendary" }
+local rarity_prototype = _rarity and (SMODS.Rarities[_rarity] or SMODS.Rarities[vanilla_rarities[_rarity]])
+if rarity_prototype and rarity_prototype.disable_if_empty then _pool[#_pool + 1] = "empty_rarity"
+elseif rarity_prototype and (type(rarity_prototype.default) == "string" or 
+(type(rarity_prototype.default) == "table" and rarity_prototype.default[_type])) then
+    _pool[#_pool+1] = type(rarity_prototype.default) == "table" and rarity_prototype.default[_type] or rarity_prototype.default
 elseif SMODS.ObjectTypes[_type] and SMODS.ObjectTypes[_type].default and G.P_CENTERS[SMODS.ObjectTypes[_type].default] then
     _pool[#_pool+1] = SMODS.ObjectTypes[_type].default
 elseif _type == 'Tarot' or _type == 'Tarot_Planet' then _pool[#_pool + 1] = "c_strength"'''
