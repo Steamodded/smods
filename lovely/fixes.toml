@@ -218,6 +218,8 @@ position = 'at'
 line_prepend = '$indent'
 payload = '''
 local new_ability = $2
+new_ability = SMODS.merge_defaults(new_ability, SMODS.get_default_ability_vars(self, center))
+
 self.ability = self.ability or {}
 new_ability.extra_value = nil
 new_ability.debuff_sources = {}

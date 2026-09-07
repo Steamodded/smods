@@ -627,14 +627,7 @@ position = 'after'
 pattern = "elseif _c.set == 'Joker' then"
 payload = '''
     if not card then
-        local ability = copy_table(_c.config)
-        ability.set = 'Joker'
-        ability.name = _c.name
-        -- temporary stopgap. fake cards should be implemented better
-        ability.x_mult = _c['config'].Xmult or _c['config'].x_mult
-        if ability.name == 'To Do List' then
-            ability.to_do_poker_hand = "High Card" -- fallback
-        end
+        local ability = SMODS.merge_defaults(copy_table(_c.config), SMODS.get_default_ability_vars(_c, card))
         local ret = {Card.generate_UIBox_ability_table({ ability = ability, config = { center = _c }, bypass_lock = true}, true)}
         specific_vars = ret[1]
         if ret[2] then desc_nodes[#desc_nodes+1] = ret[2] end
