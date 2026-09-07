@@ -2742,7 +2742,7 @@ function add_tag(_tag)
     add_tag_ref(_tag)
 end
 
-SMODS.get_default_ability_vars = function(center, card)
+SMODS.get_default_ability_vars = function(center, card, no_copy)
 	card = card or {}
 	card.ability = card.ability or {}
 
@@ -2755,8 +2755,8 @@ SMODS.get_default_ability_vars = function(center, card)
         to_do_poker_hand = pseudorandom_element(_poker_hands, 'false_to_do_smods')
     end
 
-	return {
-		name = center.name,
+	local new_ability = {
+		name = center.name or center.key,
 		effect = center.effect,
 		set = center.set,
 		mult = center.config.mult or 0,
@@ -2807,8 +2807,24 @@ SMODS.get_default_ability_vars = function(center, card)
         yorick_discards = center.name == 'Yorick' and (center.config.extra or {}).discards or nil,
 		burnt_hand = center.name == 'Loyalty Card' and 0 or nil,
 		loyalty_remaining = center.name == 'Loyalty Card' and (center.config.extra or {}).every or nil,
-		hands_played_at_create = G.GAME and G.GAME.hands_played or 0
+        hands_played_at_create = G.GAME and G.GAME.hands_played or 0,
+		
+		bonus = (card.ability.bonus or 0) + (center.config.bonus or 0)
 	}
+
+	if not no_copy then
+		for k, v in pairs(center.config) do
+			if k ~= 'bonus' then
+				if type(v) == 'table' then
+					new_ability[k] = copy_table(v)
+				else
+					new_ability[k] = v
+				end
+			end
+		end
+	end
+
+	return new_ability
 end
 
 function Card:quantum_set_ability(center)
@@ -2839,7 +2855,7 @@ function Card:quantum_set_ability(center)
     end
 
     self.ARGS.smods_quantum_ability = self.ARGS.smods_quantum_ability or {}
-    local new_ability = SMODS.merge_defaults(SMODS.get_default_ability_vars(self, center), self.ARGS.smods_quantum_ability)
+    local new_ability = SMODS.merge_defaults(SMODS.get_default_ability_vars(self, center, true), self.ARGS.smods_quantum_ability)
     
     self.ability = self.ability or {}
     new_ability.extra_value = nil
