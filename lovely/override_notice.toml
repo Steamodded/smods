@@ -68,6 +68,22 @@ match_indent = true
 [[patches]]
 [patches.pattern]
 target = "functions/misc_functions.lua"
+pattern = "function get_flush(hand)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "function get_X_same(num, hand)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/overrides.lua"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
 pattern = "function get_straight(hand)"
 position = "before"
 payload = "-- Function overridden by SMODS in src/overrides.lua"
@@ -149,6 +165,22 @@ match_indent = true
 [patches.pattern]
 target = "card.lua"
 pattern = "function Card:set_edition(edition, immediate, silent)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/game_objects/quantum_card_fields.lua (QField.inject)"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:set_seal(_seal, silent, immediate)"
+position = "before"
+payload = "-- Function overridden by SMODS in src/game_objects/quantum_card_fields.lua (QField.inject)"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = "function Card:get_end_of_round_effect(context)"
 position = "before"
 payload = "-- Function overridden by SMODS in src/overrides.lua"
 match_indent = true

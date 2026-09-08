@@ -35,9 +35,9 @@ payload = '''
 function eval_card(card, context)
     context = context or {}
     if not card:can_calculate(context.ignore_debuff, context.remove_playing_cards or context.joker_type_destroyed) then
-        if card.ability.rental then
+        if card:has_sticker("rental", {bypass_debuff = true}) then
             local ret = {}
-            ret[SMODS.Stickers.rental] = card:calculate_sticker(context, 'rental')
+            ret[SMODS.Stickers.rental] = SMODS.Stickers.rental:calculate(card, context)
             return ret, {}
         end
         return {}, {}
@@ -48,7 +48,7 @@ function eval_card(card, context)
     local ret = {}
 '''
 
-# built in config values
+# functions/common_events.lua : eval_card() : replace vanilla card field calc with CardAbilityFields.
 [[patches]]
 [patches.pattern]
 target = "functions/common_events.lua"
@@ -88,53 +88,6 @@ end
 match_indent = true
 position = "at"
 payload = """
-if context.cardarea == G.play and context.main_scoring then
-    ret.playing_card = {}
-    local chips = card:get_chip_bonus()
-    if chips ~= 0 then
-        ret.playing_card.chips = chips
-    end
-
-    local mult = card:get_chip_mult()
-    if mult ~= 0 then
-        ret.playing_card.mult = mult
-    end
-
-    local x_mult = card:get_chip_x_mult(context)
-    if x_mult > 0 then
-        ret.playing_card.x_mult = x_mult
-    end
-
-    local p_dollars = card:get_p_dollars()
-    if p_dollars ~= 0 then
-        ret.playing_card.p_dollars = p_dollars
-    end
-
-    local x_chips = card:get_chip_x_bonus()
-    if x_chips > 0 then
-        ret.playing_card.x_chips = x_chips
-    end
-
-    local score = card:get_bonus_score()
-    if score ~= 0 then
-        ret.playing_card.score = score
-    end
-    local x_score = card:get_bonus_x_score()
-    if x_score > 0 then
-        ret.playing_card.x_score = x_score
-    end
-
-	local blind_size = card:get_bonus_blind_size()
-    if blind_size ~= 0 then
-        ret.playing_card.blind_size = blind_size
-    end
-    local x_blind_size = card:get_bonus_x_blind_size()
-    if x_blind_size > 0 then
-        ret.playing_card.x_blind_size = x_blind_size
-    end
-    
-    -- TARGET: main scoring on played cards
-end
 if context.end_of_round and context.cardarea == G.hand and context.playing_card_end_of_round then
     local end_of_round = card:get_end_of_round_effect(context)
     if end_of_round then
@@ -165,48 +118,18 @@ if context.cardarea == G.hand then
 match_indent = true
 position = "at"
 payload = """
+if context.main_scoring or context.end_of_round then
+    for i, key in ipairs(SMODS.CardAbilityField.obj_buffer) do
+        local ca_field = SMODS.CardAbilityFields[key]
+        if ca_field:check_context_criteria(context) then
+            ca_field:insert_value(card, ret)
+        end
+    end
+end
 if context.cardarea == G.hand and context.main_scoring then
-    ret.playing_card = {}
-    local h_mult = card:get_chip_h_mult()
-    if h_mult ~= 0 then
-        ret.playing_card.h_mult = h_mult
-    end
-
-    local h_x_mult = card:get_chip_h_x_mult()
-    if h_x_mult > 0 then
-        ret.playing_card.x_mult = h_x_mult
-    end
-
-    local h_chips = card:get_chip_h_bonus()
-    if h_chips ~= 0 then
-        ret.playing_card.h_chips = h_chips
-    end
-
-    local h_x_chips = card:get_chip_h_x_bonus()
-    if h_x_chips > 0 then
-        ret.playing_card.x_chips = h_x_chips
-    end
-
-    local h_score = card:get_bonus_h_score()
-    if h_score ~= 0 then
-        ret.playing_card.h_score = h_score
-    end
-    local h_x_score = card:get_bonus_h_x_score()
-    if h_x_score > 0 then
-        ret.playing_card.h_x_score = h_x_score
-    end
-	local h_blind_size = card:get_bonus_h_blind_size()
-    if h_blind_size ~= 0 then
-        ret.playing_card.blind_size = h_blind_size
-    end
-    local h_x_blind_size = card:get_bonus_h_x_blind_size()
-    if h_x_blind_size > 0 then
-        ret.playing_card.x_blind_size = h_x_blind_size
-    end
-
     -- TARGET: main scoring on held cards
 """
-
+# functions/common_events.lua : eval_card() : replace vanilla card field calc with CardAbilityFields and QuantumCardFields
 [[patches]]
 [patches.pattern]
 target = "functions/common_events.lua"
@@ -219,42 +142,14 @@ end
 match_indent = true
 position = "at"
 payload = """
-if card.ability.set == 'Enhanced' then
-    local enhancement = card:calculate_enhancement(context)
-    if enhancement then
-        ret.enhancement = enhancement
-    end
-end
-if context.extra_enhancement then return ret end
-if card.edition then
-    local edition = card:calculate_edition(context)
-    if edition then
-        ret.edition = edition
-    end
-end
-if card.seal then
-    local seals = card:calculate_seal(context)
-    if seals then
-        ret.seals = seals
-    end
-end
-for _,k in ipairs(SMODS.Sticker.obj_buffer) do
-    local v = SMODS.Stickers[k]
-    local sticker = card:calculate_sticker(context, k)
-    if sticker then
-        ret[v] = sticker
-    end
+for i, key in ipairs(SMODS.QuantumCardField.obj_buffer) do
+    local q_field = SMODS.QuantumCardFields[key]
+    local eval = q_field.calculate(card, context)
+    if eval then ret[q_field.calc_key] = eval end
 end
 
 -- TARGET: evaluate your own repetition effects
-if card.ability.repetitions and card.ability.repetitions > 0 then
-    ret.seals = ret.seals or { card = card, message = localize('k_again_ex') }
-    ret.seals.repetitions = (ret.seals.repetitions and ret.seals.repetitions + card.ability.repetitions) or card.ability.repetitions
-end
-if card.ability.perma_repetitions and card.ability.perma_repetitions > 0 then
-    ret.seals = ret.seals or { card = card, message = localize('k_again_ex') }
-    ret.seals.repetitions = (ret.seals.repetitions and ret.seals.repetitions + card.ability.perma_repetitions) or card.ability.perma_repetitions
-end
+SMODS.CardAbilityFields.repetitions:insert_value(card, ret)
 """
 [[patches]]
 [patches.pattern]
@@ -263,31 +158,10 @@ pattern = "if context.cardarea == G.jokers or context.card == G.consumeables the
 match_indent = true
 position = "before"
 payload = """
-if card.ability.set == 'Enhanced' then
-    local enhancement = card:calculate_enhancement(context)
-    if enhancement then
-        ret.enhancement = enhancement
-    end
-end
-if context.extra_enhancement then return ret end
-if card.edition then
-    local edition = card:calculate_edition(context)
-    if edition then
-        ret.edition = edition
-    end
-end
-if card.seal then
-    local seals = card:calculate_seal(context)
-    if seals then
-        ret.seals = seals
-    end
-end
-for _,k in ipairs(SMODS.Sticker.obj_buffer) do
-    local v = SMODS.Stickers[k]
-    local sticker = card:calculate_sticker(context, k)
-    if sticker then
-        ret[v] = sticker
-    end
+for i, key in ipairs(SMODS.QuantumCardField.obj_buffer) do
+    local q_field = SMODS.QuantumCardFields[key]
+    local eval = q_field.calculate(card, context)
+    if eval then ret[q_field.calc_key] = eval end
 end
 
 -- TARGET: evaluate your own general effects
@@ -1510,7 +1384,6 @@ payload = '''
     local card_to_save = self and copy_card(self) or Card(0, 0, G.CARD_W, G.CARD_H, G.P_CARDS.empty, center)
     card_to_save.VT.x, card_to_save.VT.y = G.vouchers.T.x, G.vouchers.T.y
     G.vouchers:emplace(card_to_save)
-    SMODS.enh_cache:clear()
 '''
 
 [[patches]]
