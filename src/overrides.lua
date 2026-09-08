@@ -1975,7 +1975,8 @@ function create_UIBox_current_hands(simple, in_collection)
 						colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or
 						G.C.RED,
 						no_pips = true,
-						in_collection = in_collection
+						in_collection = in_collection,
+						simple = simple
 					}) }
 			} or nil }
 	}
@@ -1998,6 +1999,7 @@ G.FUNCS.your_hands_page = function(args)
 	if not args or not args.cycle_config then return end
 	G.current_hands = {}
 	local in_collection = args.cycle_config.in_collection
+	local simple = args.cycle_config.simple
 	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
 	local handlist = in_collection and {} or nil
 	if _pool then
@@ -2128,8 +2130,9 @@ function Card:set_sprites(_center, _front)
 						(_center.undiscovered[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
 						_center.undiscovered.atlas)
 					) or
-					(undiscovered_sprite and undiscovered_sprite[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or undiscovered_sprite.atlas)
-				) or _center.set or SMODS.get_atlas("Joker")
+                    (undiscovered_sprite and (undiscovered_sprite[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or undiscovered_sprite.atlas))
+					or _center.set
+				) or SMODS.get_atlas("Joker")
 				local pos = (_center.undiscovered and _center.undiscovered.pos) or (undiscovered_sprite and undiscovered_sprite.pos) or G.j_undiscovered.pos
 				local sprite_args = (_center.undiscovered and _center.undiscovered.sprite_args) or (undiscovered_sprite and undiscovered_sprite.sprite_args) or G.j_undiscovered.sprite_args
 				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos, sprite_args)

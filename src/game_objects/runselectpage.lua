@@ -25,7 +25,7 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
         self.pool = self.generate_pool and self:generate_pool()
         if not self.injected then
             if self.quick_start_text then
-                table.insert(SMODS.RunSelect.Internals.quick_start_text_functions, self.page, self.quick_start_text)
+                table.insert(SMODS.RunSelect.Internals.quick_start_text_functions, math.min(self.page, #SMODS.RunSelect.Internals.quick_start_text_functions + 1), self.quick_start_text)
             end
             table.insert(SMODS.RunSelect.Internals.pages, self.page, self.key)
             for i = self.page + 1, #SMODS.RunSelect.Internals.pages do
@@ -131,7 +131,7 @@ SMODS.RunSelectPage({
         card.children.back:remove()
         card.children.back = SMODS.create_sprite(card.T.x, card.T.y, card.T.w, card.T.h, G.ASSET_ATLAS[card.config.center.unlocked and card.config.center.atlas or 'centers'], card.config.center.unlocked and card.config.center.pos or {x = 4, y = 0})
         stick(card)
-        if card_number == self.stack_size then
+        if card_number == SMODS.RunSelect.Internals.stack_size then
             card.sticker = get_deck_win_sticker(card.config.center)
         end
         return card

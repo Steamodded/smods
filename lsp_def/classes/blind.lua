@@ -12,6 +12,7 @@
 ---@field boss_colour? table HEX color for the background when playing this Blind. 
 ---@field debuff? table Configures vanilla blind effects related to debuffing, see [SMODS.Blind](https://docs.smods.dev/Game%20Objects/SMODS.Blind#api-methods) Documentation. Ignored if Blind defines `debuff_hand` or `debuff_card`. 
 ---@field ignore_showdown_check? boolean Sets if `in_pool` should be respected regardless of whether a showdown Boss Blind was requested or not. 
+---@field attributes? string[]|table<string,true> Array of Attributes this center has. Converted into a dictionary after injection.
 ---@field vars? table Variables for this Blind's description in the collection. 
 ---@field __call? fun(self: SMODS.Blind|table, o: SMODS.Blind|table): nil|table|SMODS.Blind
 ---@field extend? fun(self: SMODS.Blind|table, o: SMODS.Blind|table): table Primary method of creating a class. 
@@ -42,7 +43,8 @@
 ---@field collection_loc_vars? fun(self: SMODS.Blind|table): table? Provides control over displaying the Blind description in the collections menu. 
 ---@field in_pool? fun(self: SMODS.Blind|table): boolean Allows configuring if the Blind is allowed to appear. 
 ---@field calculate? fun(self: SMODS.Blind|table, blind: Blind|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://docs.smods.dev/API%20Documentation/Calculate-Functions) docs for details. 
----@field calc_dollar_bonus? fun(self: SMODS.Blind|table, blind: Blind|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money. 
+---@field calc_dollar_bonus? fun(self: SMODS.Blind|table, blind: Blind|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money.
+---@field get_weight? fun(self: SMODS.Blind|table, weight: number, args: table?): number Used for finer control over this blind's weight with the object weights optional feature is enabled. 
 ---@overload fun(self: SMODS.Blind): SMODS.Blind
 SMODS.Blind = setmetatable({}, {
     __call = function(self)

@@ -164,3 +164,27 @@ payload = '''if not G.blind_select_opts then
     end
     return true
 end'''
+
+# Prevent G.FUNCS.reroll_boss from reverting blind completion if called outside the blind select UI
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+G.blind_select_opts = {}
+'''
+payload = '''
+G.GAME.round_resets.blind_states[G.GAME.blind_on_deck] = 'Select'
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if not run_info then G.GAME.round_resets.blind_states[G.GAME.blind_on_deck] = 'Select' end
+'''
+payload = '''
+--if not run_info then G.GAME.round_resets.blind_states[G.GAME.blind_on_deck] = 'Select' end
+'''
