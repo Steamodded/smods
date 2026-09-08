@@ -1126,9 +1126,16 @@ function SMODS.calculate_quantum_enhancements(card, effects, context)
     SMODS.extra_enhancement_calc_in_progress = nil
 end
 
-function SMODS.has_playing_card_property(card, key) 
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if G.P_CENTERS[k][key] then return true end
+function SMODS.has_playing_card_property(card, key)
+    if key == 'should_hide_front' then
+        -- Ignore quantum enhancements for 'should_hide_front'
+        if card.ability.set == 'Enhanced' and G.P_CENTERS[card.config.center.key][key] then
+            return true
+        end
+    else
+        for k, _ in pairs(SMODS.get_enhancements(card)) do
+            if G.P_CENTERS[k][key] then return true end
+        end
     end
     if (G.P_CENTERS[(card.edition or {}).key] or {})[key] then return true end
     if (G.P_SEALS[card.seal or {}] or {})[key] then return true end
