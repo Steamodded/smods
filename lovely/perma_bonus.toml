@@ -108,52 +108,6 @@ bonus_chips = bonus_chips ~= 0 and bonus_chips or nil,
 bonus_repetitions = self.ability.perma_repetitions ~= 0 and self.ability.perma_repetitions or nil,'''
 match_indent = true
 
-# set_ability: set defaults for temporary bonuses
-# Also add conformance with SMODS documentation.
-[[patches]]
-[patches.pattern]
-target = "card.lua"
-pattern = "x_mult = center.config.Xmult or 1,"
-position = "at"
-payload = '''
-x_mult = center.config.Xmult or center.config.x_mult or 1,
-h_chips = center.config.h_chips or 0,
-x_chips = center.config.x_chips or 1,
-h_x_chips = center.config.h_x_chips or 1,
-repetitions = center.config.repetitions or 0,
-'''
-match_indent = true
-
-# set_ability: set defaults for permanent bonuses
-[[patches]]
-[patches.pattern]
-target = "card.lua"
-pattern = "perma_bonus = self.ability and self.ability.perma_bonus or 0,"
-position = "after"
-payload = '''
-perma_x_chips = self.ability and self.ability.perma_x_chips or 0,
-perma_mult = self.ability and self.ability.perma_mult or 0,
-perma_x_mult = self.ability and self.ability.perma_x_mult or 0,
-perma_h_chips = self.ability and self.ability.perma_h_chips or 0,
-perma_h_x_chips = self.ability and self.ability.perma_h_x_chips or 0,
-perma_h_mult = self.ability and self.ability.perma_h_mult or 0,
-perma_h_x_mult = self.ability and self.ability.perma_h_x_mult or 0,
-perma_p_dollars = self.ability and self.ability.perma_p_dollars or 0,
-perma_h_dollars = self.ability and self.ability.perma_h_dollars or 0,
-perma_repetitions = self.ability and self.ability.perma_repetitions or 0,
-card_limit = self.ability and self.ability.card_limit or 0,
-extra_slots_used = self.ability and self.ability.extra_slots_used or 0,
-perma_score = self.ability and self.ability.perma_score or 0,
-perma_h_score = self.ability and self.ability.perma_h_score or 0,
-perma_x_score = self.ability and self.ability.perma_x_score or 0,
-perma_h_x_score = self.ability and self.ability.perma_h_x_score or 0,
-perma_blind_size = self.ability and self.ability.perma_blind_size or 0,
-perma_h_blind_size = self.ability and self.ability.perma_h_blind_size or 0,
-perma_x_blind_size = self.ability and self.ability.perma_x_blind_size or 0,
-perma_h_x_blind_size = self.ability and self.ability.perma_h_x_blind_size or 0,
-'''
-match_indent = true
-
 # Card:get_chip_bonus
 [[patches]]
 [patches.pattern]
