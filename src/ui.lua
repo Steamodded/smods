@@ -1377,13 +1377,14 @@ local function createClickableModBox(modInfo, scale)
     end
     bg_col = mix_colours({0.5,0.5,0.5,0.2},col,0.5)
     local label_nodes = {}
+    local mod_name = (G.localization.descriptions.Mod or {})[modInfo.id] and localize { type = 'name_text', set = 'Mod', key = modInfo.id } or modInfo.name
     table.insert(label_nodes, {
         n = G.UIT.R,
         nodes = {{
             n = G.UIT.O,
             config = { object = SMODS.UIScrollBox({
                 content = DynaText({
-                    string = modInfo.name,
+                    string = mod_name,
                     colours = { text_col or G.C.UI.TEXT_LIGHT },
                     shadow = true,
                     scale = scale,

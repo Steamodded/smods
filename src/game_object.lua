@@ -738,6 +738,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     SMODS.Gradient = SMODS.GameObject:extend {
         obj_table = SMODS.Gradients,
         obj_buffer = {},
+        set = "Gradient",
         required_params = { 'key' },
         interpolation = 'trig',
         cycle = 10,
