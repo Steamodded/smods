@@ -3897,7 +3897,7 @@ SMODS.UndiscoveredCompat = {
                     key = self.calculation_keys[1],
                     order = self.calculation_order or 0,
                     variants = self.calculation_keys,
-                    calculate = function (calc_effect, effect, scored_card, key, amount, from_edition)
+                    func = function (calc_effect, effect, scored_card, key, amount, from_edition)
                         return self:calc_effect(effect, scored_card, key, amount, from_edition)
                     end
                 }
