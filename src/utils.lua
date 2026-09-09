@@ -1291,8 +1291,8 @@ end
 
 -- This function handles the calculation of each effect returned to evaluate play.
 SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, from_edition)
-    for _, calc_key in ipairs(SMODS.CalculateEffect.obj_buffer) do
-        local calc_effect = SMODS.CalculateEffects[calc_key]
+    for _, calc_key in ipairs(SMODS.CalculationEffect.obj_buffer) do
+        local calc_effect = SMODS.CalculationEffects[calc_key]
         if calc_effect.variants[key] then
             if calc_effect:should_calculate(amount) then
                 return calc_effect:calculate(effect, scored_card, key, amount, from_edition)
@@ -1347,8 +1347,8 @@ end
 
 SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
     local ret = { scored_card = scored_card }
-    for _, key in ipairs(SMODS.CalculateEffect.obj_buffer) do
-        local calc_effect = SMODS.CalculateEffects[key]
+    for _, key in ipairs(SMODS.CalculationEffect.obj_buffer) do
+        local calc_effect = SMODS.CalculationEffects[key]
         for variant, _ in pairs(calc_effect.variants) do
             if effect[variant] then
                 if effect.juice_card and not SMODS.no_resolve and not effect.no_juice then
@@ -1736,7 +1736,7 @@ end
 
 -- Updates a [context] with all compatible [flags]
 function SMODS.update_context_flags(context, flags)
-    for key, calc_effect in pairs(SMODS.CalculateEffects) do
+    for key, calc_effect in pairs(SMODS.CalculationEffects) do
         if type(calc_effect.update_context_flags) == "function" then
             if calc_effect:check_context_flags(context, flags) then
                 calc_effect:update_context_flags(context, flags)

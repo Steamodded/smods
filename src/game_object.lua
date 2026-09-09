@@ -3893,7 +3893,7 @@ SMODS.UndiscoveredCompat = {
             self.lick = {1, 1, 1, 1}
             self.current = self.default_value
             if self.calculation_keys then
-                SMODS.CalculateEffect {
+                SMODS.CalculationEffect {
                     key = self.calculation_keys[1],
                     order = self.calculation_order or 0,
                     variants = self.calculation_keys,
@@ -4124,7 +4124,7 @@ SMODS.UndiscoveredCompat = {
     }
 
     -------------------------------------------------------------------------------------------------
-    ----- API IMPORT GameObject.CalculateEffect
+    ----- API IMPORT GameObject.CalculationEffect
     -------------------------------------------------------------------------------------------------
 
     assert(load(NFS.read(SMODS.path..'src/game_objects/calculate_effect.lua'), ('=[SMODS _ "src/game_objects/calculate_effect.lua"]')))()
