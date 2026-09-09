@@ -22,8 +22,8 @@ SMODS.CalculationEffect = SMODS.GameObject:extend {
         end
         self.variants[self.key] = true
         for variant, _ in pairs(self.variants) do
-            assert(not(SMODS.CalculationEffectVariants[variant]), ("SMODS.CalculationEffect '%s' injected with overlapping variant '%s'"):format(self.key, variant))
-            SMODS.CalculationEffectVariants[variant] = self
+            assert(not(SMODS.CalculationEffectByVariants[variant]), ("SMODS.CalculationEffect '%s' injected with overlapping variant '%s'"):format(self.key, variant))
+            SMODS.CalculationEffectByVariants[variant] = self
         end
     end,
     post_inject_class = function (self)
@@ -146,31 +146,8 @@ SMODS.CalculationEffect {
 }
 
 SMODS.CalculationEffect {
-    key = "message",
-    order = 60,
-    func = function (self, effect, scored_card, key, amount, from_edition)
-        if not SMODS.no_resolve then
-            if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-            if effect.retrigger_juice then juice_card(effect.retrigger_juice) end
-            card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect)
-            return true
-        end
-    end
-}
-
-SMODS.CalculationEffect {
-    key = "func",
-    order = 70,
-    silent = true,
-    func = function (self, effect, scored_card, key, amount, from_edition)
-        effect.func()
-        return true
-    end
-}
-
-SMODS.CalculationEffect {
     key = "swap",
-    order = 80,
+    order = 60,
     func = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         local old_mult = mult
@@ -184,7 +161,7 @@ SMODS.CalculationEffect {
 
 SMODS.CalculationEffect {
     key = "balance",
-    order = 90,
+    order = 70,
     func = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         local total = mult + hand_chips
@@ -239,28 +216,8 @@ SMODS.CalculationEffect {
 }
 
 SMODS.CalculationEffect {
-    key = "level_up",
-    order = 100,
-    func = function (self, effect, scored_card, key, amount, from_edition)
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        local hand_type = effect.level_up_hand or G.GAME.last_hand_played
-        SMODS.smart_level_up_hand(scored_card, hand_type, effect.instant, amount)
-        return true
-    end
-}
-
-SMODS.CalculationEffect {
-    key = "extra",
-    order = 400,
-    silent = true,
-    func = function (self, effect, scored_card, key, amount, from_edition)
-        return SMODS.calculate_effect(amount, scored_card)
-    end
-}
-
-SMODS.CalculationEffect {
     key = "saved",
-    order = 120,
+    order = 80,
     silent = true,
     func = function (self, effect, scored_card, key, amount, from_edition)
         SMODS.saved = amount
@@ -274,66 +231,109 @@ SMODS.CalculationEffect {
 
 SMODS.CalculationEffect {
     key = "effect",
-    order = 130,
+    order = 90,
     silent = true,
     func = function (self, effect, scored_card, key, amount, from_edition)
         return true
     end
 }
 
+SMODS.CalculationEffect {
+    key = "message",
+    order = 200,
+    func = function (self, effect, scored_card, key, amount, from_edition)
+        if not SMODS.no_resolve then
+            if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+            if effect.retrigger_juice then juice_card(effect.retrigger_juice) end
+            card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect)
+            return true
+        end
+    end
+}
+
+SMODS.CalculationEffect {
+    key = "func",
+    order = 220,
+    silent = true,
+    func = function (self, effect, scored_card, key, amount, from_edition)
+        effect.func()
+        return true
+    end
+}
+
+SMODS.CalculationEffect {
+    key = "level_up",
+    order = 210,
+    func = function (self, effect, scored_card, key, amount, from_edition)
+        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+        local hand_type = effect.level_up_hand or G.GAME.last_hand_played
+        SMODS.smart_level_up_hand(scored_card, hand_type, effect.instant, amount)
+        return true
+    end
+}
+
+SMODS.CalculationEffect {
+    key = "extra",
+    order = 380,
+    silent = true,
+    func = function (self, effect, scored_card, key, amount, from_edition)
+        return SMODS.calculate_effect(amount, scored_card)
+    end
+}
+
 --#region key_return_flags
 SMODS.CalculationEffect {
     key = "prevent_debuff",
-    order = 140,
+    order = 120,
     silent = true,
     default_return = "key",
 }
 
 SMODS.CalculationEffect {
     key = "add_to_hand",
-    order = 150,
+    order = 140,
     silent = true,
     default_return = "key",
 }
 
 SMODS.CalculationEffect {
     key = "remove_from_hand",
-    order = 160,
+    order = 150,
     silent = true,
     default_return = "key",
 }
 
 SMODS.CalculationEffect {
     key = "return_to_hand",
-    order = 170,
+    order = 160,
     silent = true,
     default_return = "key",
 }
 
 SMODS.CalculationEffect {
     key = "stay_flipped",
-    order = 180,
+    order = 170,
     silent = true,
     default_return = "key",
 }
 
 SMODS.CalculationEffect {
     key = "prevent_stay_flipped",
-    order = 190,
+    order = 180,
     silent = true,
     default_return = "key",
 }
 
 SMODS.CalculationEffect {
     key = "prevent_trigger",
-    order = 200,
+    order = 270,
     default_return = "key",
 }
 --#endregion
 
 SMODS.CalculationEffect {
     key = "modify",
-    order = 210,
+    order = 250,
     func = function (self, effect, scored_card, key, amount, from_edition)
         if SMODS.context_stack[#SMODS.context_stack].context.modify_final_cashout then
             if effect.cashout_row then
@@ -363,19 +363,19 @@ SMODS.CalculationEffect {
 --#region amount_return_flags
 SMODS.CalculationEffect {
     key = "remove",
-    order = 220,
+    order = 100,
     silent = true,
 }
 
 SMODS.CalculationEffect {
     key = "debuff_text",
-    order = 230,
+    order = 130,
     silent = true,
 }
 
 SMODS.CalculationEffect {
     key = "cards_to_draw",
-    order = 240,
+    order = 190,
     silent = true,
     update_context_flags = function (self, context, flags)
         context.amount = flags.cards_to_draw
@@ -384,7 +384,7 @@ SMODS.CalculationEffect {
 
 SMODS.CalculationEffect {
     key = "numerator",
-    order = 250,
+    order = 230,
     silent = true,
     update_context_flags = function (self, context, flags)
         context.numerator = flags.numerator
@@ -393,7 +393,7 @@ SMODS.CalculationEffect {
 
 SMODS.CalculationEffect {
     key = "denominator",
-    order = 260,
+    order = 240,
     silent = true,
     update_context_flags = function (self, context, flags)
         context.denominator = flags.denominator
@@ -402,7 +402,7 @@ SMODS.CalculationEffect {
 
 SMODS.CalculationEffect {
     key = "no_destroy",
-    order = 270,
+    order = 260,
     silent = true,
 }
 
@@ -443,17 +443,17 @@ SMODS.CalculationEffect {
 
 SMODS.CalculationEffect {
     key = "override",
-    order = 310,
+    order = 330,
 }
 
 SMODS.CalculationEffect {
     key = "shop_create_flags",
-    order = 320,
+    order = 310,
 }
 
 SMODS.CalculationEffect {
     key = "booster_create_flags",
-    order = 330,
+    order = 320,
 }
 
 SMODS.CalculationEffect {
@@ -501,7 +501,7 @@ SMODS.CalculationEffect {
 
 SMODS.CalculationEffect {
     key = "override_message",
-    order = 370,
+    order = 360,
     check_context_flags = function (self, context, flags) 
         return (context.scaling_card or context.resetting_card) and SMODS.CalculationEffect.check_context_flags(self, context, flags)
     end,
@@ -519,7 +519,7 @@ SMODS.CalculationEffect {
 
 SMODS.CalculationEffect {
     key = "post",
-    order = 380,
+    order = 370,
     check_context_flags = function (self, context, flags) 
         return (context.scaling_card or context.resetting_card) and SMODS.CalculationEffect.check_context_flags(self, context, flags)
     end,
@@ -534,7 +534,7 @@ SMODS.CalculationEffect {
 
 SMODS.CalculationEffect {
     key = "debuff",
-    order = 390,
+    order = 110,
     silent = true,
     func = function (self, effect, scored_card, key, amount, from_edition)
         return { [self.key] = amount, debuff_source = scored_card }
