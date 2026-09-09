@@ -3892,15 +3892,16 @@ SMODS.UndiscoveredCompat = {
             self.colour = self.colour or G.C.UI_MULT
             self.lick = {1, 1, 1, 1}
             self.current = self.default_value
-            if self.calculation_keys then
-                SMODS.CalculationEffect {
-                    key = self.calculation_keys[1],
-                    order = self.calculation_order or 0,
-                    variants = self.calculation_keys,
-                    func = function (calc_effect, effect, scored_card, key, amount, from_edition)
-                        return self:calc_effect(effect, scored_card, key, amount, from_edition)
-                    end
-                }
+            for _, calc_effect_table in ipairs(self.calculation_effects or {}) do
+                calc_effect_table.key = calc_effect_table.key or calc_effect_table.variants and calc_effect_table.variants[1]
+                local wrapped_func = calc_effect_table.func or self.default_calc_effect_func
+                calc_effect_table.func = function (calc_effect, effect, scored_card, key, amount, from_edition) -- Wrap the function to allow passing in the SMODS.Scoring_Parameter as self 
+                    return wrapped_func(self, calc_effect, effect, scored_card, key, amount, from_edition)
+                end
+                SMODS.CalculationEffect(calc_effect_table)
+            end
+            if self.calculation_effects then
+                
             end
             SMODS.Calculation_Controls[self.key] = false
         end,
@@ -3926,7 +3927,7 @@ SMODS.UndiscoveredCompat = {
                 hand[self.key] = math.max(hand[self.key] + amount, 0)
             end
         end,
-        calc_effect = function(self, effect, scored_card, key, amount, from_edition)
+        default_calc_effect_func = function (self, calc_effect, effect, scored_card, key, amount, from_edition)
             if not SMODS.Calculation_Controls[self.key] then return end
             if amount then
                 if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
@@ -3942,46 +3943,58 @@ SMODS.UndiscoveredCompat = {
         key = 'chips',
         default_value = 0,
         colour = G.C.UI_CHIPS,
-        calculation_keys = {'chips', 'h_chips', 'chip_mod', 'x_chips', 'xchips', 'Xchip_mod',},
-        calc_effect = function(self, effect, scored_card, key, amount, from_edition)
-            if not SMODS.Calculation_Controls.chips then return end
-            if (key == 'chips' or key == 'h_chips' or key == 'chip_mod') and amount then
-                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-                self:modify(amount)
-                if not effect.remove_default_message then
-                    if from_edition then
-                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {math.abs(amount)}}, chip_mod = amount, colour = G.C.EDITION, edition = true})
-                    else
-                        if key ~= 'chip_mod' then
-                            if effect.chip_message then
-                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.chip_message)
+        calculation_effects = {
+            {
+                variants = { 'chips', 'h_chips', 'chip_mod' },
+                order = 0,
+                func = function (self, calc_effect, effect, scored_card, key, amount, from_edition)
+                    if not SMODS.Calculation_Controls.chips then return end
+                    if amount then
+                        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                        self:modify(amount)
+                        if not effect.remove_default_message then
+                            if from_edition then
+                                card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_chips' or 'a_chips_minus', vars = {math.abs(amount)}}, chip_mod = amount, colour = G.C.EDITION, edition = true})
                             else
-                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'chips', amount, percent)
+                                if key ~= 'chip_mod' then
+                                    if effect.chip_message then
+                                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.chip_message)
+                                    else
+                                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'chips', amount, percent)
+                                    end
+                                end
                             end
                         end
+                        return true
                     end
                 end
-                return true
-            end
-            if (key == 'x_chips' or key == 'xchips' or key == 'Xchip_mod') and amount ~= 1 then
-                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-                self:modify(hand_chips * (amount - 1))
-                if not effect.remove_default_message then
-                    if from_edition then
-                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xchips' or 'a_xchips_minus',vars={math.abs(amount)}}, Xchips_mod =  amount, colour =  G.C.EDITION, edition = true})
-                    else
-                        if key ~= 'Xchip_mod' then
-                            if effect.xchip_message then
-                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.xchip_message)
+            },
+            {
+                variants = { 'x_chips', 'xchips', 'Xchip_mod' },
+                order = 1,
+                func = function (self, calc_effect, effect, scored_card, key, amount, from_edition)
+                    if not SMODS.Calculation_Controls.chips then return end
+                    if amount ~= 1 then
+                        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                        self:modify(hand_chips * (amount - 1))
+                        if not effect.remove_default_message then
+                            if from_edition then
+                                card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xchips' or 'a_xchips_minus',vars={math.abs(amount)}}, Xchips_mod =  amount, colour =  G.C.EDITION, edition = true})
                             else
-                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'x_chips', amount, percent)
+                                if key ~= 'Xchip_mod' then
+                                    if effect.xchip_message then
+                                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.xchip_message)
+                                    else
+                                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'x_chips', amount, percent)
+                                    end
+                                end
                             end
                         end
+                        return true
                     end
                 end
-                return true
-            end
-        end,
+            },
+        },
         modify = function(self, amount, skip)
             if not skip then hand_chips = mod_chips(self.current + amount) end
             self.current = (hand_chips or 0) + (skip or 0)
@@ -3994,47 +4007,58 @@ SMODS.UndiscoveredCompat = {
         default_value = 0,
         juice_on_update = true,
         colour = G.C.UI_MULT,
-        calculation_keys = {'mult', 'h_mult', 'mult_mod','x_mult', 'Xmult', 'xmult', 'x_mult_mod', 'Xmult_mod'},
-        calculation_order = 1,
-        calc_effect = function(self, effect, scored_card, key, amount, from_edition)
-            if not SMODS.Calculation_Controls.mult then return end
-            if (key == 'mult' or key == 'h_mult' or key == 'mult_mod') and amount then
-                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-                self:modify(amount)
-                if not effect.remove_default_message then
-                    if from_edition then
-                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_mult' or 'a_mult_minus', vars = {math.abs(amount)}}, mult_mod = amount, colour = G.C.DARK_EDITION, edition = true})
-                    else
-                        if key ~= 'mult_mod' then
-                            if effect.mult_message then
-                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.mult_message)
+        calculation_effects = {
+            {
+                variants = { 'mult', 'h_mult', 'mult_mod' },
+                order = 2,
+                func = function (self, calc_effect, effect, scored_card, key, amount, from_edition)
+                    if not SMODS.Calculation_Controls.mult then return end
+                    if amount then
+                        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                        self:modify(amount)
+                        if not effect.remove_default_message then
+                            if from_edition then
+                                card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type = 'variable', key = amount > 0 and 'a_mult' or 'a_mult_minus', vars = {math.abs(amount)}}, mult_mod = amount, colour = G.C.DARK_EDITION, edition = true})
                             else
-                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'mult', amount, percent)
+                                if key ~= 'mult_mod' then
+                                    if effect.mult_message then
+                                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.mult_message)
+                                    else
+                                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'mult', amount, percent)
+                                    end
+                                end
                             end
                         end
+                        return true
                     end
                 end
-                return true
-            end
-            if (key == 'x_mult' or key == 'xmult' or key == 'Xmult' or key == 'x_mult_mod' or key == 'Xmult_mod') and amount ~= 1 then
-                if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-                self:modify(mult * (amount - 1))
-                if not effect.remove_default_message then
-                    if from_edition then
-                        card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xmult' or 'a_xmult_minus',vars={amount}}, Xmult_mod =  amount, colour =  G.C.EDITION, edition = true})
-                    else
-                        if key ~= 'Xmult_mod' then
-                            if effect.xmult_message then
-                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.xmult_message)
+            },
+            {
+                variants = { 'x_mult', 'Xmult', 'xmult', 'x_mult_mod', 'Xmult_mod' },
+                order = 3,
+                func = function (self, calc_effect, effect, scored_card, key, amount, from_edition)
+                    if not SMODS.Calculation_Controls.mult then return end
+                    if amount ~= 1 then
+                        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+                        self:modify(mult * (amount - 1))
+                        if not effect.remove_default_message then
+                            if from_edition then
+                                card_eval_status_text(scored_card, 'jokers', nil, percent, nil, {message = localize{type='variable',key= amount > 0 and 'a_xmult' or 'a_xmult_minus',vars={amount}}, Xmult_mod =  amount, colour =  G.C.EDITION, edition = true})
                             else
-                                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'x_mult', amount, percent)
+                                if key ~= 'Xmult_mod' then
+                                    if effect.xmult_message then
+                                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.xmult_message)
+                                    else
+                                        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'x_mult', amount, percent)
+                                    end
+                                end
                             end
                         end
+                        return true
                     end
                 end
-                return true
-            end
-        end,
+            },
+        },
         modify = function(self, amount, skip)
             if not skip then mult = mod_mult(self.current + amount) end
             self.current = (mult or 0) + (skip or 0)
