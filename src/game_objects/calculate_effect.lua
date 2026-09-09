@@ -4,7 +4,8 @@ SMODS.CalculateEffect = SMODS.GameObject:extend {
     set = 'CalculateEffect',
     obj_buffer = {},
     required_params = {
-        'key',
+        'key', 
+        'order',
     },
     prefix_config = { key = false },
     process_loc_text = function() end,
@@ -19,12 +20,16 @@ SMODS.CalculateEffect = SMODS.GameObject:extend {
         end
         self.variants[self.key] = true
     end,
+    post_inject_class = function (self)
+        table.sort(self.obj_buffer, function (a, b) return SMODS.CalculateEffects[a].order < SMODS.CalculateEffects[b].order end)
+    end,
     return_key = nil,
     return_amount = true,
+    silent = false,
     default_amount = nil,
     variants = nil,
-    calculate = function (self, effect, scored_card, amount, from_edition)
-        return (self.return_key and self.key) or (self.return_amount and {[self.key] = amount}) or nil
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
+        return (self.return_key and key) or (self.return_amount and {[key] = amount}) or nil
     end,
     should_calculate = function (self, amount)
         return amount ~= self.default_amount
@@ -33,7 +38,8 @@ SMODS.CalculateEffect = SMODS.GameObject:extend {
 
 SMODS.CalculateEffect {
     key = "pre_func",
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    order = -10,
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         effect.pre_func()
         return true
     end
@@ -41,8 +47,9 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "dollars",
+    order = 10,
     variants = { "h_dollars", "p_dollars" },
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         SMODS.ease_dollars_calc = true
         local initial_dollars = G.GAME.dollars
@@ -72,9 +79,10 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "xscore",
+    order = 20,
     variants = { "x_score", "h_x_score", "h_xscore" },
     default_amount = 1,
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         SMODS.mod_score({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
         return true
@@ -83,9 +91,10 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "score",
+    order = 30,
     default_amount = 0,
     variants = { "h_score" },
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         SMODS.mod_score({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
         return true
@@ -94,9 +103,10 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "xblind_size",
+    order = 40,
     default_amount = 1,
     variants = { 'h_xblind_size', 'x_blind_size', 'h_x_blindsize', 'xblindsize', 'h_xblindsize', 'x_blindsize', 'h_x_blindsize' },
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         SMODS.mod_blind_size({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
         return true
@@ -105,9 +115,10 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "blind_size",
+    order = 50,
     default_amount = 0,
     variants = { 'h_blind_size', 'blindsize', 'h_blindsize' },
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         SMODS.mod_blind_size({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
         return true
@@ -116,10 +127,11 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "message",
+    order = 60,
     should_calculate = function (self, amount)
         return not SMODS.no_ressolve
     end,
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         if effect.retrigger_juice then juice_card(effect.retrigger_juice) end
         card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect)
@@ -129,7 +141,9 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "func",
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    order = 70,
+    silent = true,
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         effect.func()
         return true
     end
@@ -137,7 +151,8 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "swap",
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    order = 80,
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         local old_mult = mult
         mult = mod_mult(hand_chips)
@@ -150,7 +165,8 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "balance",
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    order = 90,
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         local total = mult + hand_chips
         mult = mod_mult(total/2)
@@ -205,7 +221,8 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "level_up",
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    order = 100,
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         local hand_type = effect.level_up_hand or G.GAME.last_hand_played
         SMODS.smart_level_up_hand(scored_card, hand_type, effect.instant, amount)
@@ -215,14 +232,18 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "extra",
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    order = 110,
+    silent = true,
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         return SMODS.calculate_effect(amount, scored_card)
     end
 }
 
 SMODS.CalculateEffect {
     key = "saved",
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    order = 120,
+    silent = true,
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         SMODS.saved = amount
         G.GAME.saved_text = amount
         return self.key
@@ -231,7 +252,9 @@ SMODS.CalculateEffect {
 
 SMODS.CalculateEffect {
     key = "effect",
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    order = 130,
+    silent = true,
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         return true
     end
 }
@@ -239,43 +262,57 @@ SMODS.CalculateEffect {
 --#region key_return_flags
 SMODS.CalculateEffect {
     key = "prevent_debuff",
+    order = 140,
+    silent = true,
     return_key = true,
 }
 
 SMODS.CalculateEffect {
     key = "add_to_hand",
+    order = 150,
+    silent = true,
     return_key = true,
 }
 
 SMODS.CalculateEffect {
     key = "remove_from_hand",
+    order = 160,
+    silent = true,
     return_key = true,
 }
 
 SMODS.CalculateEffect {
     key = "return_to_hand",
+    order = 170,
+    silent = true,
     return_key = true,
 }
 
 SMODS.CalculateEffect {
     key = "stay_flipped",
+    order = 180,
+    silent = true,
     return_key = true,
 }
 
 SMODS.CalculateEffect {
     key = "prevent_stay_flipped",
+    order = 190,
+    silent = true,
     return_key = true,
 }
 
 SMODS.CalculateEffect {
     key = "prevent_trigger",
+    order = 200,
     return_key = true,
 }
 --#endregion
 
 SMODS.CalculateEffect {
     key = "modify",
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    order = 210,
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         if SMODS.context_stack[#SMODS.context_stack].context.modify_final_cashout then
             if effect.cashout_row then
                 effect.cashout_row.bonus = true
@@ -293,80 +330,106 @@ SMODS.CalculateEffect {
 --#region amount_return_flags
 SMODS.CalculateEffect {
     key = "remove",
+    order = 220,
+    silent = true,
 }
 
 SMODS.CalculateEffect {
     key = "debuff_text",
+    order = 230,
+    silent = true,
 }
 
 SMODS.CalculateEffect {
     key = "cards_to_draw",
+    order = 240,
+    silent = true,
 }
 
 SMODS.CalculateEffect {
     key = "numerator",
+    order = 250,
+    silent = true,
 }
 
 SMODS.CalculateEffect {
     key = "denominator",
+    order = 260,
+    silent = true,
 }
 
 SMODS.CalculateEffect {
     key = "no_destroy",
+    order = 270,
+    silent = true,
 }
 
 SMODS.CalculateEffect {
     key = "replace_scoring_name",
+    order = 280,
 }
 
 SMODS.CalculateEffect {
     key = "replace_display_name",
+    order = 290,
 }
 
 SMODS.CalculateEffect {
     key = "replace_poker_hands",
+    order = 300,
 }
 
 SMODS.CalculateEffect {
     key = "override",
+    order = 310,
 }
 
 SMODS.CalculateEffect {
     key = "shop_create_flags",
+    order = 320,
 }
 
 SMODS.CalculateEffect {
     key = "booster_create_flags",
+    order = 330,
 }
 
 SMODS.CalculateEffect {
     key = "override_value",
+    order = 340,
 }
 
 SMODS.CalculateEffect {
     key = "override_scalar_value",
+    order = 350,
 }
 
 SMODS.CalculateEffect {
     key = "override_scalar",
+    order = 360,
 }
 
 SMODS.CalculateEffect {
     key = "override_reset_value",
+    order = 370,
 }
 
 SMODS.CalculateEffect {
     key = "override_message",
+    order = 380,
 }
 
 SMODS.CalculateEffect {
     key = "post",
+    order = 390,
 }
 --#endregion
 
 SMODS.CalculateEffect {
     key = "debuff",
-    calculate = function (self, effect, scored_card, amount, from_edition)
+    order = 400,
+    silent = true,
+    calculate = function (self, effect, scored_card, key, amount, from_edition)
         return { [self.key] = amount, debuff_source = scored_card }
     end
 }

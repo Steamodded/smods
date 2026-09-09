@@ -1291,16 +1291,12 @@ end
 
 -- This function handles the calculation of each effect returned to evaluate play.
 SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, from_edition)
-    if SMODS.Scoring_Parameter_Calculation[key] then
-        return SMODS.Scoring_Parameters[SMODS.Scoring_Parameter_Calculation[key]]:calc_effect(effect, scored_card, key, amount, from_edition)
-    else
-        for _, k in ipairs(SMODS.CalculateEffect.obj_buffer) do
-            local calc_effect = SMODS.CalculateEffects[k]
-            if calc_effect.variants[key] then
-                if calc_effect:should_calculate(amount) then
-                    return calc_effect:calculate(effect, scored_card, amount, from_edition)
-                else break end
-            end
+    for _, calc_key in ipairs(SMODS.CalculateEffect.obj_buffer) do
+        local calc_effect = SMODS.CalculateEffects[calc_key]
+        if calc_effect.variants[key] then
+            if calc_effect:should_calculate(amount) then
+                return calc_effect:calculate(effect, scored_card, key, amount, from_edition)
+            else break end
         end
     end
 end
@@ -1351,73 +1347,34 @@ end
 
 SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
     local ret = { scored_card = scored_card }
-    for _, key in ipairs(SMODS.calculation_keys) do
-        if effect[key] then
-            if effect.juice_card and not SMODS.no_resolve and not effect.no_juice then
-                G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function ()
-                    effect.juice_card:juice_up(0.1)
-                    if (not effect.message_card) or (effect.message_card and effect.message_card ~= scored_card) then
-                        scored_card:juice_up(0.1)
-                    end
-                    return true end}))
-            end
-            local calc = SMODS.calculate_individual_effect(effect, scored_card, key, effect[key], from_edition)
-            if calc == true then ret.calculated = true end
-            if type(calc) == 'string' then
-                ret[calc] = true
-            elseif type(calc) == 'table' then
-                for k,v in pairs(calc) do ret[k] = v end
-            end
-            if not SMODS.silent_calculation[key] then
-                percent = (percent or 0) + (percent_delta or 0.08)
+    for _, key in ipairs(SMODS.CalculateEffect.obj_buffer) do
+        local calc_effect = SMODS.CalculateEffects[key]
+        for variant, _ in pairs(calc_effect.variants) do
+            if effect[variant] then
+                if effect.juice_card and not SMODS.no_resolve and not effect.no_juice then
+                    G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function ()
+                        effect.juice_card:juice_up(0.1)
+                        if (not effect.message_card) or (effect.message_card and effect.message_card ~= scored_card) then
+                            scored_card:juice_up(0.1)
+                        end
+                        return true end}))
+                end
+                local calc = SMODS.calculate_individual_effect(effect, scored_card, key, effect[key], from_edition)
+                if calc == true then ret.calculated = true end
+                if type(calc) == 'string' then
+                    ret[calc] = true
+                elseif type(calc) == 'table' then
+                    for k,v in pairs(calc) do ret[k] = v end
+                end
+                if not calc_effect.silent then
+                    percent = (percent or 0) + (percent_delta or 0.08)
+                end
+                break
             end
         end
     end
     return ret
 end
-
-SMODS.calculation_keys = {}
-SMODS.pre_scoring_calculation_keys = {
-    'pre_func'
-}
-SMODS.scoring_parameter_keys = {
-    'chips', 'h_chips', 'chip_mod',
-    'mult', 'h_mult', 'mult_mod',
-    'x_chips', 'xchips', 'Xchip_mod',
-    'x_mult', 'Xmult', 'xmult', 'x_mult_mod', 'Xmult_mod',
-}
-SMODS.other_calculation_keys = {
-    'p_dollars', 'dollars', 'h_dollars',
-    'score', 'h_score',
-    'xscore', 'x_score', 'h_x_score', 'h_xscore',
-    'blind_size', 'blindsize', 'h_blind_size',  'h_blindsize',
-    'xblind_size', 'x_blind_size', 'xblindsize', 'x_blindsize', 'h_x_blind_size', 'h_xblind_size',  'h_x_blindsize', 'h_xblindsize',
-    'swap', 'balance',
-    'saved', 'effect', 'remove',
-    'debuff', 'prevent_debuff', 'debuff_text',
-    'add_to_hand', 'remove_from_hand', 'return_to_hand',
-    'stay_flipped', 'prevent_stay_flipped',
-    'cards_to_draw',
-    'message',
-    'level_up', 'func',
-    'numerator', 'denominator',
-    'modify',
-    'no_destroy', 'prevent_trigger',
-    'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
-    'shop_create_flags', 'booster_create_flags',
-    'override_value', 'override_reset_value', 'override_scalar_value', 'override_scalar', 'override_message', 'post',
-    'extra',
-}
-SMODS.silent_calculation = {
-    saved = true, effect = true, remove = true,
-    debuff = true, prevent_debuff = true, debuff_text = true,
-    add_to_hand = true, remove_from_hand = true, return_to_hand = true,
-    stay_flipped = true, prevent_stay_flipped = true,
-    cards_to_draw = true,
-    func = true, extra = true,
-    numerator = true, denominator = true,
-    no_destroy = true,
-}
 
 SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
     repeat

@@ -3880,7 +3880,6 @@ SMODS.UndiscoveredCompat = {
     -------------------------------------------------------------------------------------------------
 
     SMODS.Scoring_Parameters = {}
-    SMODS.Scoring_Parameter_Calculation = {}
     SMODS.Scoring_Parameter = SMODS.GameObject:extend{
         set = 'Scoring_Parameters',
         obj_table = SMODS.Scoring_Parameters,
@@ -3894,11 +3893,14 @@ SMODS.UndiscoveredCompat = {
             self.lick = {1, 1, 1, 1}
             self.current = self.default_value
             if self.calculation_keys then
-                SMODS.scoring_parameter_keys = SMODS.merge_lists({SMODS.scoring_parameter_keys, self.calculation_keys})
-                SMODS.calculation_keys = SMODS.merge_lists({SMODS.pre_scoring_calculation_keys, SMODS.scoring_parameter_keys, SMODS.other_calculation_keys})
-                for _, calc_key in ipairs(self.calculation_keys) do
-                    SMODS.Scoring_Parameter_Calculation[calc_key] = self.key
-                end
+                SMODS.CalculateEffect {
+                    key = self.calculation_keys[1],
+                    order = self.calculation_order or 0,
+                    variants = self.calculation_keys,
+                    calculate = function (calc_effect, effect, scored_card, key, amount, from_edition)
+                        return self:calc_effect(effect, scored_card, key, amount, from_edition)
+                    end
+                }
             end
             SMODS.Calculation_Controls[self.key] = false
         end,
@@ -3993,6 +3995,7 @@ SMODS.UndiscoveredCompat = {
         juice_on_update = true,
         colour = G.C.UI_MULT,
         calculation_keys = {'mult', 'h_mult', 'mult_mod','x_mult', 'Xmult', 'xmult', 'x_mult_mod', 'Xmult_mod'},
+        calculation_order = 1,
         calc_effect = function(self, effect, scored_card, key, amount, from_edition)
             if not SMODS.Calculation_Controls.mult then return end
             if (key == 'mult' or key == 'h_mult' or key == 'mult_mod') and amount then
