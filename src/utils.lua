@@ -1291,7 +1291,7 @@ end
 
 -- This function handles the calculation of each effect returned to evaluate play.
 SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, from_edition)
-    local calc_effect = SMODS.CalculationEffectVariants[key]
+    local calc_effect = SMODS.CalculationEffectByVariants[key]
     if calc_effect then
         return calc_effect:func(effect, scored_card, key, amount, from_edition)
     end

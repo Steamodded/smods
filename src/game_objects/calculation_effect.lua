@@ -1,5 +1,5 @@
 SMODS.CalculationEffects = {}
-SMODS.CalculationEffectVariants = {}
+SMODS.CalculationEffectByVariants = {}
 SMODS.CalculationEffect = SMODS.GameObject:extend {
     obj_table = SMODS.CalculationEffects,
     set = 'CalculationEffect',
