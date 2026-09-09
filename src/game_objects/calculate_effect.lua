@@ -500,11 +500,6 @@ SMODS.CalculateEffect {
 }
 
 SMODS.CalculateEffect {
-    key = "override_reset_value",
-    order = 360,
-}
-
-SMODS.CalculateEffect {
     key = "override_message",
     order = 370,
     check_context_flags = function (self, context, flags) 
