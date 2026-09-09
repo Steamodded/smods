@@ -92,22 +92,10 @@ SMODS.CalculationEffect {
     end
 }
 
-SMODS.CalculationEffect {
-    key = "xscore",
-    order = 20,
-    variants = { "x_score", "h_x_score", "h_xscore" },
-    func = function (self, effect, scored_card, key, amount, from_edition)
-        if amount ~= 1 then
-            if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-            SMODS.mod_score({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
-            return true
-        end
-    end
-}
 
 SMODS.CalculationEffect {
     key = "score",
-    order = 30,
+    order = 20,
     variants = { "h_score" },
     func = function (self, effect, scored_card, key, amount, from_edition)
         if amount ~= 0 then
@@ -119,13 +107,13 @@ SMODS.CalculationEffect {
 }
 
 SMODS.CalculationEffect {
-    key = "xblind_size",
-    order = 40,
-    variants = { 'h_xblind_size', 'x_blind_size', 'h_x_blindsize', 'xblindsize', 'h_xblindsize', 'x_blindsize', 'h_x_blindsize' },
+    key = "xscore",
+    order = 30,
+    variants = { "x_score", "h_x_score", "h_xscore" },
     func = function (self, effect, scored_card, key, amount, from_edition)
         if amount ~= 1 then
             if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-            SMODS.mod_blind_size({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
+            SMODS.mod_score({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
             return true
         end
     end
@@ -133,12 +121,25 @@ SMODS.CalculationEffect {
 
 SMODS.CalculationEffect {
     key = "blind_size",
-    order = 50,
+    order = 40,
     variants = { 'h_blind_size', 'blindsize', 'h_blindsize' },
     func = function (self, effect, scored_card, key, amount, from_edition)
         if amount ~= 0 then
             if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
             SMODS.mod_blind_size({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
+            return true
+        end
+    end
+}
+
+SMODS.CalculationEffect {
+    key = "xblind_size",
+    order = 50,
+    variants = { 'h_xblind_size', 'x_blind_size', 'h_x_blindsize', 'xblindsize', 'h_xblindsize', 'x_blindsize', 'h_x_blindsize' },
+    func = function (self, effect, scored_card, key, amount, from_edition)
+        if amount ~= 1 then
+            if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+            SMODS.mod_blind_size({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
             return true
         end
     end
@@ -250,7 +251,7 @@ SMODS.CalculationEffect {
 
 SMODS.CalculationEffect {
     key = "extra",
-    order = 110,
+    order = 400,
     silent = true,
     func = function (self, effect, scored_card, key, amount, from_edition)
         return SMODS.calculate_effect(amount, scored_card)
