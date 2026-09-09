@@ -149,7 +149,7 @@ SMODS.CalculationEffect {
     key = "message",
     order = 60,
     func = function (self, effect, scored_card, key, amount, from_edition)
-        if not SMODS.no_ressolve then
+        if not SMODS.no_resolve then
             if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
             if effect.retrigger_juice then juice_card(effect.retrigger_juice) end
             card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect)
