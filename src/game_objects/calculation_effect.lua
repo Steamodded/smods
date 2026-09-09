@@ -1,5 +1,5 @@
 SMODS.CalculationEffects = {}
-SMODS.CalculationEffectVariants = {} -- Only used for overlap checking when injecting
+SMODS.CalculationEffectVariants = {}
 SMODS.CalculationEffect = SMODS.GameObject:extend {
     obj_table = SMODS.CalculationEffects,
     set = 'CalculationEffect',
@@ -23,7 +23,7 @@ SMODS.CalculationEffect = SMODS.GameObject:extend {
         self.variants[self.key] = true
         for variant, _ in pairs(self.variants) do
             assert(not(SMODS.CalculationEffectVariants[variant]), ("SMODS.CalculationEffect '%s' injected with overlapping variant '%s'"):format(self.key, variant))
-            SMODS.CalculationEffectVariants[variant] = true
+            SMODS.CalculationEffectVariants[variant] = self
         end
     end,
     post_inject_class = function (self)

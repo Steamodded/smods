@@ -1291,11 +1291,9 @@ end
 
 -- This function handles the calculation of each effect returned to evaluate play.
 SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, from_edition)
-    for _, calc_key in ipairs(SMODS.CalculationEffect.obj_buffer) do
-        local calc_effect = SMODS.CalculationEffects[calc_key]
-        if calc_effect.variants[key] then
-            return calc_effect:func(effect, scored_card, key, amount, from_edition)
-        end
+    local calc_effect = SMODS.CalculationEffectVariants[key]
+    if calc_effect then
+        return calc_effect:func(effect, scored_card, key, amount, from_edition)
     end
 end
 
@@ -1357,7 +1355,7 @@ SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
                         end
                         return true end}))
                 end
-                local calc = SMODS.calculate_individual_effect(effect, scored_card, key, effect[key], from_edition)
+                local calc = SMODS.calculate_individual_effect(effect, scored_card, variant, effect[variant], from_edition)
                 if calc == true then ret.calculated = true end
                 if type(calc) == 'string' then
                     ret[calc] = true
