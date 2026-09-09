@@ -4127,7 +4127,7 @@ SMODS.UndiscoveredCompat = {
     ----- API IMPORT GameObject.CalculationEffect
     -------------------------------------------------------------------------------------------------
 
-    assert(load(NFS.read(SMODS.path..'src/game_objects/calculate_effect.lua'), ('=[SMODS _ "src/game_objects/calculate_effect.lua"]')))()
+    assert(load(NFS.read(SMODS.path..'src/game_objects/calculation_effect.lua'), ('=[SMODS _ "src/game_objects/calculation_effect.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT Object.Node.Moveable.Sprite.AnimatedSprite.StateSprite

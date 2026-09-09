@@ -1294,9 +1294,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     for _, calc_key in ipairs(SMODS.CalculationEffect.obj_buffer) do
         local calc_effect = SMODS.CalculationEffects[calc_key]
         if calc_effect.variants[key] then
-            if calc_effect:should_calculate(amount) then
-                return calc_effect:calculate(effect, scored_card, key, amount, from_edition)
-            else break end
+            return calc_effect:func(effect, scored_card, key, amount, from_edition)
         end
     end
 end

@@ -31,18 +31,14 @@ SMODS.CalculationEffect = SMODS.GameObject:extend {
     end,
     default_return = "amount", -- "amount"|"key"
     silent = false,
-    default_amount = nil,
     variants = nil,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         if self.default_return == "key" then
             return key
         elseif self.default_return == "amount" then
             return {[key] = amount}
         end
         return nil
-    end,
-    should_calculate = function (self, amount)
-        return amount ~= self.default_amount
     end,
     check_context_flags = function (self, context, flags)
         for variant, _ in pairs(self.variants) do
@@ -58,7 +54,7 @@ SMODS.CalculationEffect = SMODS.GameObject:extend {
 SMODS.CalculationEffect {
     key = "pre_func",
     order = -10,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         effect.pre_func()
         return true
     end
@@ -68,7 +64,7 @@ SMODS.CalculationEffect {
     key = "dollars",
     order = 10,
     variants = { "h_dollars", "p_dollars" },
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         SMODS.ease_dollars_calc = true
         local initial_dollars = G.GAME.dollars
@@ -100,61 +96,64 @@ SMODS.CalculationEffect {
     key = "xscore",
     order = 20,
     variants = { "x_score", "h_x_score", "h_xscore" },
-    default_amount = 1,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        SMODS.mod_score({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
-        return true
+    func = function (self, effect, scored_card, key, amount, from_edition)
+        if amount ~= 1 then
+            if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+            SMODS.mod_score({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
+            return true
+        end
     end
 }
 
 SMODS.CalculationEffect {
     key = "score",
     order = 30,
-    default_amount = 0,
     variants = { "h_score" },
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        SMODS.mod_score({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
-        return true
+    func = function (self, effect, scored_card, key, amount, from_edition)
+        if amount ~= 0 then
+            if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+            SMODS.mod_score({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
+            return true
+        end
     end
 }
 
 SMODS.CalculationEffect {
     key = "xblind_size",
     order = 40,
-    default_amount = 1,
     variants = { 'h_xblind_size', 'x_blind_size', 'h_x_blindsize', 'xblindsize', 'h_xblindsize', 'x_blindsize', 'h_x_blindsize' },
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        SMODS.mod_blind_size({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
-        return true
+    func = function (self, effect, scored_card, key, amount, from_edition)
+        if amount ~= 1 then
+            if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+            SMODS.mod_blind_size({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
+            return true
+        end
     end
 }
 
 SMODS.CalculationEffect {
     key = "blind_size",
     order = 50,
-    default_amount = 0,
     variants = { 'h_blind_size', 'blindsize', 'h_blindsize' },
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        SMODS.mod_blind_size({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
-        return true
+    func = function (self, effect, scored_card, key, amount, from_edition)
+        if amount ~= 0 then
+            if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+            SMODS.mod_blind_size({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
+            return true
+        end
     end
 }
 
 SMODS.CalculationEffect {
     key = "message",
     order = 60,
-    should_calculate = function (self, amount)
-        return not SMODS.no_ressolve
-    end,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        if effect.retrigger_juice then juice_card(effect.retrigger_juice) end
-        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect)
-        return true
+    func = function (self, effect, scored_card, key, amount, from_edition)
+        if not SMODS.no_ressolve then
+            if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
+            if effect.retrigger_juice then juice_card(effect.retrigger_juice) end
+            card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect)
+            return true
+        end
     end
 }
 
@@ -162,7 +161,7 @@ SMODS.CalculationEffect {
     key = "func",
     order = 70,
     silent = true,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         effect.func()
         return true
     end
@@ -171,7 +170,7 @@ SMODS.CalculationEffect {
 SMODS.CalculationEffect {
     key = "swap",
     order = 80,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         local old_mult = mult
         mult = mod_mult(hand_chips)
@@ -185,7 +184,7 @@ SMODS.CalculationEffect {
 SMODS.CalculationEffect {
     key = "balance",
     order = 90,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         local total = mult + hand_chips
         mult = mod_mult(total/2)
@@ -241,7 +240,7 @@ SMODS.CalculationEffect {
 SMODS.CalculationEffect {
     key = "level_up",
     order = 100,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         local hand_type = effect.level_up_hand or G.GAME.last_hand_played
         SMODS.smart_level_up_hand(scored_card, hand_type, effect.instant, amount)
@@ -253,7 +252,7 @@ SMODS.CalculationEffect {
     key = "extra",
     order = 110,
     silent = true,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         return SMODS.calculate_effect(amount, scored_card)
     end
 }
@@ -262,7 +261,7 @@ SMODS.CalculationEffect {
     key = "saved",
     order = 120,
     silent = true,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         SMODS.saved = amount
         G.GAME.saved_text = amount
         return self.key
@@ -276,7 +275,7 @@ SMODS.CalculationEffect {
     key = "effect",
     order = 130,
     silent = true,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         return true
     end
 }
@@ -334,7 +333,7 @@ SMODS.CalculationEffect {
 SMODS.CalculationEffect {
     key = "modify",
     order = 210,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         if SMODS.context_stack[#SMODS.context_stack].context.modify_final_cashout then
             if effect.cashout_row then
                 effect.cashout_row.bonus = true
@@ -536,7 +535,7 @@ SMODS.CalculationEffect {
     key = "debuff",
     order = 390,
     silent = true,
-    calculate = function (self, effect, scored_card, key, amount, from_edition)
+    func = function (self, effect, scored_card, key, amount, from_edition)
         return { [self.key] = amount, debuff_source = scored_card }
     end
 }
