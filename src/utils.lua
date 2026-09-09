@@ -1736,80 +1736,14 @@ end
 
 -- Updates a [context] with all compatible [flags]
 function SMODS.update_context_flags(context, flags)
-    if flags.numerator then context.numerator = flags.numerator end
-    if flags.denominator then context.denominator = flags.denominator end
-    if flags.cards_to_draw then context.amount = flags.cards_to_draw end
-    if flags.saved then context.game_over = false end
-    if flags.modify then
-        -- insert general modified value updating here
-        if context.modify_ante then context.modify_ante = flags.modify end
-        if context.drawing_cards then context.amount = math.max(flags.modify, 0) end
-        if context.modify_final_cashout then
-            context.amount = flags.modify + (not flags.override and context.amount)
-            SMODS.cashout_dollars = context.amount
-            SMODS.cashout_index = SMODS.cashout_index + 1
-            SMODS.cashout_pitch = SMODS.cashout_pitch + 0.06
-            flags.modify = nil
+    for key, calc_effect in pairs(SMODS.CalculateEffects) do
+        if type(calc_effect.update_context_flags) == "function" then
+            if calc_effect:check_context_flags(context, flags) then
+                calc_effect:update_context_flags(context, flags)
+            end
         end
-    end
-    if context.evaluate_poker_hand then
-        if flags.replace_scoring_name then
-            context.scoring_name = flags.replace_scoring_name
-            context.display_name = flags.replace_scoring_name
-        end
-        if flags.replace_display_name then context.display_name = flags.replace_display_name end
-        if flags.replace_poker_hands then context.poker_hands = flags.replace_poker_hands end
-    end
-    if context.scaling_card or context.resetting_card then
-        SMODS.update_context_flags_scaling_resetting(context, flags)
     end
 end
-
-function SMODS.update_context_flags_scaling_resetting(context, flags)
-    if context.scaling_card then
-        if not context.block_overrides.value and flags.override_value then
-            if type(flags.override_value) == 'table' then
-                context.value = flags.override_value.value or context.value
-                SMODS.calculate_effect(flags.override_value, flags.scored_card)
-            else
-                context.value = flags.override_value
-            end
-        end
-        local override_scalar = flags.override_scalar_value or flags.override_scalar
-        if not context.block_overrides.scalar and override_scalar then
-            if type(override_scalar) == 'table' then
-                context.scalar = override_scalar.value or context.scalar
-                SMODS.calculate_effect(override_scalar, flags.scored_card)
-            else
-                context.scalar = override_scalar
-            end
-        end
-        if not context.block_overrides.message and flags.override_message then
-            context.scaling_message = SMODS.merge_defaults(flags.override_message, context.scaling_message)
-        end
-    end
-    if context.resetting_card then
-        local override_value = flags.override_value or flags.override_reset_value
-        if not context.block_overrides.value and override_value then
-            if type(override_value) == 'table' then
-                context.reset_value = override_value.value
-                SMODS.calculate_effect(override_value, flags.scored_card)
-            else 
-                context.reset_value = override_value
-            end
-        end
-        if not context.block_overrides.message and flags.override_message then
-            context.reset_message = SMODS.merge_defaults(flags.override_message, context.reset_message)
-        end
-    end
-    if flags.post then
-        flags.post.source = flags.scored_card
-        flags.post_effects = flags.post_effects or {}
-        table.insert(flags.post_effects, flags.post)
-    end
-    flags.override_value, flags.override_scalar, flags.override_scalar_value, flags.override_message, flags.post = nil, nil, nil, nil, nil
-end
-
 
 -- Used to avoid looping getter context calls. Example;
 -- Joker A: Doubles lucky card probabilities

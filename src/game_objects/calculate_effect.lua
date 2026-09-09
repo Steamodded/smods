@@ -1,4 +1,5 @@
 SMODS.CalculateEffects = {}
+SMODS.CalculateEffectVariants = {} -- Only used for overlap checking when injecting
 SMODS.CalculateEffect = SMODS.GameObject:extend {
     obj_table = SMODS.CalculateEffects,
     set = 'CalculateEffect',
@@ -14,26 +15,44 @@ SMODS.CalculateEffect = SMODS.GameObject:extend {
         self.variants = self.variants or {}
         if self.variants[1] then
             for i=#self.variants, 1, -1 do
-                self.variants[self.variants[i]] = true
+                local variant = self.variants[i]
+                self.variants[variant] = true
                 table.remove(self.variants, i)
             end
         end
         self.variants[self.key] = true
+        for variant, _ in pairs(self.variants) do
+            assert(not(SMODS.CalculateEffectVariants[variant]), ("SMODS.CalculateEffect '%s' injected with overlapping variant '%s'"):format(self.key, variant))
+            SMODS.CalculateEffectVariants[variant] = true
+        end
     end,
     post_inject_class = function (self)
         table.sort(self.obj_buffer, function (a, b) return SMODS.CalculateEffects[a].order < SMODS.CalculateEffects[b].order end)
     end,
-    return_key = nil,
-    return_amount = true,
+    default_return = "amount", -- "amount"|"key"
     silent = false,
     default_amount = nil,
     variants = nil,
     calculate = function (self, effect, scored_card, key, amount, from_edition)
-        return (self.return_key and key) or (self.return_amount and {[key] = amount}) or nil
+        if self.default_return == "key" then
+            return key
+        elseif self.default_return == "amount" then
+            return {[key] = amount}
+        end
+        return nil
     end,
     should_calculate = function (self, amount)
         return amount ~= self.default_amount
-    end
+    end,
+    check_context_flags = function (self, context, flags)
+        for variant, _ in pairs(self.variants) do
+            if flags[variant] then
+                return true
+            end
+        end
+        return false
+    end,
+    update_context_flags = nil, -- function (self, context, flags) end
 }
 
 SMODS.CalculateEffect {
@@ -247,6 +266,9 @@ SMODS.CalculateEffect {
         SMODS.saved = amount
         G.GAME.saved_text = amount
         return self.key
+    end,
+    update_context_flags = function (self, context, flags)
+        context.game_over = false
     end
 }
 
@@ -264,48 +286,48 @@ SMODS.CalculateEffect {
     key = "prevent_debuff",
     order = 140,
     silent = true,
-    return_key = true,
+    default_return = "key",
 }
 
 SMODS.CalculateEffect {
     key = "add_to_hand",
     order = 150,
     silent = true,
-    return_key = true,
+    default_return = "key",
 }
 
 SMODS.CalculateEffect {
     key = "remove_from_hand",
     order = 160,
     silent = true,
-    return_key = true,
+    default_return = "key",
 }
 
 SMODS.CalculateEffect {
     key = "return_to_hand",
     order = 170,
     silent = true,
-    return_key = true,
+    default_return = "key",
 }
 
 SMODS.CalculateEffect {
     key = "stay_flipped",
     order = 180,
     silent = true,
-    return_key = true,
+    default_return = "key",
 }
 
 SMODS.CalculateEffect {
     key = "prevent_stay_flipped",
     order = 190,
     silent = true,
-    return_key = true,
+    default_return = "key",
 }
 
 SMODS.CalculateEffect {
     key = "prevent_trigger",
     order = 200,
-    return_key = true,
+    default_return = "key",
 }
 --#endregion
 
@@ -324,6 +346,17 @@ SMODS.CalculateEffect {
             end
         end
         return {[self.key] = amount}
+    end,
+    update_context_flags = function (self, context, flags)
+        if context.modify_ante then context.modify_ante = flags.modify end
+        if context.drawing_cards then context.amount = math.max(flags.modify, 0) end
+        if context.modify_final_cashout then
+            context.amount = flags.modify + (not flags.override and context.amount)
+            SMODS.cashout_dollars = context.amount
+            SMODS.cashout_index = SMODS.cashout_index + 1
+            SMODS.cashout_pitch = SMODS.cashout_pitch + 0.06
+            flags.modify = nil
+        end
     end
 }
 
@@ -344,18 +377,27 @@ SMODS.CalculateEffect {
     key = "cards_to_draw",
     order = 240,
     silent = true,
+    update_context_flags = function (self, context, flags)
+        context.amount = flags.cards_to_draw
+    end
 }
 
 SMODS.CalculateEffect {
     key = "numerator",
     order = 250,
     silent = true,
+    update_context_flags = function (self, context, flags)
+        context.numerator = flags.numerator
+    end
 }
 
 SMODS.CalculateEffect {
     key = "denominator",
     order = 260,
     silent = true,
+    update_context_flags = function (self, context, flags)
+        context.denominator = flags.denominator
+    end
 }
 
 SMODS.CalculateEffect {
@@ -367,16 +409,36 @@ SMODS.CalculateEffect {
 SMODS.CalculateEffect {
     key = "replace_scoring_name",
     order = 280,
+    check_context_flags = function (self, context, flags) 
+        return context.evaluate_poker_hand and SMODS.CalculateEffect.check_context_flags(self, context, flags)
+    end,
+    update_context_flags = function (self, context, flags)
+        context.scoring_name = flags.replace_scoring_name
+        context.display_name = flags.replace_scoring_name
+    end
 }
 
 SMODS.CalculateEffect {
     key = "replace_display_name",
     order = 290,
+    check_context_flags = function (self, context, flags) 
+        return context.evaluate_poker_hand and SMODS.CalculateEffect.check_context_flags(self, context, flags)
+    end,
+    update_context_flags = function (self, context, flags)
+        context.poker_hands = flags.replace_poker_hands
+    end
 }
 
 SMODS.CalculateEffect {
     key = "replace_poker_hands",
     order = 300,
+    check_context_flags = function (self, context, flags) 
+        return context.evaluate_poker_hand and SMODS.CalculateEffect.check_context_flags(self, context, flags)
+    end,
+    update_context_flags = function (self, context, flags)
+        context.scoring_name = flags.replace_scoring_name
+        context.display_name = flags.replace_scoring_name
+    end
 }
 
 SMODS.CalculateEffect {
@@ -397,37 +459,87 @@ SMODS.CalculateEffect {
 SMODS.CalculateEffect {
     key = "override_value",
     order = 340,
-}
-
-SMODS.CalculateEffect {
-    key = "override_scalar_value",
-    order = 350,
+    variants = { "override_reset_value" },
+    check_context_flags = function (self, context, flags) 
+        return (context.scaling_card or context.resetting_card) and SMODS.CalculateEffect.check_context_flags(self, context, flags)
+    end,
+    update_context_flags = function (self, context, flags)
+        local relev = context.scaling_card and "value" or "reset_value"
+        local override_value = flags.override_value or flags.override_reset_value
+        if not context.block_overrides.value then
+            if type(override_value) == 'table' then
+                context[relev] = override_value.value or (context.scaling_card and context.value) or nil
+                SMODS.calculate_effect(override_value, flags.scored_card)
+            else
+                context[relev] = override_value
+            end
+        end
+        flags.override_value = nil
+    end
 }
 
 SMODS.CalculateEffect {
     key = "override_scalar",
-    order = 360,
+    order = 350,
+    variants = { "override_scalar_value" },
+    check_context_flags = function (self, context, flags) 
+        return context.scaling_card and SMODS.CalculateEffect.check_context_flags(self, context, flags)
+    end,
+    update_context_flags = function (self, context, flags)
+        if not context.block_overrides.scalar then
+            local override_scalar = flags.override_scalar_value or flags.override_scalar
+            if type(override_scalar) == 'table' then
+                context.scalar = override_scalar.value or context.scalar
+                SMODS.calculate_effect(override_scalar, flags.scored_card)
+            else
+                context.scalar = override_scalar
+            end
+        end
+        flags.override_scalar, flags.override_scalar_value = nil, nil
+    end
 }
 
 SMODS.CalculateEffect {
     key = "override_reset_value",
-    order = 370,
+    order = 360,
 }
 
 SMODS.CalculateEffect {
     key = "override_message",
-    order = 380,
+    order = 370,
+    check_context_flags = function (self, context, flags) 
+        return (context.scaling_card or context.resetting_card) and SMODS.CalculateEffect.check_context_flags(self, context, flags)
+    end,
+    update_context_flags = function (self, context, flags)
+        if not context.block_overrides.message then
+            if context.scaling_card then
+                context.scaling_message = SMODS.merge_defaults(flags.override_message, context.scaling_message)
+            elseif context.resetting_card then
+                context.reset_message = SMODS.merge_defaults(flags.override_message, context.reset_message)
+            end
+        end
+        flags.override_message = nil
+    end
 }
 
 SMODS.CalculateEffect {
     key = "post",
-    order = 390,
+    order = 380,
+    check_context_flags = function (self, context, flags) 
+        return (context.scaling_card or context.resetting_card) and SMODS.CalculateEffect.check_context_flags(self, context, flags)
+    end,
+    update_context_flags = function (self, context, flags)
+        flags.post.source = flags.scored_card
+        flags.post_effects = flags.post_effects or {}
+        table.insert(flags.post_effects, flags.post)
+        flags.post = nil
+    end
 }
 --#endregion
 
 SMODS.CalculateEffect {
     key = "debuff",
-    order = 400,
+    order = 390,
     silent = true,
     calculate = function (self, effect, scored_card, key, amount, from_edition)
         return { [self.key] = amount, debuff_source = scored_card }
