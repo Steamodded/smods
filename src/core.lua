@@ -24,7 +24,8 @@ function boot_timer(_label, _next, progress)
         font = love.graphics.setNewFont("resources/fonts/m6x11plus.ttf", 20),
         love.graphics.dis
     }
-    local realw, realh = love.window.getMode()
+    local realw, realh = love.graphics.getDimensions()
+
     love.graphics.setCanvas()
     love.graphics.push()
     love.graphics.setShader()
