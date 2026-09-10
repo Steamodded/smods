@@ -132,8 +132,9 @@ function SMODS.pop_from_stencil_stack() end
 function SMODS.reset_stencil_stack() end
 
 --- Restore stencil buffer in current canvas
---- @param full boolean Fully reload stencil stack by cleaning up current stencil and redrawing all stencils from stack
-function SMODS.reload_stencil_stack(full) end
+--- @param full? boolean Fully reload stencil stack by cleaning up current stencil and redrawing all stencils from stack
+--- @param canvas? table Canvas to pass into `love.graphics.setCanvas`, default is current canvas
+function SMODS.reload_stencil_stack(full, canvas) end
 
 ---@param str string
 ---@return any
