@@ -973,3 +973,22 @@ G.PROFILES[G.SETTINGS.profile].all_unlocked = true
 payload = '''
 EMPTY(G.P_LOCKED)
 '''
+
+# Fix negative hand levels causing a crash
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if type(vals.level) == 'number' then 
+    G.hand_text_area.hand_level.config.colour = G.C.HAND_LEVELS[math.min(vals.level, 7)]
+else
+    G.hand_text_area.hand_level.config.colour = G.C.HAND_LEVELS[1]
+end
+'''
+payload = '''
+if not G.hand_text_area.hand_level.config.colour then
+    G.hand_text_area.hand_level.config.colour = G.C.HAND_LEVELS[0]
+end
+'''
