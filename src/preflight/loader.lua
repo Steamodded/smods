@@ -147,6 +147,7 @@ function loadMods(modsDirectory)
         badge_colour = { type = 'string', check = function(mod, s) local success, hex = pcall(sUtil.hex, s); mod.badge_colour = success and hex or sUtil.hex('666665FF') end },
         badge_text_colour = { type = 'string', check = function(mod, s) local success, hex = pcall(sUtil.hex, s); mod.badge_text_colour = success and hex or sUtil.hex('FFFFFFFF') end},
         badge_shader = { type = 'string', },
+        badge_text_no_shadow = { type = 'boolean', },
         prefix = { type = 'string', required = true, check = function(mod, s) if string.find(s, '%$') then error("Disallowed use of reserved prefix "..s) end end },
         version = { type = 'string', check = function(mod, x) return x and sUtil.V(x):is_valid() and x or '0.0.0' end },
         dump_loc = { type = 'boolean' },
