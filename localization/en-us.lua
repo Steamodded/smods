@@ -386,7 +386,7 @@ return {
             run_select_locked_stake_and = " and ",
             run_select_nothing = 'Nothing',
             run_select_selected = 'SELECTED',
-            run_select_quick_start = 'Quick Start',
+            run_select_quick_start = 'Last Run',
             run_select_play = 'Play',
             run_setup_enable_seed = 'Enable Seed',
             run_select_deck_choice = 'Select Deck',
