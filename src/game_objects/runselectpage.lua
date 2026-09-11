@@ -49,7 +49,7 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
                 SMODS.RunSelect.Setup.choices[self.key] = choice.config.center.key
             end
             if SMODS.RunSelect.Internals.preview_area then SMODS.RunSelect.Functions.populate_preview_ui(self.key, choice.config.center.key, self.silent) end
-        else
+        elseif not self.no_remove then
             if self.selection_limit == 1 then
                 SMODS.RunSelect.Setup.choices[self.key] = nil
             else
