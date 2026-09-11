@@ -3091,3 +3091,8 @@ function AnimatedSprite:get_pos_pixel()
     self.RETS.get_pos_pixel[4] = self.animation.h
     return self.RETS.get_pos_pixel
 end
+
+-- completely bypass get_new_boss()
+function get_new_boss()
+	return SMODS.get_new_blind("boss")
+end
