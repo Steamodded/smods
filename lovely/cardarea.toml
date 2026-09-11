@@ -51,3 +51,42 @@ if card.highlighted then
     self:remove_from_highlighted(card, true)
 end
 '''
+
+# Redirect old cardarea buffers to new ones
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+self.GAME = saveTable and saveTable.GAME or self:init_game_object()
+'''
+payload = '''
+-- Redirect cardarea buffers to config buffers
+self.GAME.consumeable_buffer = nil
+self.GAME.joker_buffer = nil
+self.GAME = setmetatable(self.GAME, {
+    __index = function(t, key)
+        if key == "joker_buffer" then
+            return G.jokers and G.jokers.config.buffer or 0
+        elseif key == "consumeable_buffer" then
+            return G.consumeables and G.consumeables.config.buffer or 0
+        end
+        return rawget(t, key)
+    end,
+    __newindex = function(t, key, value)
+        if key == "joker_buffer" then
+            if G.jokers then
+                rawset(G.jokers.config, "buffer", value)
+            end
+            return
+        elseif key == "consumeable_buffer" then
+            if G.consumeables then
+                rawset(G.consumeables.config, "buffer", value)
+            end
+            return
+        end
+        rawset(t, key, value)
+    end
+})
+'''
