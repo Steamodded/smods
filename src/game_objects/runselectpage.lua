@@ -117,9 +117,8 @@ SMODS.RunSelectPage({
     end,
     stack_size = 10,
     preview_size = 52,
-    quick_start_text = function()
-        if not G.P_CENTERS[G.PROFILES[G.SETTINGS.profile].last_choices.deck_choice] then G.PROFILES[G.SETTINGS.profile].last_choices.deck_choice = 'b_red' end
-        return localize({type = 'name_text', set = 'Back', key = G.PROFILES[G.SETTINGS.profile].last_choices.deck_choice})
+    quick_start_text = function(self, choice)
+        return localize({type = 'name_text', set = 'Back', key = choice})
     end,
     set_default = function(self, choice)
         return G.P_CENTERS[choice] and choice or 'b_red'
@@ -150,9 +149,8 @@ SMODS.RunSelectPage({
         return G.P_CENTER_POOLS.Stake
     end,
     sprite_size = {w = 0.99, h = 0.99},
-    quick_start_text = function()
-        if not G.P_STAKES[G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice] then G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice = 'stake_white' end
-        return localize({type = 'name_text', set = 'Stake', key = G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice})
+    quick_start_text = function(self, choice)
+        return localize({type = 'name_text', set = 'Stake', key = choice})
     end,
     set_default = function(self, choice)
         if not choice or not G.P_STAKES[choice] then return 'stake_white' else return self.is_stake_unlocked(G.P_STAKES[choice]) and choice or 'stake_white' end
