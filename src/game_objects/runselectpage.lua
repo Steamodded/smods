@@ -10,6 +10,7 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
     selection_limit = 1,
     stack_size = 1,
     silent = false,
+    double_click_advance = true,
     register = function(self)
         if self.registered then
             sendWarnMessage(('Detected duplicate register call on object %s'):format(self.key), self.set)
@@ -38,6 +39,11 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
     handle_choice = function(self, choice, remove)
         SMODS.RunSelect.Setup.choices[self.key] = SMODS.RunSelect.Setup.choices[self.key] or {}
         if not remove then
+            if self.double_click_advance then
+                if (self.selection_limit > 1 and SMODS.RunSelect.Setup.choices[self.key][choice.config.center.key]) or SMODS.RunSelect.Setup.choices[self.key] == choice.config.center.key then
+                    return SMODS.RunSelect.Functions.double_click_advance(self)
+                end
+            end
             if self.selection_limit > 1 then
                 if SMODS.table_size(SMODS.RunSelect.Setup.choices[self.key]) < self.selection_limit and not SMODS.RunSelect.Setup.choices[self.key][choice.config.center.key] then
                     SMODS.RunSelect.Setup.choices[self.key][choice.config.center.key] = true
@@ -49,7 +55,7 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
                 SMODS.RunSelect.Setup.choices[self.key] = choice.config.center.key
             end
             if SMODS.RunSelect.Internals.preview_area then SMODS.RunSelect.Functions.populate_preview_ui(self.key, choice.config.center.key, self.silent) end
-        else
+        elseif not self.no_remove then
             if self.selection_limit == 1 then
                 SMODS.RunSelect.Setup.choices[self.key] = nil
             else
@@ -112,14 +118,14 @@ SMODS.RunSelectPage({
     area_type = 'deck',
     automatic_preview = true,
     random_select = true,
+    double_click_advance = true,
     generate_pool = function(self)
         return G.P_CENTER_POOLS.Back
     end,
     stack_size = 10,
     preview_size = 52,
-    quick_start_text = function()
-        if not G.P_CENTERS[G.PROFILES[G.SETTINGS.profile].last_choices.deck_choice] then G.PROFILES[G.SETTINGS.profile].last_choices.deck_choice = 'b_red' end
-        return localize({type = 'name_text', set = 'Back', key = G.PROFILES[G.SETTINGS.profile].last_choices.deck_choice})
+    quick_start_text = function(self, choice)
+        return localize({type = 'name_text', set = 'Back', key = choice})
     end,
     set_default = function(self, choice)
         return G.P_CENTERS[choice] and choice or 'b_red'
@@ -129,7 +135,7 @@ SMODS.RunSelectPage({
         card.sprite_facing = 'back'
         card.facing = 'back'
         card.children.back:remove()
-        card.children.back = SMODS.create_sprite(card.T.x, card.T.y, card.T.w, card.T.h, G.ASSET_ATLAS[card.config.center.unlocked and card.config.center.atlas or 'centers'], card.config.center.unlocked and card.config.center.pos or {x = 4, y = 0})
+        card.children.back = SMODS.create_sprite(card.T.x, card.T.y, card.T.w, card.T.h, G.ASSET_ATLAS[card.config.center.unlocked and card.config.center.atlas or 'centers'], card.config.center.unlocked and card.config.center.pos or {x = 4, y = 0}, card.config.center.sprite_args)
         stick(card)
         if card_number == SMODS.RunSelect.Internals.stack_size then
             card.sticker = get_deck_win_sticker(card.config.center)
@@ -145,19 +151,22 @@ SMODS.RunSelectPage({
     area_type = 'deck',
     grid_size = {4, 8},
     random_select = true,
+    double_click_advance = true,
     type = 'Stake',
     generate_pool = function(self)
         return G.P_CENTER_POOLS.Stake
     end,
     sprite_size = {w = 0.99, h = 0.99},
-    quick_start_text = function()
-        if not G.P_STAKES[G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice] then G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice = 'stake_white' end
-        return localize({type = 'name_text', set = 'Stake', key = G.PROFILES[G.SETTINGS.profile].last_choices.stake_choice})
+    quick_start_text = function(self, choice)
+        return localize({type = 'name_text', set = 'Stake', key = choice})
     end,
     set_default = function(self, choice)
         if not choice or not G.P_STAKES[choice] then return 'stake_white' else return self.is_stake_unlocked(G.P_STAKES[choice]) and choice or 'stake_white' end
     end,
     handle_choice = function(self, choice, remove)
+        if SMODS.RunSelect.Setup.choices[self.key] == choice then
+            return SMODS.RunSelect.Functions.double_click_advance(self)
+        end
         SMODS.RunSelect.Setup.choices[self.key] = choice
         G.E_MANAGER:clear_queue('run_select')
         SMODS.RunSelect.Functions.populate_stake_tower(choice)
@@ -191,7 +200,7 @@ SMODS.RunSelectPage({
             card.params.stake_chip_locked = true
         end
         card.children.back:remove()
-        card.children.back = SMODS.create_sprite(card.T.x, card.T.y, card.T.w, card.T.h, unlocked and G.P_STAKES[stake_key].atlas or 'locked_stake', unlocked and G.P_STAKES[stake_key].pos or {x=0, y=0})
+        card.children.back = SMODS.create_sprite(card.T.x, card.T.y, card.T.w, card.T.h, unlocked and G.P_STAKES[stake_key].atlas or 'locked_stake', unlocked and G.P_STAKES[stake_key].pos or {x=0, y=0}, card.config.center.sprite_args)
         card.children.back.draw = function(_sprite)
             _sprite.ARGS.send_to_shader = _sprite.ARGS.send_to_shader or {}
             _sprite.ARGS.send_to_shader[1] = math.min(_sprite.VT.r*3, 1) + G.TIMERS.REAL/(18) + (_sprite.juice and _sprite.juice.r*20 or 0) + 1

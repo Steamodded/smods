@@ -297,7 +297,7 @@ function loadMods(modsDirectory)
             elseif depth == 2 and filename == "lovely.toml" and not isDirLovely then
                 isDirLovely = true
                 table.insert(lovely_directories, flags)
-            elseif filename:lower():match('%.json') and depth > 1 then
+            elseif filename:lower():match('%.json$') and depth > 1 then
                 local json_str = NFS.read(file_path)
                 local parsed, mod = pcall(JSON.decode, json_str)
                 if mod and mod.name and mod.name:find('Steamodded') then smods_dupe = directory end

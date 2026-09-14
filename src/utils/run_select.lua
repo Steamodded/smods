@@ -126,10 +126,12 @@ end
 
 function SMODS.RunSelect.Functions.nav_bar()
     local quick_select_text = {}
-    for _, func in ipairs(SMODS.RunSelect.Internals.quick_start_text_functions) do
-        local text = func()
-        if text then table.insert(quick_select_text, text) end
-    end
+    
+    for _, key in ipairs(SMODS.RunSelectPage.obj_buffer) do
+            local page = SMODS.RunSelect.Pages[key]
+            local text = page.quick_start_text and SMODS.RunSelect.Setup.choices[key] and page:quick_start_text(SMODS.RunSelect.Setup.choices[key])
+            if text then table.insert(quick_select_text, text) end
+        end
     
     local t = {n=G.UIT.R, config = {align = "cm", minw = 3, offset = {x=0, y=-5}, padding = 0.15}, nodes = {
         -- Previous Button
@@ -203,10 +205,23 @@ function SMODS.RunSelect.Functions.update_nav_bar(ui)
     SMODS.RunSelect.Internals.previous_button_text = previous_active and '< ' .. localize('run_select_'..SMODS.RunSelect.Internals.pages[prev_page_index]) or ''
     SMODS.RunSelect.Internals.next_button_text = final and localize('run_select_play') or (localize('run_select_'..SMODS.RunSelect.Internals.pages[next_page_index]) .. ' >')
     if not ui then return end
-
+    
     local prev_button = ui.UIBox:get_UIE_by_ID('previous_selection')
     local next_button = ui.UIBox:get_UIE_by_ID('next_selection')
-
+    
+    local play_button_text = {}
+    if final then
+        for _, key in ipairs(SMODS.RunSelectPage.obj_buffer) do
+            local page = SMODS.RunSelect.Pages[key]
+            local text = page.quick_start_text and SMODS.RunSelect.Setup.choices[key] and page:quick_start_text(SMODS.RunSelect.Setup.choices[key])
+            if text then table.insert(play_button_text, text) end
+        end
+        next_button.config.tooltip = {text = play_button_text}
+    else
+        next_button.config.tooltip = nil
+        next_button.config.h_popup = nil
+    end
+    
     prev_button.config.button = previous_active and 'run_select_change_page' or nil
     prev_button.config.emboss = previous_active and 0.1 or 0
     prev_button.config.hover = previous_active and true or false
@@ -383,6 +398,15 @@ function SMODS.RunSelect.Functions.change_page(ui)
         config = {offset = {x=0,y=0}, parent = current_selector_page, type = 'cm'}
     }
     current_selector_page.UIBox:recalculate()
+end
+
+function SMODS.RunSelect.Functions.double_click_advance(page_def)
+    if page_def.can_continue and not page_def:can_continue() then return end
+    if SMODS.RunSelect.Internals.current_page == #SMODS.RunSelect.Internals.pages or SMODS.RunSelect.Functions.get_page_key(1) > #SMODS.RunSelect.Internals.pages then
+        SMODS.RunSelect.Functions.start_run()
+    else
+        SMODS.RunSelect.Functions.change_page(G.OVERLAY_MENU:get_UIE_by_ID('next_selection'))
+    end
 end
 
 function SMODS.RunSelect.Functions.build_selection_areas(key)
