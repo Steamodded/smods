@@ -26,7 +26,7 @@
 ---@field can_use? fun(self: SMODS.Consumable|table, card: Card|table): boolean? Return `true` if the consumable is allowed to be used. 
 ---@field keep_on_use? fun(self: SMODS.Consumable|table, card: Card|table): boolean? Return `true` if the consumable should stay after use.
 ---@field calc_dollar_bonus? fun(self: SMODS.Consumable|table, card: Card|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money. 
----@field calc_scaling? fun(self: SMODS.Consumable|table, card: Card|table, other_card: Card|table, scaling_value: number, scalar_value: number, args: table): table? Called by `SMODS.scale_card`. Allows detection and modification of cards when scaling values. The return may include a `scaling_value` or `scalar_value` field to modify those values or any standard calculation return.
+---@field calc_scaling? fun(self: SMODS.Consumable|table, card: Card|table, other_card: Card|table, scaling_value: number, scalar_value: number, args: table): table? @**[DEPRECATED]** Use `calculate` with `context.scaling_card` instead. ~Called by `SMODS.scale_card`. Allows detection and modification of cards when scaling values. The return may include a `scaling_value` or `scalar_value` field to modify those values or any standard calculation return.~
 ---@field can_sell? fun(self: SMODS.Consumable|table, card: Card|table, context: unknown?):boolean? Allows configuring if the card is allowed to be sold. (Context is not used in vanilla and it's not the same as `calculate`)
 ---@overload fun(self: SMODS.Consumable): SMODS.Consumable
 SMODS.Consumable = setmetatable({}, {

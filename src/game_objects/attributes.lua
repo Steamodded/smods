@@ -40,7 +40,7 @@ end
 
 function SMODS.add_attribute(attribute_key, object_keys)
     assert(SMODS.Attributes[attribute_key], "SMODS.add_attribute called with invaled attribute_key."..SMODS.log_crash_info(debug.getinfo(2)))
-    SMODS.Attributes[attribute_key].keys = SMODS.merge_lists({SMODS.Attributes[attribute_key].keys, object_keys})
+    SMODS.Attributes[attribute_key].keys = SMODS.merge_lists({SMODS.Attributes[attribute_key].keys or {}, object_keys})
 end
 
 function SMODS.populate_attributes()

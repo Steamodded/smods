@@ -3,7 +3,7 @@
 --- Util Classes
 
 --- Internal class referring args passed as `context` in a SMODS object's `calculate` function.
---- Not all arguments typed here are present in all contexts, see [Calculate Function](https://github.com/Steamodded/smods/wiki/calculate_functions#contexts) for details.
+--- Not all arguments typed here are present in all contexts, see [Calculate Function](https://docs.smods.dev/API%20Documentation/Calculate-Functions#contexts) for details.
 ---@class CalcContext: table
 ---@field cardarea? CardArea|PlayAreas|table The CardArea currently being checked.
 ---@field full_hand? Card[]|table[] All played or selected cards.
@@ -57,6 +57,8 @@
 ---@field other_drawn? Card[] List of cards that just got drawn outside a blind
 ---@field using_consumeable? true Check if `true` for effects after using a Consumable.
 ---@field skip_blind? true Check if `true` for effects after skipping a blind.
+---@field skipped_blind? string Key of the blind that just got skipped
+---@field skip_to? string Key of the new upcoming blind after a skip
 ---@field playing_card_added? true Check if `true` for effects after a playing card was added into the deck.
 ---@field card_added? true Check if `true` for effects after a non-playing card was added into the deck.
 ---@field check_enhancement? true Check if `true` for applying quantum enhancements.
@@ -129,6 +131,23 @@
 ---@field old_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand before the alteration.
 ---@field new_parameters? table<'chips'|'mult'|string, number> Altered scoring parameters of the poker hand after the alteration.
 ---@field modify_final_cashout? true Check if `true` for modifying the amount of money at the end of cashout.
+---@field scaling_card? true Check if `true` for reacting to a card's values being scaled.
+---@field resetting_card? true Check if `true` for reacting to a card's values being reset.
+---@field ref_table? table Used in scaling/resetting contexts as the table containing the affected value.
+---@field ref_value? string Used in scaling/resetting contexts as the key of the affected value.
+---@field value? number Used in scaling context as the current (unscaled) affected value.
+---@field initial_value? number Used in resetting context as the initial affected value.
+---@field scalar_table? table Used in scaling context as the table containing the scalar value.
+---@field scalar_value? string Used in scaling context as the key of the scalar value.
+---@field scalar? number Used in scaling context as the current scalar value.
+---@field scalar_factor? number Used in scaling context as the scaling operation's scalar factor.
+---@field reset_value? number Used in resetting context as the target value after the reset.
+---@field operation? '+'|'X'|'-'|string|fun(ref_table:table, ref_value:string, initial:number, change:number)|fun(ref_table:table, ref_value:string, initial:number, reset:number) Used in scaling/resetting context, indicates the operation that will be performed to set the newly scaled value.
+---@field block_overrides? {value:boolean?, scalar:boolean?, message:boolean?}|table Used in scaling/resetting contexts. Set keys cannot by overridden by returned effects.
+---@field scaling_message? table Used in scaling context as message that will be displayed when the operation has been performed.
+---@field reset_message? table Used in resetting context as message that will be displayed when the operation has been performed.
+---@field no_message? true Used in scaling/resetting contexts. If `true`, no message will be displayed when the operation has been performed.
+---@field drawing_to_play_area? true Check if `true` for effects before cards are moved to the play area for scoring.
 
 --- Util Functions
 
@@ -287,6 +306,11 @@ function SMODS.has_enhancement(card, key) end
 ---@param context CalcContext|table
 --- Calculates quantum Enhancements. Require `SMODS.optional_features.quantum_enhancements` to be `true`.
 function SMODS.calculate_quantum_enhancements(card, effects, context) end
+
+---@param card Card|table
+---@param key string
+--- Check if the card has an enhancement, edition, seal or sticker with the given property.
+function SMODS.has_playing_card_property(card, key) end
 
 ---@param card Card|table
 ---@return boolean?
@@ -463,8 +487,9 @@ function SMODS.add_card(t) end
 ---@param card Card|table
 ---@param debuff boolean|"reset"|'prevent_debuff'?
 ---@param source string?
+---@param delay boolean? If the application of the shader should be delayed
 --- Sets a flag that debuffs (or prevents debuff on) provided `card`.
-function SMODS.debuff_card(card, debuff, source) end
+function SMODS.debuff_card(card, debuff, source, delay) end
 
 ---@param card Card|table
 --- Recalculate card debuffs.
@@ -670,6 +695,12 @@ function SMODS.smeared_check(card, suit) end
 --- Checks if the provided `hand` meets the conditions to trigger Seeing Double.
 function SMODS.seeing_double_check(hand, suit) end
 
+---@param ctrl string|table
+---@param vars table[]
+---@return table?
+--- Given a `ctrl` string that represents a hex code, a numeric index in `vars` or a valid loc_colour, returns the colour table corresponding to `ctrl`. Given a `ctrl` table, treats `ctrl.c` as the string value of `ctrl`.
+function SMODS.get_loc_colour(ctrl, vars) end
+
 ---@param lines table
 ---@param args table
 ---@return table
@@ -687,12 +718,13 @@ function SMODS.get_multi_boxes(multi_box) end
 function SMODS.is_playing_card(card) end
 
 ---@param card Card 
+---@param args? {silent?: boolean, no_juice?: boolean} 
 ---@return boolean success
 -- Pinches and :removes() a card. (context.joker_type_destroyed is calculated, and may prevent destruction)
-function SMODS.pinch_and_remove(card) end
+function SMODS.pinch_and_remove(card, args) end
 
 ---@param cards Card|Card[]
----@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], delay?: number, destroy_func?: fun(card: Card, args: table<>)}
+---@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], silent?: boolean, delay?: number, destroy_func?: fun(card: Card, args: table<>), skip_calc? boolean}
 ---@param ... ... Old signature arguments in the above order, up to and including colours
 ---@return Card[] destroy_queued
 --- Destroys the cards passed to the function, handling calculation events that need to happen.
@@ -758,7 +790,7 @@ function SMODS.is_eternal(card, trigger) end
 function SMODS.scale_card(card, args) end
 
 ---@param card Card|table
----@param args? table|{ref_table: table, ref_value: string, reset_value: number, operation: fun(ref_table: table, ref_value: string, initial: number, reset: number)?, block_override: boolean?, reset_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
+---@param args? table|{ref_table: table, ref_value: string, reset_value: number, operation: fun(ref_table: table, ref_value: string, initial: number, reset: number)?, block_overrides: boolean?, reset_message: table?, message_key: string?, message_colour: table?, message_delay: number?, no_message: boolean?}
 --- Tells Jokers that this card is resetting allowing for resetting detection
 --- Args must contain `ref_table`, `ref_value`, and `reset_value`. It may optionally contain an `operation` function to define the behavior of resetting
 function SMODS.reset_card(card, args) end
@@ -786,6 +818,14 @@ function SMODS.push_to_context_stack(context, func) end
 ---@param func string|nil The function/file from which the call originates
 --- Pop a context from the SMODS.context_stack. (Removes 1 from .count)
 function SMODS.pop_from_context_stack(context, func) end
+
+---@param stack_index integer? Optionally the index of the context in the SMODS.context_stack from which to return the latest evaluee. -1 for previous context.
+--- Returns the latest evaluee of the context at stack_index in the SMODS.context_stack
+function SMODS.get_context_evaluee(stack_index) end
+
+---@param previous_context boolean? Whether or not to check the current context's previous evaluee, skipped if this is true.
+--- Returns the previous evaluee, first checking the current SMODS.context_stack entry's previous evaluee and then checking the previous entry's latest evaluee.
+function SMODS.get_previous_evaluee() end
 
 ---@return CalcContext|table|nil
 --- Returns the second to last context from the SMODS.context_stack.
@@ -912,7 +952,7 @@ function SMODS.mod_blind_size(mod_blind_size) end
 
 ---Copies a card
 ---@param card Card|table? Card to copy
----@param args CopyCardArgs
+---@param args CopyCardArgs?
 ---@return Card|table
 function SMODS.copy_card(card, args) end
 
@@ -923,9 +963,24 @@ function SMODS.copy_card(card, args) end
 ---@return Card|table
 function SMODS.add_to_deck(card, args) end
 
+-- Util function to render one card to a `.png` file, saved to `love.filesystem.getSaveDirectory()`
+---@param card Card|table Card to save as an image
+---@param scale number? Scale to render the card at (default = G.SETTINGS.GRAPHICS.texture_scaling)
+---@param filename string? Name of the file (default = [center.key])
+function SMODS.card_to_image(card, scale, filename) end
+
 ---Checks if a card counts as at least one suit that matches the provided suit shade
 ---@param card Card|table Card to check
 ---@param shade string Suit shade to check for
 ---@param bypass_debuff boolean? Whether to ignore the card's debuff status
 ---@return boolean
 function Card.is_suit_shade(card, shade, bypass_debuff) end
+
+---Process element passed via loc_vars' `vars.elements` table
+---@param element? UINode | Node | table | nil | fun(): UINode | Node | table | nil
+---@return UINode | nil
+function SMODS.process_loc_element(element) end
+
+--- Returns if the current ante would have a showdown boss blind.
+---@return boolean
+function SMODS.is_showdown_ante() end

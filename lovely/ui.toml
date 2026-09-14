@@ -545,12 +545,10 @@ payload = '''
 # adjust placement of G.HUD
 [[patches]]
 [patches.pattern]
-target = 'game.lua'
+target = 'blind.lua'
 match_indent = true
-position = 'at'
+position = 'after'
 pattern = '''
-config = {align=('cli'), offset = {x=-0.7,y=0},major = G.ROOM_ATTACH}
-'''
+G.HUD_blind.alignment.offset.y = -10'''
 payload = '''
-config = {align=('cli'), offset = {x=-0.7,y=0.4},major = G.ROOM_ATTACH}
-'''
+ease_value(G.HUD.alignment.offset, 'y', 0 - G.HUD.alignment.offset.y)'''
