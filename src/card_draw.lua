@@ -256,13 +256,13 @@ SMODS.DrawStep {
     func = function(self, layer)
         --Draw the main part of the card
         if (self.edition and self.edition.negative and (not self.delay_edition or self.delay_edition.negative)) or (self.ability.name == 'Antimatter' and (self.config.center.discovered or self.bypass_discovery_center)) then
-            if self.children.front and (self.ability.delayed or not self:should_hide_front()) then
+            if self.children.front and (self.ability.delayed or not self.front_hidden) then
                 self.children.front:draw_shader('negative', nil, self.ARGS.send_to_shader)
             end
         elseif not self:should_draw_base_shader() then
             -- Don't render base dissolve shader.
         elseif not self.greyed then
-            if self.children.front and (self.ability.delayed or not self:should_hide_front()) then
+            if self.children.front and (self.ability.delayed or not self.front_hidden) then
                 self.children.front:draw_shader('dissolve')
             end
         end
@@ -313,7 +313,7 @@ SMODS.DrawStep {
                         v:draw(self, layer)
                     else
                         self.children.center:draw_shader(v.shader, nil, self.ARGS.send_to_shader)
-                        if self.children.front and not self:should_hide_front() then
+                        if self.children.front and not self.front_hidden then
                             self.children.front:draw_shader(v.shader, nil, self.ARGS.send_to_shader)
                         end
                     end
@@ -331,14 +331,14 @@ SMODS.DrawStep {
     key = 'seal',
     order = 30,
     func = function(self, layer)
-        local seal = G.P_SEALS[self.seal] or {}
-        if self.ability.delay_seal then return end
+        local key = self.delay_seal or self.seal
+        local seal = G.P_SEALS[key] or {}
         if type(seal.draw) == 'function' then
             seal:draw(self, layer)
-        elseif self.seal then
-            G.shared_seals[self.seal].role.draw_major = self
-            G.shared_seals[self.seal]:draw_shader('dissolve', nil, nil, nil, self.children.center)
-            if self.seal == 'Gold' then G.shared_seals[self.seal]:draw_shader('voucher', nil, self.ARGS.send_to_shader, nil, self.children.center) end
+        elseif type(key) == "string" then
+            G.shared_seals[key].role.draw_major = self
+            G.shared_seals[key]:draw_shader('dissolve', nil, nil, nil, self.children.center)
+            if key == 'Gold' then G.shared_seals[key]:draw_shader('voucher', nil, self.ARGS.send_to_shader, nil, self.children.center) end
         end
     end,
     conditions = { vortex = false, facing = 'front' },
@@ -460,7 +460,7 @@ SMODS.DrawStep {
     func = function(self)
         if self.debuff and not self.delay_debuff then
             self.children.center:draw_shader('debuff', nil, self.ARGS.send_to_shader)
-            if self.children.front and (self.ability.delayed or not self:should_hide_front()) then
+            if self.children.front and (self.ability.delayed or not self.front_hidden) then
                 self.children.front:draw_shader('debuff', nil, self.ARGS.send_to_shader)
             end
         end
@@ -474,7 +474,7 @@ SMODS.DrawStep {
     func = function(self)
         if self.greyed then
             self.children.center:draw_shader('played', nil, self.ARGS.send_to_shader)
-            if self.children.front and (self.ability.delayed or not self:should_hide_front()) then
+            if self.children.front and (self.ability.delayed or not self.front_hidden) then
                 self.children.front:draw_shader('played', nil, self.ARGS.send_to_shader)
             end
         end
