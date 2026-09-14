@@ -3239,6 +3239,7 @@ SMODS.UndiscoveredCompat = {
             G.STAGE_OBJECT_INTERRUPT = true
             self.sticker_sprite = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, self.atlas, self.pos, self.sprite_args)
             G.STAGE_OBJECT_INTERRUPT = false
+			G.ARGS.LOC_COLOURS[self.key] = self.badge_colour
             G.shared_stickers[self.key] = self.sticker_sprite
         end,
         -- relocating sticker checks to here, so if the sticker has different checks than default
