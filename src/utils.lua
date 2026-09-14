@@ -1033,7 +1033,7 @@ function SMODS.get_enhancements(card, extra_only)
     if not SMODS.enh_cache:read(card, extra_only) then
 
         local enhancements = {}
-        if card.config.center.key ~= "c_base" then
+        if card.config.center.key ~= "c_base" and G.P_CENTERS[card.config.center.key] then
             enhancements[card.config.center.key] = true
         end
         local calc_return = {}
@@ -1134,7 +1134,7 @@ function SMODS.has_playing_card_property(card, key)
         end
     else
         for k, _ in pairs(SMODS.get_enhancements(card)) do
-            if G.P_CENTERS[k] and G.P_CENTERS[k][key] then return true end
+            if G.P_CENTERS[k][key] then return true end
         end
     end
     if (G.P_CENTERS[(card.edition or {}).key] or {})[key] then return true end
