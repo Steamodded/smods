@@ -248,15 +248,6 @@ position = "at"
 payload = "if self.seal == 'Blue' and #G.consumeables.cards + G.GAME.consumeable_buffer < G.consumeables.config.card_limit and not self.ability.extra_enhancement then"
 match_indent = true
 
-# Reset enh cache on game update
-[[patches]]
-[patches.pattern]
-target = "game.lua"
-pattern = "modulate_sound(dt)"
-position = "after"
-payload = "SMODS.enh_cache:clear()"
-match_indent = true
-
 # Invalidate enhancement cache when card changes / replace_base_card fix pt1
 [[patches]]
 [patches.pattern]
