@@ -232,6 +232,41 @@ payload = '''
 v:update(dt*self.SPEEDFACTOR, self.real_dt)
 '''
 
+# Add outline_colour_opacity
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+--Draw the outline of the object
+if self.config.outline and self.config.outline_colour[4] > 0.01 then
+'''
+payload = '''
+local old_outline_opacity
+--Draw the outline of the object
+if self.config.outline and self.config.outline_colour[4] > 0.01 then
+    if self.config.outline_colour_opacity then
+        old_outline_opacity = self.config.outline_colour[4]
+        self.config.outline_colour[4] = self.config.outline_colour[4] * self.config.outline_colour_opacity
+    end
+'''
+
+# Cancel outline_colour_opacity
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+--Draw the outline for highlighted buttons
+'''
+payload = '''
+if old_outline_opacity then
+    self.config.outline_colour[4] = old_outline_opacity
+end
+
+'''
 
 # Add under-/overline and strikethrough properties for text
 [[patches]]
@@ -244,28 +279,52 @@ pattern = '''
 '''
 payload = '''
 if self.config.strikethrough and self.config.strikethrough[4] > 0.01 then 
+    local old_colour_opacity
+    if self.config.strikethrough_colour_opacity then
+        old_colour_opacity = self.config.strikethrough[4]
+        self.config.strikethrough[4] = self.config.strikethrough[4] * self.config.strikethrough_colour_opacity
+    end
     prep_draw(self, 1)
     love.graphics.scale(1/(G.TILESIZE))
     love.graphics.setLineWidth(1)
     love.graphics.setColor(self.config.strikethrough)
     self:draw_pixellated_strikethough('line', parallax_dist)
     love.graphics.pop()
+    if old_colour_opacity then
+        self.config.strikethrough[4] = old_colour_opacity
+    end
 end
 if self.config.underline and self.config.underline[4] > 0.01 then 
+    local old_colour_opacity
+    if self.config.underline_colour_opacity then
+        old_colour_opacity = self.config.underline[4]
+        self.config.underline[4] = self.config.underline[4] * self.config.underline_colour_opacity
+    end
     prep_draw(self, 1)
     love.graphics.scale(1/(G.TILESIZE))
     love.graphics.setLineWidth(1)
     love.graphics.setColor(self.config.underline)
     self:draw_pixellated_under('line', parallax_dist)
     love.graphics.pop()
+    if old_colour_opacity then
+        self.config.underline[4] = old_colour_opacity
+    end
 end
 if self.config.overline and self.config.overline[4] > 0.01 then
+    local old_colour_opacity
+    if self.config.overline_colour_opacity then
+        old_colour_opacity = self.config.overline[4]
+        self.config.overline[4] = self.config.overline[4] * self.config.overline_colour_opacity
+    end
     prep_draw(self, 1)
     love.graphics.scale(1/(G.TILESIZE))
     love.graphics.setLineWidth(1)
     love.graphics.setColor(self.config.overline)
     self:draw_pixellated_over('line', parallax_dist)
     love.graphics.pop()
+    if old_colour_opacity then
+        self.config.overline[4] = old_colour_opacity
+    end
 end
 '''
 

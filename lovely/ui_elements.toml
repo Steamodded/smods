@@ -232,6 +232,11 @@ if self.UIT ~= G.UIT.T then
 end
 end
 
+local old_colour_opacity
+if self.config.colour_opacity then
+    old_colour_opacity = self.config.colour[4]
+    self.config.colour[4] = self.config.colour[4] * self.config.colour_opacity
+end
 local element_shaders = SMODS.resolve_ui_shaders(self, self.states.visible and self.UIT ~= G.UIT.T and self.config.shader, nil)
 for _, v in ipairs(element_shaders) do
     if v then
@@ -239,6 +244,9 @@ for _, v in ipairs(element_shaders) do
     else
         self.ARGS.cached_draw(self, nil, nil, button_active, parallax_dist, button_being_pressed)
     end
+end
+if old_colour_opacity then
+    self.config.colour[4] = old_colour_opacity
 end
 """
 match_indent = true
