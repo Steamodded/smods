@@ -58,3 +58,15 @@ payload = '''
 create_option_cycle({label = localize('b_graphics_mipmap_level'),scale = 0.8, options = SMODS.config.graphics_mipmap_level_options, opt_callback = 'SMODS_change_mipmap', current_option = SMODS.config.graphics_mipmap_level}),'''
 match_indent = true
 
+# Fix menu cards not being removed when locked cards exist and `remove_original` is active
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+card = Card(self.title_top.T.x, self.title_top.T.y, 1.2*G.CARD_W*SC_scale, 1.2*G.CARD_H*SC_scale, nil, pseudorandom_element(viable_unlockables) or self.P_CENTERS.j_joker)
+'''
+payload = '''
+replace_card = G.title_top.cards[1]
+'''

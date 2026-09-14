@@ -20,7 +20,7 @@
 ---@field get_obj? fun(self: SMODS.Voucher|table, key: string): SMODS.Voucher|table? Returns an object if one matches the `key`. 
 ---@field redeem? fun(self: SMODS.Voucher|table, voucher?: Card|table) Defines behaviour when this voucher is redeemed.
 ---@field calc_dollar_bonus? fun(self: SMODS.Voucher|table, card: Card|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money. 
----@field calc_scaling? fun(self: SMODS.Voucher|table, voucher: Card|table, other_card: Card|table, scaling_value: number, scalar_value: number, args: table): table? Called by `SMODS.scale_card`. Allows detection and modification of cards when scaling values. The return may include a `scaling_value` or `scalar_value` field to modify those values or any standard calculation return.
+---@field calc_scaling? fun(self: SMODS.Voucher|table, voucher: Card|table, other_card: Card|table, scaling_value: number, scalar_value: number, args: table): table? @**[DEPRECATED]** Use `calculate` with `context.scaling_card` instead. ~Called by `SMODS.scale_card`. Allows detection and modification of cards when scaling values. The return may include a `scaling_value` or `scalar_value` field to modify those values or any standard calculation return.~
 ---@field new? fun(self, name, slug, config, pos, loc_txt, cost, unlocked, discovered, available, requires, atlas): any DEPRECATED. DO NOT USE
 ---@overload fun(self: SMODS.Voucher): SMODS.Voucher
 SMODS.Voucher = setmetatable({}, {

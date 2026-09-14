@@ -1,7 +1,7 @@
 ---@meta
 
 ---@class SMODS.Suit: SMODS.GameObject
----@field obj_buffer? Suits|string[] Array of keys to all objects registered to this class.
+---@field obj_buffer? Suits[]|string[] Array of keys to all objects registered to this class.
 ---@field obj_table? table<Suits|string, SMODS.Suit|table> Table of objects registered to this class. 
 ---@field loc_txt? table|{singular: string, plural: string} Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.GameObject|table Parent class. 
