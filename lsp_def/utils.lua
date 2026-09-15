@@ -984,3 +984,10 @@ function SMODS.process_loc_element(element) end
 --- Returns if the current ante would have a showdown boss blind.
 ---@return boolean
 function SMODS.is_showdown_ante() end
+
+--- Returns the default ability table for this center
+---@param center SMODS.Center|table
+---@param card? Card|table
+---@param no_copy? boolean Skips copying the config values of the center
+---@return table
+SMODS.get_default_ability_vars = function(center, card, no_copy) end
