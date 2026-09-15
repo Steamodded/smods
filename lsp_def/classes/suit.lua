@@ -16,6 +16,7 @@
 ---@field lc_colour? table HEX color of the suit text for low-contrast. 
 ---@field hc_colour? table HEX color of the suit text for high-contrast. 
 ---@field shade? string A string that identifies a "shade" for the suit, e.g. "light" and "dark" suits.
+---@field no_mod_badges? boolean Hides the mod's badge from the tooltip.
 ---@field __call? fun(self: SMODS.Suit|table, o: SMODS.Suit|table): nil|table|SMODS.Suit
 ---@field extend? fun(self: SMODS.Suit|table, o: SMODS.Suit|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Suit|table): boolean? Ensures objects already registered will not register. 

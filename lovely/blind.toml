@@ -151,6 +151,10 @@ pattern = "local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_fl
 position = 'at'
 match_indent = true
 payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(self, card, area)
+if card.ability.return_to_hand and from == G.play then
+    to = G.hand
+    card.ability.return_to_hand = nil
+end
 if SMODS.to_area then to = SMODS.to_area; SMODS.to_area = nil end'''
 
 [[patches]]
@@ -160,6 +164,10 @@ pattern = "local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_fl
 position = 'at'
 match_indent = true
 payload = '''local stay_flipped = G.GAME and G.GAME.blind and G.GAME.blind:stay_flipped(to, card, from)
+if card.ability.return_to_hand and from == G.play then
+    to = G.hand
+    card.ability.return_to_hand = nil
+end
 if SMODS.to_area then to = SMODS.to_area; SMODS.to_area = nil end
 '''
 

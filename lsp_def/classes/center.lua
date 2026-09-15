@@ -12,6 +12,7 @@
 ---@field no_collection? boolean|fun():boolean Sets whether the card shows up in the collections menu. 
 ---@field loc_txt? table|{name: string|string[], text: string[]|string[][]} Contains strings used for displaying text related to this object. 
 ---@field pools? string[] Array of keys to ObjectTypes this center will be added to.
+---@field attributes? string[]|table<string,true> Array of Attributes this center has. Converted into a dictionary after injection.
 ---@field cost? number Sell cost of this center. 
 ---@field no_pool_flag? string Key to a pool flag defined in `G.GAME.pool_flags`. This center is removed from pools as long as this flag is `true`. 
 ---@field yes_pool_flag? string Key to the pool flag defined in `G.GAME.pool_flags`. This center is removed from pools as long as this flag is `false`. 
@@ -21,6 +22,7 @@
 ---@field pixel_size? table|{w: integer, h: integer} Change the size of the sprite drawn onto the card.
 ---@field badge_text_colour? table Colour of the label for the badge (supersedes Rarities and ConsumableTypes).
 ---@field badge_colour? table Colour of the badge (supersedes Rarities and ConsumableTypes).
+---@field no_mod_badges? boolean Hides the mod's badge from the tooltip.
 ---@field __call? fun(self: SMODS.Center|table, o: SMODS.Center|table): nil|table|SMODS.Center
 ---@field extend? fun(self: SMODS.Center|table, o: SMODS.Center|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Center|table): boolean? Ensures objects already registered will not register. 
@@ -53,7 +55,8 @@
 ---@field calculate? fun(self: SMODS.Center|table, card: Card|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://docs.smods.dev/API%20Documentation/Calculate-Functions) docs for details. 
 ---@field create_fake_card? fun(self: SMODS.Center|table): table Creates a fake card representing this center. Used internally for `generate_ui` in cases where recieved `card` param is nil. 
 ---@field on_select? fun(self: SMODS.Center|table, card: Card|table) Called when the card is selected from a booster pack. 
----@field select_card? string|{[string]: string}|(fun(self: SMODS.Center|table, card: Card|table, pack: SMODS.Booster|table): string|{[string]: string}, boolean?) Key to the CardArea (e.x. `G[SMODS.Center.select_card]`). As a table, each key-value pair is a card set as key and CardArea string as values. Or return either formers as a function. May also return a second value of boolean to indicate card can be selected and used at the same time. 
+---@field select_card? string|{[string]: string}|(fun(self: SMODS.Center|table, card: Card|table, pack: SMODS.Booster|table): string|{[string]: string}, boolean?) Key to the CardArea (e.x. `G[SMODS.Center.select_card]`). As a table, each key-value pair is a card set as key and CardArea string as values. Or return either formers as a function. May also return a second value of boolean to indicate card can be selected and used at the same time.
+---@field get_weight? fun(self: SMODS.Center|table, weight: number, args: table?): number Used for finer control over this center's weight with the object weights optional feature is enabled. 
 ---@overload fun(self: SMODS.Center): SMODS.Center
 SMODS.Center = setmetatable({}, {
     __call = function(self)
