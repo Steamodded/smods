@@ -530,7 +530,7 @@ function SMODS.create_mod_badge(mod, obj, width, text_height)
     local mod_name = mod.display_name
     local max_text_width = width or 1.732
     local scale_fac = 1
-    local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE}, maxw = mod.no_marquee and max_text_width, float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = text_height or 0.297})
+    local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE}, maxw = mod.no_marquee and max_text_width, float = true, shadow = not mod.badge_text_no_shadow, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = text_height or 0.297})
     local badge_scroll = SMODS.UIScrollBox({
         content = badge_text,
         container = {
