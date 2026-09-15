@@ -870,28 +870,229 @@ end
 
 SMODS.booted = false
 
-function SMODS.load_file(path, id)
-    if not path or path == "" then
-        error("No path was provided to load.")
+local lovely = require "lovely"
+
+local function validate_load_args(path, id)
+    if not path then
+        return nil, "No path was provided to load."
     end
     local mod
     if not id then
         if not SMODS.current_mod then
-            error("No ID was provided! Usage without an ID is only available when file is first loaded.")
+            return nil, "No ID was provided! Usage without an ID is only available when mod is first loaded."
         end
         mod = SMODS.current_mod
     else
         mod = SMODS.Mods[id]
     end
     if not mod then
-        error("Mod not found. Ensure you are passing the correct ID.")
+        return nil, "Mod not found. Ensure you are passing the correct ID."
     end
+    return mod
+end
+
+function SMODS.load_file(path, id, aliases)
+    local mod, err = validate_load_args(path, id)
+    if not mod then return nil, err end
     local file_path = NFS.getNormalizedPath(mod.path .. path)
+    if not NFS.getInfo(file_path, "file") then
+        return nil, "Unsupported file type! SMODS.load_file expects a path to a regular file!"
+    end
     local file_content, err = NFS.read(file_path)
     if not file_content then return  nil, "Error reading file '" .. path .. "' for mod with ID '" .. mod.id .. "': " .. err end
-    local chunk, err = load(file_content, "=[SMODS " .. mod.id .. ' "' .. path .. '"]')
+
+    if type(aliases) == 'string' then aliases = {aliases} end
+    if type(aliases) ~= 'table' then aliases = {} end
+    for _,alias in ipairs(aliases) do
+        file_content = assert(lovely.apply_patches(alias, file_content))
+    end
+
+    local chunk, err
+    local chunk_name = "=[SMODS " .. mod.id .. ' "' .. path .. '"]'
+    if file_path:lower():match("%.json$") then
+        file_content = assert(lovely.apply_patches(chunk_name, file_content))
+        local success, result = pcall(JSON.decode, file_content)
+        chunk, err = success and function() return result end, not success and result
+    else
+        chunk, err = load(file_content, chunk_name)
+    end
     if not chunk then return nil, "Error processing file '" .. path .. "' for mod with ID '" .. mod.id .. "': " .. err end
     return chunk
+end
+
+function SMODS.load_folder(path, config, id, seen_paths)
+    path = path:gsub("\\","/"):gsub("/$","")
+    local mod, err = validate_load_args(path, id)
+    if not mod then return nil, err end
+    local dir_path = NFS.getNormalizedPath(mod.path .. path)
+    seen_paths = seen_paths or {}
+    if seen_paths[dir_path] then
+        -- Safeguard against recursive file structures due to symlinks
+        return nil, "Found recursive file structure! Skipping this directory as it's been seen before."
+    end
+    seen_paths[dir_path] = true
+    if not NFS.getInfo(dir_path, "directory") and not NFS.getInfo(dir_path, "symlink") then
+        return nil, "Unsupported file type! `SMODS.load_folder` expects a path to a directory or symbolic link."
+    end
+    if type(config) == 'string' then 
+        config, err = SMODS.load_file(config, id)
+        if not config then return nil, err end
+    end
+    if type(config) ~= 'table' then config = {} end
+
+    local valid_traversals = { preorder = true, inorder = true, postorder = true, files_only = true, custom = true }
+    config.traversal = valid_traversals[config.traversal] and config.traversal or 'postorder'
+    if config.traversal == 'custom' and type(config.files) ~= 'table' then
+        return nil, "Invalid configuration! With a custom `traversal`, it is required to specify an array of `files`!"
+    end
+    if config.reverse and config.files then
+        local len = #config.files
+        for i = 1, math.floor(len/2) do
+            config.files[i], config.files[len+1-i] = config.files[len+1-i], config.files[i]
+        end
+    end
+
+    -- Sanitize the exclude table
+    config.exclude = config.exclude or {}
+    if type(config.exclude) ~= "table" then
+        if type(config.exclude) == "string" then
+            config.exclude = { [config.exclude] = true }
+        else
+            config.exclude = {}
+        end
+    end
+    if #config.exclude > 0 then
+        for i = #config.exclude, 1, -1 do
+            config.exclude[config.exclude[i]] = true
+            config.exclude[i] = nil
+        end
+    end
+    local exclude = {}
+    for _,k in ipairs(config.exclude) do 
+        if type(k) == "string" then exclude[k:lower()] = true end
+    end
+    for k,v in pairs(config.exclude) do
+        if type(k) == "string" then exclude[k:lower()] = v end
+    end
+    config.exclude = exclude
+
+    local results = {}
+    if config.traversal == 'custom' then
+        local custom_paths = {}
+        local has_catchall
+        for _, entry in ipairs(config.files) do
+            if not config.exclude[entry.path:lower()] then -- why would you do that
+                entry.catch_errors = entry.catch_errors or config.catch_errors
+                entry.reverse = entry.reverse ~= nil and entry.reverse or config.reverse
+                local file_name = entry.path
+                custom_paths[file_name] = true
+                local file_path = dir_path .. '/' .. file_name
+                local file_type = NFS.getInfo(file_path).type
+                if file_type == 'file' and (file_name:lower():match("%.lua$") or file_name:lower():match("%.json")) then
+                    results[entry.path] = {SMODS.load_file(path..'/'..file_name, id), is_file = true}
+                elseif file_type == 'directory' or file_type == 'symlink' then
+                    entry.exclude = entry.exclude or {}
+                    for k,v in pairs(config.exclude) do
+                        if v and string.sub(k, 1, #file_name) == file_name:lower() then
+                            entry.exclude[string.sub(k, #file_name+2)] = v
+                        end
+                    end
+                    if file_name == "" then
+                        has_catchall = true
+                    else
+                        results[entry.path] = SMODS.load_folder(path..'/'..file_name, entry, id, seen_paths)
+                    end
+                end
+            end
+        end
+        if has_catchall then
+            seen_paths[path] = nil -- In this specific case it's okay to revisit the same directory
+            for k,v in pairs(custom_paths) do
+                config.files[""].exclude[k] = v
+            end
+            results[""] = SMODS.load_folder(path, config.files[""], id, seen_paths)
+        end
+    else
+        for _, file_name in ipairs(NFS.getDirectoryItems(dir_path)) do
+            if not config.exclude[file_name:lower()] then
+                local file_path = dir_path .. '/' .. file_name
+                local file_type = NFS.getInfo(file_path).type
+                if file_type == 'file' and file_name then
+                    results[file_name] = {SMODS.load_file(path..'/'..file_name, id), is_file = true}
+                elseif (file_type == 'directory' or file_type == 'symlink') and config.traversal ~= 'files_only' then
+                    local cur_exclude = config.exclude
+                    config.exclude = {}
+                    for k,v in pairs(cur_exclude) do
+                        if v and string.sub(k, 1, #file_name) == file_name:lower() then
+                            config.exclude[string.sub(k, #file_name+2)] = v
+                        end
+                    end
+                    results[file_name] = SMODS.load_folder(path..'/'..file_name, config, id, seen_paths)
+                    config.exclude = cur_exclude
+                end
+            end
+        end
+    end
+    return setmetatable(results, {
+        __call = function(self, ...)
+            local ret = {}
+            local function call_file(key, ...)
+                local chunk, err = unpack(self[key])
+                if config.catch_errors then
+                    if not chunk then return { failed = true, error = err } end
+                    local res = {pcall(chunk, ...)}
+                    return table.remove(res, 1) and res or { failed = true, error = res[1]}
+                end
+                if err then error(err, 0) end
+                return {chunk(...)}
+            end
+            if config.traversal == 'custom' then
+                for _, entry in ipairs(config.files) do
+                    if self[entry.path].is_file then
+                        ret[entry.path] = call_file(entry.path, ...)
+                    elseif entry.path == "" then -- unwrap same-level catchall
+                        for k,v in pairs(self[entry.path](...)) do
+                            ret[k] = v
+                        end
+                    else
+                        ret[entry.path] = self[entry.path](...)
+                    end
+                end
+            elseif config.traversal == 'inorder' then
+                local files_and_dirs = {}
+                for k,_ in pairs(self) do
+                    table.insert(files_and_dirs, k)
+                end
+                table.sort(files_and_dirs, config.reverse and function(a,b) return a > b end)
+                for _,k in ipairs(files_and_dirs) do
+                    if self[k].is_file then
+                        ret[k] = call_file(k, ...)
+                    else
+                        ret[k] = self[k](...)
+                    end
+                end
+            else
+                local files = {}
+                local dirs = {}
+                for k,v in pairs(self) do
+                    table.insert(v.is_file and files or dirs, k)
+                end
+                table.sort(files, config.reverse and function(a,b) return a > b end)
+                table.sort(dirs, config.reverse and function(a,b) return a > b end)
+                
+                if config.traversal == 'files_only' or config.traversal == 'postorder' then
+                    for _,k in ipairs(files) do ret[k] = call_file(k, ...) end
+                end
+                if config.traversal == 'postorder' or config.traversal == 'preorder' then
+                    for _,k in ipairs(dirs) do ret[k] = self[k](...) end
+                end
+                if config.traversal == 'preorder' then
+                    for _,k in ipairs(files) do ret[k] = call_file(k, ...) end
+                end
+            end
+            return ret
+        end
+    })
 end
 
 local function doGameHooks()
