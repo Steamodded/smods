@@ -4507,7 +4507,10 @@ function SMODS.copy_card(card, args)
 
     if args.new_card or args.no_add then return copy end
 
-    return SMODS.add_to_deck(copy, {area = args.area or card.area, playing_card = playing_card})
+    args.area = args.area or card.area
+    args.playing_card = playing_card
+
+    return SMODS.add_to_deck(copy, args)
 end
 
 function SMODS.add_to_deck(card, args)
@@ -4523,13 +4526,36 @@ function SMODS.add_to_deck(card, args)
     if not args.area and SMODS.ConsumableTypes[card.ability.set] then
         args.area = G.consumeables
     end
-    card:add_to_deck()
-    if is_playing_card then
-        G.deck.config.card_limit = G.deck.config.card_limit + 1
-        table.insert(G.playing_cards, card)
-    end
+
     local area = args.area or G.jokers
-    area:emplace(card)
+
+    local add_card = function()
+        card:add_to_deck()
+        if is_playing_card then
+            G.deck.config.card_limit = G.deck.config.card_limit + 1
+            table.insert(G.playing_cards, card)
+        end
+        area:emplace(card)
+    end
+
+    if args.create_event then
+        if not args.ignore_buffer then
+            area.config.buffer = (area.config.buffer or 0) +
+                (args.buffer_increment or 1)
+        end
+        local event_args = type(args.create_event) == "table" and args.create_event or {}
+        local event_func = event_args.func or function() return true end
+        event_args.func = function()
+            if event_args.pre_func then event_args.pre_func(card) end
+            add_card()
+            area.config.buffer = 0
+            return event_func()
+        end
+        G.E_MANAGER:add_event(Event(event_args))
+    else
+        add_card()
+    end
+
     return card
 end
 
@@ -4657,4 +4683,8 @@ function SMODS.split_string(_string, parts)
     end
 
     return text_output
+end
+
+function SMODS.get_slots_available(area, ignore_buffer)
+    return area and (area.config.card_limit - (#area.cards + (not ignore_buffer and area.config.buffer or 0))) or 0
 end
