@@ -1290,217 +1290,11 @@ SMODS.smart_level_up_hand = function(card, hand, instant, amount, statustext)
 end
 
 -- This function handles the calculation of each effect returned to evaluate play.
--- Can easily be hooked to add more calculation effects ala Talisman
 SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, from_edition)
-    if key == 'pre_func' then
-        effect.pre_func()
-        return true
+    local calc_effect = SMODS.CalculationEffectByVariants[key]
+    if calc_effect then
+        return calc_effect:func(effect, scored_card, key, amount, from_edition)
     end
-
-    if SMODS.Scoring_Parameter_Calculation[key] then
-        return SMODS.Scoring_Parameters[SMODS.Scoring_Parameter_Calculation[key]]:calc_effect(effect, scored_card, key, amount, from_edition)
-    end
-
-    if (key == 'p_dollars' or key == 'dollars' or key == 'h_dollars') and amount then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        SMODS.ease_dollars_calc = true
-        local initial_dollars = G.GAME.dollars
-        SMODS.dollars_changed = amount
-        ease_dollars(amount, effect.instant)
-        local final_amt = SMODS.dollars_changed
-        SMODS.ease_dollars_calc = nil
-        if not effect.remove_default_message then
-            if effect.dollar_message then
-                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.dollar_message)
-            else
-                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'dollars', final_amt, percent)
-            end
-        end
-        SMODS.calculate_context({
-            money_altered = true,
-            amount = final_amt,
-            initial = initial_dollars,
-            from_shop = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SMODS_BOOSTER_OPENED or G.STATE == G.STATES.SMODS_REDEEM_VOUCHER) or nil,
-            from_consumeable = (G.STATE == G.STATES.PLAY_TAROT) or nil,
-            from_scoring = (G.STATE == G.STATES.HAND_PLAYED) or nil,
-            from_cashout = SMODS.money_from_cashout or nil,
-        })
-        return true
-    end
-    if (key == 'xscore' or key == 'h_xscore' or key == 'x_score' or key == 'h_x_score') and amount ~= 1 then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        SMODS.mod_score({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
-        return true
-    end
-    if (key == 'score' or key == 'h_score') and amount ~= 0 then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        SMODS.mod_score({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
-        return true
-    end
-    if (key == 'xblind_size' or key == 'h_xblind_size' or key == 'x_blind_size' or key == 'h_x_blindsize' or key == 'xblindsize' or key == 'h_xblindsize' or key == 'x_blindsize' or key == 'h_x_blindsize') and amount ~= 1 then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        SMODS.mod_blind_size({ mult = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
-        return true
-    end
-    if (key == 'blind_size' or key == 'h_blind_size' or key == 'blindsize' or key == 'h_blindsize') and amount ~= 0 then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        SMODS.mod_blind_size({ add = amount, card = effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, effect = effect, from_edition = from_edition })
-        return true
-    end
-
-    if key == 'message' and not SMODS.no_resolve then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        if effect.retrigger_juice then juice_card(effect.retrigger_juice) end
-        card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect)
-        return true
-    end
-
-    if key == 'func' then
-        effect.func()
-        return true
-    end
-
-    if key == 'swap' then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        local old_mult = mult
-        mult = mod_mult(hand_chips)
-        hand_chips = mod_chips(old_mult)
-        update_hand_text({delay = 0}, {chips = hand_chips, mult = mult})
-        juice_card(scored_card)
-        return true
-    end
-
-    if key == 'balance' then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        local total = mult + hand_chips
-        mult = mod_mult(total/2)
-        hand_chips = mod_chips(total/2)
-        update_hand_text({delay = 0}, {chips = hand_chips, mult = mult})
-        G.E_MANAGER:add_event(Event({
-            func = (function()
-                -- scored_card:juice_up()
-                play_sound('gong', 0.94, 0.3)
-                play_sound('gong', 0.94*1.5, 0.2)
-                play_sound('tarot1', 1.5)
-                ease_colour(G.C.UI_CHIPS, {0.8, 0.45, 0.85, 1})
-                ease_colour(G.C.UI_MULT, {0.8, 0.45, 0.85, 1})
-                G.E_MANAGER:add_event(Event({
-                    trigger = 'after',
-                    blockable = false,
-                    blocking = false,
-                    delay =  0.8,
-                    func = (function()
-                            ease_colour(G.C.UI_CHIPS, G.C.BLUE, 0.8)
-                            ease_colour(G.C.UI_MULT, G.C.RED, 0.8)
-                        return true
-                    end)
-                }))
-                G.E_MANAGER:add_event(Event({
-                    trigger = 'after',
-                    blockable = false,
-                    blocking = false,
-                    no_delete = true,
-                    delay =  1.3,
-                    func = (function()
-                        G.C.UI_CHIPS[1], G.C.UI_CHIPS[2], G.C.UI_CHIPS[3], G.C.UI_CHIPS[4] = G.C.BLUE[1], G.C.BLUE[2], G.C.BLUE[3], G.C.BLUE[4]
-                        G.C.UI_MULT[1], G.C.UI_MULT[2], G.C.UI_MULT[3], G.C.UI_MULT[4] = G.C.RED[1], G.C.RED[2], G.C.RED[3], G.C.RED[4]
-                        return true
-                    end)
-                }))
-                return true
-            end)
-        }))
-        if not effect.remove_default_message then
-            if effect.balance_message then
-                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, effect.balance_message)
-            else
-                card_eval_status_text(effect.message_card or effect.juice_card or scored_card or effect.card or effect.focus, 'extra', nil, percent, nil, {message = localize('k_balanced'), colour =  {0.8, 0.45, 0.85, 1}})
-            end
-        end
-        delay(0.6)
-
-        return true
-    end
-
-    if key == 'level_up' then
-        if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        local hand_type = effect.level_up_hand or G.GAME.last_hand_played
-        SMODS.smart_level_up_hand(scored_card, hand_type, effect.instant, amount)
-        return true
-    end
-
-    if key == 'extra' then
-        return SMODS.calculate_effect(amount, scored_card)
-    end
-
-    if key == 'saved' then
-        SMODS.saved = amount
-        G.GAME.saved_text = amount
-        return key
-    end
-
-    if key == 'effect' then
-        return true
-    end
-
-    local key_return_flags = {
-        prevent_debuff = true,
-        add_to_hand = true,
-        remove_from_hand = true,
-        return_to_hand = true,
-        stay_flipped = true,
-        prevent_stay_flipped = true,
-        prevent_trigger = true,
-    }
-
-    if key_return_flags[key] then
-        return key
-    end
-
-    local amount_return_flags = {
-        remove = true,
-        debuff_text = true,
-        cards_to_draw = true,
-        numerator = true,
-        denominator = true,
-        no_destroy = true,
-        replace_scoring_name = true,
-        replace_display_name = true,
-        replace_poker_hands = true,
-        modify = true,
-        override = true,
-        shop_create_flags = true,
-        booster_create_flags = true,
-        override_value = true,
-        override_scalar_value = true,
-        override_scalar = true,
-        override_reset_value = true,
-        override_message = true,
-        post = true,
-    }
-
-    if key == 'modify' then
-        if SMODS.context_stack[#SMODS.context_stack].context.modify_final_cashout then
-            if effect.cashout_row then
-                effect.cashout_row.bonus = true
-                effect.cashout_row.pitch = SMODS.cashout_pitch
-                effect.cashout_row.dollars = effect.cashout_row.dollars or amount
-                add_round_eval_row(effect.cashout_row)
-            else
-                add_round_eval_row({dollars = amount, bonus = true, name='joker'..SMODS.cashout_index, pitch = SMODS.cashout_pitch, card = scored_card})
-            end
-        end
-    end
-
-    if amount_return_flags[key] then
-        return { [key] = amount }
-    end
-
-
-    if key == 'debuff' then
-        return { [key] = amount, debuff_source = scored_card }
-    end
-
 end
 
 -- Used to calculate a table of effects generated in evaluate_play
@@ -1549,73 +1343,34 @@ end
 
 SMODS.calculate_effect = function(effect, scored_card, from_edition, pre_jokers)
     local ret = { scored_card = scored_card }
-    for _, key in ipairs(SMODS.calculation_keys) do
-        if effect[key] then
-            if effect.juice_card and not SMODS.no_resolve and not effect.no_juice then
-                G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function ()
-                    effect.juice_card:juice_up(0.1)
-                    if (not effect.message_card) or (effect.message_card and effect.message_card ~= scored_card) then
-                        scored_card:juice_up(0.1)
-                    end
-                    return true end}))
-            end
-            local calc = SMODS.calculate_individual_effect(effect, scored_card, key, effect[key], from_edition)
-            if calc == true then ret.calculated = true end
-            if type(calc) == 'string' then
-                ret[calc] = true
-            elseif type(calc) == 'table' then
-                for k,v in pairs(calc) do ret[k] = v end
-            end
-            if not SMODS.silent_calculation[key] then
-                percent = (percent or 0) + (percent_delta or 0.08)
+    for _, key in ipairs(SMODS.CalculationEffect.obj_buffer) do
+        local calc_effect = SMODS.CalculationEffects[key]
+        for variant, _ in pairs(calc_effect.variants) do
+            if effect[variant] then
+                if effect.juice_card and not SMODS.no_resolve and not effect.no_juice then
+                    G.E_MANAGER:add_event(Event({trigger = 'immediate', func = function ()
+                        effect.juice_card:juice_up(0.1)
+                        if (not effect.message_card) or (effect.message_card and effect.message_card ~= scored_card) then
+                            scored_card:juice_up(0.1)
+                        end
+                        return true end}))
+                end
+                local calc = SMODS.calculate_individual_effect(effect, scored_card, variant, effect[variant], from_edition)
+                if calc == true then ret.calculated = true end
+                if type(calc) == 'string' then
+                    ret[calc] = true
+                elseif type(calc) == 'table' then
+                    for k,v in pairs(calc) do ret[k] = v end
+                end
+                if not calc_effect.silent then
+                    percent = (percent or 0) + (percent_delta or 0.08)
+                end
+                break
             end
         end
     end
     return ret
 end
-
-SMODS.calculation_keys = {}
-SMODS.pre_scoring_calculation_keys = {
-    'pre_func'
-}
-SMODS.scoring_parameter_keys = {
-    'chips', 'h_chips', 'chip_mod',
-    'mult', 'h_mult', 'mult_mod',
-    'x_chips', 'xchips', 'Xchip_mod',
-    'x_mult', 'Xmult', 'xmult', 'x_mult_mod', 'Xmult_mod',
-}
-SMODS.other_calculation_keys = {
-    'p_dollars', 'dollars', 'h_dollars',
-    'score', 'h_score',
-    'xscore', 'x_score', 'h_x_score', 'h_xscore',
-    'blind_size', 'blindsize', 'h_blind_size',  'h_blindsize',
-    'xblind_size', 'x_blind_size', 'xblindsize', 'x_blindsize', 'h_x_blind_size', 'h_xblind_size',  'h_x_blindsize', 'h_xblindsize',
-    'swap', 'balance',
-    'saved', 'effect', 'remove',
-    'debuff', 'prevent_debuff', 'debuff_text',
-    'add_to_hand', 'remove_from_hand', 'return_to_hand',
-    'stay_flipped', 'prevent_stay_flipped',
-    'cards_to_draw',
-    'message',
-    'level_up', 'func',
-    'numerator', 'denominator',
-    'modify',
-    'no_destroy', 'prevent_trigger',
-    'replace_scoring_name', 'replace_display_name', 'replace_poker_hands',
-    'shop_create_flags', 'booster_create_flags',
-    'override_value', 'override_reset_value', 'override_scalar_value', 'override_scalar', 'override_message', 'post',
-    'extra',
-}
-SMODS.silent_calculation = {
-    saved = true, effect = true, remove = true,
-    debuff = true, prevent_debuff = true, debuff_text = true,
-    add_to_hand = true, remove_from_hand = true, return_to_hand = true,
-    stay_flipped = true, prevent_stay_flipped = true,
-    cards_to_draw = true,
-    func = true, extra = true,
-    numerator = true, denominator = true,
-    no_destroy = true,
-}
 
 SMODS.insert_repetitions = function(ret, eval, effect_card, _type)
     repeat
@@ -1977,80 +1732,14 @@ end
 
 -- Updates a [context] with all compatible [flags]
 function SMODS.update_context_flags(context, flags)
-    if flags.numerator then context.numerator = flags.numerator end
-    if flags.denominator then context.denominator = flags.denominator end
-    if flags.cards_to_draw then context.amount = flags.cards_to_draw end
-    if flags.saved then context.game_over = false end
-    if flags.modify then
-        -- insert general modified value updating here
-        if context.modify_ante then context.modify_ante = flags.modify end
-        if context.drawing_cards then context.amount = math.max(flags.modify, 0) end
-        if context.modify_final_cashout then
-            context.amount = flags.modify + (not flags.override and context.amount)
-            SMODS.cashout_dollars = context.amount
-            SMODS.cashout_index = SMODS.cashout_index + 1
-            SMODS.cashout_pitch = SMODS.cashout_pitch + 0.06
-            flags.modify = nil
+    for key, calc_effect in pairs(SMODS.CalculationEffects) do
+        if type(calc_effect.update_context_flags) == "function" then
+            if calc_effect:check_context_flags(context, flags) then
+                calc_effect:update_context_flags(context, flags)
+            end
         end
-    end
-    if context.evaluate_poker_hand then
-        if flags.replace_scoring_name then
-            context.scoring_name = flags.replace_scoring_name
-            context.display_name = flags.replace_scoring_name
-        end
-        if flags.replace_display_name then context.display_name = flags.replace_display_name end
-        if flags.replace_poker_hands then context.poker_hands = flags.replace_poker_hands end
-    end
-    if context.scaling_card or context.resetting_card then
-        SMODS.update_context_flags_scaling_resetting(context, flags)
     end
 end
-
-function SMODS.update_context_flags_scaling_resetting(context, flags)
-    if context.scaling_card then
-        if not context.block_overrides.value and flags.override_value then
-            if type(flags.override_value) == 'table' then
-                context.value = flags.override_value.value or context.value
-                SMODS.calculate_effect(flags.override_value, flags.scored_card)
-            else
-                context.value = flags.override_value
-            end
-        end
-        local override_scalar = flags.override_scalar_value or flags.override_scalar
-        if not context.block_overrides.scalar and override_scalar then
-            if type(override_scalar) == 'table' then
-                context.scalar = override_scalar.value or context.scalar
-                SMODS.calculate_effect(override_scalar, flags.scored_card)
-            else
-                context.scalar = override_scalar
-            end
-        end
-        if not context.block_overrides.message and flags.override_message then
-            context.scaling_message = SMODS.merge_defaults(flags.override_message, context.scaling_message)
-        end
-    end
-    if context.resetting_card then
-        local override_value = flags.override_value or flags.override_reset_value
-        if not context.block_overrides.value and override_value then
-            if type(override_value) == 'table' then
-                context.reset_value = override_value.value
-                SMODS.calculate_effect(override_value, flags.scored_card)
-            else 
-                context.reset_value = override_value
-            end
-        end
-        if not context.block_overrides.message and flags.override_message then
-            context.reset_message = SMODS.merge_defaults(flags.override_message, context.reset_message)
-        end
-    end
-    if flags.post then
-        flags.post.source = flags.scored_card
-        flags.post_effects = flags.post_effects or {}
-        table.insert(flags.post_effects, flags.post)
-    end
-    flags.override_value, flags.override_scalar, flags.override_scalar_value, flags.override_message, flags.post = nil, nil, nil, nil, nil
-end
-
 
 -- Used to avoid looping getter context calls. Example;
 -- Joker A: Doubles lucky card probabilities
