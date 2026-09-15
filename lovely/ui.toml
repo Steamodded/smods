@@ -552,3 +552,22 @@ pattern = '''
 G.HUD_blind.alignment.offset.y = -10'''
 payload = '''
 ease_value(G.HUD.alignment.offset, 'y', 0 - G.HUD.alignment.offset.y)'''
+
+# this patch was made for when you still want to show card's abilities even when it is debuffed
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''    elseif specific_vars and specific_vars.debuffed then'''
+payload = '''elseif specific_vars and specific_vars.debuffed and SMODS.should_use_debuffed_description({ vars = (specific_vars or _c.vars) })  then'''
+# this one too lol
+# rationale of these being at patches is because these are elseif clauses and there are not a lot of ways you can go about it
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''    elseif self.debuff then'''
+payload = '''elseif self.debuff and SMODS.should_use_debuffed_description({ card = self }) then
+'''
