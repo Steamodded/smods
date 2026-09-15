@@ -592,8 +592,8 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         py = 66,
     }
     SMODS.Atlas {
-        key = 'dropdown_arrow',
-        path = 'dropdown_arrow.png',
+        key = 'ui_icons',
+        path = 'ui_icons.png',
         px = 66,
         py = 66,
     }
@@ -3835,6 +3835,21 @@ SMODS.UndiscoveredCompat = {
                 end
                 if scale <= 0 then scale = G.SETTINGS.GRAPHICS.texture_scaling end
                 SMODS.card_to_image(target, scale)
+            end
+        end
+    }
+
+    SMODS.Keybind {
+        key_pressed = 'f',
+        event = 'pressed',
+        action = function(self)
+            SMODS.collection_filters_toggled = not SMODS.collection_filters_toggled
+            if G.OVERLAY_MENU and SMODS.current_collection_filterable then
+                if SMODS.collection_filters_toggled then
+                    SMODS.create_collection_filters_uibox()
+                else
+                    SMODS.remove_collection_filters_uibox()
+                end
             end
         end
     }
