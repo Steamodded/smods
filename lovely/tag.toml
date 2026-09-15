@@ -188,3 +188,25 @@ if not run_info then G.GAME.round_resets.blind_states[G.GAME.blind_on_deck] = 'S
 payload = '''
 --if not run_info then G.GAME.round_resets.blind_states[G.GAME.blind_on_deck] = 'Select' end
 '''
+
+### tag.prototype
+# Tag:init()
+[[patches]]
+[patches.pattern]
+target = "tag.lua"
+pattern = "self.name = proto.name"
+position = 'after'
+match_indent = true
+payload = '''
+self.prototype = proto
+'''
+# Tag:generate_UI()
+[[patches]]
+[patches.pattern]
+target = "tag.lua"
+pattern = "tag_sprite.config = {tag = self, force_focus = true}"
+position = 'after'
+match_indent = true
+payload = '''
+tag_sprite.prototype = G.P_TAGS[self.key]
+'''

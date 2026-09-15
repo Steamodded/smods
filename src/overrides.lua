@@ -155,7 +155,8 @@ function create_UIBox_your_collection_blinds(exit)
 		})
 		temp_blind.float = true
 		card.states.collide.can = true
-		card.config.blind = v
+        card.config.blind = v
+		card.prototype = v
 		card.config.force_focus = true
 		if v.discovered and not v.alerted then
 			blinds_to_be_alerted[#blinds_to_be_alerted + 1] = card
@@ -346,6 +347,7 @@ function G.FUNCS.your_collection_blinds_page(args)
 		temp_blind.float = true
 		card.states.collide.can = true
 		card.config.blind = v
+		card.prototype = v
 		card.config.force_focus = true
 		if v.discovered and not v.alerted then
 			blinds_to_be_alerted[#blinds_to_be_alerted + 1] = card
@@ -2111,7 +2113,8 @@ function Card:set_edition(edition, immediate, silent, delay)
 		if self.edition == nil then -- early exit
 			return
 		end
-		self.edition = nil -- remove edition from card
+        self.edition = nil -- remove edition from card
+		self.edition_prototype = nil
 		self:set_cost()
 		if not silent then
 			G.E_MANAGER:add_event(Event({
@@ -2143,7 +2146,8 @@ function Card:set_edition(edition, immediate, silent, delay)
 	self.edition.type = edition_type
 	self.edition.key = 'e_' .. edition_type
 
-	local p_edition = G.P_CENTERS['e_' .. edition_type]
+    local p_edition = G.P_CENTERS['e_' .. edition_type]
+	self.edition_prototype = p_edition
 
 	if p_edition.override_base_shader or p_edition.disable_base_shader then
 		self.ignore_base_shader[self.edition.key] = true
@@ -2756,6 +2760,7 @@ function Card:quantum_set_ability(center)
         assert(G.P_CENTERS[center], ("Could not find center \"%s\""):format(center))
         center = G.P_CENTERS[center]
     end
+	self.prototype = center
     self.config.center = center
     if self.config.center.key then
         self.config.center_key = self.config.center.key
@@ -3090,4 +3095,29 @@ function AnimatedSprite:get_pos_pixel()
     self.RETS.get_pos_pixel[3] = self.animation.w
     self.RETS.get_pos_pixel[4] = self.animation.h
     return self.RETS.get_pos_pixel
+end
+
+-- Add sticker prototypes
+local card_set_eternal_ref = Card.set_eternal
+function Card:set_eternal(...)
+    local ret = card_set_eternal_ref(...)
+	self.stickers.eternal = true
+    self.sticker_prototypes.eternal = self.ability.eternal and SMODS.Stickers.eternal or nil
+	return ret
+end
+
+local card_set_perishable_ref = Card.set_perishable
+function Card:set_perishable(...)
+    local ret = card_set_perishable_ref(...)
+	self.stickers.perishable = true
+    self.sticker_prototypes.perishable = self.ability.perishable and SMODS.Stickers.perishable or nil
+	return ret
+end
+
+local card_set_rental_ref = Card.set_rental
+function Card:set_rental(...)
+    local ret = card_set_rental_ref(...)
+	self.stickers.rental = true
+    self.sticker_prototypes.rental = self.ability.rental and SMODS.Stickers.rental or nil
+	return ret
 end

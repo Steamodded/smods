@@ -175,6 +175,7 @@ if type(center) == 'string' then
     assert(G.P_CENTERS[center], ("Could not find center \"%s\""):format(center))
     center = G.P_CENTERS[center]
 end
+self.prototype = center
 self.config.center = center
 '''
 

@@ -194,6 +194,7 @@ pattern = '''self.seal = _seal'''
 position = 'after'
 match_indent = true
 payload = '''
+self.seal_prototype = G.P_SEALS[_seal]
 self.ability.seal = {}
 for k, v in pairs(G.P_SEALS[_seal].config or {}) do
     if type(v) == 'table' then

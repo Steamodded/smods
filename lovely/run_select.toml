@@ -30,7 +30,7 @@ match_indent = true
 payload = '''
 local selected_back = saveTable and saveTable.BACK.name or (args.challenge and args.challenge.deck and args.challenge.deck.type) or (args.deck_choice and args.deck_choice.name) or (self.GAME.viewed_back and self.GAME.viewed_back.name) or self.GAME.selected_back and self.GAME.selected_back.name or 'Red Deck'
 '''
-# Allow run_select stake_choice to work
+# Allow run_select stake_choice to work and stake.prototype
 [[patches]]
 [patches.pattern]
 target = 'game.lua'
@@ -41,6 +41,7 @@ self.GAME.stake = args.stake or self.GAME.stake or 1
 '''
 payload = '''
 self.GAME.stake = args.stake_choice or args.stake or self.GAME.stake or 1
+self.GAME.stake_prototype = self.P_CENTER_POOLS.Stake[self.GAME.stake]
 '''
 
 # Allows hovering of chips in stake chip tower

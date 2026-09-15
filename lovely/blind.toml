@@ -570,7 +570,7 @@ line_prepend = '$indent'
 payload = '''end
 if self.name == 'Crimson Heart' and not self.disabled'''
 
-### Add blind.effect
+### Add blind.effect and blind.prototype
 # Blind.set_blind
 [[patches]]
 [patches.pattern]
@@ -579,6 +579,7 @@ match_indent = true
 pattern = "self.config.blind = blind or {}"
 position = "after"
 payload = '''
+self.prototype = self.config.blind
 self.effect = type(self.config.blind.config) == "table" and copy_table(self.config.blind.config) or {}
 '''
 # Blind.load
@@ -586,9 +587,10 @@ self.effect = type(self.config.blind.config) == "table" and copy_table(self.conf
 [patches.pattern]
 target = "blind.lua"
 match_indent = true
-pattern = "function Blind:load(blindTable)"
+pattern = "self.config.blind = G.P_BLINDS[blindTable.config_blind] or {}"
 position = "after"
 payload = '''
+self.prototype = self.config.blind
 self.effect = blindTable.effect
 '''
 # Blind.save
