@@ -223,7 +223,8 @@ payload = '''
 local rank = SMODS.Ranks[self.base.value] or {}
 self.base.nominal = rank.nominal or 0
 self.base.face_nominal = rank.face_nominal or 0
-self.base.id = rank.id'''
+self.base.id = rank.id
+self.rank_prototype = SMODS.Ranks[self.base.value]'''
 
 [[patches]]
 [patches.regex]
@@ -235,7 +236,8 @@ payload = '''
 local suit = SMODS.Suits[self.base.suit] or {}
 self.base.suit_nominal = suit.suit_nominal or 0
 self.base.suit_nominal_original = suit_base_nominal_original or suit.suit_nominal or 0
-self.base.shade = suit.shade'''
+self.base.shade = suit.shade
+self.suit_prototype = SMODS.Suits[self.base.suit]'''
 
 # Card:change_suit()
 [[patches]]

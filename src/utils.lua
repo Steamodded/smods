@@ -981,10 +981,12 @@ function time(func, ...)
     return 1000*(end_time-start_time)
 end
 
-function Card:add_sticker(sticker, bypass_check)
-    local sticker = SMODS.Stickers[sticker]
+function Card:add_sticker(sticker_key, bypass_check)
+    local sticker = SMODS.Stickers[sticker_key]
     if bypass_check or (sticker and sticker.should_apply and type(sticker.should_apply) == 'function' and sticker:should_apply(self, self.config.center, self.area, true)) then
         sticker:apply(self, true)
+        self.stickers[sticker_key] = true
+        self.sticker_prototypes[sticker_key] = sticker
         SMODS.enh_cache:write(self, nil)
     end
 end
@@ -992,6 +994,8 @@ end
 function Card:remove_sticker(sticker)
     if (sticker == 'pinned' and self.pinned) or self.ability[sticker] then
         SMODS.Stickers[sticker]:apply(self, false)
+        self.stickers[sticker] = nil
+        self.sticker_prototypes[sticker] = nil
         SMODS.enh_cache:write(self, nil)
     end
 end
@@ -1120,6 +1124,7 @@ function SMODS.calculate_quantum_enhancements(card, effects, context)
         table.insert(effects, eval)
     end
     card.ability = old_ability
+    card.prototype = old_center
     card.config.center = old_center
     card.config.center_key = old_center_key
     context.extra_enhancement = nil

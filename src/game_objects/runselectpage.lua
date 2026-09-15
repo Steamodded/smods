@@ -191,6 +191,7 @@ SMODS.RunSelectPage({
         card.facing = 'back'
         card.sprite_facing = 'back'
         card.config.center = G.P_STAKES[stake_key]
+        card.prototype = card.config.center
 
         local unlocked, won = self.is_stake_unlocked(G.P_STAKES[stake_key])
         -- TODO: check this with new save strucutre

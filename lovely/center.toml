@@ -574,6 +574,64 @@ position = 'after'
 payload = '''
     if self.area == G.pack_cards and G.pack_cards and booster_obj and self:selectable_from_pack(booster_obj) then return end'''
 
+# Card:load() -- add card.prototype
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = 'self.config.center = G.P_CENTERS[self.config.center_key]'
+match_indent = true
+position = 'after'
+payload = '''
+self.prototype = self.config.center'''
+
+# Card:load() -- add card.rank/suit_prototype
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = 'self.base = cardTable.base'
+match_indent = true
+position = 'after'
+payload = '''
+self.suit_prototype = SMODS.Suits[self.base.suit]
+self.rank_prototype = SMODS.Ranks[self.base.value]'''
+
+# Card:load() -- add card.edition/seal_prototype and card.stickers
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = 'self.seal = cardTable.seal'
+match_indent = true
+position = 'after'
+payload = '''
+self.edition_prototype = G.P_CENTERS[(self.edition or {}).key]
+self.seal_prototype = G.P_SEALS[self.seal]
+self.stickers = cardTable.stickers or {}
+self.sticker_prototypes = {}
+for sticker_key, _ in pairs(self.stickers) do
+    self.sticker_prototypes = SMODS.Stickers[sticker_key]
+end'''
+
+# Card:save() -- card.stickers
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = "bypass_lock = self.bypass_lock,"
+position = "after"
+payload = """
+stickers = self.stickers,"""
+match_indent = true
+
+# Card:init() -- card.stickers
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = "self.debuff = false"
+position = "after"
+payload = """
+self.stickers = {}
+self.sticker_prototypes = {}"""
+match_indent = true
+
 # Card:load()
 [[patches]]
 [patches.pattern]

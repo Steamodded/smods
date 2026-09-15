@@ -205,3 +205,14 @@ if saveTable then
     self.GAME.selected_back:load(saveTable.BACK)
 end
 '''
+
+# Add deck.prototype
+[[patches]]
+[patches.pattern]
+target = 'back.lua'
+pattern = "self.effect.center = G.P_CENTERS[backTable.key] or G.P_CENTERS.b_red"
+position = 'after'
+match_indent = true
+payload = '''
+self.prototype = self.effect.center
+'''

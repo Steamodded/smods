@@ -182,6 +182,7 @@ end
 G.hand.cards[i].ability = old_ability
 G.hand.cards[i].config.center = old_center
 G.hand.cards[i].config.center_key = old_center_key
+G.hand.cards[i].prototype = old_center
 G.hand.cards[i]:set_sprites(old_center)
 '''
 match_indent = true
@@ -318,6 +319,7 @@ payload = '''
         self.ability.card_limit = self.ability.card_limit - (self.ability.seal.card_limit or 0)
         self.ability.extra_slots_used = self.ability.extra_slots_used - (self.ability.seal.extra_slots_used or 0)
     end
+    self.seal_prototype = nil
 '''
 match_indent = true
 
