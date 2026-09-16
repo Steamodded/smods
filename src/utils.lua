@@ -4,15 +4,9 @@
 local NFS = SMODS.NFS
 local utf8 = require("utf8")
 
-function utf8Len(...)
-    return utf8.len(...)
-end
-function utf8Offset(...)
-    return utf8.offset(...)
-end
-function utf8Codepoint(...)
-    return utf8.codepoint(...)
-end
+utf8Len = utf8.len
+utf8Offset = utf8.offset
+utf8Codepoint = utf8.codepoint
 function utf8CharAt(text, i)
 	if not text or not i then
 		return nil
