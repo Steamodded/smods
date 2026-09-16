@@ -10,6 +10,7 @@
 ---@field always_scores? boolean Playing cards with this seal always score. May be overridden by `context.modify_scoring_hand` effects.
 ---@field never_scores? boolean Playing cards with this seal never score. Takes priority over `always_scores`. May be overridden by `context.modify_scoring_hand` effects.
 ---@field shatters? boolean Playing cards with this seal use a shatter animation when destroyed.
+---@field attributes? string[]|table<string,true> Array of Attributes this center has. Converted into a dictionary after injection.
 ---@field loc_txt? table|{name: string|string[], text: string[]|string[][], label: string} Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field atlas? string Key to the seal's atlas. 
@@ -35,7 +36,8 @@
 ---@field get_obj? fun(self: SMODS.Seal|table, key: string): SMODS.Seal|table? Returns an object if one matches the `key`. 
 ---@field loc_vars? fun(self: SMODS.Seal|table, info_queue: table, card: Card|table): table? Provides control over displaying the tooltip of this seal. See [`loc_vars`](https://docs.smods.dev/API%20Documentation/Localization#loc_vars) documentation for details. 
 ---@field calculate? fun(self: SMODS.Seal|table, card: Card|table, context: CalcContext|table): table?, boolean?  Calculates effects based on parameters in `context`. See [SMODS calculation](https://docs.smods.dev/API%20Documentation/Calculate-Functions) docs for details. 
----@field get_p_dollars? fun(self: SMODS.Seal|table, card: Card|table): number? Gives money when a card with this seal is played. 
+---@field get_p_dollars? fun(self: SMODS.Seal|table, card: Card|table): number? Gives money when a card with this seal is played.
+---@field get_weight? fun(self: SMODS.Seal|table, weight: number, args: table?): number Used for finer control over this seal's weight with the object weights optional feature is enabled. 
 ---@field draw? fun(self: SMODS.Seal|table, card: Card|table, layer: string) Draws the sprite and shader of the seal. 
 ---@field update? fun(self: SMODS.Seal|table, card: Card|table, dt: number) Allows logic for this card to be run per-frame. 
 ---@field generate_ui? fun(self: SMODS.Seal|table, info_queue: table, card: Card|table, desc_nodes: table, specific_vars: table, full_UI_table: table) Provides complex control over the UI display of the seal. See [`generate_ui`](https://docs.smods.dev/API%20Documentation/Localization#generate_ui-advanced) documentation for details. 

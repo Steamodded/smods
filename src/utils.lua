@@ -1044,7 +1044,7 @@ function Card:calculate_enhancement(context)
 end
 
 function SMODS.get_enhancements(card, extra_only)
-    if not SMODS.optional_features.quantum_enhancements or not G.hand then
+    if not SMODS.optional_features.quantum_enhancements or not G.hand or G.OVERLAY_MENU then
         return not extra_only and card.ability.set == 'Enhanced' and { [card.config.center.key] = true } or {}
     end
     if not SMODS.enh_cache:read(card, extra_only) then
@@ -1143,9 +1143,16 @@ function SMODS.calculate_quantum_enhancements(card, effects, context)
     SMODS.extra_enhancement_calc_in_progress = nil
 end
 
-function SMODS.has_playing_card_property(card, key) 
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if G.P_CENTERS[k][key] then return true end
+function SMODS.has_playing_card_property(card, key)
+    if key == 'should_hide_front' then
+        -- Ignore quantum enhancements for 'should_hide_front'
+        if card.ability.set == 'Enhanced' and G.P_CENTERS[card.config.center.key][key] then
+            return true
+        end
+    else
+        for k, _ in pairs(SMODS.get_enhancements(card)) do
+            if G.P_CENTERS[k][key] then return true end
+        end
     end
     if (G.P_CENTERS[(card.edition or {}).key] or {})[key] then return true end
     if (G.P_SEALS[card.seal or {}] or {})[key] then return true end
@@ -1457,6 +1464,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         prevent_debuff = true,
         add_to_hand = true,
         remove_from_hand = true,
+        return_to_hand = true,
         stay_flipped = true,
         prevent_stay_flipped = true,
         prevent_trigger = true,
@@ -1602,7 +1610,7 @@ SMODS.other_calculation_keys = {
     'swap', 'balance',
     'saved', 'effect', 'remove',
     'debuff', 'prevent_debuff', 'debuff_text',
-    'add_to_hand', 'remove_from_hand',
+    'add_to_hand', 'remove_from_hand', 'return_to_hand',
     'stay_flipped', 'prevent_stay_flipped',
     'cards_to_draw',
     'message',
@@ -1618,7 +1626,7 @@ SMODS.other_calculation_keys = {
 SMODS.silent_calculation = {
     saved = true, effect = true, remove = true,
     debuff = true, prevent_debuff = true, debuff_text = true,
-    add_to_hand = true, remove_from_hand = true,
+    add_to_hand = true, remove_from_hand = true, return_to_hand = true,
     stay_flipped = true, prevent_stay_flipped = true,
     cards_to_draw = true,
     func = true, extra = true,
@@ -3938,6 +3946,7 @@ function CardArea:handle_card_limit()
         if not G.TAROT_INTERRUPT then
             self.config.card_limits.extra_slots = self:count_property('card_limit')
             self.config.card_limits.total_slots = self.config.card_limits.extra_slots + (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
+            self.config.card_limits.display_slots = math.max(0, self.config.card_limits.total_slots)
             self.config.card_limits.extra_slots_used = self:count_property('extra_slots_used')
         end
         self.config.card_count = #self.cards + self.config.card_limits.extra_slots_used
@@ -3953,7 +3962,7 @@ function CardArea:handle_card_limit()
                         G.E_MANAGER:add_event(Event({
                             trigger = 'immediate',
                             func = function()
-                                if (self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0)) > 0 and #G.deck.cards > (SMODS.cards_to_draw or 0) then
+                                if (self.config.card_limits.total_slots - self.config.card_count - (SMODS.cards_to_draw or 0)) > 0 and #G.deck.cards > (SMODS.cards_to_draw or 0) and #G.deck.cards > 0 then
                                     G.FUNCS.draw_from_deck_to_hand()
                                 end
                                 return true
@@ -3963,9 +3972,7 @@ function CardArea:handle_card_limit()
                     end
                 }))
             elseif G.STATE == G.STATES.SELECTING_HAND and #G.deck.cards > 0 and self.config.card_limits.old_slots < self.config.card_limits.total_slots then
-                if (self.config.card_limits.total_slots - self.config.card_limits.old_slots) > 0 then
-                    G.FUNCS.draw_from_deck_to_hand()
-                end
+                G.FUNCS.draw_from_deck_to_hand()
             end
             if self == G.hand and G.STATE == G.STATES.SELECTING_HAND or G.STATE == G.STATES.DRAW_TO_HAND then
                 self.config.card_limits.old_slots = self.config.card_limits.total_slots or 0
@@ -3975,6 +3982,7 @@ function CardArea:handle_card_limit()
     else
         self.config.card_count = #self.cards
         self.config.card_limits.total_slots = (self.config.card_limits.base or 0) + (self.config.card_limits.mod or 0)
+        self.config.card_limits.display_slots = math.max(0, self.config.card_limits.total_slots)
     end
 end
 
