@@ -3420,7 +3420,11 @@ function SMODS.GUI.text_input(args)
     args.multi_language = args.multi_language or false
     args.smods_gui_input = true
 
+    if args.ref_table[args.ref_value] then
+        args.ref_table[args.ref_value] = tostring(args.ref_table[args.ref_value])
+    end
     local text = {ref_table = args.ref_table, ref_value = args.ref_value, letters = {}, current_position = utf8Len(args.ref_table[args.ref_value])}
+
     local ui_letters = {}
     for i = 1, args.max_length do
         text.letters[i] = (args.ref_table[args.ref_value] and (utf8CharAt(args.ref_table[args.ref_value], i) or '')) or ''
