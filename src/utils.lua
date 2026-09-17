@@ -873,9 +873,6 @@ function convert_save_data(profile, silent)
     for _, v in pairs(profile.joker_usage or {}) do
         convert_usage_entry(v)
     end
-    for _, v in pairs(profile.sleeve_usage or {}) do
-        convert_usage_entry(v)
-    end
     if not silent then G:save_settings() end
 end
 
