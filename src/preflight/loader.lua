@@ -876,6 +876,9 @@ local function validate_load_args(path, id)
     if not path then
         return nil, "No path was provided to load."
     end
+    if id == '_' then -- internal files
+        return { id = id, path = SMODS.path }
+    end
     local mod
     if not id then
         if not SMODS.current_mod then
@@ -904,6 +907,7 @@ function SMODS.load_file(path, id, aliases)
     if type(aliases) == 'string' then aliases = {aliases} end
     if type(aliases) ~= 'table' then aliases = {} end
     for _,alias in ipairs(aliases) do
+        print(alias)
         file_content = assert(lovely.apply_patches(alias, file_content))
     end
 
@@ -935,15 +939,15 @@ function SMODS.load_folder(path, config, id, seen_paths)
         return nil, "Unsupported file type! `SMODS.load_folder` expects a path to a directory or symbolic link."
     end
     if type(config) == 'string' then 
-        config, err = SMODS.load_file(config, id)
+        config, err = SMODS.load_file(config, id)()
         if not config then return nil, err end
     end
     if type(config) ~= 'table' then config = {} end
 
-    local valid_traversals = { preorder = true, inorder = true, postorder = true, files_only = true, custom = true }
-    config.traversal = valid_traversals[config.traversal] and config.traversal or 'postorder'
-    if config.traversal == 'custom' and type(config.files) ~= 'table' then
-        return nil, "Invalid configuration! With a custom `traversal`, it is required to specify an array of `files`!"
+    local valid_orders = { folders_first = true, lexicographic = true, files_first = true, files_only = true, custom = true }
+    config.order = config.files and 'custom' or (valid_orders[config.order] and config.order or 'lexicographic')
+    if config.order == 'custom' and type(config.files) ~= 'table' then
+        return nil, "Invalid configuration! With a custom `order`, it is required to specify an array of `files`!"
     end
     if config.reverse and config.files then
         local len = #config.files
@@ -961,12 +965,6 @@ function SMODS.load_folder(path, config, id, seen_paths)
             config.exclude = {}
         end
     end
-    if #config.exclude > 0 then
-        for i = #config.exclude, 1, -1 do
-            config.exclude[config.exclude[i]] = true
-            config.exclude[i] = nil
-        end
-    end
     local exclude = {}
     for _,k in ipairs(config.exclude) do 
         if type(k) == "string" then exclude[k:lower()] = true end
@@ -977,40 +975,43 @@ function SMODS.load_folder(path, config, id, seen_paths)
     config.exclude = exclude
 
     local results = {}
-    if config.traversal == 'custom' then
-        local custom_paths = {}
-        local has_catchall
+    if config.order == 'custom' then
+        local paths = {}
+        for _, entry in ipairs(config.files) do
+            paths[#paths+1] = entry.path
+        end
         for _, entry in ipairs(config.files) do
             if not config.exclude[entry.path:lower()] then -- why would you do that
                 entry.catch_errors = entry.catch_errors or config.catch_errors
                 entry.reverse = entry.reverse ~= nil and entry.reverse or config.reverse
+                local aliases = {}
+                for _,v in ipairs(config.aliases or {}) do aliases[#aliases+1] = v end
+                for _,v in ipairs(entry.aliases or {}) do aliases[#aliases+1] = v end
+                entry.aliases = aliases
                 local file_name = entry.path
-                custom_paths[file_name] = true
-                local file_path = dir_path .. '/' .. file_name
-                local file_type = NFS.getInfo(file_path).type
+                local file_path = NFS.getNormalizedPath(dir_path .. '/' .. file_name)
+                local file_type = (NFS.getInfo(file_path) or {}).type
                 if file_type == 'file' and (file_name:lower():match("%.lua$") or file_name:lower():match("%.json")) then
-                    results[entry.path] = {SMODS.load_file(path..'/'..file_name, id), is_file = true}
+                    results[entry.path] = {SMODS.load_file(path..'/'..file_name, id, entry.aliases), is_file = true}
                 elseif file_type == 'directory' or file_type == 'symlink' then
                     entry.exclude = entry.exclude or {}
                     for k,v in pairs(config.exclude) do
                         if v and string.sub(k, 1, #file_name) == file_name:lower() then
-                            entry.exclude[string.sub(k, #file_name+2)] = v
+                            entry.exclude[string.sub(k, #file_name+1):gsub("^/","")] = v
                         end
                     end
-                    if file_name == "" then
-                        has_catchall = true
-                    else
-                        results[entry.path] = SMODS.load_folder(path..'/'..file_name, entry, id, seen_paths)
+                    for _,k in ipairs(paths) do
+                        if #k > #file_name and string.sub(k, 1, #file_name):lower() == file_name:lower() then
+                            entry.exclude[string.sub(k, #file_name+1):gsub("^/",""):lower()] = true
+                        end
                     end
+                    if file_name == "" then seen_paths[dir_path] = nil end -- Revisiting same directory with different config
+                    results[entry.path] = SMODS.load_folder(path..'/'..file_name, entry, id, seen_paths)
+                else
+                    sendWarnMessage("Custom `files` sequence includes invalid or missing file type '"..path.."/"..file_name.."', ignoring this entry.", "SMODS.load_folder")
+                    entry.invalid = true
                 end
             end
-        end
-        if has_catchall then
-            seen_paths[path] = nil -- In this specific case it's okay to revisit the same directory
-            for k,v in pairs(custom_paths) do
-                config.files[""].exclude[k] = v
-            end
-            results[""] = SMODS.load_folder(path, config.files[""], id, seen_paths)
         end
     else
         for _, file_name in ipairs(NFS.getDirectoryItems(dir_path)) do
@@ -1018,8 +1019,8 @@ function SMODS.load_folder(path, config, id, seen_paths)
                 local file_path = dir_path .. '/' .. file_name
                 local file_type = NFS.getInfo(file_path).type
                 if file_type == 'file' and file_name then
-                    results[file_name] = {SMODS.load_file(path..'/'..file_name, id), is_file = true}
-                elseif (file_type == 'directory' or file_type == 'symlink') and config.traversal ~= 'files_only' then
+                    results[file_name] = {SMODS.load_file(path..'/'..file_name, id, config.aliases), is_file = true}
+                elseif (file_type == 'directory' or file_type == 'symlink') and config.order ~= 'files_only' then
                     local cur_exclude = config.exclude
                     config.exclude = {}
                     for k,v in pairs(cur_exclude) do
@@ -1046,24 +1047,21 @@ function SMODS.load_folder(path, config, id, seen_paths)
                 if err then error(err, 0) end
                 return {chunk(...)}
             end
-            if config.traversal == 'custom' then
+            if config.order == 'custom' then
                 for _, entry in ipairs(config.files) do
-                    if self[entry.path].is_file then
+                    if entry.invalid then
+                    elseif self[entry.path].is_file then
                         ret[entry.path] = call_file(entry.path, ...)
-                    elseif entry.path == "" then -- unwrap same-level catchall
-                        for k,v in pairs(self[entry.path](...)) do
-                            ret[k] = v
-                        end
                     else
                         ret[entry.path] = self[entry.path](...)
                     end
                 end
-            elseif config.traversal == 'inorder' then
+            elseif config.order == 'lexicographic' then
                 local files_and_dirs = {}
                 for k,_ in pairs(self) do
                     table.insert(files_and_dirs, k)
                 end
-                table.sort(files_and_dirs, config.reverse and function(a,b) return a > b end)
+                table.sort(files_and_dirs, config.reverse and function(a,b) return a > b end or nil)
                 for _,k in ipairs(files_and_dirs) do
                     if self[k].is_file then
                         ret[k] = call_file(k, ...)
@@ -1077,16 +1075,16 @@ function SMODS.load_folder(path, config, id, seen_paths)
                 for k,v in pairs(self) do
                     table.insert(v.is_file and files or dirs, k)
                 end
-                table.sort(files, config.reverse and function(a,b) return a > b end)
-                table.sort(dirs, config.reverse and function(a,b) return a > b end)
+                table.sort(files, config.reverse and function(a,b) return a > b end or nil)
+                table.sort(dirs, config.reverse and function(a,b) return a > b end or nil)
                 
-                if config.traversal == 'files_only' or config.traversal == 'postorder' then
+                if config.order == 'files_only' or config.order == 'files_first' then
                     for _,k in ipairs(files) do ret[k] = call_file(k, ...) end
                 end
-                if config.traversal == 'postorder' or config.traversal == 'preorder' then
+                if config.order == 'files_first' or config.order == 'folders_first' then
                     for _,k in ipairs(dirs) do ret[k] = self[k](...) end
                 end
-                if config.traversal == 'preorder' then
+                if config.order == 'folders_first' then
                     for _,k in ipairs(files) do ret[k] = call_file(k, ...) end
                 end
             end
