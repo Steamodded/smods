@@ -8,6 +8,7 @@
 ---@field min_ante? number Minimum ante needed for this tag to appear. For more complex restrictions, use `SMODS.Tag:in_pool()`. 
 ---@field discovered? boolean Sets the discovery state of the tag. 
 ---@field attributes? string[]|table<string,true> Array of Attributes this tag has. Converted into a dictionary after injection.
+---@field no_mod_badges? boolean Hides the mod's badge from the tooltip.
 ---@field __call? fun(self: SMODS.Tag|table, o: SMODS.Tag|table): nil|table|SMODS.Tag
 ---@field extend? fun(self: SMODS.Tag|table, o: SMODS.Tag|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Tag|table): boolean? Ensures objects already registered will not register. 

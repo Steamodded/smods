@@ -544,6 +544,14 @@ function SMODS.cull_pool(pool, args)
             end
 
             if args.types and (not args.types[v.set] and not (args.types['Consumeables'] and SMODS.ConsumableTypes[v.set])) then add = nil end
+            if v.pools then
+                for k, _ in pairs(v.pools) do
+                    if args.types[k] then
+                        add = true
+                        break
+                    end
+                end
+            end
             if v.no_pool_flag and G.GAME.pool_flags[v.no_pool_flag] then add = nil end
             if v.yes_pool_flag and not G.GAME.pool_flags[v.yes_pool_flag] then add = nil end
             if args.no_replace and v.set == 'Enhanced' and v.replace_base_card then add = nil end
