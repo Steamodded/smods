@@ -53,6 +53,11 @@ SMODS.Seal = setmetatable({}, {
 ---@type table<Seals|string, SMODS.Seal|table>
 SMODS.Seals = {}
 
+---Returns the prototype object from the game object. (`nil` if none)
+---@param card Card|table
+---@return SMODS.Seal|table?
+SMODS.Seal.get_prototype_object = function (card) end
+
 ---@param args table|{key?: string, mod?: number, guaranteed?: boolean, options?: table, type_key?: string}
 ---@return Seals|string?
 --- Polls seals. 
