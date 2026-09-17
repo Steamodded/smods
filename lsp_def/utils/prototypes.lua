@@ -24,6 +24,7 @@ SMODS.card_prototype_map = {}
 ---| 'center'
 ---| 'enhancement'
 ---| 'edition'
+---| 'sticker'
 ---| 'seal'
 ---| 'rank'
 ---| 'suit'
@@ -31,7 +32,15 @@ SMODS.card_prototype_map = {}
 ---| 'card'
 
 ---Returns the prototype object of a property of this card.
----@param obj_type card_prototype_args? Card property, returns the center if `nil`
+---@param self Card
+---@param obj_type card_prototype_args Card property, returns the center if `nil`
 ---@return table|SMODS.GameObject?
----@overload fun(obj_type: 'sticker'|'stickers'):table<string,SMODS.Sticker|table>?
-function Card:prototype(obj_type) end
+---@overload fun(self: Card, obj_type: 'center'|'enhancement'|nil):SMODS.Center|table
+---@overload fun(self: Card, obj_type: 'edition'):SMODS.Edition|table?
+---@overload fun(self: Card, obj_type: 'seal'):SMODS.Seal|table?
+---@overload fun(self: Card, obj_type: 'rank'):SMODS.Rank|table?
+---@overload fun(self: Card, obj_type: 'suit'):SMODS.Suit|table?
+---@overload fun(self: Card, obj_type: 'rarity'):SMODS.Rarity|table?
+---@overload fun(self: Card, obj_type: 'card'):{name:string,value:string,suit:string,pos:{x:integer,y:integer}}|table?
+---@overload fun(self: Card, obj_type: 'sticker'|'stickers'):table<string,SMODS.Sticker|table>?
+function Card.prototype(self, obj_type) end
