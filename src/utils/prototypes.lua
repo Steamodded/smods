@@ -92,7 +92,8 @@ SMODS.card_prototype_map = {
     rarity = SMODS.Rarity,
 }
 
-function Card:prototype(obj_type)
+local _Card = Card -- evil lsp reasons
+function _Card:prototype(obj_type)
     local class = SMODS.card_prototype_map[obj_type]
     if class then
         return class.get_prototype_object(self)

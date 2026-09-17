@@ -33,7 +33,7 @@ SMODS.card_prototype_map = {}
 
 ---Returns the prototype object of a property of this card.
 ---@param self Card
----@param obj_type 0 Card property, returns the center if `nil`
+---@param obj_type card_prototype_args Card property, returns the center if `nil`
 ---@return nil
 ---@overload fun(self: Card):SMODS.Center|table?
 ---@overload fun(self: Card, obj_type: 'center'|'enhancement'):SMODS.Center|table
