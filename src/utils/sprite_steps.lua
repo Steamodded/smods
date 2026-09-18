@@ -57,9 +57,7 @@ function Sprite:draw_self(overlay)
 	end
 	if not do_the_thing then sds_hook(self, overlay) return end
 
-	-- Get existing shader and blend mode
-	local shader = love.graphics.getShader()
-	local blenda, blendb = love.graphics.getBlendMode()
+	love.graphics.push("all")
 
 	-- Get Canvas to use
 	local qx,qy = self.image_dims[1], self.image_dims[2]
@@ -90,10 +88,8 @@ function Sprite:draw_self(overlay)
 			first = false
 		end
 	end
-
-	-- Revert stuff
-	love.graphics.setShader(shader)
-    love.graphics.setBlendMode(blenda, blendb)
+	
+	love.graphics.pop()
 
 	-- Draw with the new canvas
 	local old_img = self.atlas.image
