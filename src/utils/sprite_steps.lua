@@ -6,13 +6,14 @@ SMODS.SpriteSteps = {}
 SMODS.SpriteStep = SMODS.GameObject:extend {
 	obj_table = SMODS.SpriteSteps,
 	obj_buffer = {},
+	order = 0,
 	required_params = {
 		'key',
-		'order',
 		'func',
+		'should_apply'
 	},
 	-- func = function(self, quad, raw_spr, sprite) end,
-	should_apply = nil,
+	-- should_apply = function(self, sprite) end,
 	set = "Sprite Step",
 	register = function(self)
 		if self.registered then
@@ -27,15 +28,24 @@ SMODS.SpriteStep = SMODS.GameObject:extend {
 	end,
 }
 
--- Example SpriteStep, Should use as template
-SMODS.SpriteStep {
-	key = "sprite",
-	order = 0,
-	func = function(self, image, quad, sprite)
-		love.graphics.draw(image,quad,0,0)
-	end,
-	should_apply = function(self, sprite) return false end,
-}
+local function draw_storage(first, sprite, canvas)
+	local vx, vy = sprite.sprite:getViewport()
+	love.graphics.clear()
+	if first then
+		love.graphics.draw(
+			sprite.atlas.image,
+			sprite.sprite,vx,vy)
+	else
+		love.graphics.draw(canvas, 0, 0)
+	end
+end
+
+local function draw_thingy(step, image, quad, sprite)
+	local vx, vy = sprite.sprite:getViewport()
+	love.graphics.clear()
+	love.graphics.translate(vx,vy)
+	step:func(image, quad, sprite)
+end
 
 local sds_hook = Sprite.draw_self
 function Sprite:draw_self(overlay)
@@ -47,8 +57,7 @@ function Sprite:draw_self(overlay)
 	end
 	if not do_the_thing then sds_hook(self, overlay) return end
 
-	-- Get existing canvas and shader
-	local target = love.graphics.getCanvas()
+	-- Get existing shader and blend mode
 	local shader = love.graphics.getShader()
 	local blenda, blendb = love.graphics.getBlendMode()
 
@@ -71,31 +80,18 @@ function Sprite:draw_self(overlay)
 	for i, k in ipairs(SMODS.SpriteStep.obj_buffer) do
 		local step = SMODS.SpriteSteps[k]
 		if step.should_apply and step:should_apply(self) or type(step.should_apply) == "nil" then
-			love.graphics.setColor(1,1,1,1)
 			love.graphics.push()
-			love.graphics.origin()
+			love.graphics.setColor(1,1,1,1)
 			love.graphics.setShader()
-			love.graphics.setCanvas(storagecanvas)
-			love.graphics.clear()
-			if first then
-				love.graphics.draw(
-					self.atlas.image,
-					self.sprite,vx,vy)
-			else
-				love.graphics.draw(canvas, 0, 0)
-			end
-			love.graphics.setCanvas(canvas)
-			love.graphics.translate(vx,vy)
-			love.graphics.clear()
-			step:func(storagecanvas, SMODS.SpriteStepQuad, self)
-
+			love.graphics.origin()
+			storagecanvas:renderTo(draw_storage, first, self, canvas)
+			canvas:renderTo(draw_thingy, step, storagecanvas, SMODS.SpriteStepQuad, self)
 			love.graphics.pop()
 			first = false
 		end
 	end
 
 	-- Revert stuff
-	love.graphics.setCanvas({target, stencil=true})
 	love.graphics.setShader(shader)
     love.graphics.setBlendMode(blenda, blendb)
 
