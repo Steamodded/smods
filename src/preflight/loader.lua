@@ -147,6 +147,7 @@ function loadMods(modsDirectory)
         badge_colour = { type = 'string', check = function(mod, s) local success, hex = pcall(sUtil.hex, s); mod.badge_colour = success and hex or sUtil.hex('666665FF') end },
         badge_text_colour = { type = 'string', check = function(mod, s) local success, hex = pcall(sUtil.hex, s); mod.badge_text_colour = success and hex or sUtil.hex('FFFFFFFF') end},
         badge_shader = { type = 'string', },
+        badge_text_no_shadow = { type = 'boolean', },
         prefix = { type = 'string', required = true, check = function(mod, s) if string.find(s, '%$') then error("Disallowed use of reserved prefix "..s) end end },
         version = { type = 'string', check = function(mod, x) return x and sUtil.V(x):is_valid() and x or '0.0.0' end },
         dump_loc = { type = 'boolean' },
@@ -297,7 +298,7 @@ function loadMods(modsDirectory)
             elseif depth == 2 and filename == "lovely.toml" and not isDirLovely then
                 isDirLovely = true
                 table.insert(lovely_directories, flags)
-            elseif filename:lower():match('%.json') and depth > 1 then
+            elseif filename:lower():match('%.json$') and depth > 1 then
                 local json_str = NFS.read(file_path)
                 local parsed, mod = pcall(JSON.decode, json_str)
                 if mod and mod.name and mod.name:find('Steamodded') then smods_dupe = directory end

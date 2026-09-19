@@ -11,6 +11,7 @@
 ---@field shop_rate? nil|number Defining this value allows cards part of this ConsumableType to appear in the shop. Defined as `G.GAME[key:lower()..'_rate']`.  
 ---@field ctype_buffer? string[] Array of keys to all objects registered to the ConsumableType class. 
 ---@field visible_buffer? string[] Array of keys to all ConsumableType objects allowed to appear in collections menu.
+---@field select_card? string|{[string]: string}|(fun(self: SMODS.ConsumableType|table, card: Card|table, pack: SMODS.Booster|table): string|{[string]: string}, boolean?) Key to the CardArea (e.x. `G[SMODS.ConsumableType.select_card]`). As a table, each key-value pair is a card set as key and CardArea string as values. Or return either formers as a function. May also return a second value of boolean to indicate card can be selected and used at the same time. 
 ---@field __call? fun(self: SMODS.ConsumableType|table, o: SMODS.ConsumableType|table): nil|table|SMODS.ConsumableType
 ---@field extend? fun(self: SMODS.ConsumableType|table, o: SMODS.ConsumableType|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.ConsumableType|table): boolean? Ensures objects already registered will not register. 
@@ -26,7 +27,6 @@
 ---@field take_ownership? fun(self: SMODS.ConsumableType|table, key: string, obj: SMODS.ConsumableType|table, silent?: boolean): nil|table|SMODS.ConsumableType Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.ConsumableType|table, key: string): SMODS.ConsumableType|table? Returns an object if one matches the `key`. 
 ---@field create_UIBox_your_collection? fun(self: SMODS.ConsumableType|table): table Creates the UIBox of the ConsumableType's collections menu. 
----@field select_card? string|{[string]: string}|(fun(self: SMODS.ConsumableType|table, card: Card|table, pack: SMODS.Booster|table): string|{[string]: string}, boolean?) Key to the CardArea (e.x. `G[SMODS.ConsumableType.select_card]`). As a table, each key-value pair is a card set as key and CardArea string as values. Or return either formers as a function. May also return a second value of boolean to indicate card can be selected and used at the same time. 
 ---@overload fun(self: SMODS.ConsumableType): SMODS.ConsumableType
 SMODS.ConsumableType = setmetatable({}, {
     __call = function(self)

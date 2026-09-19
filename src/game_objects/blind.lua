@@ -11,6 +11,7 @@ SMODS.Blind = SMODS.GameObject:extend {
     atlas = 'blind_chips',
     discovered = false,
     pos = { x = 0, y = 0 },
+    boss_colour = G.C.GREY,
     required_params = {
         'key',
     },
@@ -32,6 +33,14 @@ SMODS.Blind = SMODS.GameObject:extend {
         }
 
         G.P_BLINDS[self.key] = self
+        if self.attributes then
+            for _, attribute in ipairs(self.attributes) do
+                if SMODS.Attributes[attribute] then
+                    self.attributes[attribute] = true
+                    SMODS.Attributes[attribute].keys = SMODS.merge_lists({SMODS.Attributes[attribute].keys or {}, {self.key}})
+                end
+            end
+        end
         if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
     end
 }

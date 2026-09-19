@@ -12,7 +12,7 @@ StateSprite = AnimatedSprite:extend()
     [state_name] = { 
         start_pos = { x/y = [0..n-1 for n columns/rows in sprite atlas] }, 
         (frames = [amount of frames] |OR| end_pos = { [same as start_pos] }),
-        frame_order = "linear" |OR| "random" |OR| {1: x, 2: y, .. n: m}
+        frame_order = "linear" |OR| "random" |OR| {1: x, 2: y, .. n: m} |OR| function(sprite), returning frame
         (optional) flipped_h/flipped_v = true,
         (optional) exit_to = [state] |OR [function(state_table, sprite), returning a state],
         (optional) frame_durations = {1: 2, 2:...},     (in Frames according to G.ANIMATION_FPS)
@@ -119,7 +119,7 @@ function StateSprite:load_states(states)
                 sendWarnMessage(("StateSprite:load_states() state '%s' had an incorrect frame_order argument '%s'."):format(key, state.frame_order))
                 state.frame_order = "linear"
             end
-        else
+        elseif type(state.frame_order) ~= "function" then
             state.frame_order = "linear"
         end
         self.a_states[key] = state
@@ -135,19 +135,14 @@ function SMODS.get_new_frame(animated_sprite, frame_order)
         return frame_order[cur_anim.frame_index] - 1 or cur_anim.current
     elseif frame_order == "random" then
         return math.random(0, cur_anim.frames-1)
+    elseif type(frame_order) == "function" then
+        return ((frame_order(animated_sprite)) % cur_anim.frames)
     end
     return ((cur_anim.current + 1) % cur_anim.frames)
 end
 
 function StateSprite:animate()
     if not self.state then return end
-    if self.state.exit_to and self.current_animation.elapsed >= self.current_animation.frames then
-        if type(self.state.exit_to) == "function" then
-            self:set_state(self.state:exit_to(self) or self.default_state)
-        else
-            self:set_state(self.state.exit_to)
-        end
-    end
     local frame_finished = (math.floor((G.TIMERS.REAL - self.offset_seconds) / self.current_animation.frame_duration)) > 0
     if frame_finished then
         self.current_animation.current = SMODS.get_new_frame(self, self.state.frame_order)
@@ -163,6 +158,13 @@ function StateSprite:animate()
             self.animation.h
         )
         self.offset_seconds = G.TIMERS.REAL
+    end
+    if self.state.exit_to and self.current_animation.elapsed >= self.current_animation.frames then
+        if type(self.state.exit_to) == "function" then
+            self:set_state(self.state:exit_to(self) or self.default_state)
+        else
+            self:set_state(self.state.exit_to)
+        end
     end
     if self.float then 
         self.T.r = 0.02*math.sin(2*G.TIMERS.REAL+self.T.x)
