@@ -11,6 +11,7 @@ SMODS.Blind = SMODS.GameObject:extend {
     atlas = 'blind_chips',
     discovered = false,
     pos = { x = 0, y = 0 },
+    boss_colour = G.C.GREY,
     required_params = {
         'key',
     },

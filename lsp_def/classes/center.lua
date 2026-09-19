@@ -22,6 +22,7 @@
 ---@field pixel_size? table|{w: integer, h: integer} Change the size of the sprite drawn onto the card.
 ---@field badge_text_colour? table Colour of the label for the badge (supersedes Rarities and ConsumableTypes).
 ---@field badge_colour? table Colour of the badge (supersedes Rarities and ConsumableTypes).
+---@field no_mod_badges? boolean Hides the mod's badge from the tooltip.
 ---@field __call? fun(self: SMODS.Center|table, o: SMODS.Center|table): nil|table|SMODS.Center
 ---@field extend? fun(self: SMODS.Center|table, o: SMODS.Center|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Center|table): boolean? Ensures objects already registered will not register. 

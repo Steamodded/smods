@@ -14,6 +14,7 @@
 ---@field ignore_showdown_check? boolean Sets if `in_pool` should be respected regardless of whether a showdown Boss Blind was requested or not. 
 ---@field attributes? string[]|table<string,true> Array of Attributes this center has. Converted into a dictionary after injection.
 ---@field vars? table Variables for this Blind's description in the collection. 
+---@field no_mod_badges? boolean Hides the mod's badge from the tooltip.
 ---@field __call? fun(self: SMODS.Blind|table, o: SMODS.Blind|table): nil|table|SMODS.Blind
 ---@field extend? fun(self: SMODS.Blind|table, o: SMODS.Blind|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Blind|table): boolean? Ensures objects already registered will not register. 

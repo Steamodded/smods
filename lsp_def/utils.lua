@@ -472,6 +472,7 @@ function SMODS.find_card(key, count_debuffed) end
 ---@field front? string|false Front of the playing card. Ignores rank and suit.
 ---@field enhanced_poll? number Chance to pick 'Base' over 'Enhanced' with set 'Playing Card'.
 ---@field silent? true|{edition?:true, seal?:true} Applies edition and/or seal silently
+---@field immediate? true|{edition?:true, seal?:true} Applies edition and/or seal immediately
 ---@field attributes? string[] Creates a card with these attributes. All other arguments will be passed to SMODS.poll_object
 
 ---@param t CreateCard|table

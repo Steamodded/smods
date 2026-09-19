@@ -400,6 +400,15 @@ function SMODS.RunSelect.Functions.change_page(ui)
     current_selector_page.UIBox:recalculate()
 end
 
+function SMODS.RunSelect.Functions.double_click_advance(page_def)
+    if page_def.can_continue and not page_def:can_continue() then return end
+    if SMODS.RunSelect.Internals.current_page == #SMODS.RunSelect.Internals.pages or SMODS.RunSelect.Functions.get_page_key(1) > #SMODS.RunSelect.Internals.pages then
+        SMODS.RunSelect.Functions.start_run()
+    else
+        SMODS.RunSelect.Functions.change_page(G.OVERLAY_MENU:get_UIE_by_ID('next_selection'))
+    end
+end
+
 function SMODS.RunSelect.Functions.build_selection_areas(key)
     local page_def = SMODS.RunSelect.Pages[key]
     local dim = page_def.sprite_size or {w = G.CARD_W, h = G.CARD_H}

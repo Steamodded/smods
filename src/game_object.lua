@@ -435,11 +435,19 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         extern Image sourceImage;
         extern vec2 dim;
 
-        vec2 neigbours[8] = vec2[8](vec2(-1, -1),vec2(0, -1),vec2(1, -1),vec2(-1, 0),vec2(1, 0),vec2(-1, 1),vec2(0, 1),vec2(1, 1));
-
         vec4 fixAlpha(Image img, vec2 uv){
             vec4 result = vec4(0.0);
             float count = 0.0;
+
+            vec2 neigbours[8];
+            neigbours[0] = vec2(-1.0, -1.0);
+            neigbours[1] = vec2( 0.0, -1.0);
+            neigbours[2] = vec2( 1.0, -1.0);
+            neigbours[3] = vec2(-1.0,  0.0);
+            neigbours[4] = vec2( 1.0,  0.0);
+            neigbours[5] = vec2(-1.0,  1.0);
+            neigbours[6] = vec2( 0.0,  1.0);
+            neigbours[7] = vec2( 1.0,  1.0);
 
             for (int i = 0; i < 8; i++) {
                 vec2 c = uv + (neigbours[i] * dim);

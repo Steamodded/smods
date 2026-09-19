@@ -1608,7 +1608,7 @@ function G.FUNCS.get_poker_hand_info(_cards)
 end
 
 function create_UIBox_current_hands(simple, in_collection)
-	G.current_hands = {}
+	local current_hands = {}
 
 	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
 	local handlist = in_collection and {} or nil
@@ -1630,9 +1630,9 @@ function create_UIBox_current_hands(simple, in_collection)
 	end
 
 	local index = 0
-	for _, v in ipairs(handlist or G.handlist) do
-		local ui_element = create_UIBox_current_hand_row(v, simple, in_collection)
-		G.current_hands[index + 1] = ui_element
+	for _, handname in ipairs(handlist or G.handlist) do
+		local ui_element = create_UIBox_current_hand_row(handname, simple, in_collection)
+		current_hands[index + 1] = ui_element
 		if ui_element then
 			index = index + 1
 		end
@@ -1655,7 +1655,7 @@ function create_UIBox_current_hands(simple, in_collection)
 				n = G.UIT.R,
 				config = { align = "cm", padding = 0.04 },
 				nodes =
-					G.current_hands
+					current_hands
 			},
 			-- UI consistency with vanilla
 			#visible_hands > 12 and {
@@ -1694,7 +1694,7 @@ end
 
 G.FUNCS.your_hands_page = function(args)
 	if not args or not args.cycle_config then return end
-	G.current_hands = {}
+	local current_hands = {}
 	local in_collection = args.cycle_config.in_collection
 	local simple = args.cycle_config.simple
 	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
@@ -1706,13 +1706,13 @@ G.FUNCS.your_hands_page = function(args)
 	end
 
 	local index = 0
-	for _, v in ipairs(handlist or G.handlist) do
-		local ui_element = create_UIBox_current_hand_row(v, simple, in_collection)
+	for _, handname in ipairs(handlist or G.handlist) do
 		if index >= (0 + 10 * (args.cycle_config.current_option - 1)) and index < 10 * args.cycle_config.current_option then
-			G.current_hands[index - (10 * (args.cycle_config.current_option - 1)) + 1] = ui_element
+			local ui_element = create_UIBox_current_hand_row(handname, simple, in_collection)
+			current_hands[index - (10 * (args.cycle_config.current_option - 1)) + 1] = ui_element
 		end
 
-		if ui_element then
+		if in_collection or SMODS.is_poker_hand_visible(handname) then
 			index = index + 1
 		end
 
@@ -1742,7 +1742,7 @@ G.FUNCS.your_hands_page = function(args)
 		n = G.UIT.ROOT,
 		config = { align = "cm", colour = G.C.CLEAR },
 		nodes = {
-			{ n = G.UIT.R, config = { align = "cm", padding = 0.04 }, nodes = G.current_hands
+			{ n = G.UIT.R, config = { align = "cm", padding = 0.04 }, nodes = current_hands
 			},
 			{
 				n = G.UIT.R,
@@ -1872,7 +1872,7 @@ function Card:set_sprites(_center, _front)
 
         if self.children.back then self.children.back:remove() end
 		local atlas_key = (G.GAME.viewed_back or G.GAME.selected_back) and ((G.GAME.viewed_back or G.GAME.selected_back)[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or (G.GAME.viewed_back or G.GAME.selected_back).atlas) or 'centers'
-		self.children.back = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos), (G.GAME.viewed_back or G.GAME.selected_back or {}).sprite_args)
+		self.children.back = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos), (G.GAME.viewed_back or G.GAME.selected_back or {effect = {center = {}}}).effect.center.sprite_args)
 		self.children.back.states.hover = self.states.hover
 		self.children.back.states.click = self.states.click
 		self.children.back.states.drag = self.states.drag

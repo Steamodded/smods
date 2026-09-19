@@ -409,6 +409,7 @@ function SMODS.create_card(t)
         t.front = t.front or (t.suit and t.rank and (t.suit .. "_" .. t.rank)) or nil
     end
     t.silent = t.silent == true and { edition = true, seal = true } or type(t.silent) ~= "table" and {} or t.silent
+    t.immediate = t.immediate == true and { edition = true, seal = true } or type(t.immediate) ~= "table" and {} or t.immediate
     SMODS.bypass_create_card_edition = t.no_edition or t.edition
     SMODS.bypass_create_card_discover = t.discover
     SMODS.bypass_create_card_discovery_center = t.bypass_discovery_center
@@ -427,8 +428,8 @@ function SMODS.create_card(t)
 
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
-    if t.edition then _card:set_edition(t.edition, nil, t.silent.edition) end
-    if t.seal then _card:set_seal(t.seal, t.silent.seal); _card.ability.delay_seal = false end
+    if t.edition then _card:set_edition(t.edition, t.immediate.edition, t.silent.edition) end
+    if t.seal then _card:set_seal(t.seal, t.silent.seal, t.immediate.seal); _card.ability.delay_seal = false end
     if t.stickers or type(t.force_stickers) == "table" then
         local applied_stickers = {}
         if type(t.force_stickers) == "table" then
@@ -833,6 +834,7 @@ function SMODS.stake_from_index(index)
 end
 
 function convert_usage_entry(entry)
+    if type(entry) ~= 'table' then return entry end
     for _,keys in ipairs{ {"wins","wins_by_key"},{"losses","losses_by_key"}} do
         entry[keys[1]] = entry[keys[1]] or {}
         entry[keys[2]] = entry[keys[2]] or {}
@@ -840,20 +842,20 @@ function convert_usage_entry(entry)
         local data_by_key = entry[keys[2]]
         setmetatable(data_by_key, {
             __index = function(t, k) 
-                if (G.P_STAKES[k] or {}).vanilla_index then
+                if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                     return data[G.P_STAKES[k].vanilla_index]
                 end
                 return rawget(t,k)
             end,
             __newindex = function(t,k,w)
-                if (G.P_STAKES[k] or {}).vanilla_index then
+                if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                     data[G.P_STAKES[k].vanilla_index] = w
                 end
                 rawset(t,k,w)
             end,
         })
         for k,w in pairs(data_by_key) do
-            if (G.P_STAKES[k] or {}).vanilla_index then
+            if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                 data[G.P_STAKES[k].vanilla_index] = math.max(data[G.P_STAKES[k].vanilla_index] or 0, w)
                 rawset(data_by_key, k, nil)
             end
@@ -862,14 +864,17 @@ function convert_usage_entry(entry)
     return entry
 end
 
-function convert_save_data()
-    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
+-- Convert usage tables. silent=true only fixes the in-memory wins_by_key <-> wins
+-- metatable bridge (used on profile load); omit it to also queue a profile save.
+function convert_save_data(profile, silent)
+    profile = profile or G.PROFILES[G.SETTINGS.profile]
+    for _, v in pairs(profile.deck_usage or {}) do
         convert_usage_entry(v)
     end
-    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
+    for _, v in pairs(profile.joker_usage or {}) do
         convert_usage_entry(v)
     end
-    G:save_settings()
+    if not silent then G:save_settings() end
 end
 
 
@@ -1033,7 +1038,7 @@ function SMODS.get_enhancements(card, extra_only)
     if not SMODS.enh_cache:read(card, extra_only) then
 
         local enhancements = {}
-        if card.config.center.key ~= "c_base" then
+        if card.config.center.key ~= "c_base" and G.P_CENTERS[card.config.center.key] then
             enhancements[card.config.center.key] = true
         end
         local calc_return = {}
