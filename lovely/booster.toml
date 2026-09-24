@@ -403,12 +403,42 @@ if select_to then
     if card.config.center.on_select and type(card.config.center.on_select) == 'function' then
         card.config.center:on_select(card)
     end
+    SMODS.calculate_context{booster_select_card = true, card = card, booster = booster_obj, cardarea = G[select_to]}
     play_sound('card1', 0.8, 0.6)
     play_sound('generic1')
     dont_dissolve = true
     delay_fac = 0.2
 elseif card.ability.consumeable then
       if nc then
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+G.deck:emplace(card)
+'''
+payload = '''
+if card.config.center.on_select and type(card.config.center.on_select) == 'function' then
+    card.config.center:on_select(card)
+end
+SMODS.calculate_context{booster_select_card = true, card = card, booster = booster_obj, cardarea = G.deck}
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+G.jokers:emplace(card)
+'''
+payload = '''
+if card.config.center.on_select and type(card.config.center.on_select) == 'function' then
+    card.config.center:on_select(card)
+end
+SMODS.calculate_context{booster_select_card = true, card = card, booster = booster_obj, cardarea = G.jokers}
 '''
 # G.FUNCS.end_consumeable()
 [[patches]]
