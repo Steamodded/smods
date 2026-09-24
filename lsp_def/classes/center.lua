@@ -66,3 +66,8 @@ SMODS.Center = setmetatable({}, {
 
 ---@type table<string, SMODS.Center|table>
 SMODS.Centers = {}
+
+---Returns the prototype object from the game object.
+---@param card Card|table
+---@return SMODS.Center|table 
+SMODS.Center.get_prototype_object = function (card) end

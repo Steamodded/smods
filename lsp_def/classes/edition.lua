@@ -53,6 +53,11 @@ SMODS.Edition = setmetatable({}, {
     end
 })
 
+---Returns the prototype object from the game object. (`nil` if none)
+---@param card Card|table
+---@return SMODS.Edition|table?
+SMODS.Edition.get_prototype_object = function (card) end
+
 ---@param self Card|table
 ---@param context CalcContext|table
 ---@return table?

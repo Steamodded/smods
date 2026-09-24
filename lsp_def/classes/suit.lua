@@ -44,3 +44,8 @@ SMODS.Suit = setmetatable({}, {
 
 ---@type table<Suits|string, SMODS.Suit|table>
 SMODS.Suits = {}
+
+---Returns the prototype object from the game object. (`nil` if none)
+---@param card Card|table
+---@return SMODS.Suit|table?
+SMODS.Suit.get_prototype_object = function (card) end

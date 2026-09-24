@@ -4161,6 +4161,12 @@ SMODS.UndiscoveredCompat = {
     assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/runselectpage.lua'), ('=[SMODS _ "src/game_objects/runselectpage.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject Prototype Utils
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(SMODS.NFS.read(SMODS.path..'src/utils/prototypes.lua'), ('=[SMODS _ "src/utils/prototypes.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
     ----- INTERNAL API CODE GameObject._Loc_Post
     -------------------------------------------------------------------------------------------------
 

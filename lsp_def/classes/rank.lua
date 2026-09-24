@@ -47,3 +47,8 @@ SMODS.Rank = setmetatable({}, {
 
 ---@type table<Ranks|string, SMODS.Rank|table>
 SMODS.Ranks = {}
+
+---Returns the prototype object from the game object. (`nil` if none)
+---@param card Card|table
+---@return SMODS.Rank|table?
+SMODS.Rank.get_prototype_object = function (card) end
