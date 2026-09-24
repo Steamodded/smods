@@ -2733,13 +2733,98 @@ end
 
 local add_tag_ref = add_tag
 function add_tag(_tag)
-	_tag = _tag or {}
-	_tag.key = _tag.key or 'unknown'
-	assert(G.P_TAGS[_tag.key], ("Could not find tag \"%s\"."):format(_tag.key))
-	if not (_tag.is and _tag:is(Tag)) then
-		_tag = Tag(_tag.key, nil, _tag.blind_type)
+    _tag = _tag or {}
+    _tag.key = _tag.key or 'unknown'
+    assert(G.P_TAGS[_tag.key], ("Could not find tag \"%s\"."):format(_tag.key))
+    if not (_tag.is and _tag:is(Tag)) then
+        _tag = Tag(_tag.key, nil, _tag.blind_type)
+    end
+    add_tag_ref(_tag)
+end
+
+SMODS.get_default_ability_vars = function(center, card, no_copy)
+	card = card or {}
+	card.ability = card.ability or {}
+
+	local to_do_poker_hand
+    if center.name == 'To Do List' then
+        local _poker_hands = {}
+        for key, _ in pairs(G.GAME.hands) do
+            if SMODS.is_poker_hand_visible(key) then _poker_hands[#_poker_hands+1] = key end
+        end
+        to_do_poker_hand = pseudorandom_element(_poker_hands, 'false_to_do_smods')
+    end
+
+	local new_ability = {
+		name = center.name or center.key,
+		effect = center.effect,
+		set = center.set,
+		mult = center.config.mult or 0,
+		h_mult = center.config.h_mult or 0,
+		h_x_mult = center.config.h_x_mult or 0,
+		h_dollars = center.config.h_dollars or 0,
+		p_dollars = center.config.p_dollars or 0,
+		t_mult = center.config.t_mult or 0,
+		t_chips = center.config.t_chips or 0,
+		x_mult = center.config.Xmult or center.config.x_mult or 1,
+		h_chips = center.config.h_chips or 0,
+		x_chips = center.config.x_chips or 1,
+		h_x_chips = center.config.h_x_chips or 1,
+		repetitions = center.config.repetitions or 0,
+		h_size = center.config.h_size or 0,
+		d_size = center.config.d_size or 0,
+		extra = copy_table(center.config.extra) or nil,
+		extra_value = 0,
+		type = center.config.type or '',
+		order = center.order or nil,
+		forced_selection = card.ability.forced_selection or nil,
+		perma_bonus = card.ability.perma_bonus or 0,
+		perma_x_chips = card.ability.perma_x_chips or 0,
+		perma_mult = card.ability.perma_mult or 0,
+		perma_x_mult = card.ability.perma_x_mult or 0,
+		perma_h_chips = card.ability.perma_h_chips or 0,
+		perma_h_x_chips = card.ability.perma_h_x_chips or 0,
+		perma_h_mult = card.ability.perma_h_mult or 0,
+		perma_h_x_mult = card.ability.perma_h_x_mult or 0,
+		perma_p_dollars = card.ability.perma_p_dollars or 0,
+		perma_h_dollars = card.ability.perma_h_dollars or 0,
+		perma_repetitions = card.ability.perma_repetitions or 0,
+		card_limit = card.ability.card_limit or 0,
+		extra_slots_used = card.ability.extra_slots_used or 0,
+		perma_score = card.ability.perma_score or 0,
+		perma_h_score = card.ability.perma_h_score or 0,
+		perma_x_score = card.ability.perma_x_score or 0,
+		perma_h_x_score = card.ability.perma_h_x_score or 0,
+		perma_blind_size = card.ability.perma_blind_size or 0,
+		perma_h_blind_size = card.ability.perma_h_blind_size or 0,
+		perma_x_blind_size = card.ability.perma_x_blind_size or 0,
+        perma_h_x_blind_size = card.ability.perma_h_x_blind_size or 0,
+		
+        consumeable = center.consumeable and center.config or nil,
+        invis_rounds = center.name == "Invisible Joker" and 0 or nil,
+        to_do_poker_hand = to_do_poker_hand,
+        caino_xmult = center.name == 'Caino' and 1 or nil,
+        yorick_discards = center.name == 'Yorick' and (center.config.extra or {}).discards or nil,
+		burnt_hand = center.name == 'Loyalty Card' and 0 or nil,
+		loyalty_remaining = center.name == 'Loyalty Card' and (center.config.extra or {}).every or nil,
+        hands_played_at_create = G.GAME and G.GAME.hands_played or 0,
+		
+		bonus = (card.ability.bonus or 0) + (center.config.bonus or 0)
+	}
+
+	if not no_copy then
+		for k, v in pairs(center.config) do
+			if k ~= 'bonus' then
+				if type(v) == 'table' then
+					new_ability[k] = copy_table(v)
+				else
+					new_ability[k] = v
+				end
+			end
+		end
 	end
-	add_tag_ref(_tag)
+
+	return new_ability
 end
 
 function Card:quantum_set_ability(center)
@@ -2770,51 +2855,7 @@ function Card:quantum_set_ability(center)
     end
 
     self.ARGS.smods_quantum_ability = self.ARGS.smods_quantum_ability or {}
-    local new_ability = self.ARGS.smods_quantum_ability
-
-    new_ability.name = center.name
-    new_ability.effect = center.effect
-    new_ability.set = center.set
-    new_ability.mult = center.config.mult or 0
-    new_ability.h_mult = center.config.h_mult or 0
-    new_ability.h_x_mult = center.config.h_x_mult or 0
-    new_ability.h_dollars = center.config.h_dollars or 0
-    new_ability.p_dollars = center.config.p_dollars or 0
-    new_ability.t_mult = center.config.t_mult or 0
-    new_ability.t_chips = center.config.t_chips or 0
-    new_ability.x_mult = center.config.Xmult or center.config.x_mult or 1
-    new_ability.h_chips = center.config.h_chips or 0
-    new_ability.x_chips = center.config.x_chips or 1
-    new_ability.h_x_chips = center.config.h_x_chips or 1
-    new_ability.repetitions = center.config.repetitions or 0
-    new_ability.h_size = center.config.h_size or 0
-    new_ability.d_size = center.config.d_size or 0
-    new_ability.extra = copy_table(center.config.extra) or nil
-    new_ability.extra_value = 0
-    new_ability.type = center.config.type or ''
-    new_ability.order = center.order or nil
-    new_ability.forced_selection = self.ability and self.ability.forced_selection or nil
-    new_ability.perma_bonus = self.ability and self.ability.perma_bonus or 0
-    new_ability.perma_x_chips = self.ability and self.ability.perma_x_chips or 0
-    new_ability.perma_mult = self.ability and self.ability.perma_mult or 0
-    new_ability.perma_x_mult = self.ability and self.ability.perma_x_mult or 0
-    new_ability.perma_h_chips = self.ability and self.ability.perma_h_chips or 0
-    new_ability.perma_h_x_chips = self.ability and self.ability.perma_h_x_chips or 0
-    new_ability.perma_h_mult = self.ability and self.ability.perma_h_mult or 0
-    new_ability.perma_h_x_mult = self.ability and self.ability.perma_h_x_mult or 0
-    new_ability.perma_p_dollars = self.ability and self.ability.perma_p_dollars or 0
-    new_ability.perma_h_dollars = self.ability and self.ability.perma_h_dollars or 0
-    new_ability.perma_repetitions = self.ability and self.ability.perma_repetitions or 0
-    new_ability.card_limit = self.ability and self.ability.card_limit or 0
-    new_ability.extra_slots_used = self.ability and self.ability.extra_slots_used or 0
-    new_ability.perma_score = self.ability and self.ability.perma_score or 0
-    new_ability.perma_h_score = self.ability and self.ability.perma_h_score or 0
-    new_ability.perma_x_score = self.ability and self.ability.perma_x_score or 0
-    new_ability.perma_h_x_score = self.ability and self.ability.perma_h_x_score or 0
-    new_ability.perma_blind_size = self.ability and self.ability.perma_blind_size or 0
-    new_ability.perma_h_blind_size = self.ability and self.ability.perma_h_blind_size or 0
-    new_ability.perma_x_blind_size = self.ability and self.ability.perma_x_blind_size or 0
-    new_ability.perma_h_x_blind_size = self.ability and self.ability.perma_h_x_blind_size or 0
+    local new_ability = SMODS.merge_defaults(SMODS.get_default_ability_vars(self, center, true), self.ARGS.smods_quantum_ability)
     
     self.ability = self.ability or {}
     new_ability.extra_value = nil
