@@ -3496,3 +3496,274 @@ function G.UIDEF.SMODS_current_stake()
 end
 
 -- #endregion
+
+--#region Eval row
+
+local function round_eval_get_text_config(config_args, defaults)
+    config_args = (type(config_args) == "string" or type(config_args) == "number") and
+        (defaults.text_row and { text = (defaults.prepend or "") .. config_args .. (defaults.append or "") } or
+            { string = { (defaults.prepend or "") .. config_args .. (defaults.append or "") } }) or config_args or {}
+
+    if not defaults.text_row and type(config_args.string) == "string" then
+        config_args.string = { (defaults.prepend or "") .. config_args.string .. (defaults.append or "") }
+    end
+
+    if not defaults.text_row and config_args.colour then
+        config_args.colours = { config_args.colour }
+    end
+
+    if config_args.scale then
+        config_args.scale = config_args.scale * (defaults.no_scale and 1 or 0.9)
+    end
+
+    local ret = SMODS.merge_defaults(SMODS.shallow_copy(config_args), defaults)
+
+    return ret
+end
+
+local function round_eval_name_row_from_nodes(name_nodes)
+    local t = {}
+    for k, v in ipairs(name_nodes) do
+        t[#t + 1] = { n = G.UIT.R, config = { align = "cm" }, nodes = v }
+    end
+    return { n = G.UIT.R, config = { align = "cm", padding = -0.03 }, nodes = t }
+end
+
+SMODS.add_round_eval_row = function(args)
+    if not args then return end
+    local width = G.round_eval.T.w - 0.51
+    local scale = 0.9
+
+    total_cashout_rows = (total_cashout_rows or 0) + 1
+    if not args.bypass_row_limit then
+        if total_cashout_rows > 7 then
+            return
+        end
+    end
+
+    if args.add_divider then
+        G.E_MANAGER:add_event(Event({
+            trigger = 'after',
+            delay = 0.25,
+            func = function()
+                local spacer = {
+                    n = G.UIT.R,
+                    config = { align = "cm", minw = width },
+                    nodes = {
+                        { n = G.UIT.O, config = { object = DynaText({ string = { '......................................' }, colours = { G.C.WHITE }, shadow = true, float = true, y_offset = -30, scale = 0.45, spacing = 13.5, font = G.LANGUAGES['en-us'].font, pop_in = 0 }) } }
+                    }
+                }
+                G.round_eval:add_child(spacer,
+                    G.round_eval:get_UIE_by_ID(args.bonus and 'bonus_round_eval' or 'base_round_eval'))
+                return true
+            end
+        }))
+        delay(0.6)
+    end
+
+    delay(0.2)
+
+    local row_id = args.id or ("SMODS" .. (total_cashout_rows or 0))
+    local dollar_row_id = 'dollar_' .. row_id
+
+    G.E_MANAGER:add_event(Event({
+        trigger = 'before',
+        delay = 0.5,
+        func = function()
+            local left_text = {}
+
+            if args.left_ui_nodes then
+                left_text = args.left_ui_nodes
+            else
+                if args.sprite_atlas then
+                    local sprite = SMODS.create_sprite(0, 0,
+                        args.sprite_w_scale or 1.2, args.sprite_h_scale or 1.2,
+                        args.sprite_atlas, args.sprite_pos or { x = 0, y = 0 }, args.sprite_args)
+                    sprite:define_draw_steps({
+                        { shader = 'dissolve', shadow_height = args.shadow_height or 0.05 },
+                        { shader = 'dissolve' }
+                    })
+                    table.insert(left_text,
+                        { n = G.UIT.O, config = { w = args.sprite_w_scale or 1.2, h = args.sprite_h_scale or 1.2, object = sprite, hover = true, can_collide = false } })
+                end
+
+                if args.number then
+                    table.insert(left_text,
+                        { n = G.UIT.T, config = round_eval_get_text_config(args.number,
+                            { shadow = true, juice = true, scale = 0.8 * scale, colour = G.C.FILTER, text_row = true }) })
+                end
+                if args.prefix_text then
+                    table.insert(left_text,
+                        { n = G.UIT.O, config = { object = DynaText(round_eval_get_text_config(args.prefix_text, {append = " ", colours = { G.C.UI.TEXT_LIGHT }, shadow = true, pop_in = 0, scale = 0.4 * scale, silent = true})) } })
+                end
+                if args.text then
+                    table.insert(left_text,
+                        { n = G.UIT.O, config = { object = DynaText(round_eval_get_text_config(args.text, {colours = { G.C.UI.TEXT_LIGHT }, shadow = true, pop_in = 0, scale = 0.4 * scale, silent = true})) } })
+                end
+
+                if args.card or args.object then
+                    local obj = args.card or args.object
+                    local prototype_obj = obj.prototype
+                    local vars = args.loc_vars
+                    if not vars and type(prototype_obj.loc_vars) == "function" then
+                        local old_fake = obj.fake_card
+                        obj.fake_card = true
+                        local res = prototype_obj:loc_vars({}, obj)
+                        obj.fake_card = old_fake
+                        vars = res.name_vars or res.vars
+                    end
+                    vars = vars or {}
+                    local name_nodes = {}
+                    localize(round_eval_get_text_config(args.name_args or {}, { type = 'name', set = args.set or vars.set or prototype_obj.set, key = args.key or vars.key or prototype_obj.key, nodes = name_nodes, set_scale = ((args.name_args or {}).scale or 0.6) * scale, no_bump = true, vars = vars, text_colour = (args.name_args or {}).colour or G.C.FILTER, no_spacing = true }))
+                    table.insert(left_text, round_eval_name_row_from_nodes(name_nodes))
+                elseif args.key then
+                    local name_nodes = {}
+                    localize(round_eval_get_text_config(args.name_args, { type = 'name', set = args.set or "Joker", key = args.key, nodes = name_nodes, set_scale = ((args.name_args or {}).scale or 0.6) * scale, no_bump = true, vars = vars, text_colour = (args.name_args or {}).colour or G.C.FILTER, no_spacing = true }))
+                    table.insert(left_text, round_eval_name_row_from_nodes(name_nodes))
+                end
+                if args.suffix_text then
+                    table.insert(left_text,
+                        { n = G.UIT.O, config = { object = DynaText(round_eval_get_text_config(args.suffix_text, {prepend = " ", colours = { G.C.UI.TEXT_LIGHT }, shadow = true, pop_in = 0, scale = 0.4 * scale, silent = true})) } })
+                end
+            end
+
+            local full_row = {
+                n = G.UIT.R,
+                config = { align = "cm", minw = 5 },
+                nodes = {
+                    { n = G.UIT.C, config = { padding = 0.05, minw = width * 0.55, minh = 0.61, align = "cl" }, nodes = left_text },
+                    { n = G.UIT.C, config = { padding = 0.05, minw = width * 0.45, align = "cr" },              nodes = { { n = G.UIT.C, config = { align = "cm", id = dollar_row_id }, nodes = {} } } }
+                }
+            }
+
+            G.round_eval:add_child(full_row,
+                G.round_eval:get_UIE_by_ID(args.bonus and 'bonus_round_eval' or 'base_round_eval'))
+            if not args.silent then
+                play_sound('cancel', args.pitch or 1)
+                play_sound('highlight1', (1.5 * (args.pitch or 1)), 0.2)
+            end
+            if not args.no_juice then
+                local obj = args.card or args.object
+                if type(obj) == "table" and type(obj.juice_up) == "function" then
+                    obj:juice_up(0.7, 0.46)
+                end
+            end
+            if args.left_func then
+                args:left_func()
+            end
+            return true
+        end
+    }))
+
+    if args.right_ui_nodes then
+        G.E_MANAGER:add_event(Event({
+            trigger = 'before',
+            delay = 0.38,
+            func = function()
+                G.round_eval:add_child(
+                    {
+                        n = G.UIT.R,
+                        config = { align = "cm", id = 'dollar_row_' .. 1 .. '_' .. row_id },
+                        nodes = args.right_ui_nodes
+                    },
+                    G.round_eval:get_UIE_by_ID(dollar_row_id))
+                if args.right_func then
+                    args:right_func()
+                end
+                return true
+            end
+        }))
+    elseif args.right_text then
+        G.E_MANAGER:add_event(Event({
+            trigger = 'before',
+            delay = 0.38,
+            func = function()
+                G.round_eval:add_child(
+                    {
+                        n = G.UIT.R,
+                        config = { align = "cm", id = 'dollar_row_' .. 1 .. '_' .. row_id },
+                        nodes = {
+                            { n = G.UIT.O, config = { object = DynaText(round_eval_get_text_config(args.right_text, {colours = { G.C.UI.TEXT_LIGHT }, shadow = true, pop_in = 0, scale = 0.4 * scale, silent = true})) } }
+                        }
+                    },
+                    G.round_eval:get_UIE_by_ID(dollar_row_id))
+                if not args.silent then
+                    play_sound('cancel', args.pitch or 1)
+                    play_sound('highlight1', 1.5 * (args.pitch or 1), 0.2)
+                end
+                if args.right_func then
+                    args:right_func()
+                end
+                return true
+            end
+        }))
+    elseif args.dollars then
+        local dollar_row = 0
+        local num_dollars = args.dollars
+        local abs_dollars = math.abs(num_dollars)
+        local dollars_sign = args.dollars_sign or localize('$')
+        local dollar_colour = num_dollars < 0 and args.dollars_negative_colour or args.dollars_colour or
+            (num_dollars < 0 and G.C.RED or G.C.MONEY)
+        if num_dollars > 60 or num_dollars < -60 then
+            G.E_MANAGER:add_event(Event({
+                trigger = 'before',
+                delay = 0.38,
+                func = function()
+                    G.round_eval:add_child(
+                        {
+                            n = G.UIT.R,
+                            config = { align = "cm", id = 'dollar_row_' .. (dollar_row + 1) .. '_' .. row_id },
+                            nodes = {
+                                { n = G.UIT.O, config = { object = DynaText(round_eval_get_text_config(args.dollars_args, { string = { (num_dollars < 0 and "-" or "") .. dollars_sign .. format_ui_value(abs_dollars) }, colours = { dollar_colour }, shadow = true, pop_in = 0, bump = false, scale = args.dollars_scale or 0.65, float = true })) } }
+                            }
+                        },
+                        G.round_eval:get_UIE_by_ID(dollar_row_id))
+                    if not args.silent then
+                        play_sound('coin3', 0.9 + 0.2 * math.random(), 0.7)
+                        play_sound('coin6', 1.3, 0.8)
+                    end
+                    if args.right_func then
+                        args:right_func()
+                    end
+                    return true
+                end
+            }))
+        else
+            local dollars_to_loop
+            if num_dollars < 0 then dollars_to_loop = (num_dollars * -1) + 1 else dollars_to_loop = num_dollars end
+            for i = 1, dollars_to_loop do
+                local dollar_scale = (abs_dollars > 20 and 0.28) or (abs_dollars > 9 and 0.43) or 0.58
+                dollar_scale = args.dollars_scale and (args.dollars_scale * (dollar_scale / 0.58)) or dollar_scale
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'before',
+                    delay = 0.18 - ((abs_dollars > 20 and 0.13) or (abs_dollars > 9 and 0.1) or 0),
+                    func = function()
+                        if i % 30 == 1 then
+                            G.round_eval:add_child(
+                                { n = G.UIT.R, config = { align = "cm", id = 'dollar_row_' .. (dollar_row + 1) .. '_' .. row_id }, nodes = {} },
+                                G.round_eval:get_UIE_by_ID(dollar_row_id))
+                            dollar_row = dollar_row + 1
+                        end
+
+                        local text = i == 1 and num_dollars < 0 and "-" or dollars_sign
+                        if not args.silent then
+                            play_sound('coin3', 0.9 + 0.2 * math.random(), 0.7 - (abs_dollars > 20 and 0.2 or 0))
+                        end
+
+                        G.round_eval:add_child(
+                            { n = G.UIT.T, config = round_eval_get_text_config(args.dollars_args, { text = text, colour = dollar_colour, scale = dollar_scale, shadow = true, hover = true, can_collide = false, juice = true, text_row = true }) },
+                            G.round_eval:get_UIE_by_ID('dollar_row_' ..
+                                (dollar_row) .. '_' .. row_id))
+                        G.VIBRATION = G.VIBRATION + 0.4
+                        if args.right_func then
+                            args:right_func(i, dollars_to_loop)
+                        end
+                        return true
+                    end
+                }))
+            end
+        end
+    end
+end
+
+--#endregion
