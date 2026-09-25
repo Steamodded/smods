@@ -34,10 +34,10 @@
 ---@field inject? fun(self: SMODS.Rank|table, i?: number) Called during `inject_class`. Injects the object into the game. 
 ---@field take_ownership? fun(self: SMODS.Rank|table, key: string, obj: SMODS.Rank|table, silent?: boolean): nil|table|SMODS.Rank Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.Rank|table, key: string): SMODS.Rank|table? Returns an object if one matches the `key`. 
----@field loc_vars? fun(self: SMODS.Rank|table, info_queue: table, card: Card|table) Allows adding tooltips onto cards with this suit. Return values not respected. 
----@field draw? fun(self: SMODS.Rank|table, card: Card|table, layer: string) Allows drawing additional sprites or shaders onto cards with this suit. 
----@field in_pool? fun(self: SMODS.Rank|table, args: table): boolean? Allows configuring if cards with this suit should spawn. 
----@field delete? fun(self: SMODS.Rank|table) Deletes this suit. 
+---@field loc_vars? fun(self: SMODS.Rank|table, info_queue: table, card: Card|table) Allows adding tooltips onto cards with this rank. Return values not respected. 
+---@field draw? fun(self: SMODS.Rank|table, card: Card|table, layer: string) Allows drawing additional sprites or shaders onto cards with this rank. 
+---@field in_pool? fun(self: SMODS.Rank|table, args: table): boolean? Allows configuring if cards with this rank should spawn. 
+---@field delete? fun(self: SMODS.Rank|table) Deletes this rank. 
 ---@overload fun(self: SMODS.Rank): SMODS.Rank
 SMODS.Rank = setmetatable({}, {
     __call = function(self)

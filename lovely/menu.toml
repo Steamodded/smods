@@ -70,3 +70,16 @@ card = Card(self.title_top.T.x, self.title_top.T.y, 1.2*G.CARD_W*SC_scale, 1.2*G
 payload = '''
 replace_card = G.title_top.cards[1]
 '''
+
+# Fix crash when menu card has been completely removed
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if replace_card and (G.P_CENTERS.j_blueprint.unlocked) then
+'''
+payload = '''
+if G.title_top.cards[1] and G.P_CENTERS.j_blueprint.unlocked then
+'''

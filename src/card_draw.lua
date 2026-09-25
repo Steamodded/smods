@@ -306,7 +306,7 @@ SMODS.DrawStep {
     order = 20,
     func = function(self, layer)
         local edition = self.delay_edition or self.edition
-        if edition then
+        if edition and not edition.negative then
             for k, v in pairs(G.P_CENTER_POOLS.Edition) do
                 if edition[v.key:sub(3)] and v.shader then
                     if type(v.draw) == 'function' then

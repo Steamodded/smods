@@ -803,7 +803,8 @@ target = "game.lua"
 pattern = 'function Game:delete_run()'
 position = 'after'
 payload = '''    G.in_delete_run = true
-    booster_obj = nil'''
+    booster_obj = nil
+    G.TAROT_INTERRUPT = nil'''
 match_indent = true
 [[patches]]
 [patches.pattern]
@@ -812,6 +813,17 @@ pattern = 'G.STATE = -1'
 position = 'after'
 payload = 'G.in_delete_run = false'
 match_indent = true
+
+## Re-apply save data conversion on profile load to restore stake/sticker progress
+# Game:load_profile()
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = 'recursive_init(temp_profile, G.PROFILES[G.SETTINGS.profile])'
+payload = '''if convert_save_data and G.P_STAKES then convert_save_data(G.PROFILES[G.SETTINGS.profile], true) end'''
+
 # Card:remove()
 [[patches]]
 [patches.pattern]
@@ -972,4 +984,23 @@ G.PROFILES[G.SETTINGS.profile].all_unlocked = true
 '''
 payload = '''
 EMPTY(G.P_LOCKED)
+'''
+
+# Fix negative hand levels causing a crash
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if type(vals.level) == 'number' then 
+    G.hand_text_area.hand_level.config.colour = G.C.HAND_LEVELS[math.min(vals.level, 7)]
+else
+    G.hand_text_area.hand_level.config.colour = G.C.HAND_LEVELS[1]
+end
+'''
+payload = '''
+if not G.hand_text_area.hand_level.config.colour then
+    G.hand_text_area.hand_level.config.colour = G.C.HAND_LEVELS[0]
+end
 '''

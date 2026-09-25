@@ -150,7 +150,7 @@ function StateSprite:animate()
         local frame_duration = (self.state.frame_durations or {})[self.current_animation.current+1] or self.state.frame_duration or 1
         self.current_animation.frame_duration = frame_duration / self.state.fps
         local _x = self.animation.w * ((self.states_offset.x + self.state.start_pos.x + self.current_animation.current) % self.atlas.columns)
-        local _y = self.animation.h * (self.states_offset.y + self.state.start_pos.y + math.floor(self.current_animation.current / self.atlas.columns))
+        local _y = self.animation.h * (self.states_offset.y + self.state.start_pos.y + math.floor((self.states_offset.x + self.state.start_pos.x + self.current_animation.current) / self.atlas.columns))
         self.sprite:setViewport(
             _x,
             _y,

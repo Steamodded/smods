@@ -219,13 +219,10 @@ function SMODS.create_blind_pool(blind_type, skip_cull)
             end
         end
     end
-    local final_pool = {}
     for k, v in pairs(eligible_bosses) do
         if eligible_bosses[k] then
             if eligible_bosses[k] > min_use and not G.P_BLINDS[k][blind_type].allow_duplicates then 
                 eligible_bosses[k] = nil
-            else
-                final_pool[#final_pool + 1] = k
             end
         end
     end
@@ -234,7 +231,8 @@ function SMODS.create_blind_pool(blind_type, skip_cull)
     for k, _ in pairs(eligible_bosses) do
         output[#output + 1] = k
     end
-    
+    table.sort(output)
+
     return output
 end
 
