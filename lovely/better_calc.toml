@@ -727,14 +727,36 @@ for _,v in ipairs(SMODS.get_card_areas('playing_cards', 'destroying_cards')) do
     SMODS.calculate_destroying_cards({ full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, cardarea = v }, cards_destroyed, v == G.play and scoring_hand or nil)
 end
 
--- context.remove_playing_cards calculations
-if cards_destroyed[1] then
-    SMODS.calculate_context({scoring_hand = scoring_hand, remove_playing_cards = true, removed = cards_destroyed})
-end
+SMODS.destroy_cards(cards_destroyed)
 
 -- TARGET: effects when cards are removed
-
 '''
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''        local glass_shattered = {}
+        for k, v in ipairs(cards_destroyed) do
+            if v.shattered then glass_shattered[#glass_shattered+1] = v end
+        end
+
+        check_for_unlock{type = 'shatter', shattered = glass_shattered}
+        
+        for i=1, #cards_destroyed do
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    if cards_destroyed[i].ability.name == 'Glass Card' then 
+                        cards_destroyed[i]:shatter()
+                    else
+                        cards_destroyed[i]:start_dissolve()
+                    end
+                  return true
+                end
+              }))
+        end'''
+position = "at"
+payload = ''
+match_indent = true
 
 [[patches]]
 [patches.regex]

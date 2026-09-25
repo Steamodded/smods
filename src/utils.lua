@@ -2371,6 +2371,9 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
         end
         local flags = SMODS.calculate_context(context)
         if flags.remove then destroyed = true end
+        if type(flags.remove) == "table" then
+            card.SMODS_destroy_args = flags.remove
+        end
 
         -- TARGET: card destroyed
 
@@ -3057,7 +3060,8 @@ function SMODS.destroy_cards(cards, args, ...)
     local playing_cards = {}
     local queued_for_destruction = {}
     for _, card in ipairs(cards) do
-        if args.bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
+        local card_args = card.SMODS_destroy_args or {}
+        if args.bypass_eternal or card_args.bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
             card.getting_sliced = true
             table.insert(queued_for_destruction, card)
             if SMODS.shatters(card) then
@@ -3066,7 +3070,7 @@ function SMODS.destroy_cards(cards, args, ...)
             else
                 card.destroyed = true
             end
-            if card.base.name then
+            if SMODS.is_playing_card(card) then
                 playing_cards[#playing_cards + 1] = card
             end
         end
@@ -3076,7 +3080,7 @@ function SMODS.destroy_cards(cards, args, ...)
 
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
-    local destroy_func = function (card, args)
+    local destroy_func = function(card, args)
         if not card.getting_sliced then return false end
         if args.destroy_func then 
             return args.destroy_func(card, args) ~= false
@@ -3098,6 +3102,7 @@ function SMODS.destroy_cards(cards, args, ...)
     end
 
     for i, card in ipairs(queued_for_destruction) do
+        local args = SMODS.merge_defaults(card.SMODS_destroy_args or {}, args)
         if args.immediate then
             destroy_func(card, args)
         else
@@ -3110,6 +3115,7 @@ function SMODS.destroy_cards(cards, args, ...)
                 end
             }))
         end
+        card.SMODS_destroy_args = nil
     end
     return queued_for_destruction
 end
