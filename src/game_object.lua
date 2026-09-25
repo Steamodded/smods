@@ -1678,7 +1678,6 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         --]]
         update_pack = function(self, dt)
             if G.buttons then G.buttons:remove(); G.buttons = nil end
-            if G.shop then G.shop.alignment.offset.y = G.ROOM.T.y+11 end
 
             if not G.STATE_COMPLETE then
                 G.STATE_COMPLETE = true
@@ -4147,6 +4146,11 @@ SMODS.UndiscoveredCompat = {
         text = '^'
     }
 
+    -------------------------------------------------------------------------------------------------
+    ----- API IMPORT GameObject.GameState
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/game_states.lua'), ('=[SMODS _ "src/game_objects/game_states.lua"]')))()
     
     -------------------------------------------------------------------------------------------------
     ----- API IMPORT Object.Node.Moveable.Sprite.AnimatedSprite.StateSprite
