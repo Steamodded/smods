@@ -16,21 +16,6 @@ payload = '''
 boosters_in_shop = 2,
 vouchers_in_shop = 1,
 '''
-
-# Allow booster count to be controlled by G.GAME.modifiers.extra_boosters
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
-match_indent = true
-position = 'at'
-pattern = '''
-for i = 1, 2 do
-    G.GAME.current_round.used_packs = G.GAME.current_round.used_packs or {}
-'''
-payload = '''
-for i=1, G.GAME.starting_params.boosters_in_shop + (G.GAME.modifiers.extra_boosters or 0) do
-    G.GAME.current_round.used_packs = G.GAME.current_round.used_packs or {}
-'''
 # Custom deck functionality
 [[patches]]
 [patches.pattern]
@@ -43,35 +28,6 @@ if self.effect.config.no_interest then
 payload = '''
 if self.effect.config.boosters_in_shop then
     G.GAME.starting_params.boosters_in_shop = self.effect.config.boosters_in_shop
-end
-'''
-
-# Allow voucher count to be controlled by G.GAME.modifiers.extra_vouchers
-[[patches]]
-[patches.pattern]
-target = 'game.lua'
-match_indent = true
-position = 'at'
-pattern = '''
-if G.GAME.current_round.voucher and G.P_CENTERS[G.GAME.current_round.voucher] then
-    local card = Card(G.shop_vouchers.T.x + G.shop_vouchers.T.w/2,
-    G.shop_vouchers.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS[G.GAME.current_round.voucher],{bypass_discovery_center = true, bypass_discovery_ui = true})
-    card.shop_voucher = true
-    create_shop_card_ui(card, 'Voucher', G.shop_vouchers)
-    card:start_materialize()
-    G.shop_vouchers:emplace(card)
-end
-'''
-payload = '''
-local vouchers_to_spawn = 0
-for _,_ in pairs(G.GAME.current_round.voucher.spawn) do vouchers_to_spawn = vouchers_to_spawn + 1 end
-if vouchers_to_spawn < G.GAME.starting_params.vouchers_in_shop + (G.GAME.modifiers.extra_vouchers or 0) then
-    SMODS.get_next_vouchers(G.GAME.current_round.voucher)
-end
-for _, key in ipairs(G.GAME.current_round.voucher or {}) do
-    if G.P_CENTERS[key] and G.GAME.current_round.voucher.spawn[key] then
-        SMODS.add_voucher_to_shop(key)
-    end
 end
 '''
 # Modify generating vouchers
