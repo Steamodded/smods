@@ -1,0 +1,50 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 100
+
+[[patches]]
+[patches.pattern]
+target = '''engine/controller.lua'''
+pattern = '''
+elseif key == "capslock" then
+    self.capslock = not self.capslock'''
+position = "after"
+payload = '''
+elseif self.text_input_hook.config.ref_table.smods_gui_input then
+    G.FUNCS.smods_gui_text_input_key({ key = key, caps = G.CONTROLLER.held_keys["lshift"] or G.CONTROLLER.held_keys["rshift"], keypressed = true })
+'''
+match_indent = true
+
+# Use utf8 function for correct offsets and lengths
+[[patches]]
+[patches.pattern]
+target = '''functions/button_callbacks.lua'''
+pattern = '''if string.len(text.ref_table[text.ref_value]) > 0 and args.key == 'BACKSPACE' then --If not at start, remove preceding letter'''
+position = "at"
+payload = '''if utf8Len(text.ref_table[text.ref_value]) > 0 and args.key == 'BACKSPACE' then --If not at start, remove preceding letter'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = '''functions/button_callbacks.lua'''
+pattern = '''elseif string.len(text.ref_table[text.ref_value]) > 0 and args.key == 'DELETE' then --if not at end, remove following letter'''
+position = "at"
+payload = '''elseif utf8Len(text.ref_table[text.ref_value]) > 0 and args.key == 'DELETE' then --if not at end, remove following letter'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = '''functions/button_callbacks.lua'''
+pattern = '''text.current_position = math.min(position_child-1, string.len(text.ref_table[text.ref_value]))'''
+position = "at"
+payload = '''text.current_position = math.min(position_child-1, utf8Len(text.ref_table[text.ref_value]))'''
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = '''functions/UI_definitions.lua'''
+pattern = '''text.letters[i] = (args.ref_table[args.ref_value] and (string.sub(args.ref_table[args.ref_value], i, i) or '')) or '''''
+position = "at"
+payload = '''text.letters[i] = (args.ref_table[args.ref_value] and (utf8CharAt(args.ref_table[args.ref_value], i) or '')) or '''''
+match_indent = true
