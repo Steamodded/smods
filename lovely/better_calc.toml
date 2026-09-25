@@ -1171,6 +1171,7 @@ G.E_MANAGER:add_event(Event({
     trigger = 'immediate',
     func = function()                
         SMODS.cards_to_draw = SMODS.cards_to_draw - hand_space
+        SMODS.cards_to_draw = math.min(SMODS.cards_to_draw, #G.deck.cards)
         return true
     end
 }))
