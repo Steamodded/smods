@@ -196,7 +196,7 @@ v.W_offset = 0.5*(self.config.W - (self.config.marquee and self.config.maxw and 
 if v.align_list.l then v.W_offset = 0 end
 if v.align_list.r then v.W_offset = v.W_offset * 2 end
 '''
-# Apply align property to y position
+# Apply align property to y position (respecting offset_y)
 [[patches]]
 [patches.pattern]
 target = 'engine/text.lua'
@@ -206,8 +206,8 @@ pattern = '''
 v.H_offset = 0.5*(self.config.H - v.H + (self.config.offset_y or 0))
 '''
 payload = '''
-if v.align_list.t then v.H_offset = 0 end
-if v.align_list.b then v.H_offset = v.H_offset * 2 end
+if v.align_list.t then v.H_offset = 0.5*(self.config.offset_y or 0) end
+if v.align_list.b then v.H_offset = v.H_offset * 2 - 0.5*(self.config.offset_y or 0) end
 '''
 
 # Add start/end index calculation
