@@ -183,7 +183,7 @@ pattern = '''
 G.GAME.current_round.free_rerolls = G.GAME.current_round.free_rerolls + 1
 '''
 payload = '''
-SMODS.change_free_rerolls(1)
+SMODS.change_free_rerolls(self.ability.extra or 1)
 '''
 [[patches]]
 [patches.pattern]
@@ -194,7 +194,7 @@ pattern = '''
 G.GAME.current_round.free_rerolls = G.GAME.current_round.free_rerolls - 1
 '''
 payload = '''
-SMODS.change_free_rerolls(-1)
+SMODS.change_free_rerolls(-(self.ability.extra or 1))
 '''
 
 ## Shop Card Area Width
