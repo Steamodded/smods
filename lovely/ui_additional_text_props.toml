@@ -111,7 +111,7 @@ pattern = '''
 local part_scale = 1
 '''
 payload = '''
-local part_align = self.config.string_align or ""
+local part_align = self.config.text_align or ""
 '''
 [[patches]]
 [patches.pattern]
@@ -122,7 +122,7 @@ pattern = '''
 outer_colour = v.outer_colour or nil
 '''
 payload = '''
-part_align = v.string_align or part_align or ""
+part_align = v.text_align or part_align or ""
 '''
 [[patches]]
 [patches.pattern]
