@@ -4577,7 +4577,6 @@ function SMODS.card_to_image(card, scale, filename)
     local px,py = display.w or atlas.px or 71, display.h or atlas.py or 95
     display.w, display.h = display.w or 71, display.h or 95
     local ratiox,ratioy = px/display.w, py/display.h
-    if (ratiox - ratioy) > 1/95 then print("yayyyy this might not work as intended.") end --No clue how to handle the case where image scaling isn't 1:1
 
 	local canvas = love.graphics.newCanvas(px * scale, py * scale, {type = '2d', readable = true})
     canvas:setFilter('nearest', 'nearest')
