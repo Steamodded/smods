@@ -101,6 +101,50 @@ if pcall(function()
 end) then
 '''
 
+# Align parsing
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+local part_scale = 1
+'''
+payload = '''
+local part_align = self.config.string_align or ""
+'''
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+outer_colour = v.outer_colour or nil
+'''
+payload = '''
+part_align = v.string_align or part_align or ""
+'''
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if self.start_pop_in then self.reset_pop_in = true end
+'''
+payload = '''
+self.strings[k].align_list = {
+    a = part_align == 'a',
+    m = string.find(part_align, "m"),
+    c = string.find(part_align, "c"),
+    b = string.find(part_align, "b"),
+    t = string.find(part_align, "t"),
+    l = string.find(part_align, "l"),
+    r = string.find(part_align, "r"),
+    i = string.find(part_align, "i"),
+}
+'''
+
 # Marquee text in DynaText
 # Adjust width when marquee is enabled
 [[patches]]
@@ -138,6 +182,7 @@ payload = '''
 if self.config.maxw and self.config.W > self.config.maxw and not self.config.marquee then
 '''
 # Adjust width when marquee is enabled
+# Apply align property to x position
 [[patches]]
 [patches.pattern]
 target = 'engine/text.lua'
@@ -148,6 +193,21 @@ v.W_offset = 0.5*(self.config.W - v.W)
 '''
 payload = '''
 v.W_offset = 0.5*(self.config.W - (self.config.marquee and self.config.maxw and self.config.maxw < v.W and self.config.maxw or v.W))
+if v.align_list.l then v.W_offset = 0 end
+if v.align_list.r then v.W_offset = v.W_offset * 2 end
+'''
+# Apply align property to y position
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+v.H_offset = 0.5*(self.config.H - v.H + (self.config.offset_y or 0))
+'''
+payload = '''
+if v.align_list.t then v.H_offset = 0 end
+if v.align_list.b then v.H_offset = v.H_offset * 2 end
 '''
 
 # Add start/end index calculation
