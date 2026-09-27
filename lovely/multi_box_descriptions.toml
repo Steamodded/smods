@@ -46,18 +46,18 @@ for _, lines in ipairs(args.type == 'unlocks' and loc_target.unlock_parsed or ar
 payload = '''
 if type(loc_target.text) == 'table' and type(loc_target.text[1]) == 'table' then
     for i, box in ipairs(loc_target.text_parsed) do
-        if #multi_line ~= 0 then multi_line[#multi_line+1] = "" end
-        for _, lines in ipairs(box) do
-        local final_line = ''
-        for _, part in ipairs(lines) do
-          local assembled_string = ''
-          for _, subpart in ipairs(part.strings) do
-            assembled_string = assembled_string..(type(subpart) == 'string' and subpart or format_ui_value(args.vars[tonumber(subpart[1])]) or 'ERROR')
-          end
-          final_line = final_line..assembled_string
+        if #multi_line ~= 0 then multi_line[#multi_line+1] = '' end
+            for _, lines in ipairs(box) do
+            local final_line = ''
+            for _, part in ipairs(lines) do
+                local assembled_string = ''
+                for _, subpart in ipairs(part.strings) do
+                    assembled_string = assembled_string..(type(subpart) == 'string' and subpart or format_ui_value(args.vars[tonumber(subpart[1])]) or 'ERROR')
+                end
+                final_line = final_line..assembled_string
+            end
+            multi_line[#multi_line+1] = final_line
         end
-        multi_line[#multi_line+1] = final_line
-      end
     end
     return multi_line
 end
