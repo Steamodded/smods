@@ -1378,8 +1378,11 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'balance' or key == "balance_raw" or key == "balance_points" then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         local halfdiff = math.abs(mult - hand_chips)/2
+
         local pctdef = key == "balance_raw" and 1 or key == "balance_points" and 100 or 100 --Do we want the default to be raw or points? Either way, the user can specify.
         local pct = type(amount) == "number" and amount or pctdef
+
+        if math.abs(pct) ~= pct then halfdiff = math.min(mult, hand_chips)/2 end --Negative balance takes from the smaller and gives to the larger
 
         local function determine_multiplier(input_pct)
             -- Passed 150% balance,
