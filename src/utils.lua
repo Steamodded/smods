@@ -1378,16 +1378,33 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
     if key == 'balance' or key == "balance_raw" or key == "balance_points" then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
         local halfdiff = math.abs(mult - hand_chips)/2
-        local pctdef = effect.balance_raw and 1 or effect.balance_points and 100 or 100 --Do we want the default to be raw or points? Either way, the user can specify.
+        local pctdef = key == "balance_raw" and 1 or key == "balance_points" and 100 or 100 --Do we want the default to be raw or points? Either way, the user can specify.
         local pct = type(amount) == "number" and amount or pctdef
-        if effect.balance_cap then pct = math.min(pct, pctdef) end --Current default behavior of balancing over 100% is to balance 100%, then add the excess to the number that started smaller. This lets users cap at 100% instead.
+
+        local function determine_multiplier(input_pct)
+            -- Passed 150% balance,
+            -- default: subtract 100%, add 150%
+            -- capped: subtract 100%, add 100%
+            -- penalized: subtract 150%, add 150%
+            local mag = math.abs(input_pct)
+            local sign = input_pct/mag
+        
+            local res
+            if effect.overbalance_penalty then res = input_pct 
+            elseif effect.balance_cap then res = math.min(mag, pctdef)*sign 
+            else res = math.max(input_pct, sign) end
+            --print(input_pct, res)
+            return res
+        end
+
+        if effect.balance_cap then pct = math.min(pct, pctdef) end
 
         if mult > hand_chips then
-            mult = mod_mult(mult - halfdiff*math.min(pct/pctdef, 1))
-            hand_chips = mod_chips(hand_chips + halfdiff*(pct/pctdef))
+            mult = mod_mult(mult + halfdiff*determine_multiplier(-pct/pctdef))
+            hand_chips = mod_chips(hand_chips + halfdiff*determine_multiplier(pct/pctdef))
         else
-            mult = mod_mult(mult * halfdiff*(pct/pctdef))
-            hand_chips = mod_chips(hand_chips - halfdiff*math.min(pct/pctdef, 1))
+            mult = mod_mult(mult + halfdiff*determine_multiplier(pct/pctdef))
+            hand_chips = mod_chips(hand_chips + halfdiff*determine_multiplier(-pct/pctdef))
         end
         update_hand_text({delay = 0}, {chips = hand_chips, mult = mult})
         G.E_MANAGER:add_event(Event({
