@@ -1395,7 +1395,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         
             local res
             if effect.overbalance_penalty then res = input_pct 
-            elseif effect.balance_cap then res = math.min(mag, pctdef)*sign 
+            elseif effect.balance_cap then res = math.min(mag, 1)*sign 
             else res = math.max(input_pct, sign) end
             --print(input_pct, res)
             return res
