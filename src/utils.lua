@@ -1391,6 +1391,7 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
             -- penalized: subtract 150%, add 150%
             local mag = math.abs(input_pct)
             local sign = input_pct/mag
+            if mag <= 1 then return input_pct end
         
             local res
             if effect.overbalance_penalty then res = input_pct 
