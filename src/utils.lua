@@ -1375,11 +1375,20 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return true
     end
 
-    if key == 'balance' then
+    if key == 'balance' or key == "balance_raw" or key == "balance_points" then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        local total = mult + hand_chips
-        mult = mod_mult(total/2)
-        hand_chips = mod_chips(total/2)
+        local halfdiff = math.abs(mult - hand_chips)/2
+        local pctdef = effect.balance_raw and 1 or effect.balance_points and 100 or 100 --Do we want the default to be raw or points? Either way, the user can specify.
+        local pct = type(amount) == "number" and amount or pctdef
+        if effect.balance_cap then pct = math.min(pct, pctdef) end --Current default behavior of balancing over 100% is to balance 100%, then add the excess to the number that started smaller. This lets users cap at 100% instead.
+
+        if mult > hand_chips then
+            mult = mod_mult(mult - halfdiff*math.min(pct/pctdef, 1))
+            hand_chips = mod_chips(hand_chips + halfdiff*(pct/pctdef))
+        else
+            mult = mod_mult(mult * halfdiff*(pct/pctdef))
+            hand_chips = mod_chips(hand_chips - halfdiff*math.min(pct/pctdef, 1))
+        end
         update_hand_text({delay = 0}, {chips = hand_chips, mult = mult})
         G.E_MANAGER:add_event(Event({
             func = (function()
@@ -1595,7 +1604,7 @@ SMODS.other_calculation_keys = {
     'xscore', 'x_score', 'h_x_score', 'h_xscore',
     'blind_size', 'blindsize', 'h_blind_size',  'h_blindsize',
     'xblind_size', 'x_blind_size', 'xblindsize', 'x_blindsize', 'h_x_blind_size', 'h_xblind_size',  'h_x_blindsize', 'h_xblindsize',
-    'swap', 'balance',
+    'swap', 'balance', 'balance_raw', 'balance_points',
     'saved', 'effect', 'remove',
     'debuff', 'prevent_debuff', 'debuff_text',
     'add_to_hand', 'remove_from_hand', 'return_to_hand',
