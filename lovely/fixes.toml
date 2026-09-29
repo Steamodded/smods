@@ -78,7 +78,7 @@ target = 'functions/misc_functions.lua'
 pattern = "function save_run()"
 position = "after"
 payload = """    if G.STATE == G.STATES.TAROT_PACK or G.STATE == G.STATES.PLANET_PACK or G.STATE == G.STATES.SPECTRAL_PACK
-        or G.STATE == G.STATES.BUFFOON_PACK or G.STATE == G.STATES.STANDARD_PACK or G.STATE == G.STATES.SMODS_BOOSTER_OPENED then return end"""
+        or G.STATE == G.STATES.BUFFOON_PACK or G.STATE == G.STATES.STANDARD_PACK or G.STATE == SMODS.STATES.BOOSTER_OPENED then return end"""
 match_indent = true
 
 ## Set `G.your_collection.config.collection` to true in all cases
