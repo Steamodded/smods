@@ -400,3 +400,55 @@ function SMODS.GUI.dropdown_select(args) end
 ---@param args DropdownSelectArgs
 ---@param parent_width number
 function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width) end
+
+---@class smods_add_round_eval_row_text_args
+---@field string? string Text to display.
+---@field scale? number
+---@field colour? table
+---@field no_pop_in? boolean
+---@field pop_in? number
+---@field shadow? boolean
+---@field juice? boolean
+---@field silent? boolean
+---@field font? SMODS.Font|table|string|integer
+
+---@class smods_add_round_eval_row_args
+---@field bypass_row_limit? boolean If `true` ignores the row limit of 7.
+---@field add_divider? boolean If `true` adds a divider before this row.
+---@field bonus? boolean If `true` adds the row to the bottom of the round eval with other gained bonuses, if `false` it is added below the Blind's reward. Note there is no difference if this is called before bonus rows are added (i.e. in context.round_eval).
+---@field id? string Used as an append for this row's UI elements.
+---@field left_ui_nodes? table Array of UI node definitions to show to the left of the row. (Ignores other left parameters)
+---@field sprite_atlas? string Atlas for the sprite to show on the left.
+---@field sprite_pos? {x:integer, y:integer} Position of the sprite to show on the left in its atlas.
+---@field sprite_args? table Arguments for `SMODS.create_sprite` for the sprite to show on the left.
+---@field shadow_height? number Shadow height for the sprite to show on the left.
+---@field sprite_w_scale? number Width scaling of the sprite to show on the left.
+---@field sprite_h_scale? number Height scaling of the sprite to show on the left.
+---@field number? string|number|smods_add_round_eval_row_text_args Number to show on the left before the text (similar to hands left).
+---@field text? string|smods_add_round_eval_row_text_args Text to show on the left.
+---@field prefix_text? string|smods_add_round_eval_row_text_args Text to show on the left before other texts.
+---@field suffix_text? string|smods_add_round_eval_row_text_args Text to show on the left after other texts.
+---@field card? Card|table Card applying the effect, it will show its name and juice up.
+---@field object? table Object applying the effect, it will show its name and juice up.
+---@field loc_vars? table Replaces the object's loc_vars returns for its name.
+---@field vars? table Replaces the vars passed to localize for the object's name.
+---@field set? string Set of the object to show the name of.
+---@field key? string Key of the object to show the name of.
+---@field name_args? smods_add_round_eval_row_text_args Arguments for the localize call for the object's name.
+---@field silent? boolean Stops sounds from playing.
+---@field pitch? number Modifies pitch for the sounds.
+---@field no_juice? boolean Doesn't juice up the object.
+---@field left_func? fun(args:table) Runs after the left nodes are added. (For playing custom sounds, etc.)
+---@field right_ui_nodes? table Array of UI node definitions to show to the left of the row. (Ignores other right parameters)
+---@field right_text? string|smods_add_round_eval_row_text_args Text to show on the right.
+---@field dollars? integer Amount of dollars the row should display (doesn't give them to the player).
+---@field dollars_sign? string String to use instead of the dollar sign.
+---@field dollars_colour? table Default colour for the dollars text.
+---@field dollars_negative_colour? table Default colour for the dollars text when negative.
+---@field dollars_scale? number Default scale for the dollars text.
+---@field dollars_args? smods_add_round_eval_row_text_args Replaces the dollar text's default text/dynatext config values.
+---@field right_func? fun(args:table, i:integer?, dollars_to_loop:integer?) Runs after the right nodes are added. (For playing custom sounds, etc.). When adding dollars, it runs when each dollar sign (or replacement) is added individually with the current iteration count and total.
+
+---Adds a row to the round eval screen. Similar to vanilla `add_round_eval_row`.
+---@param args smods_add_round_eval_row_args
+SMODS.add_round_eval_row = function(args) end
