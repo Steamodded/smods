@@ -37,6 +37,11 @@ SMODS.Rarity = setmetatable({}, {
 ---@type table<Rarities|string, SMODS.Rarity|table>
 SMODS.Rarities = {}
 
+---Returns the prototype object from the game object. (`nil` if none)
+---@param card Card|table
+---@return SMODS.Rarity|table?
+SMODS.Rarity.get_prototype_object = function (card) end
+
 ---@param _pool_key string Key to ObjectType
 ---@param _rand_key? string Used as polling seed
 ---@return Rarities|string|number rarity_key

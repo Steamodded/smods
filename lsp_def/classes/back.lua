@@ -32,3 +32,8 @@ SMODS.Back = setmetatable({}, {
 ---@field exclude? boolean Turns the lists into blacklists, rather than whitelists
 ---@field suits? Suits[]|string[] A list of suits to include/exclude
 ---@field ranks? Ranks[]|string[] A list of ranks to include/exclude
+
+---Returns the prototype object from the game object.
+---@param back Back|table
+---@return SMODS.Back|table 
+SMODS.Back.get_prototype_object = function (back) end

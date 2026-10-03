@@ -38,3 +38,8 @@ SMODS.Tag = setmetatable({}, {
 
 ---@type table<string, SMODS.Tag|table>
 SMODS.Tags = {}
+
+---Returns the prototype object from the game object. Also takes tag sprites.
+---@param tag Tag|Sprite|table
+---@return SMODS.Tag|table
+SMODS.Tag.get_prototype_object = function (tag) end
