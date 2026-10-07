@@ -870,7 +870,12 @@ for _, area in ipairs(SMODS.get_card_areas('jokers')) do
         if ret then
             if not ret_opts.no_eval_row then
                 i = i+1
-                add_round_eval_row({dollars = ret, bonus = true, name='joker'..i, pitch = pitch, card = _card, loc_opts = ret_opts})
+                ret_opts.name_args = ret_opts.name_args or {}
+                ret_opts.name_args.colour = ret_opts.name_args.colour or ret_opts.text_colour
+                ret_opts.name_args.scale = ret_opts.name_args.scale or ret_opts.scale
+                
+                ret_opts = SMODS.merge_defaults(ret_opts, {dollars = ret, bonus = true, id='joker'..i, pitch = pitch, card = _card})
+                SMODS.add_round_eval_row(ret_opts)
                 pitch = pitch + 0.06
             end
             dollars = dollars + ret
@@ -887,9 +892,7 @@ for _, target in ipairs(SMODS.get_card_areas('individual', 'calc_dollar_bonus'))
         -- TARGET: calc_dollar_bonus per individual object
         if ret then
             if not ret_opts.no_eval_row then
-                if ret_opts.text then
-                    name = ret_opts.text
-                elseif (ret_opts.set or target.set) and (ret_opts.key or target.key) then
+                if not ret_opts.text and (ret_opts.set or target.set) and (ret_opts.key or target.key) then
                     if ret_opts.set == "Challenge" or (not ret_opts.set and target.set == "Challenge") then
                         name = localize(ret_opts.key or target.key, 'challenge_names')
                     elseif (ret_opts.set == "Mod" or (not ret_opts.set and target.set == "Mod")) and not (G.localization.descriptions.Mod or {})[ret_opts.key or target.key] then
@@ -898,8 +901,13 @@ for _, target in ipairs(SMODS.get_card_areas('individual', 'calc_dollar_bonus'))
                         name = localize{type = 'name_text', set = ret_opts.set or target.set, key = ret_opts.key or target.key}
                     end
                 end
+                ret_opts.text = type(ret_opts.text) == "table" and ret_opts.text or {string = ret_opts.text or name or 'ERROR'}
+                ret_opts.text.colour = ret_opts.text.colour or ret_opts.text_colour or G.C.FILTER
+                ret_opts.text.scale = ret_opts.text.scale or ret_opts.scale or 0.6
+                
                 i = i+1
-                add_round_eval_row({dollars = ret, bonus = true, name='custom_individual'..i, pitch = pitch, text_colour = ret_opts.text_colour or G.C.FILTER, text = name or 'ERROR', text_scale = ret_opts.scale or 0.6})
+                ret_opts = SMODS.merge_defaults(ret_opts, {dollars = ret, bonus = true, id='custom_individual'..i, pitch = pitch, object = target.object})
+                SMODS.add_round_eval_row(ret_opts)
                 pitch = pitch + 0.06
             end
             dollars = dollars + ret

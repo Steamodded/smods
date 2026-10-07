@@ -29,7 +29,7 @@
 ---@field button_colour? table Colour of the button on the challenge list.
 ---@field calculate? fun(self: SMODS.Challenge|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://docs.smods.dev/API%20Documentation/Calculate-Functions) docs for details. 
 ---@field apply? fun(self: SMODS.Challenge|table) Applied modifiers at the start of a run. 
----@field calc_dollar_bonus? fun(self: SMODS.Challenge|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money. 
+---@field calc_dollar_bonus? fun(self: SMODS.Challenge|table): number?, smods_calc_dollar_bonus_row_args? Calculates reward money. 
 ---@overload fun(self: SMODS.Challenge): SMODS.Challenge
 SMODS.Challenge = setmetatable({}, {
     __call = function(self)
