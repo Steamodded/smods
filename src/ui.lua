@@ -3538,7 +3538,7 @@ SMODS.add_round_eval_row = function(args)
         end
     end
 
-    if args.add_divider then
+    if args.add_divider or (not G.round_eval.divider_added and not args.skip_divider) then
         G.E_MANAGER:add_event(Event({
             trigger = 'after',
             delay = 0.25,
@@ -3556,12 +3556,15 @@ SMODS.add_round_eval_row = function(args)
             end
         }))
         delay(0.6)
+        G.round_eval.divider_added = true
     end
 
     delay(0.2)
 
     local row_id = args.id or ("SMODS" .. (total_cashout_rows or 0))
     local dollar_row_id = 'dollar_' .. row_id
+    local obj = args.card or args.object
+    local prototype_obj = obj and type(obj.prototype) == "function" and obj:prototype() or nil
 
     G.E_MANAGER:add_event(Event({
         trigger = 'before',
@@ -3596,21 +3599,18 @@ SMODS.add_round_eval_row = function(args)
                 if args.text then
                     table.insert(left_text,
                         { n = G.UIT.O, config = { object = DynaText(round_eval_get_text_config(args.text, {colours = { G.C.UI.TEXT_LIGHT }, shadow = true, pop_in = 0, scale = 0.4 * scale, silent = true})) } })
-                end
-
-                if args.card or args.object then
-                    local obj = args.card or args.object
-                    local prototype_obj = obj.prototype
-                    local vars = args.loc_vars
+                elseif obj and prototype_obj then
+                    local vars = args.vars
                     if not vars and type(prototype_obj.loc_vars) == "function" then
                         local old_fake = obj.fake_card
                         obj.fake_card = true
-                        local res = prototype_obj:loc_vars({}, obj)
+                        local res = prototype_obj:loc_vars({}, obj) or {}
                         obj.fake_card = old_fake
                         vars = res.name_vars or res.vars
                     end
                     vars = vars or {}
                     local name_nodes = {}
+                    if not vars.set and not (G.localization.descriptions[prototype_obj.set] or {})[prototype_obj.key] then vars.set = "Other" end
                     localize(round_eval_get_text_config(args.name_args or {}, { type = 'name', set = args.set or vars.set or prototype_obj.set, key = args.key or vars.key or prototype_obj.key, nodes = name_nodes, set_scale = ((args.name_args or {}).scale or 0.6) * scale, no_bump = true, vars = vars, text_colour = (args.name_args or {}).colour or G.C.FILTER, no_spacing = true }))
                     table.insert(left_text, round_eval_name_row_from_nodes(name_nodes))
                 elseif args.key then

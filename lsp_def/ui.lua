@@ -415,6 +415,7 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width) end
 ---@class smods_add_round_eval_row_args
 ---@field bypass_row_limit? boolean If `true` ignores the row limit of 7.
 ---@field add_divider? boolean If `true` adds a divider before this row.
+---@field skip_divider? boolean If `true` doesn't add the divider automatically before this row if one hasn't been added yet.
 ---@field bonus? boolean If `true` adds the row to the bottom of the round eval with other gained bonuses, if `false` it is added below the Blind's reward. Note there is no difference if this is called before bonus rows are added (i.e. in context.round_eval).
 ---@field id? string Used as an append for this row's UI elements.
 ---@field left_ui_nodes? table Array of UI node definitions to show to the left of the row. (Ignores other left parameters)
@@ -452,3 +453,8 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width) end
 ---Adds a row to the round eval screen. Similar to vanilla `add_round_eval_row`.
 ---@param args smods_add_round_eval_row_args
 SMODS.add_round_eval_row = function(args) end
+
+---@class smods_calc_dollar_bonus_row_args: smods_add_round_eval_row_args
+---@field scale? number Scale of the name (equivalent of name_args.scale)
+---@field text_colour? table Colour for the name (equivalent of name_args.colour)
+---@field no_eval_row? boolean Skips adding the row to the evaluation screen

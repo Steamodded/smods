@@ -44,7 +44,7 @@
 ---@field collection_loc_vars? fun(self: SMODS.Blind|table): table? Provides control over displaying the Blind description in the collections menu. 
 ---@field in_pool? fun(self: SMODS.Blind|table): boolean Allows configuring if the Blind is allowed to appear. 
 ---@field calculate? fun(self: SMODS.Blind|table, blind: Blind|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://docs.smods.dev/API%20Documentation/Calculate-Functions) docs for details. 
----@field calc_dollar_bonus? fun(self: SMODS.Blind|table, blind: Blind|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money.
+---@field calc_dollar_bonus? fun(self: SMODS.Blind|table, blind: Blind|table): number?, smods_calc_dollar_bonus_row_args? Calculates reward money.
 ---@field get_weight? fun(self: SMODS.Blind|table, weight: number, args: table?): number Used for finer control over this blind's weight with the object weights optional feature is enabled. 
 ---@overload fun(self: SMODS.Blind): SMODS.Blind
 SMODS.Blind = setmetatable({}, {
