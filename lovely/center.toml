@@ -66,7 +66,18 @@ payload = '''
     if self.ability.set ~= "Enhanced" and obj.calculate and type(obj.calculate) == 'function' then
         local o, t = obj:calculate(self, context)
         if o or t then return o, t end
-    end'''
+    end
+    if self.ability.set ~= "Enhanced" and context.scaling_card and obj.calc_scaling and type(obj.calc_scaling) == 'function' then
+        sendWarnMessage("Usage of a `calc_scaling` function is deprecated. Please use `context.scaling_card` in a `calculate` function instead.", "Calculation")
+        local o,t = obj:calc_scaling(self, context.card, context.value, context.scalar, context)
+        if o or t then return o, t end
+    end
+    if self.ability.set ~= "Enhanced" and context.resetting_card and obj.calc_resetting and type(obj.calc_resetting) == 'function' then
+        sendWarnMessage("Usage of a `calc_resetting` function is deprecated. Please use `context.resetting_card` in a `calculate` function instead.", "Calculation")
+        local o,t = obj:calc_resetting(self, context.card, context.initial_value, context.reset_value, context)
+        if o or t then return o, t end
+    end
+'''
 match_indent = true
 
 # Card:update()
@@ -616,14 +627,7 @@ position = 'after'
 pattern = "elseif _c.set == 'Joker' then"
 payload = '''
     if not card then
-        local ability = copy_table(_c.config)
-        ability.set = 'Joker'
-        ability.name = _c.name
-        -- temporary stopgap. fake cards should be implemented better
-        ability.x_mult = _c['config'].Xmult or _c['config'].x_mult
-        if ability.name == 'To Do List' then
-            ability.to_do_poker_hand = "High Card" -- fallback
-        end
+        local ability = SMODS.get_default_ability_vars(_c, card)
         local ret = {Card.generate_UIBox_ability_table({ ability = ability, config = { center = _c }, bypass_lock = true}, true)}
         specific_vars = ret[1]
         if ret[2] then desc_nodes[#desc_nodes+1] = ret[2] end

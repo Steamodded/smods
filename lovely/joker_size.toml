@@ -14,10 +14,10 @@ end
 position = "after"
 payload = '''
 if _center.pixel_size and _center.pixel_size.h and (_center.discovered or self.bypass_discovery_center) then
-    self.children.center.scale.y = self.children.center.scale.y*(_center.pixel_size.h/95)
+    self.children.center.scale.y = self.children.center.scale.y*(_center.pixel_size.h/self.children.center.atlas.py)
 end
 if _center.pixel_size and _center.pixel_size.w and (_center.discovered or self.bypass_discovery_center) then
-    self.children.center.scale.x = self.children.center.scale.x*(_center.pixel_size.w/71)
+    self.children.center.scale.x = self.children.center.scale.x*(_center.pixel_size.w/self.children.center.atlas.px)
 end
 '''
 match_indent = true
@@ -38,14 +38,14 @@ if center.display_size and center.display_size.h and (center.discovered or self.
     H = H*(center.display_size.h/95)
     self.T.h = H
 elseif center.pixel_size and center.pixel_size.h and (center.discovered or self.bypass_discovery_center) then
-    H = H*(center.pixel_size.h/95)
+    H = H*(center.pixel_size.h/SMODS.get_atlas(center.atlas).py)
     self.T.h = H
 end
 if center.display_size and center.display_size.w and (center.discovered or self.bypass_discovery_center) then
     W = W*(center.display_size.w/71)
     self.T.w = W
 elseif center.pixel_size and center.pixel_size.w and (center.discovered or self.bypass_discovery_center) then
-    W = W*(center.pixel_size.w/71)
+    W = W*(center.pixel_size.w/SMODS.get_atlas(center.atlas).px)
     self.T.w = W
 end
 '''
@@ -62,12 +62,12 @@ payload = '''
 if self.config.center.display_size and self.config.center.display_size.h then
     self.T.h = H*(self.config.center.display_size.h/95)
 elseif self.config.center.pixel_size and self.config.center.pixel_size.h then
-    self.T.h = H*(self.config.center.pixel_size.h/95)
+    self.T.h = H*(self.config.center.pixel_size.h/SMODS.get_atlas(self.config.center.atlas).py)
 end
 if self.config.center.display_size and self.config.center.display_size.w then
     self.T.w = W*(self.config.center.display_size.w/71)
 elseif self.config.center.pixel_size and self.config.center.pixel_size.w then
-    self.T.w = W*(self.config.center.pixel_size.w/71)
+    self.T.w = W*(self.config.center.pixel_size.w/SMODS.get_atlas(self.config.center.atlas).px)
 end
 '''
 match_indent = true

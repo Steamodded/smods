@@ -382,6 +382,17 @@ match_indent = true
 
 [[patches]]
 [patches.pattern]
+target = 'functions/common_events.lua'
+pattern = """elseif _c.name == "The World" then loc_vars = {_c.config.max_highlighted, localize(_c.config.suit_conv, 'suits_plural'), colours = {G.C.SUITS[_c.config.suit_conv]}}
+end
+localize{type = 'descriptions', key = _c.key, set = _c.set, nodes = desc_nodes, vars = _c.vars or loc_vars}"""
+position = "after"
+payload = """    elseif _c.set then --Fallback for unrecognized sets
+        localize{type = 'descriptions', key = _c.key, set = _c.set, nodes = desc_nodes, vars = _c.vars or loc_vars}"""
+match_indent = false
+
+[[patches]]
+[patches.pattern]
 target = 'functions/UI_definitions.lua'
 pattern = '''
 function info_tip_from_rows(desc_nodes, name)
@@ -545,12 +556,10 @@ payload = '''
 # adjust placement of G.HUD
 [[patches]]
 [patches.pattern]
-target = 'game.lua'
+target = 'blind.lua'
 match_indent = true
-position = 'at'
+position = 'after'
 pattern = '''
-config = {align=('cli'), offset = {x=-0.7,y=0},major = G.ROOM_ATTACH}
-'''
+G.HUD_blind.alignment.offset.y = -10'''
 payload = '''
-config = {align=('cli'), offset = {x=-0.7,y=0.4},major = G.ROOM_ATTACH}
-'''
+ease_value(G.HUD.alignment.offset, 'y', 0 - G.HUD.alignment.offset.y)'''

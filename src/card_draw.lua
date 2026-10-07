@@ -50,8 +50,9 @@ function SMODS.clean_up_canvas_text(t)
 	t.canvas_text = nil
 end
 
+SMODS.clean_up_children_ignore = {center = true, shadow = true, back = true, h_popup = true, front = true}
 function SMODS.clean_up_children(t)
-	local ignore = {center = true, shadow = true, back = true, h_popup = true, front = true}
+	local ignore = SMODS.clean_up_children_ignore
     for k, v in pairs(t) do
         if not ignore[k] then
             if type(v) == 'table' and v.remove then v:remove() end
@@ -220,7 +221,7 @@ SMODS.DrawStep {
         end
 
          --If the card is not yet discovered
-         if not self.config.center.discovered and (self.config.center.unlocked ~= false) and not self.config.center.demo and not self.bypass_discovery_center then
+         if not self.config.center.discovered and (self.config.center.unlocked ~= false) and not self.config.center.demo and not self.bypass_discovery_center and not SMODS.is_playing_card(self) then
             local shared_sprite = (self.ability.set == 'Edition' or self.ability.set == 'Joker') and G.shared_undiscovered_joker or G.shared_undiscovered_tarot
             local scale_mod = -0.05 + 0.05*math.sin(1.8*G.TIMERS.REAL)
             local rotate_mod = 0.03*math.sin(1.219*G.TIMERS.REAL)
@@ -305,7 +306,7 @@ SMODS.DrawStep {
     order = 20,
     func = function(self, layer)
         local edition = self.delay_edition or self.edition
-        if edition then
+        if edition and not edition.negative then
             for k, v in pairs(G.P_CENTER_POOLS.Edition) do
                 if edition[v.key:sub(3)] and v.shader then
                     if type(v.draw) == 'function' then
@@ -398,7 +399,6 @@ SMODS.DrawStep {
                     )
                 end
                 love.graphics.pop()
-                SMODS.reload_stencil_stack()
                 sprite.role.draw_major = self
                 sprite:draw_shader('dissolve', nil, nil, nil, self.children.center)
             end
@@ -532,6 +532,20 @@ SMODS.DrawStep {
             if not v.custom_draw and not SMODS.draw_ignore_keys[k] then v:draw() end
         end
     end,
+}
+
+SMODS.DrawStep {
+    key = 'sprite_particles',
+    order = 95,
+    func = function(self)
+        for i, particle_sprite in ipairs(self.sprite_particles or {}) do
+            local sprite_particle_obj = SMODS.SpriteParticles[particle_sprite.sprite_particle_key]
+            if sprite_particle_obj and type(sprite_particle_obj.draw) == "function" then
+                sprite_particle_obj:draw(particle_sprite, self)
+            end
+        end
+    end,
+    conditions = { vortex = false },
 }
 
 SMODS.DrawStep {

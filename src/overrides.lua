@@ -1608,7 +1608,7 @@ function G.FUNCS.get_poker_hand_info(_cards)
 end
 
 function create_UIBox_current_hands(simple, in_collection)
-	G.current_hands = {}
+	local current_hands = {}
 
 	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
 	local handlist = in_collection and {} or nil
@@ -1630,9 +1630,9 @@ function create_UIBox_current_hands(simple, in_collection)
 	end
 
 	local index = 0
-	for _, v in ipairs(handlist or G.handlist) do
-		local ui_element = create_UIBox_current_hand_row(v, simple, in_collection)
-		G.current_hands[index + 1] = ui_element
+	for _, handname in ipairs(handlist or G.handlist) do
+		local ui_element = create_UIBox_current_hand_row(handname, simple, in_collection)
+		current_hands[index + 1] = ui_element
 		if ui_element then
 			index = index + 1
 		end
@@ -1655,7 +1655,7 @@ function create_UIBox_current_hands(simple, in_collection)
 				n = G.UIT.R,
 				config = { align = "cm", padding = 0.04 },
 				nodes =
-					G.current_hands
+					current_hands
 			},
 			-- UI consistency with vanilla
 			#visible_hands > 12 and {
@@ -1672,7 +1672,8 @@ function create_UIBox_current_hands(simple, in_collection)
 						colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or
 						G.C.RED,
 						no_pips = true,
-						in_collection = in_collection
+						in_collection = in_collection,
+						simple = simple
 					}) }
 			} or nil }
 	}
@@ -1693,8 +1694,9 @@ end
 
 G.FUNCS.your_hands_page = function(args)
 	if not args or not args.cycle_config then return end
-	G.current_hands = {}
+	local current_hands = {}
 	local in_collection = args.cycle_config.in_collection
+	local simple = args.cycle_config.simple
 	local _pool = in_collection and SMODS.collection_pool(SMODS.PokerHands) or nil
 	local handlist = in_collection and {} or nil
 	if _pool then
@@ -1704,13 +1706,13 @@ G.FUNCS.your_hands_page = function(args)
 	end
 
 	local index = 0
-	for _, v in ipairs(handlist or G.handlist) do
-		local ui_element = create_UIBox_current_hand_row(v, simple, in_collection)
+	for _, handname in ipairs(handlist or G.handlist) do
 		if index >= (0 + 10 * (args.cycle_config.current_option - 1)) and index < 10 * args.cycle_config.current_option then
-			G.current_hands[index - (10 * (args.cycle_config.current_option - 1)) + 1] = ui_element
+			local ui_element = create_UIBox_current_hand_row(handname, simple, in_collection)
+			current_hands[index - (10 * (args.cycle_config.current_option - 1)) + 1] = ui_element
 		end
 
-		if ui_element then
+		if in_collection or SMODS.is_poker_hand_visible(handname) then
 			index = index + 1
 		end
 
@@ -1740,7 +1742,7 @@ G.FUNCS.your_hands_page = function(args)
 		n = G.UIT.ROOT,
 		config = { align = "cm", colour = G.C.CLEAR },
 		nodes = {
-			{ n = G.UIT.R, config = { align = "cm", padding = 0.04 }, nodes = G.current_hands
+			{ n = G.UIT.R, config = { align = "cm", padding = 0.04 }, nodes = current_hands
 			},
 			{
 				n = G.UIT.R,
@@ -1819,22 +1821,18 @@ function Card:set_sprites(_center, _front)
 					self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Joker", G.j_locked.pos)
 				end
 			elseif not self.params.bypass_discovery_center and (_center.consumeable or SMODS.UndiscoveredCompat[_center.set]) and not _center.discovered then
+				local undiscovered_sprite = SMODS.UndiscoveredSprites[_center.set]
 				local atlas = SMODS.get_atlas(
 					(_center.undiscovered and
 						(_center.undiscovered[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
 						_center.undiscovered.atlas)
 					) or
-					(
-						SMODS.UndiscoveredSprites[_center.set] and
-						(SMODS.UndiscoveredSprites[_center.set][G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
-						SMODS.UndiscoveredSprites[_center.set].atlas)
-					) or
-					_center.set
+                    (undiscovered_sprite and (undiscovered_sprite[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or undiscovered_sprite.atlas))
+					or _center.set
 				) or SMODS.get_atlas("Joker")
-				local pos = (_center.undiscovered and _center.undiscovered.pos) or
-					(SMODS.UndiscoveredSprites[_center.set] and SMODS.UndiscoveredSprites[_center.set].pos) or
-					G.j_undiscovered.pos
-				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos)
+				local pos = (_center.undiscovered and _center.undiscovered.pos) or (undiscovered_sprite and undiscovered_sprite.pos) or G.j_undiscovered.pos
+				local sprite_args = (_center.undiscovered and _center.undiscovered.sprite_args) or (undiscovered_sprite and undiscovered_sprite.sprite_args) or G.j_undiscovered.sprite_args
+				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas, pos, sprite_args)
 			elseif _center.set == 'Joker' or _center.consumeable or _center.set == 'Voucher' then
 				local atlas_key = _center[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or _center.atlas or _center.set
 				self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, _center.pos or {x=0, y=0}, _center.sprite_args)
@@ -1856,10 +1854,10 @@ function Card:set_sprites(_center, _front)
                 self.children.center.scale.y = self.children.center.scale.x
             end
             if _center.pixel_size and _center.pixel_size.h and (_center.discovered or self.bypass_discovery_center) then
-                self.children.center.scale.y = self.children.center.scale.y*(_center.pixel_size.h/95)
+                self.children.center.scale.y = self.children.center.scale.y*(_center.pixel_size.h/self.children.center.atlas.py)
             end
             if _center.pixel_size and _center.pixel_size.w and (_center.discovered or self.bypass_discovery_center) then
-                self.children.center.scale.x = self.children.center.scale.x*(_center.pixel_size.w/71)
+                self.children.center.scale.x = self.children.center.scale.x*(_center.pixel_size.w/self.children.center.atlas.px)
             end
         end
 
@@ -1874,7 +1872,7 @@ function Card:set_sprites(_center, _front)
 
         if self.children.back then self.children.back:remove() end
 		local atlas_key = (G.GAME.viewed_back or G.GAME.selected_back) and ((G.GAME.viewed_back or G.GAME.selected_back)[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or (G.GAME.viewed_back or G.GAME.selected_back).atlas) or 'centers'
-		self.children.back = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos), (G.GAME.viewed_back or G.GAME.selected_back or {}).sprite_args)
+		self.children.back = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, atlas_key, self.params.bypass_back or (self.playing_card and G.GAME[self.back].pos or G.P_CENTERS['b_red'].pos), (G.GAME.viewed_back or G.GAME.selected_back or {effect = {center = {}}}).effect.center.sprite_args)
 		self.children.back.states.hover = self.states.hover
 		self.children.back.states.click = self.states.click
 		self.children.back.states.drag = self.states.drag
@@ -2537,7 +2535,7 @@ G.FUNCS.change_collab = function(args)
     end
 
 	for k, v in pairs(G.I.CARD) do
-		if v.config and v.config.card and v.children.front and v.ability.effect ~= 'Stone Card' then
+		if v.config and v.config.card and v.children.front and not v:should_hide_front() then
 			v:set_sprites(nil, v.config.card)
 		end
 	end
@@ -2549,7 +2547,7 @@ G.FUNCS.change_colour_palette = function(args)
 	G.FUNCS.update_suit_colours(args.cycle_config.curr_suit, args.cycle_config.curr_skin)
 	G.FUNCS.update_collab_cards(args.cycle_config.curr_skin, args.cycle_config.curr_suit)
 	for k, v in pairs(G.I.CARD) do
-		if v.config and v.config.card and v.children.front and v.ability.effect ~= 'Stone Card' then
+		if v.config and v.config.card and v.children.front and not v:should_hide_front() then
 			v:set_sprites(nil, v.config.card)
 		end
 	end
@@ -2673,6 +2671,7 @@ end
 
 local use_consumeable = Card.use_consumeable
 function Card:use_consumeable(area, copier)
+	SMODS.currently_used_consumable = self
 	local ret = use_consumeable(self, area, copier)
 	if SMODS.post_prob and next(SMODS.post_prob) then
         local prob_tables = SMODS.post_prob
@@ -2682,6 +2681,7 @@ function Card:use_consumeable(area, copier)
             SMODS.calculate_context(v)
         end
     end
+	SMODS.currently_used_consumable = nil
 	return ret
 end
 
@@ -2733,13 +2733,98 @@ end
 
 local add_tag_ref = add_tag
 function add_tag(_tag)
-	_tag = _tag or {}
-	_tag.key = _tag.key or 'unknown'
-	assert(G.P_TAGS[_tag.key], ("Could not find tag \"%s\"."):format(_tag.key))
-	if not (_tag.is and _tag:is(Tag)) then
-		_tag = Tag(_tag.key, nil, _tag.blind_type)
+    _tag = _tag or {}
+    _tag.key = _tag.key or 'unknown'
+    assert(G.P_TAGS[_tag.key], ("Could not find tag \"%s\"."):format(_tag.key))
+    if not (_tag.is and _tag:is(Tag)) then
+        _tag = Tag(_tag.key, nil, _tag.blind_type)
+    end
+    add_tag_ref(_tag)
+end
+
+SMODS.get_default_ability_vars = function(center, card, no_copy)
+	card = card or {}
+	card.ability = card.ability or {}
+
+	local to_do_poker_hand
+    if center.name == 'To Do List' then
+        local _poker_hands = {}
+        for key, _ in pairs(G.GAME.hands) do
+            if SMODS.is_poker_hand_visible(key) then _poker_hands[#_poker_hands+1] = key end
+        end
+        to_do_poker_hand = pseudorandom_element(_poker_hands, 'false_to_do_smods')
+    end
+
+	local new_ability = {
+		name = center.name or center.key,
+		effect = center.effect,
+		set = center.set,
+		mult = center.config.mult or 0,
+		h_mult = center.config.h_mult or 0,
+		h_x_mult = center.config.h_x_mult or 0,
+		h_dollars = center.config.h_dollars or 0,
+		p_dollars = center.config.p_dollars or 0,
+		t_mult = center.config.t_mult or 0,
+		t_chips = center.config.t_chips or 0,
+		x_mult = center.config.Xmult or center.config.x_mult or 1,
+		h_chips = center.config.h_chips or 0,
+		x_chips = center.config.x_chips or 1,
+		h_x_chips = center.config.h_x_chips or 1,
+		repetitions = center.config.repetitions or 0,
+		h_size = center.config.h_size or 0,
+		d_size = center.config.d_size or 0,
+		extra = copy_table(center.config.extra) or nil,
+		extra_value = 0,
+		type = center.config.type or '',
+		order = center.order or nil,
+		forced_selection = card.ability.forced_selection or nil,
+		perma_bonus = card.ability.perma_bonus or 0,
+		perma_x_chips = card.ability.perma_x_chips or 0,
+		perma_mult = card.ability.perma_mult or 0,
+		perma_x_mult = card.ability.perma_x_mult or 0,
+		perma_h_chips = card.ability.perma_h_chips or 0,
+		perma_h_x_chips = card.ability.perma_h_x_chips or 0,
+		perma_h_mult = card.ability.perma_h_mult or 0,
+		perma_h_x_mult = card.ability.perma_h_x_mult or 0,
+		perma_p_dollars = card.ability.perma_p_dollars or 0,
+		perma_h_dollars = card.ability.perma_h_dollars or 0,
+		perma_repetitions = card.ability.perma_repetitions or 0,
+		card_limit = card.ability.card_limit or 0,
+		extra_slots_used = card.ability.extra_slots_used or 0,
+		perma_score = card.ability.perma_score or 0,
+		perma_h_score = card.ability.perma_h_score or 0,
+		perma_x_score = card.ability.perma_x_score or 0,
+		perma_h_x_score = card.ability.perma_h_x_score or 0,
+		perma_blind_size = card.ability.perma_blind_size or 0,
+		perma_h_blind_size = card.ability.perma_h_blind_size or 0,
+		perma_x_blind_size = card.ability.perma_x_blind_size or 0,
+        perma_h_x_blind_size = card.ability.perma_h_x_blind_size or 0,
+		
+        consumeable = center.consumeable and center.config or nil,
+        invis_rounds = center.name == "Invisible Joker" and 0 or nil,
+        to_do_poker_hand = to_do_poker_hand,
+        caino_xmult = center.name == 'Caino' and 1 or nil,
+        yorick_discards = center.name == 'Yorick' and (center.config.extra or {}).discards or nil,
+		burnt_hand = center.name == 'Loyalty Card' and 0 or nil,
+		loyalty_remaining = center.name == 'Loyalty Card' and (center.config.extra or {}).every or nil,
+        hands_played_at_create = G.GAME and G.GAME.hands_played or 0,
+		
+		bonus = (card.ability.bonus or 0) + (center.config.bonus or 0)
+	}
+
+	if not no_copy then
+		for k, v in pairs(center.config) do
+			if k ~= 'bonus' then
+				if type(v) == 'table' then
+					new_ability[k] = copy_table(v)
+				else
+					new_ability[k] = v
+				end
+			end
+		end
 	end
-	add_tag_ref(_tag)
+
+	return new_ability
 end
 
 function Card:quantum_set_ability(center)
@@ -2770,51 +2855,7 @@ function Card:quantum_set_ability(center)
     end
 
     self.ARGS.smods_quantum_ability = self.ARGS.smods_quantum_ability or {}
-    local new_ability = self.ARGS.smods_quantum_ability
-
-    new_ability.name = center.name
-    new_ability.effect = center.effect
-    new_ability.set = center.set
-    new_ability.mult = center.config.mult or 0
-    new_ability.h_mult = center.config.h_mult or 0
-    new_ability.h_x_mult = center.config.h_x_mult or 0
-    new_ability.h_dollars = center.config.h_dollars or 0
-    new_ability.p_dollars = center.config.p_dollars or 0
-    new_ability.t_mult = center.config.t_mult or 0
-    new_ability.t_chips = center.config.t_chips or 0
-    new_ability.x_mult = center.config.Xmult or center.config.x_mult or 1
-    new_ability.h_chips = center.config.h_chips or 0
-    new_ability.x_chips = center.config.x_chips or 1
-    new_ability.h_x_chips = center.config.h_x_chips or 1
-    new_ability.repetitions = center.config.repetitions or 0
-    new_ability.h_size = center.config.h_size or 0
-    new_ability.d_size = center.config.d_size or 0
-    new_ability.extra = copy_table(center.config.extra) or nil
-    new_ability.extra_value = 0
-    new_ability.type = center.config.type or ''
-    new_ability.order = center.order or nil
-    new_ability.forced_selection = self.ability and self.ability.forced_selection or nil
-    new_ability.perma_bonus = self.ability and self.ability.perma_bonus or 0
-    new_ability.perma_x_chips = self.ability and self.ability.perma_x_chips or 0
-    new_ability.perma_mult = self.ability and self.ability.perma_mult or 0
-    new_ability.perma_x_mult = self.ability and self.ability.perma_x_mult or 0
-    new_ability.perma_h_chips = self.ability and self.ability.perma_h_chips or 0
-    new_ability.perma_h_x_chips = self.ability and self.ability.perma_h_x_chips or 0
-    new_ability.perma_h_mult = self.ability and self.ability.perma_h_mult or 0
-    new_ability.perma_h_x_mult = self.ability and self.ability.perma_h_x_mult or 0
-    new_ability.perma_p_dollars = self.ability and self.ability.perma_p_dollars or 0
-    new_ability.perma_h_dollars = self.ability and self.ability.perma_h_dollars or 0
-    new_ability.perma_repetitions = self.ability and self.ability.perma_repetitions or 0
-    new_ability.card_limit = self.ability and self.ability.card_limit or 0
-    new_ability.extra_slots_used = self.ability and self.ability.extra_slots_used or 0
-    new_ability.perma_score = self.ability and self.ability.perma_score or 0
-    new_ability.perma_h_score = self.ability and self.ability.perma_h_score or 0
-    new_ability.perma_x_score = self.ability and self.ability.perma_x_score or 0
-    new_ability.perma_h_x_score = self.ability and self.ability.perma_h_x_score or 0
-    new_ability.perma_blind_size = self.ability and self.ability.perma_blind_size or 0
-    new_ability.perma_h_blind_size = self.ability and self.ability.perma_h_blind_size or 0
-    new_ability.perma_x_blind_size = self.ability and self.ability.perma_x_blind_size or 0
-    new_ability.perma_h_x_blind_size = self.ability and self.ability.perma_h_x_blind_size or 0
+    local new_ability = SMODS.merge_defaults(SMODS.get_default_ability_vars(self, center, true), self.ARGS.smods_quantum_ability)
     
     self.ability = self.ability or {}
     new_ability.extra_value = nil
@@ -2980,29 +3021,36 @@ end
 
 -- AnimatedSprite : Use obj.sprite_args and allow wrapping / overlapping frames / StateSprite args like flipped_h/v, frame_duration(s) and frame_order.
 function AnimatedSprite:init(X, Y, W, H, new_sprite_atlas, sprite_pos, args)
-	sprite_pos = sprite_pos or {x=0, y=0}
-	self.sprite_args = args or {}
-	if new_sprite_atlas.sprite_args then 
-		for arg_key, v in pairs(new_sprite_atlas.sprite_args) do
-			if self.sprite_args[arg_key] == nil then self.sprite_args[arg_key] = v end
-		end
-	end
+	self.sprite_pos = sprite_pos or {x=0, y=0}
     Sprite.init(self,X, Y, W, H, new_sprite_atlas, sprite_pos)
     self.offset = {x = 0, y = 0}
 
+	self:load_sprite_args(args)
+
     table.insert(G.ANIMATIONS, self)
     if getmetatable(self) == AnimatedSprite then 
-		self.sprite_args.start_pos = self.sprite_args.start_pos or {}
-		self.sprite_args.start_pos.x = self.sprite_args.start_pos.x or sprite_pos.x or 0
-		self.sprite_args.start_pos.y = self.sprite_args.start_pos.y or sprite_pos.y or 0
-		self.sprite_args.frames = self.sprite_args.frames or self.sprite_args.end_pos and ((self.sprite_args.end_pos.x or self.sprite_args.start_pos.x) - self.sprite_args.start_pos.x + ((self.sprite_args.end_pos.y or self.sprite_args.start_pos.y) - self.sprite_args.start_pos.y) * self.atlas.columns + 1) or self.atlas.frames or 1
-		self.flipped_h = self.sprite_args.flipped_h or false
-		self.flipped_v = self.sprite_args.flipped_v or false
         table.insert(G.I.SPRITE, self)
     end
 end
 
+function AnimatedSprite:load_sprite_args(args)
+	self.sprite_args = args or {}
+	if self.atlas.sprite_args then 
+		for arg_key, v in pairs(self.atlas.sprite_args) do
+			if self.sprite_args[arg_key] == nil then self.sprite_args[arg_key] = v end
+		end
+	end
+	self.sprite_args.start_pos = self.sprite_args.start_pos or {}
+	self.sprite_args.start_pos.x = self.sprite_args.start_pos.x or self.sprite_pos.x or 0
+	self.sprite_args.start_pos.y = self.sprite_args.start_pos.y or self.sprite_pos.y or 0
+	self.sprite_args.frames = self.sprite_args.frames or self.sprite_args.end_pos and ((self.sprite_args.end_pos.x or self.sprite_args.start_pos.x) - self.sprite_args.start_pos.x + ((self.sprite_args.end_pos.y or self.sprite_args.start_pos.y) - self.sprite_args.start_pos.y) * self.atlas.columns + 1) or self.atlas.frames or 1
+	self.flipped_h = self.sprite_args.flipped_h or false
+	self.flipped_v = self.sprite_args.flipped_v or false
+	self:set_sprite_pos(self.sprite_pos)
+end
+
 function AnimatedSprite:animate()
+	if not self.current_animation or not self.current_animation.frames then return end
     local frame_finished = (math.floor((G.TIMERS.REAL - self.offset_seconds) / self.current_animation.frame_duration)) > 0
     if frame_finished then
         self.current_animation.current = SMODS.get_new_frame(self, self.sprite_args.frame_order)
@@ -3010,7 +3058,7 @@ function AnimatedSprite:animate()
 		local fps = self.sprite_args.fps or self.atlas.fps or G.ANIMATION_FPS
         self.current_animation.frame_duration = frame_duration / fps
         local _x = self.animation.w * ((self.sprite_args.start_pos.x + self.current_animation.current) % self.atlas.columns)
-        local _y = self.animation.h * (self.sprite_args.start_pos.y + math.floor(self.current_animation.current / self.atlas.columns))
+        local _y = self.animation.h * (self.sprite_args.start_pos.y + math.floor((self.sprite_args.start_pos.x + self.current_animation.current) / self.atlas.columns))
         self.sprite:setViewport(
             _x,
             _y,
@@ -3026,11 +3074,13 @@ function AnimatedSprite:animate()
     end
 end
 
+function AnimatedSprite:rescale() end -- Functionality unclear / deprecated, self.scale_mag is not used anymore, instead love.graphics.scale is called with live values. 
+
 function AnimatedSprite:draw_self()
     if not self.states.visible then return end
 
     prep_draw(self, 1)
-    love.graphics.scale(1/self.scale_mag)
+    love.graphics.scale(1/(self.scale.x/self.VT.w), 1/(self.scale.y/self.VT.h))
     love.graphics.setColor(G.C.WHITE)
     love.graphics.draw(
         self.atlas.image, 
@@ -3044,6 +3094,7 @@ function AnimatedSprite:draw_self()
 end
 
 function AnimatedSprite:set_sprite_pos(sprite_pos)
+	if not self.sprite_args then return end
     self.animation = {
         x= sprite_pos and sprite_pos.x or 0,
         y= sprite_pos and sprite_pos.y or 0,
@@ -3080,4 +3131,9 @@ function AnimatedSprite:get_pos_pixel()
     self.RETS.get_pos_pixel[3] = self.animation.w
     self.RETS.get_pos_pixel[4] = self.animation.h
     return self.RETS.get_pos_pixel
+end
+
+-- completely bypass get_new_boss()
+function get_new_boss()
+	return SMODS.get_new_blind("boss")
 end

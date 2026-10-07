@@ -11,7 +11,7 @@ target = "game.lua"
 pattern = '''love.graphics.setCanvas{self.CANVAS}'''
 position = "at"
 payload = '''
-love.graphics.setCanvas{self.CANVAS, stencil = true}
+love.graphics.setCanvas{self.CANVAS, depthstencil = SMODS.stencil_canvas}
 '''
 match_indent = true
 

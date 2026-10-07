@@ -1,17 +1,23 @@
 StateSprite = AnimatedSprite:extend()
 
--- Form of param [states] is; 
+
+
+-- See https://docs.smods.dev/Guides/Animated-Sprites for an Animated/StateSprite guide!
+
+
+
+-- Form of sprite_args param [states] is; 
 --[[
 { 
     [state_name] = { 
         start_pos = { x/y = [0..n-1 for n columns/rows in sprite atlas] }, 
         (frames = [amount of frames] |OR| end_pos = { [same as start_pos] }),
-        frame_order = "linear" |OR| "random" |OR| {1: x, 2: y, .. n: m}
+        frame_order = "linear" |OR| "random" |OR| {1: x, 2: y, .. n: m} |OR| function(sprite), returning frame
         (optional) flipped_h/flipped_v = true,
         (optional) exit_to = [state] |OR [function(state_table, sprite), returning a state],
         (optional) frame_durations = {1: 2, 2:...},     (in Frames according to G.ANIMATION_FPS)
-        (optional) default_frame_duration = 1,          (in Frames according to G.ANIMATION_FPS)
-        (optional) fps = 2,                             (in Frames per second according to G.ANIMATION_FPS, alternative to default_frame_duration)
+        (optional) frame_duration = 1,                  (in Frames according to G.ANIMATION_FPS)
+        (optional) fps = 2,                             (in Frames per second according to G.ANIMATION_FPS, alternative to frame_duration)
     }, 
     ...
 }
@@ -26,7 +32,7 @@ StateSprite = AnimatedSprite:extend()
     wakey = {
         start_pos = {x = 4},        (y is set to 0)
         frames = 4,                 (end_pos is set to start_pos with .x + frames (wraps correctly))
-        default_frame_duration = 3, (all frames last 3 times longer (0.3 seconds with default G.ANIMATION_FPS == 10))
+        frame_duration = 3,         (all frames last 3 times longer (0.3 seconds with default G.ANIMATION_FPS == 10))
         exit_to = "lookey",         (after one iteration, sets state to this value)
     },
     lookey = {
@@ -39,25 +45,27 @@ StateSprite = AnimatedSprite:extend()
 ]]
 -- To change state, call StateSprite:set_state(state_name) / Card:set_sprite_state()
 function StateSprite:init(X, Y, W, H, new_sprite_atlas, _pos, args)
-    self.sprite_args = args or {}
-    if new_sprite_atlas.sprite_args then 
-		for arg_key, v in pairs(new_sprite_atlas.sprite_args) do
+    AnimatedSprite.init(self, X, Y, W, H, new_sprite_atlas, _pos, args)
+
+    if getmetatable(self) == StateSprite then
+        table.insert(G.I.SPRITE, self)
+    end
+end
+
+function StateSprite:load_sprite_args(args)
+	self.sprite_args = args or {}
+	if self.atlas.sprite_args then 
+		for arg_key, v in pairs(self.atlas.sprite_args) do
 			if self.sprite_args[arg_key] == nil then self.sprite_args[arg_key] = v end
 		end
 	end
-    AnimatedSprite.init(self, X, Y, W, H, new_sprite_atlas, {x=0, y=0}, args)
-
     if not self.sprite_args.states or not next(self.sprite_args.states) then
-        sendWarnMessage(string.format("StateSprite initialized without states, atlas = '%s'", new_sprite_atlas.name), "utils")
+        sendWarnMessage(string.format("StateSprite initialized without states, atlas = '%s'", self.atlas.name), "utils")
     else
         self.states_offset = self.sprite_args.states_offset and {x = self.sprite_args.states_offset.x or 0, y = self.sprite_args.states_offset.y or 0} or {x = 0, y = 0}
         self.default_state = self.sprite_args.default_state or next(self.sprite_args.states)
         self:load_states(self.sprite_args.states)
         self:set_state(self.default_state)
-    end
-
-    if getmetatable(self) == StateSprite then
-        table.insert(G.I.SPRITE, self)
     end
 end
 
@@ -78,22 +86,40 @@ end
 function StateSprite:load_states(states)
     self.a_states = {}
     for key, state in pairs(states) do
-        state.start_pos = state.start_pos and {x = state.start_pos.x or 0, y = state.start_pos.y or 0} or {x = 0, y = 0}
-        state.frames = state.frames or ((state.end_pos or state.start_pos).x - state.start_pos.x + ((state.end_pos or state.start_pos).y - state.start_pos.y) * self.atlas.columns + 1)
+        state.start_pos = state.start_pos or {}
+        state.start_pos.x = state.start_pos.x or self.sprite_args.start_pos and self.sprite_args.start_pos.x or self.sprite_pos.x or 0
+        state.start_pos.y = state.start_pos.y or self.sprite_args.start_pos and self.sprite_args.start_pos.y or self.sprite_pos.y or 0
+        state.end_pos = state.end_pos or {}
+        self.sprite_args.end_pos = self.sprite_args.end_pos or {}
+        state.end_pos.x = state.end_pos.x or self.sprite_args.end_pos.x
+        state.end_pos.y = state.end_pos.y or self.sprite_args.end_pos.y
+        state.frames = state.frames or (state.end_pos.x and state.end_pos.y) and (state.end_pos.x - state.start_pos.x + (state.end_pos.y - state.start_pos.y) * self.atlas.columns + 1) or self.sprite_args.frames or self.atlas.frames or 1
+        state.fps = state.fps or self.sprite_args.fps or self.atlas.fps or G.ANIMATION_FPS
+        state.frame_duration = state.frame_duration or self.sprite_args.frame_duration or 1
+        state.frame_durations = state.frame_durations or self.sprite_args.frame_durations
         state.key = key
+        if self.sprite_args.flipped_h ~= nil and state.flipped_h == nil then
+            state.flipped_h = self.sprite_args.flipped_h
+        end
+        if self.sprite_args.flipped_v ~= nil and state.flipped_v == nil then
+            state.flipped_v = self.sprite_args.flipped_v
+        end
+        state.frame_order = state.frame_order or self.sprite_args.frame_order
         if type(state.frame_order) == "string" then
             local keymap = {
                 linear=true,
                 random=true
             }
             if not keymap[state.frame_order:lower()] then
+                sendWarnMessage(("StateSprite:load_states() state '%s' had an incorrect frame_order argument '%s'."):format(key, state.frame_order))
                 state.frame_order = "linear"
             end
         elseif type(state.frame_order) == "table" then
             if not state.frame_order[1] then
+                sendWarnMessage(("StateSprite:load_states() state '%s' had an incorrect frame_order argument '%s'."):format(key, state.frame_order))
                 state.frame_order = "linear"
             end
-        else
+        elseif type(state.frame_order) ~= "function" then
             state.frame_order = "linear"
         end
         self.a_states[key] = state
@@ -109,28 +135,22 @@ function SMODS.get_new_frame(animated_sprite, frame_order)
         return frame_order[cur_anim.frame_index] - 1 or cur_anim.current
     elseif frame_order == "random" then
         return math.random(0, cur_anim.frames-1)
+    elseif type(frame_order) == "function" then
+        return ((frame_order(animated_sprite)) % cur_anim.frames)
     end
     return ((cur_anim.current + 1) % cur_anim.frames)
 end
 
 function StateSprite:animate()
     if not self.state then return end
-    if self.state.exit_to and self.current_animation.elapsed >= self.current_animation.frames then
-        if type(self.state.exit_to) == "function" then
-            self:set_state(self.state:exit_to(self) or self.default_state)
-        else
-            self:set_state(self.state.exit_to)
-        end
-    end
     local frame_finished = (math.floor((G.TIMERS.REAL - self.offset_seconds) / self.current_animation.frame_duration)) > 0
     if frame_finished then
         self.current_animation.current = SMODS.get_new_frame(self, self.state.frame_order)
         self.current_animation.elapsed = self.current_animation.elapsed + 1
-        local frame_duration = (self.state.frame_durations or {})[self.current_animation.current+1] or self.state.default_frame_duration or 1
-		local fps = self.state.fps or self.atlas.fps or G.ANIMATION_FPS
-        self.current_animation.frame_duration = frame_duration / fps
+        local frame_duration = (self.state.frame_durations or {})[self.current_animation.current+1] or self.state.frame_duration or 1
+        self.current_animation.frame_duration = frame_duration / self.state.fps
         local _x = self.animation.w * ((self.states_offset.x + self.state.start_pos.x + self.current_animation.current) % self.atlas.columns)
-        local _y = self.animation.h * (self.states_offset.y + self.state.start_pos.y + math.floor(self.current_animation.current / self.atlas.columns))
+        local _y = self.animation.h * (self.states_offset.y + self.state.start_pos.y + math.floor((self.states_offset.x + self.state.start_pos.x + self.current_animation.current) / self.atlas.columns))
         self.sprite:setViewport(
             _x,
             _y,
@@ -138,6 +158,13 @@ function StateSprite:animate()
             self.animation.h
         )
         self.offset_seconds = G.TIMERS.REAL
+    end
+    if self.state.exit_to and self.current_animation.elapsed >= self.current_animation.frames then
+        if type(self.state.exit_to) == "function" then
+            self:set_state(self.state:exit_to(self) or self.default_state)
+        else
+            self:set_state(self.state.exit_to)
+        end
     end
     if self.float then 
         self.T.r = 0.02*math.sin(2*G.TIMERS.REAL+self.T.x)
@@ -147,15 +174,15 @@ function StateSprite:animate()
 end
 
 function StateSprite:set_sprite_pos(sprite_pos)
+    if not self.state then return end
     self.animation = {
         x = sprite_pos and sprite_pos.x or 0,
         y = sprite_pos and sprite_pos.y or 0,
-        frames = self.state and self.state.frames or 1, current = 0,
+        frames = self.state.frames, current = 0,
         w = self.scale.x, h = self.scale.y
     }
 
-    local frame_duration = self.state and ((self.state.frame_durations or {})[1] or self.state.default_frame_duration)
-    local fps = (self.state and self.state.fps) or self.atlas.fps or G.ANIMATION_FPS
+    local frame_duration = self.state and ((self.state.frame_durations or {})[1] or self.state.frame_duration)
     self.current_animation = {
         current = 0,
         frames = self.animation.frames,
@@ -163,7 +190,7 @@ function StateSprite:set_sprite_pos(sprite_pos)
         h = self.animation.h,
         elapsed = 0,
         frame_index = 0,
-        frame_duration = frame_duration / fps
+        frame_duration = frame_duration / self.state.fps
     }
 
     self.image_dims = self.image_dims or {}
@@ -183,7 +210,7 @@ function StateSprite:draw_self()
     if not self.states.visible then return end
 
     prep_draw(self, 1)
-    love.graphics.scale(1/self.scale_mag)
+    love.graphics.scale(1/(self.scale.x/self.VT.w), 1/(self.scale.y/self.VT.h))
     love.graphics.setColor(G.C.WHITE)
     love.graphics.draw(
         self.atlas.image,

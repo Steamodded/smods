@@ -41,9 +41,11 @@ function G.UIDEF.run_select_galdur(type)
     end
     G.SETTINGS.current_setup = type
   
-    for key, page in pairs(SMODS.RunSelect.Pages) do
+    for _, key in ipairs(SMODS.RunSelectPage.obj_buffer) do
+        local page = SMODS.RunSelect.Pages[key]
         SMODS.RunSelect.Setup.choices[key] = page:set_default(G.PROFILES[G.SETTINGS.profile].last_choices[key])
     end
+    
     SMODS.RunSelect.Setup.choices.seed = ''
     
     SMODS.RunSelect.Internals.current_page = 1
@@ -126,10 +128,12 @@ end
 
 function SMODS.RunSelect.Functions.nav_bar()
     local quick_select_text = {}
-    for _, func in ipairs(SMODS.RunSelect.Internals.quick_start_text_functions) do
-        local text = func()
-        if text then table.insert(quick_select_text, text) end
-    end
+    
+    for _, key in ipairs(SMODS.RunSelectPage.obj_buffer) do
+            local page = SMODS.RunSelect.Pages[key]
+            local text = page.quick_start_text and SMODS.RunSelect.Setup.choices[key] and page:quick_start_text(SMODS.RunSelect.Setup.choices[key])
+            if text then table.insert(quick_select_text, text) end
+        end
     
     local t = {n=G.UIT.R, config = {align = "cm", minw = 3, offset = {x=0, y=-5}, padding = 0.15}, nodes = {
         -- Previous Button
@@ -203,10 +207,23 @@ function SMODS.RunSelect.Functions.update_nav_bar(ui)
     SMODS.RunSelect.Internals.previous_button_text = previous_active and '< ' .. localize('run_select_'..SMODS.RunSelect.Internals.pages[prev_page_index]) or ''
     SMODS.RunSelect.Internals.next_button_text = final and localize('run_select_play') or (localize('run_select_'..SMODS.RunSelect.Internals.pages[next_page_index]) .. ' >')
     if not ui then return end
-
+    
     local prev_button = ui.UIBox:get_UIE_by_ID('previous_selection')
     local next_button = ui.UIBox:get_UIE_by_ID('next_selection')
-
+    
+    local play_button_text = {}
+    if final then
+        for _, key in ipairs(SMODS.RunSelectPage.obj_buffer) do
+            local page = SMODS.RunSelect.Pages[key]
+            local text = page.quick_start_text and SMODS.RunSelect.Setup.choices[key] and page:quick_start_text(SMODS.RunSelect.Setup.choices[key])
+            if text then table.insert(play_button_text, text) end
+        end
+        next_button.config.tooltip = {text = play_button_text}
+    else
+        next_button.config.tooltip = nil
+        next_button.config.h_popup = nil
+    end
+    
     prev_button.config.button = previous_active and 'run_select_change_page' or nil
     prev_button.config.emboss = previous_active and 0.1 or 0
     prev_button.config.hover = previous_active and true or false
@@ -274,7 +291,7 @@ G.FUNCS.run_select_start_run = function(e)
 end
 
 G.FUNCS.run_select_quick_start = function(skip_wipe)
-    SMODS.RunSelect.Functions.start_run(true, skip_wipe)
+    SMODS.RunSelect.Functions.start_run(true, type(skip_wipe) == 'boolean')
 end
 
 G.FUNCS.random_type = function(e)
@@ -304,9 +321,21 @@ function SMODS.RunSelect.Functions.start_run(_quick_start, _skip_wipe)
     local run_args = {}
     SMODS.RunSelect.Functions.clean_up()
     
-    local access = _quick_start and G.PROFILES[G.SETTINGS.profile].last_choices or SMODS.RunSelect.Setup.choices
-    for k, v in pairs(access) do
+    run_args.deck_choice = "b_red"
+    run_args.stake_choice = "stake_white"
+    for k, v in pairs(SMODS.RunSelect.Setup.choices) do
         run_args[k] = v
+    end
+    if _quick_start and _skip_wipe ~= true then
+        for k, v in pairs(G.PROFILES[G.SETTINGS.profile].last_choices or {}) do
+            run_args[k] = v
+        end
+    end
+
+    if SMODS.RunSelect.Setup.choices.enable_seed then
+        run_args.seed = SMODS.RunSelect.Setup.choices.seed
+    else
+        run_args.seed = nil
     end
 
     if SMODS.RunSelect.Setup.choices.enable_seed then
@@ -316,6 +345,13 @@ function SMODS.RunSelect.Functions.start_run(_quick_start, _skip_wipe)
     end
 
     G.PROFILES[G.SETTINGS.profile].last_choices = copy_table(run_args)
+    if not G.GAME or (not G.GAME.won and not G.GAME.seeded) then
+      if G.SAVED_GAME ~= nil then
+        if not G.SAVED_GAME.GAME.won then 
+          G.PROFILES[G.SETTINGS.profile].high_scores.current_streak.amt = 0
+        end
+      end
+    end
     G:save_settings()
     
     run_args.deck_choice = {name = G.P_CENTERS[run_args.deck_choice].name}
@@ -373,6 +409,15 @@ function SMODS.RunSelect.Functions.change_page(ui)
     current_selector_page.UIBox:recalculate()
 end
 
+function SMODS.RunSelect.Functions.double_click_advance(page_def)
+    if page_def.can_continue and not page_def:can_continue() then return end
+    if SMODS.RunSelect.Internals.current_page == #SMODS.RunSelect.Internals.pages or SMODS.RunSelect.Functions.get_page_key(1) > #SMODS.RunSelect.Internals.pages then
+        SMODS.RunSelect.Functions.start_run()
+    else
+        SMODS.RunSelect.Functions.change_page(G.OVERLAY_MENU:get_UIE_by_ID('next_selection'))
+    end
+end
+
 function SMODS.RunSelect.Functions.build_selection_areas(key)
     local page_def = SMODS.RunSelect.Pages[key]
     local dim = page_def.sprite_size or {w = G.CARD_W, h = G.CARD_H}
@@ -426,9 +471,8 @@ function SMODS.RunSelect.Functions.populate_selection_ui(key, page)
     
     for i=1, (page_def.amount or 10) do
         if count > #page_def.pool then return end
-        local stack_size = page_def.stack_size
-        if SMODS.config.run_select_performance then stack_size = math.min(5, stack_size) end
-        for j=1, stack_size do
+        SMODS.RunSelect.Internals.stack_size = SMODS.config.run_select_performance and math.min(5, page_def.stack_size) or page_def.stack_size
+        for j=1, SMODS.RunSelect.Internals.stack_size do
             local card = page_def.create_selection_card and page_def:create_selection_card(page_def.pool[count].key, j, areas[i]) 
             or Card(areas[i].T.x, areas[i].T.y, card_size.w, card_size.h, nil, page_def.pool[count])
             card.params.run_select_selection_choice = {i, key}
@@ -533,10 +577,12 @@ function SMODS.RunSelect.Functions.build_preview_areas(key)
         end
     end
 
-    SMODS.RunSelect.Internals.preview_area = CardArea(15.475, 0, G.CARD_W * (page_def.selection_limit > 1 and 1.5 or 1), G.CARD_H,
-    {card_limit = page_def.preview_size or page_def.selection_limit, type = page_def.area_type or 'title_2', highlight_limit = 0, run_select_deck_preview = page_def.area_type == 'deck'})
+    local selection_limit = SMODS.RunSelect.Functions.get_selection_limit(page_def)
+
+    SMODS.RunSelect.Internals.preview_area = CardArea(15.475, 0, G.CARD_W * (selection_limit > 1 and 1.5 or 1), G.CARD_H,
+    {card_limit = page_def.preview_size or selection_limit, type = page_def.area_type or 'title_2', highlight_limit = 0, run_select_deck_preview = page_def.area_type == 'deck'})
     SMODS.RunSelect.Internals.preview_area_holding = CardArea(15.475+2*G.CARD_W, -2*G.CARD_H, G.CARD_W, G.CARD_H,
-    {card_limit = page_def.preview_size or page_def.selection_limit, type = page_def.area_type or 'title_2', highlight_limit = 0})
+    {card_limit = page_def.preview_size or selection_limit, type = page_def.area_type or 'title_2', highlight_limit = 0})
 end
 
 function SMODS.RunSelect.Functions.update_preview_texts(page_def)
@@ -595,7 +641,10 @@ end
 function SMODS.RunSelect.Functions.populate_preview_ui(key, to_add, silent, _remove)
     if SMODS.config.run_select_performance then silent = true end
     local page_def = SMODS.RunSelect.Pages[key]
-    if page_def.selection_limit == 1 and not _remove then
+
+    local selection_limit = SMODS.RunSelect.Functions.get_selection_limit(page_def)
+
+    if selection_limit == 1 and not _remove then
         if G.E_MANAGER.queues.run_select then G.E_MANAGER:clear_queue('run_select') end
         remove_all(SMODS.RunSelect.Internals.preview_area.cards)
         SMODS.RunSelect.Internals.preview_area.cards = {}
@@ -616,16 +665,15 @@ function SMODS.RunSelect.Functions.populate_preview_ui(key, to_add, silent, _rem
     local preview_area = SMODS.RunSelect.Internals.preview_area
     local holding_area = SMODS.RunSelect.Internals.preview_area_holding
     
-    local stack_size = page_def.preview_size or page_def.stack_size
-    if SMODS.config.run_select_performance then stack_size = math.min(5, stack_size) end
+    SMODS.RunSelect.Internals.stack_size = SMODS.config.run_select_performance and math.min(5, page_def.preview_size or page_def.stack_size) or page_def.preview_size or page_def.stack_size
     local card_size = page_def.sprite_size or {w = G.CARD_W, h = G.CARD_H}
     if type(to_add) == 'table' then
         local temp = {}
         for k, _ in pairs(to_add) do table.insert(temp, k) end
         to_add = temp
-        stack_size = #to_add
+        SMODS.RunSelect.Internals.stack_size = #to_add
     end
-    for j=1, stack_size do
+    for j=1, SMODS.RunSelect.Internals.stack_size do
         local card = page_def.create_selection_card and page_def:create_selection_card(type(to_add) == 'table' and to_add[j] or to_add, j, preview_area) 
         or Card(preview_area.T.x, preview_area.T.y, card_size.w, card_size.h, nil, G.P_CENTERS[type(to_add) == 'table' and to_add[j] or to_add])
         card.params.run_select_preview_card = page_def.key
@@ -732,18 +780,28 @@ function SMODS.RunSelect.Functions.clean_up(early)
     if SMODS.RunSelect.Internals.stake_tower and SMODS.RunSelect.Internals.stake_tower.cards then
         remove_all(SMODS.RunSelect.Internals.stake_tower.cards)
         SMODS.RunSelect.Internals.stake_tower.cards = {}
+    end
+    if SMODS.RunSelect.Internals.stake_tower_holding and SMODS.RunSelect.Internals.stake_tower_holding.cards then
         remove_all(SMODS.RunSelect.Internals.stake_tower_holding.cards)
         SMODS.RunSelect.Internals.stake_tower_holding.cards = {}
     end
     if SMODS.RunSelect.Internals.preview_area and SMODS.RunSelect.Internals.preview_area.cards then
         remove_all(SMODS.RunSelect.Internals.preview_area.cards)
         SMODS.RunSelect.Internals.preview_area.cards = {}
+    end
+    if SMODS.RunSelect.Internals.preview_area_holding and SMODS.RunSelect.Internals.preview_area_holding.cards then
         remove_all(SMODS.RunSelect.Internals.preview_area_holding.cards)
         SMODS.RunSelect.Internals.preview_area_holding.cards = {}
     end
 end
 
 -- Function Hooks
+local exit_overlay = G.FUNCS.exit_overlay_menu
+G.FUNCS.exit_overlay_menu = function()
+  exit_overlay()
+  SMODS.RunSelect.Functions.clean_up()
+end
+
 local card_stop_hover = Card.stop_hover
 function Card:stop_hover()
     if self.params.stake then
@@ -804,6 +862,14 @@ function SMODS.RunSelect.Functions.create_info_nodes(info_queue, c, row)
     end
 
     return tooltips
+end
+
+function SMODS.RunSelect.Functions.get_selection_limit(page_def)
+    if type(page_def.selection_limit) == 'function' then
+        return page_def:selection_limit() or 1
+    else
+        return page_def.selection_limit or 1
+    end
 end
 
 
@@ -901,7 +967,7 @@ local card_click_ref = Card.click
 function Card:click() 
     if self.params.stake and not self.params.stake_chip_locked and self.params.run_select_selection_choice then
         SMODS.RunSelect.Pages.stake_choice:handle_choice(self.params.stake)
-    elseif self.params.run_select_selection_choice and self.config.center.unlocked ~= false and self.config.center.discovered ~= false then
+    elseif self.params.run_select_selection_choice and self.config.center.unlocked ~= false and (self.config.center.discovered ~= false or self.bypass_discovery_center) then
         local page = SMODS.RunSelect.Pages[self.params.run_select_selection_choice[2]]
         if page.card_click and type(page.card_click) == 'function' then
             return page:card_click(self)

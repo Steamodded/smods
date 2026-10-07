@@ -8,7 +8,7 @@ SMODS = {}
 MODDED_VERSION = require'SMODS.version'
 RELEASE_VERSION = require'SMODS.release'
 SMODS.id = 'Steamodded'
-SMODS.version = MODDED_VERSION:gsub('%-STEAMODDED', '')
+SMODS.version = MODDED_VERSION
 SMODS.can_load = true
 SMODS.meta_mod = true
 SMODS.config_file = 'config.lua'
@@ -24,13 +24,23 @@ SMODS.NFS = nativefs
 local lovely = require "lovely"
 local json = require "json"
 
+local lovely_path = false -- This line is patched, don't edit it
+-- TODO: hanlde preflight dev correctly
+SMODS.path = assert(lovely_path, "Steamodded could not find itself"):gsub("\\", "/")
+
 local lovely_mod_dir = lovely.mod_dir:gsub("/$", "")
 NFS = nativefs -- Global for backwards compatibility
 local NFS = nativefs -- local so nothing accidentially overwrites our global
--- make lovely_mod_dir an absolute path.
--- respects symlink/.. combos
 NFS.setWorkingDirectory(lovely_mod_dir)
-lovely_mod_dir = NFS.getWorkingDirectory()
+local old = lovely_mod_dir
+lovely_mod_dir = NFS.getWorkingDirectory():gsub("\\", "/")
+if old ~= lovely_mod_dir then
+    if old ~= SMODS.path:sub(1, #old) then
+        print("SMODS not in mod dir? This is not good!")
+    else
+        SMODS.path = lovely_mod_dir .. SMODS.path:sub(#old + 1)
+    end
+end
 -- make sure NFS behaves the same as love.filesystem
 NFS.setWorkingDirectory(love.filesystem.getSaveDirectory())
 
@@ -38,10 +48,6 @@ JSON = json
 
 SMODS.MODS_DIR = lovely_mod_dir:gsub("\\", "/")
 
-local lovely_path = false -- This line is patched, don't edit it
-
--- TODO: hanlde preflight dev correctly
-SMODS.path = assert(lovely_path, "Steamodded could not find itself"):gsub("\\", "/")
 
 require"SMODS.preflight.logging"
 require"SMODS.preflight.loader"

@@ -131,8 +131,9 @@ function SMODS.pop_from_stencil_stack() end
 --- Cleanup stencil stack
 function SMODS.reset_stencil_stack() end
 
---- Reload stencil stack by cleaning up current stencil and redrawing all stencils from stack
-function SMODS.reload_stencil_stack() end
+--- Restore stencil buffer in current canvas
+--- @param full boolean Fully reload stencil stack by cleaning up current stencil and redrawing all stencils from stack
+function SMODS.reload_stencil_stack(full) end
 
 ---@param str string
 ---@return any
@@ -353,6 +354,7 @@ function SMODS.GUI.score_container(args) end
 ---@field horizontal? boolean Whether or not this scrollbar is horizontal. Default orientation is vertical.
 ---@field min? number Minimum value of `ref_value`. Defaults to 0.
 ---@field max? number Maximum value of `ref_value` Defaults to 1.
+---@field no_force_sync_mode? boolean If true, will not force the associated scrollbox to use `sync_mode = "offset"`. Defaults to false.
 ---@field scroll_mult? number Multiplies the scrolling speed of this scrollbar when scrolled with mouse wheel or something similar.
 
 ---Returns an UI node that has the functionality of a scrollbar.
