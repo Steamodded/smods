@@ -108,3 +108,32 @@ function _Card:prototype(obj_type)
     end
     return SMODS.Center.get_prototype_object(self)
 end
+
+function Blind:get_key()
+    return self:prototype().key
+end
+
+function Back:get_key()
+    return self:prototype().key
+end
+
+function Tag:get_key()
+    return self:prototype().key
+end
+
+function _Card:get_key(obj_type)
+    if obj_type == "sticker" or obj_type == "stickers" then
+        local keys = {}
+        local stickers = self:prototype(obj_type)
+        for key, _ in pairs(stickers) do
+            keys[#keys + 1] = key
+        end
+        return keys
+    end
+
+    if obj_type == "card" then
+        return self:prototype(obj_type).name
+    end
+
+    return self:prototype(obj_type).key
+end
