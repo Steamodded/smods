@@ -2791,16 +2791,13 @@ function G.UIDEF.custom_deck_tab(_suit)
     local r = {n=G.UIT.R, config={align = "tm", minh = 1.35}, nodes={{n=G.UIT.R, config={align = "cm", minh = 0.3}, nodes = {}}}}
     local loc_options = localize(_suit, 'collabs')
     local conv_loc_options = {}
-    for k, v in pairs(loc_options) do
-      conv_loc_options[tonumber(k)] = v
-    end
-
-    loc_options = conv_loc_options
 
     local current_option = 1
-    for k, v in pairs(G.COLLABS.options[_suit]) do
-      if G.SETTINGS.CUSTOM_DECK.Collabs[_suit] == v then current_option = k end
+    for k, v in ipairs(G.COLLABS.options[_suit]) do
+        conv_loc_options[k] = loc_options[v] or v
+        if G.SETTINGS.CUSTOM_DECK.Collabs[_suit] == v then current_option = k end
     end
+    loc_options = conv_loc_options
 
     local collab_cycle = create_option_cycle({options = loc_options, w = 5.5, cycle_shoulders = true, curr_suit = _suit, opt_callback = 'change_collab', current_option = current_option, colour = G.C.RED, focus_args = {snap_to = true, nav = 'wide'}})
     collab_cycle.nodes[2].config.padding = 0
