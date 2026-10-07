@@ -1,6 +1,10 @@
 ---@meta
 
 ---@class SMODS.Scoring_Calculation: SMODS.GameObject
+---@field config? table Values saved to the scoring calculation
+---@field parameters? string[] Table of Scoring Parameter keys that are used
+---@field text? string Replaces the `X` in the UI
+---@field colour? table HEX colour of the `text` in the UI
 ---@field extend? fun(self: SMODS.Scoring_Calculation|table, o: SMODS.Scoring_Calculation|table): table Primary method of creating a class.
 ---@field check_duplicate_register? fun(self: SMODS.Scoring_Calculation|table): boolean? Ensures objects already registered will not register.
 ---@field check_duplicate_key? fun(self: SMODS.Scoring_Calculation|table): boolean? Ensures objects with duplicate keys will not register. Checked on `__call` but not `take_ownership`. For take_ownership, the key must exist.
@@ -17,12 +21,8 @@
 ---@field new? fun(self, config): SMODS.Scoring_Calculation Creates a new instance of this operator.
 ---@field key string Used to reference your calculation, mod_prefix is applied
 ---@field func fun(self, chips, mult, flames): number Calculate your new score, flames respects animation timings
----@field text? string Replaces the `X` in the UI
----@field colour? table HEX colour of the `text` in the UI
 ---@field replace_ui? fun(self) Return a UI node to replace the display
 ---@field update_ui? fun(self: SMODS.Scoring_Calculation, container?: UIElement, chip_display?: UIElement, mult_display?: UIElement, operator?: UIElement)
----@field config? table Values saved to the scoring calculation
----@field parameters? string[] Table of Scoring Parameter keys that are used
 ---@overload fun(self: SMODS.Scoring_Calculation): SMODS.Scoring_Calculation
 SMODS.Scoring_Calculation = setmetatable({}, {
     __call = function(self)

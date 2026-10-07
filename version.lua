@@ -1,1 +1,1 @@
-return "1.0.0~BETA-2021a-STEAMODDED"
+return "26.1007.0~dev-b"

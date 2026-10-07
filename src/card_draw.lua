@@ -221,7 +221,7 @@ SMODS.DrawStep {
         end
 
          --If the card is not yet discovered
-         if not self.config.center.discovered and (self.config.center.unlocked ~= false) and not self.config.center.demo and not self.bypass_discovery_center then
+         if not self.config.center.discovered and (self.config.center.unlocked ~= false) and not self.config.center.demo and not self.bypass_discovery_center and not SMODS.is_playing_card(self) then
             local shared_sprite = (self.ability.set == 'Edition' or self.ability.set == 'Joker') and G.shared_undiscovered_joker or G.shared_undiscovered_tarot
             local scale_mod = -0.05 + 0.05*math.sin(1.8*G.TIMERS.REAL)
             local rotate_mod = 0.03*math.sin(1.219*G.TIMERS.REAL)
@@ -306,7 +306,7 @@ SMODS.DrawStep {
     order = 20,
     func = function(self, layer)
         local edition = self.delay_edition or self.edition
-        if edition then
+        if edition and not edition.negative then
             for k, v in pairs(G.P_CENTER_POOLS.Edition) do
                 if edition[v.key:sub(3)] and v.shader then
                     if type(v.draw) == 'function' then

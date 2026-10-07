@@ -391,3 +391,18 @@ if self.focused.target and self.focused.target.UIBox and self.focused.target.UIB
     end
 end
 '''
+
+# Add initial work for stretch argument
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function UIBox:calculate_xywh(node, _T, recalculate, _scale)
+'''
+payload = '''
+    if node.config.stretch then
+        node.config.minw = node.UIBox.T.w - (node.config.diff or 0)
+    end
+'''
