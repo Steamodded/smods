@@ -2,6 +2,7 @@
 
 ---@class SMODS.Back: SMODS.Center
 ---@field super? SMODS.Center|table Parent class. 
+---@field initial_deck? back_initial_deck_args Allows customization of the starting deck
 ---@field __call? fun(self: SMODS.Back|table, o: SMODS.Back|table): nil|table|SMODS.Back
 ---@field extend? fun(self: SMODS.Back|table, o: SMODS.Back|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Back|table): boolean? Ensures objects already registered will not register. 
@@ -20,7 +21,6 @@
 ---@field apply? fun(self: SMODS.Back|table, back: Back|table) Applied modifiers at the start of a run.
 ---@field quip_filter? fun(quip: SMODS.JimboQuip|table, quip_type: string): boolean?, table? Allows configuring a quip is allowed to appear. 
 ---@field calc_dollar_bonus? fun(self: SMODS.Back|table, back: Back|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money.
----@field initial_deck? back_initial_deck_args Allows customization of the starting deck
 ---@overload fun(self: SMODS.Back): SMODS.Back
 SMODS.Back = setmetatable({}, {
     __call = function(self)
@@ -32,3 +32,8 @@ SMODS.Back = setmetatable({}, {
 ---@field exclude? boolean Turns the lists into blacklists, rather than whitelists
 ---@field suits? Suits[]|string[] A list of suits to include/exclude
 ---@field ranks? Ranks[]|string[] A list of ranks to include/exclude
+
+---Returns the prototype object from the game object.
+---@param back Back|table
+---@return SMODS.Back|table 
+SMODS.Back.get_prototype_object = function (back) end
