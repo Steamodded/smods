@@ -534,7 +534,6 @@ if G.booster_pack and not G.booster_pack.alignment.offset.py and ((not select_to
 
 '''
 
-
 # G.FUNCS.use_card()
 [[patches]]
 [patches.pattern]
@@ -545,6 +544,7 @@ position = 'at'
 payload = '''
 if not card.from_area then card.from_area = card.area end
 if card.area and (not nc or card.area == G.pack_cards) then card.area:remove_card(card) end'''
+
 [[patches]]
 [patches.pattern]
 target = 'functions/button_callbacks.lua'
