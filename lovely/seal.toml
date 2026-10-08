@@ -36,55 +36,22 @@ for k, v in pairs(SMODS.Seals) do
     G.BADGE_COL[k:lower()..'_seal'] = v.badge_colour
 end'''
 
-# Card:calculate_seal()
-[[patches]]
-[patches.regex]
-target = "card.lua"
-pattern = 'function Card:calculate_seal\(context\)\n(?<indent>[\t ]*)if self.debuff then return nil end'
-position = 'after'
-line_prepend = '$indent'
-payload = '''
-
-
-local obj = G.P_SEALS[self.seal] or {}
-if obj.calculate and type(obj.calculate) == 'function' then
-	local o, t = obj:calculate(self, context)
-	if o then
-        if not o.card then o.card = self end
-    end
-    if o or t then return o, t end
-end'''
-
 # Card:update()
 [[patches]]
 [patches.pattern]
 target = "card.lua"
-pattern = 'if G.STAGE == G.STAGES.RUN then'
-position = 'before'
+pattern = '''
+    if self.ability.consumeable and self.ability.consumeable.max_highlighted then
+        self.ability.consumeable.mod_num = math.min(5, self.ability.consumeable.max_highlighted)
+    end
+'''
+position = 'after'
 match_indent = true
 payload = '''
 local obj = G.P_SEALS[self.seal] or {}
 if obj.update and type(obj.update) == 'function' then
     obj:update(self, dt)
 end'''
-
-# Card:get_p_dollars()
-# Also, Gold Seal respects quantum enhancements
-# Patch is here to avoid conflict
-[[patches]]
-[patches.regex]
-target = "card.lua"
-pattern = '''(?<indent>[\t ]*)if self\.seal == 'Gold' then'''
-position = 'at'
-line_prepend = '$indent'
-payload = '''
-local obj = G.P_SEALS[self.seal] or {}
-if obj.get_p_dollars and type(obj.get_p_dollars) == 'function' then
-    ret = ret + obj:get_p_dollars(self)
-elseif self.seal == 'Gold' and not self.ability.extra_enhancement then'''
-# note for later: the Card:get_xxx functions sometimes take context and sometimes don't,
-# which is annoying for enhancements
-# this should probably be changed to be consistent in better calc
 
 # generate_card_ui()
 [[patches]]
@@ -167,43 +134,6 @@ Blue = {order = 2,  discovered = false, set = "Seal"},
 Gold = {order = 3,  discovered = false, set = "Seal"},
 Purple = {order = 4,  discovered = false, set = "Seal"},
 }
-'''
-
-# Card:set_seal()
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''G.CONTROLLER.locks.seal = true'''
-position = 'after'
-match_indent = true
-payload = '''local sound = G.P_SEALS[_seal].sound or {sound = 'gold_seal', per = 1.2, vol = 0.4}'''
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''play_sound('gold_seal', 1.2, 0.4)'''
-position = 'at'
-match_indent = true
-payload = '''
-self.ability.delay_seal = false
-play_sound(sound.sound, sound.per, sound.vol)'''
-## Populate Seal Ability Table
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''self.seal = _seal'''
-position = 'after'
-match_indent = true
-payload = '''
-self.ability.seal = {}
-for k, v in pairs(G.P_SEALS[_seal].config or {}) do
-    if type(v) == 'table' then
-        self.ability.seal[k] = copy_table(v)
-    else
-        self.ability.seal[k] = v
-    end
-end
-
-self.ability.delay_seal = not silent
 '''
 
 # card_limit support

@@ -21,7 +21,6 @@ if not from_debuff and G.hand then
 
     if not is_playing_card then
         SMODS.calculate_context({card_added = true, card = self})
-        SMODS.enh_cache:clear()
     end
 end
 '''
