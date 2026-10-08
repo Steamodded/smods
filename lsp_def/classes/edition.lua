@@ -53,6 +53,11 @@ SMODS.Edition = setmetatable({}, {
     end
 })
 
+---Returns the prototype object from the game object. (`nil` if none)
+---@param card Card|table
+---@return SMODS.Edition|table?
+SMODS.Edition.get_prototype_object = function (card) end
+
 ---@param self Card|table
 ---@param edition? Editions|string|{[string]: true} Both `string` values are the key of the edition to apply. 
 ---@param immediate? boolean

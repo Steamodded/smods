@@ -53,6 +53,17 @@ SMODS.Sticker = setmetatable({}, {
 ---@type table<Stickers|string, SMODS.Sticker|table>
 SMODS.Stickers = {}
 
+---Returns the prototype sticker objects from the card. (`nil` if none).
+---@see SMODS.Sticker.get_stickers
+---@param card Card|table
+---@return table<string,SMODS.Sticker|table>?
+SMODS.Sticker.get_prototype_object = function (card) end
+
+---Returns the prototype sticker objects from the card. (`nil` if none).
+---@param card Card|table
+---@return table<string,SMODS.Sticker|table>?
+SMODS.Sticker.get_stickers = function (card) end
+
 ---@param self Card|table
 ---@param sticker Stickers|string Key to the sticker to apply. 
 ---@param bypass_check? boolean Whether the sticker's `should_apply` function is called. 

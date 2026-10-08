@@ -21,6 +21,7 @@
 ---@field parity? number The parity of the rank, 0 for Even, 1 for odd.
 ---@field is_royal? boolean Whether this rank allows for a Royal Flush. (Only relevant for displayed hand text by default)
 ---@field suit_map? table<string, number> For any suit keys in this table, use this rank's atlas over the suit's atlas. Provided number is the `y` position of the suit on the rank's atlas. 
+---@field no_mod_badges? boolean Hides the mod's badge from the tooltip.
 ---@field __call? fun(self: SMODS.Rank|table, o: SMODS.Rank|table): nil|table|SMODS.Rank
 ---@field extend? fun(self: SMODS.Rank|table, o: SMODS.Rank|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Rank|table): boolean? Ensures objects already registered will not register. 
@@ -35,10 +36,10 @@
 ---@field inject? fun(self: SMODS.Rank|table, i?: number) Called during `inject_class`. Injects the object into the game. 
 ---@field take_ownership? fun(self: SMODS.Rank|table, key: string, obj: SMODS.Rank|table, silent?: boolean): nil|table|SMODS.Rank Takes control of vanilla objects. Child class must have get_obj for this to function
 ---@field get_obj? fun(self: SMODS.Rank|table, key: string): SMODS.Rank|table? Returns an object if one matches the `key`. 
----@field loc_vars? fun(self: SMODS.Rank|table, info_queue: table, card: Card|table) Allows adding tooltips onto cards with this suit. Return values not respected. 
----@field draw? fun(self: SMODS.Rank|table, card: Card|table, layer: string) Allows drawing additional sprites or shaders onto cards with this suit. 
----@field in_pool? fun(self: SMODS.Rank|table, args: table): boolean? Allows configuring if cards with this suit should spawn. 
----@field delete? fun(self: SMODS.Rank|table) Deletes this suit. 
+---@field loc_vars? fun(self: SMODS.Rank|table, info_queue: table, card: Card|table) Allows adding tooltips onto cards with this rank. Return values not respected. 
+---@field draw? fun(self: SMODS.Rank|table, card: Card|table, layer: string) Allows drawing additional sprites or shaders onto cards with this rank. 
+---@field in_pool? fun(self: SMODS.Rank|table, args: table): boolean? Allows configuring if cards with this rank should spawn. 
+---@field delete? fun(self: SMODS.Rank|table) Deletes this rank. 
 ---@field get_straight_next? fun(self: SMODS.Rank|table, direction: "next"|"prev", do_wrap?: boolean) Function to get a rank's .next/.prev with respect to VirtualRanks.
 ---@overload fun(self: SMODS.Rank): SMODS.Rank
 SMODS.Rank = setmetatable({}, {
@@ -49,3 +50,8 @@ SMODS.Rank = setmetatable({}, {
 
 ---@type table<Ranks|string, SMODS.Rank|table>
 SMODS.Ranks = {}
+
+---Returns the prototype object from the game object. (`nil` if none)
+---@param card Card|table
+---@return SMODS.Rank|table?
+SMODS.Rank.get_prototype_object = function (card) end

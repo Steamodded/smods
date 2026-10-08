@@ -407,6 +407,7 @@ function SMODS.create_card(t)
         t.front = t.front or (t.suit and t.rank and (t.suit .. "_" .. t.rank)) or nil
     end
     t.silent = t.silent == true and { edition = true, seal = true } or type(t.silent) ~= "table" and {} or t.silent
+    t.immediate = t.immediate == true and { edition = true, seal = true } or type(t.immediate) ~= "table" and {} or t.immediate
     SMODS.bypass_create_card_edition = t.no_edition or t.edition
     SMODS.bypass_create_card_discover = t.discover
     SMODS.bypass_create_card_discovery_center = t.bypass_discovery_center
@@ -425,8 +426,8 @@ function SMODS.create_card(t)
 
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
-    if t.edition then _card:set_edition(t.edition, nil, t.silent.edition) end
-    if t.seal then _card:set_seal(t.seal, t.silent.seal); _card.delay_seal = nil end
+    if t.edition then _card:set_edition(t.edition, t.immediate.edition, t.silent.edition) end
+    if t.seal then _card:set_seal(t.seal, t.silent.seal, t.immediate.seal); _card.ability.delay_seal = nil end
     if t.stickers or type(t.force_stickers) == "table" then
         local applied_stickers = {}
         if type(t.force_stickers) == "table" then
@@ -528,7 +529,7 @@ function SMODS.create_mod_badge(mod, obj, width, text_height)
     local mod_name = mod.display_name
     local max_text_width = width or 1.732
     local scale_fac = 1
-    local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE}, maxw = mod.no_marquee and max_text_width, float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = text_height or 0.297})
+    local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE}, maxw = mod.no_marquee and max_text_width, float = true, shadow = not mod.badge_text_no_shadow, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = text_height or 0.297})
     local badge_scroll = SMODS.UIScrollBox({
         content = badge_text,
         container = {
@@ -831,6 +832,7 @@ function SMODS.stake_from_index(index)
 end
 
 function convert_usage_entry(entry)
+    if type(entry) ~= 'table' then return entry end
     for _,keys in ipairs{ {"wins","wins_by_key"},{"losses","losses_by_key"}} do
         entry[keys[1]] = entry[keys[1]] or {}
         entry[keys[2]] = entry[keys[2]] or {}
@@ -838,20 +840,20 @@ function convert_usage_entry(entry)
         local data_by_key = entry[keys[2]]
         setmetatable(data_by_key, {
             __index = function(t, k) 
-                if (G.P_STAKES[k] or {}).vanilla_index then
+                if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                     return data[G.P_STAKES[k].vanilla_index]
                 end
                 return rawget(t,k)
             end,
             __newindex = function(t,k,w)
-                if (G.P_STAKES[k] or {}).vanilla_index then
+                if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                     data[G.P_STAKES[k].vanilla_index] = w
                 end
                 rawset(t,k,w)
             end,
         })
         for k,w in pairs(data_by_key) do
-            if (G.P_STAKES[k] or {}).vanilla_index then
+            if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                 data[G.P_STAKES[k].vanilla_index] = math.max(data[G.P_STAKES[k].vanilla_index] or 0, w)
                 rawset(data_by_key, k, nil)
             end
@@ -860,14 +862,17 @@ function convert_usage_entry(entry)
     return entry
 end
 
-function convert_save_data()
-    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
+-- Convert usage tables. silent=true only fixes the in-memory wins_by_key <-> wins
+-- metatable bridge (used on profile load); omit it to also queue a profile save.
+function convert_save_data(profile, silent)
+    profile = profile or G.PROFILES[G.SETTINGS.profile]
+    for _, v in pairs(profile.deck_usage or {}) do
         convert_usage_entry(v)
     end
-    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
+    for _, v in pairs(profile.joker_usage or {}) do
         convert_usage_entry(v)
     end
-    G:save_settings()
+    if not silent then G:save_settings() end
 end
 
 
@@ -2297,6 +2302,9 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
         end
         local flags = SMODS.calculate_context(context)
         if flags.remove then destroyed = true end
+        if type(flags.remove) == "table" then
+            card.SMODS_destroy_args = flags.remove
+        end
 
         -- TARGET: card destroyed
 
@@ -2586,7 +2594,11 @@ function Card.selectable_from_pack(card, pack)
     local select_area, can_also_use = SMODS.card_select_area(card, pack)
     if select_area then
         if type(select_area) == 'table' then
-            if select_area[card.ability.set] then return select_area[card.ability.set] else return false end
+            if select_area[card.ability.set] then 
+                return select_area[card.ability.set], can_also_use
+            else
+                return false, can_also_use
+            end
         end
         return select_area, can_also_use
     end
@@ -2955,7 +2967,8 @@ function SMODS.destroy_cards(cards, args, ...)
     local playing_cards = {}
     local queued_for_destruction = {}
     for _, card in ipairs(cards) do
-        if args.bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
+        local card_args = card.SMODS_destroy_args or {}
+        if args.bypass_eternal or card_args.bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
             card.getting_sliced = true
             table.insert(queued_for_destruction, card)
             if SMODS.shatters(card) then
@@ -2964,7 +2977,7 @@ function SMODS.destroy_cards(cards, args, ...)
             else
                 card.destroyed = true
             end
-            if card.base.name then
+            if SMODS.is_playing_card(card) then
                 playing_cards[#playing_cards + 1] = card
             end
         end
@@ -2974,7 +2987,7 @@ function SMODS.destroy_cards(cards, args, ...)
 
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
-    local destroy_func = function (card, args)
+    local destroy_func = function(card, args)
         if not card.getting_sliced then return false end
         if args.destroy_func then 
             return args.destroy_func(card, args) ~= false
@@ -2996,6 +3009,7 @@ function SMODS.destroy_cards(cards, args, ...)
     end
 
     for i, card in ipairs(queued_for_destruction) do
+        local args = SMODS.merge_defaults(card.SMODS_destroy_args or {}, args)
         if args.immediate then
             destroy_func(card, args)
         else
@@ -3008,6 +3022,7 @@ function SMODS.destroy_cards(cards, args, ...)
                 end
             }))
         end
+        card.SMODS_destroy_args = nil
     end
     return queued_for_destruction
 end
@@ -3445,6 +3460,7 @@ end
 
 function SMODS.challenge_is_unlocked(challenge, k)
     local challenge_unlocked
+    challenge = type(challenge) == "string" and SMODS.Challenges[challenge] or challenge or {}
     if type(challenge.unlocked) == 'function' then
         challenge_unlocked = challenge:unlocked()
     elseif type(challenge.unlocked) == 'boolean' then
@@ -4583,7 +4599,13 @@ function SMODS.card_to_image(card, scale, filename)
     scale = scale or G.SETTINGS.GRAPHICS.texture_scaling
 	filename = (filename or key == "j_joker" and "jimbo" or key) .. ".png"
     
-	local canvas = love.graphics.newCanvas(71 * scale, 95 * scale, {type = '2d', readable = true})
+    local atlas = card.children and card.children.center and card.children.center.atlas or {}
+    local display = card.config.center.display_size or {}
+    local px,py = display.w or atlas.px or 71, display.h or atlas.py or 95
+    display.w, display.h = display.w or 71, display.h or 95
+    local ratiox,ratioy = px/display.w, py/display.h
+
+	local canvas = love.graphics.newCanvas(px * scale, py * scale, {type = '2d', readable = true})
     canvas:setFilter('nearest', 'nearest')
 
     local old_t = SMODS.shallow_copy(card.T)
@@ -4591,7 +4613,7 @@ function SMODS.card_to_image(card, scale, filename)
     local old_rm = G.SETTINGS.reduced_motion
     card.T.r = 0
     local old_scale = card.T.scale 
-    card.T.scale = scale / G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 -- Don't ask me why I had to multiply by 1.5 here, and by the per-dimension factors below, I do not know,,, (this may have been brute-tinkered)
+    card.T.scale = scale / G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 * ratiox -- Don't ask me why I had to multiply by 1.5 here, and by the per-dimension factors below, I do not know,,, (this may have been brute-tinkered)
     local w, h = old_t.w * 0.997, old_t.h * 0.99348                                                         -- (well these factors are needed to remove extra pixels in height/width for scales == 2.0 -> 16.0 (at least))
     card:hard_set_T(w/2*(card.T.scale-1), h/2*(card.T.scale-1), w, h)
 	card.no_shadow = true
