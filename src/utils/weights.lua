@@ -219,13 +219,10 @@ function SMODS.create_blind_pool(blind_type, skip_cull)
             end
         end
     end
-    local final_pool = {}
     for k, v in pairs(eligible_bosses) do
         if eligible_bosses[k] then
             if eligible_bosses[k] > min_use and not G.P_BLINDS[k][blind_type].allow_duplicates then 
                 eligible_bosses[k] = nil
-            else
-                final_pool[#final_pool + 1] = k
             end
         end
     end
@@ -234,7 +231,8 @@ function SMODS.create_blind_pool(blind_type, skip_cull)
     for k, _ in pairs(eligible_bosses) do
         output[#output + 1] = k
     end
-    
+    table.sort(output)
+
     return output
 end
 
@@ -544,6 +542,14 @@ function SMODS.cull_pool(pool, args)
             end
 
             if args.types and (not args.types[v.set] and not (args.types['Consumeables'] and SMODS.ConsumableTypes[v.set])) then add = nil end
+            if args.types and v.pools then
+                for k, _ in pairs(v.pools) do
+                    if args.types[k] then
+                        add = true
+                        break
+                    end
+                end
+            end
             if v.no_pool_flag and G.GAME.pool_flags[v.no_pool_flag] then add = nil end
             if v.yes_pool_flag and not G.GAME.pool_flags[v.yes_pool_flag] then add = nil end
             if args.no_replace and v.set == 'Enhanced' and v.replace_base_card then add = nil end
