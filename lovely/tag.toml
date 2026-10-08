@@ -188,3 +188,14 @@ if not run_info then G.GAME.round_resets.blind_states[G.GAME.blind_on_deck] = 'S
 payload = '''
 --if not run_info then G.GAME.round_resets.blind_states[G.GAME.blind_on_deck] = 'Select' end
 '''
+
+# Tag:generate_UI() -- Add tag_sprite.prototype()
+[[patches]]
+[patches.pattern]
+target = "tag.lua"
+pattern = "tag_sprite.config = {tag = self, force_focus = true}"
+position = 'after'
+match_indent = true
+payload = '''
+tag_sprite.prototype = function(sprite_obj) return SMODS.Tag.get_prototype_object(sprite_obj) end
+'''

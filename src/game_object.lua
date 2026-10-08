@@ -435,11 +435,19 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         extern Image sourceImage;
         extern vec2 dim;
 
-        vec2 neigbours[8] = vec2[8](vec2(-1, -1),vec2(0, -1),vec2(1, -1),vec2(-1, 0),vec2(1, 0),vec2(-1, 1),vec2(0, 1),vec2(1, 1));
-
         vec4 fixAlpha(Image img, vec2 uv){
             vec4 result = vec4(0.0);
             float count = 0.0;
+
+            vec2 neigbours[8];
+            neigbours[0] = vec2(-1.0, -1.0);
+            neigbours[1] = vec2( 0.0, -1.0);
+            neigbours[2] = vec2( 1.0, -1.0);
+            neigbours[3] = vec2(-1.0,  0.0);
+            neigbours[4] = vec2( 1.0,  0.0);
+            neigbours[5] = vec2(-1.0,  1.0);
+            neigbours[6] = vec2( 0.0,  1.0);
+            neigbours[7] = vec2( 1.0,  1.0);
 
             for (int i = 0; i < 8; i++) {
                 vec2 c = uv + (neigbours[i] * dim);
@@ -567,12 +575,12 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     function Game:set_render_settings()
         local ret = game_set_render_settings(self)
         for _, atlas in pairs(G.ASSET_ATLAS) do
-            atlas.atlas_table = "ASSET_ATLAS"
+            atlas.atlas_table = atlas.atlas_table or "ASSET_ATLAS"
             atlas.columns = atlas.image:getWidth() / atlas.px
             atlas.rows = atlas.image:getHeight() / atlas.py
         end
         for _, atlas in pairs(G.ANIMATION_ATLAS) do
-            atlas.atlas_table = "ANIMATION_ATLAS"
+            atlas.atlas_table = atlas.atlas_table or "ANIMATION_ATLAS"
             atlas.columns = atlas.image:getWidth() / atlas.px
             atlas.rows = atlas.image:getHeight() / atlas.py
         end
@@ -816,18 +824,37 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
             -- should only need to do this once per injection routine
         end,
         post_inject_class = function(self)
+            local function get_stake_above_key(stake, t)
+                local key = stake.above_stake
+                if not key or (t[key] == stake.key) then return key end
+
+                while t[key] and t[key] ~= key and key ~= stake.key do
+                    key = t[key]
+                end
+                return key ~= stake.key and key
+            end
             -- sort stakes into the correct spot
-            local stakes_fixed = false
-            repeat
-                table.sort(G.P_CENTER_POOLS[self.set], function(a, b) return a.order < b.order end)
-                stakes_fixed = true
+            local sorted = false
+            local above_alias = {}
+            while not sorted do
+                sorted = true
+                table.sort(G.P_CENTER_POOLS[self.set], function(a, b) return a.order > b.order end)
                 for i, v in ipairs(G.P_CENTER_POOLS[self.set]) do
-                    if v.above_stake and G.P_STAKES[v.above_stake] and v.order < G.P_STAKES[v.above_stake].order then
-                        v.order = G.P_STAKES[v.above_stake].order + 1
-                        stakes_fixed = false
+                    local above_key = get_stake_above_key(v, above_alias)
+                    if above_key and G.P_STAKES[above_key] and (v.order ~= G.P_STAKES[above_key].order + 1 and v.order ~= G.P_STAKES[v.above_stake].order + 1) then
+                        sorted = false
+                        local new_order = G.P_STAKES[above_key].order + 1
+                        v.order = new_order
+                        above_alias[above_key] = above_alias[above_key] or v.key
+                        for _, stake in pairs(G.P_STAKES) do
+                            if stake ~= v and stake.order >= new_order then stake.order = stake.order + 1 end
+                        end
                     end
                 end
-            until stakes_fixed
+            end
+            
+            -- until stakes_fixed
+            table.sort(G.P_CENTER_POOLS[self.set], function(a, b) return a.order < b.order end)
             for i,v in ipairs(G.P_CENTER_POOLS[self.set]) do
                 G.P_STAKES[v.key].order = i
             end
@@ -2650,9 +2677,6 @@ SMODS.UndiscoveredCompat = {
                 for i, p in ipairs(self.palettes) do
                     if p.loc_txt then
                         SMODS.process_loc_text(G.localization.misc.collab_palettes[self.key], i..'', p.loc_txt)
-                    elseif G.localization.misc.collab_palettes[self.key][i..''] then
-                    else
-                        G.localization.misc.collab_palettes[self.key][i..''] = ({ lc = true, hc = true, def = true })[p.key] and localize('b_deckskins_'..p.key) or p.key
                     end
                 end
             else
@@ -2665,11 +2689,15 @@ SMODS.UndiscoveredCompat = {
             end
 
             if not self.loc_txt then
-                G.localization.misc.collabs[self.suit][self.suit_index .. ''] = G.localization.misc.collabs[self.suit][self.suit_index .. ''] or self.key
+                G.localization.misc.collabs[self.suit][self.suit_index .. ''] = G.localization.misc.collabs[self.suit]
+                [self.suit_index .. ''] or self.key
+                G.localization.misc.collabs[self.suit][self.key] = G.localization.misc.collabs[self.suit]
+                [self.suit_index .. ''] or self.key
                 return
             end
 
             SMODS.process_loc_text(G.localization.misc.collabs[self.suit], self.suit_index..'', self.loc_txt)
+            SMODS.process_loc_text(G.localization.misc.collabs[self.suit], self.key..'', self.loc_txt)
         end,
         register = function(self)
             if self.registered then
@@ -2751,9 +2779,11 @@ SMODS.UndiscoveredCompat = {
                 key = G.COLLABS.options[suit][key]
             end
 
+            local prototype = SMODS.DeckSkins[key]
+
             local conv_palette_loc_options = {}
-            for k, v in pairs(G.localization.misc.collab_palettes[key]) do
-                conv_palette_loc_options[tonumber(k)] = v
+            for i, p in ipairs(prototype.palettes) do
+                conv_palette_loc_options[i] = G.localization.misc.collab_palettes[key][i] or ({ lc = true, hc = true, def = true })[p.key] and localize('b_deckskins_'..p.key) or p.key
             end
 
             return conv_palette_loc_options
@@ -4148,6 +4178,12 @@ SMODS.UndiscoveredCompat = {
     -------------------------------------------------------------------------------------------------
 
     assert(load(SMODS.NFS.read(SMODS.path..'src/game_objects/runselectpage.lua'), ('=[SMODS _ "src/game_objects/runselectpage.lua"]')))()
+
+    -------------------------------------------------------------------------------------------------
+    ----- API CODE GameObject Prototype Utils
+    -------------------------------------------------------------------------------------------------
+
+    assert(load(SMODS.NFS.read(SMODS.path..'src/utils/prototypes.lua'), ('=[SMODS _ "src/utils/prototypes.lua"]')))()
 
     -------------------------------------------------------------------------------------------------
     ----- INTERNAL API CODE GameObject._Loc_Post
