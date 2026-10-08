@@ -168,12 +168,12 @@ local function _general_quantum_setter(key, card, value, args, ...)
     if not new_is_base and new_obj then
         card[key] = value
         card.ability[key] = override_val or SMODS.get_ability_from_obj(new_obj, card)
-        card["delay_" .. key] = delay_val
+        card.ability["delay_" .. key] = delay_val
         G.CONTROLLER.locks[key] = true
         local sound = not args.silent and (new_obj.sound or setter_defaults.sound)
         if args.immediate then
             if not args.no_juice then card:juice_up(setter_defaults.juice_scale or 0.3, setter_defaults.juice_rot or 0.3) end
-            if not args.delay then card["delay_" .. key] = nil end
+            if not args.delay then card.ability["delay_" .. key] = nil end
             if sound then play_sound(sound.sound, sound.per, sound.vol) end
             G.CONTROLLER.locks[key] = nil
         else
@@ -182,7 +182,7 @@ local function _general_quantum_setter(key, card, value, args, ...)
                 delay = setter_defaults.delay or 0.3,
                 func = function()
                     if not args.no_juice then card:juice_up(setter_defaults.juice_scale or 0.3, setter_defaults.juice_rot or 0.3) end
-                    card["delay_" .. key] = nil
+                    card.ability["delay_" .. key] = nil
                     if sound then play_sound(sound.sound, sound.per, sound.vol) end
                     return true
                 end
@@ -200,7 +200,7 @@ local function _general_quantum_setter(key, card, value, args, ...)
             G.E_MANAGER:add_event(Event({
                 trigger = 'immediate',
                 func = function()
-                    card["delay_" .. key] = nil
+                    card.ability["delay_" .. key] = nil
                     return true
                 end
             }))
@@ -246,11 +246,11 @@ local function _general_quantum_setter(key, card, value, args, ...)
             }))
         end
         if args.delay then
-            card["delay_" .. key] = old_val
+            card.ability["delay_" .. key] = old_val
             G.E_MANAGER:add_event(Event({
                 trigger = 'immediate',
                 func = function()
-                    card["delay_" .. key] = nil
+                    card.ability["delay_" .. key] = nil
                     return true
                 end
             }))

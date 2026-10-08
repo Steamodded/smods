@@ -331,7 +331,7 @@ SMODS.DrawStep {
     key = 'seal',
     order = 30,
     func = function(self, layer)
-        local key = self.delay_seal or self.seal
+        local key = self.ability.delay_seal or self.seal
         local seal = G.P_SEALS[key] or {}
         if type(seal.draw) == 'function' then
             seal:draw(self, layer)
