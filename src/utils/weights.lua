@@ -542,7 +542,7 @@ function SMODS.cull_pool(pool, args)
             end
 
             if args.types and (not args.types[v.set] and not (args.types['Consumeables'] and SMODS.ConsumableTypes[v.set])) then add = nil end
-            if v.pools then
+            if args.types and v.pools then
                 for k, _ in pairs(v.pools) do
                     if args.types[k] then
                         add = true

@@ -44,6 +44,10 @@ SMODS.Stake = setmetatable({}, {
 ---@type table<string, SMODS.Stake|table>
 SMODS.Stakes = {}
 
+---Gets all currently applied stakes
+---@return table<string, SMODS.Stake|table>
+SMODS.Stake.get_applied = function() end
+
 ---@param stake SMODS.Stake|table
 ---@param applied? table
 ---@return table applied

@@ -38,14 +38,17 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
     process_loc_text = function() end,
     handle_choice = function(self, choice, remove)
         SMODS.RunSelect.Setup.choices[self.key] = SMODS.RunSelect.Setup.choices[self.key] or {}
+        
+        local selection_limit = SMODS.RunSelect.Functions.get_selection_limit(self)
+
         if not remove then
             if self.double_click_advance then
-                if (self.selection_limit > 1 and SMODS.RunSelect.Setup.choices[self.key][choice.config.center.key]) or SMODS.RunSelect.Setup.choices[self.key] == choice.config.center.key then
+                if (selection_limit > 1 and SMODS.RunSelect.Setup.choices[self.key][choice.config.center.key]) or SMODS.RunSelect.Setup.choices[self.key] == choice.config.center.key then
                     return SMODS.RunSelect.Functions.double_click_advance(self)
                 end
             end
-            if self.selection_limit > 1 then
-                if SMODS.table_size(SMODS.RunSelect.Setup.choices[self.key]) < self.selection_limit and not SMODS.RunSelect.Setup.choices[self.key][choice.config.center.key] then
+            if selection_limit > 1 then
+                if SMODS.table_size(SMODS.RunSelect.Setup.choices[self.key]) < selection_limit and not SMODS.RunSelect.Setup.choices[self.key][choice.config.center.key] then
                     SMODS.RunSelect.Setup.choices[self.key][choice.config.center.key] = true
                 else
                     if choice.juice_up then choice:juice_up() end
@@ -56,7 +59,7 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
             end
             if SMODS.RunSelect.Internals.preview_area then SMODS.RunSelect.Functions.populate_preview_ui(self.key, choice.config.center.key, self.silent) end
         elseif not self.no_remove then
-            if self.selection_limit == 1 then
+            if selection_limit == 1 then
                 SMODS.RunSelect.Setup.choices[self.key] = nil
             else
                 SMODS.RunSelect.Setup.choices[self.key][choice.config.center.key] = nil
@@ -65,7 +68,9 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
         end
     end,
     set_default = function(self, choice)
-        if self.selection_limit > 1 then
+        local selection_limit = SMODS.RunSelect.Functions.get_selection_limit(self)
+
+        if selection_limit > 1 then
             if type(choice) ~= 'table' then choice = {choice} end
             local final = {}
             for i, k in ipairs(choice) do
@@ -80,19 +85,21 @@ SMODS.RunSelectPage = SMODS.GameObject:extend({
         return localize({set = self.type, key = selection, type = 'name_text'})
     end,
     choose_random = function(self)
+        local selection_limit = SMODS.RunSelect.Functions.get_selection_limit(self)
+
         local options = {}
         for i=1, #self.pool do
             if self.pool[i].unlocked then
                 options[#options + 1] = self.pool[i].key
             end
         end
-        if self.selection_limit > 1 then
+        if selection_limit > 1 then
             for k,_ in pairs(SMODS.RunSelect.Setup.choices[self.key]) do
                 SMODS.RunSelect.Setup.choices[self.key][k] = nil
                 SMODS.RunSelect.Functions.populate_preview_ui(self.key, SMODS.RunSelect.Internals.preview_area.cards[1], self.silent, true)
             end
         end
-        for i=1, self.selection_limit do
+        for i=1, selection_limit do
             local selected = false
             while not selected do
                 selected = pseudorandom_element(options, pseudoseed(os.time()))
@@ -173,17 +180,11 @@ SMODS.RunSelectPage({
     end,
     is_stake_unlocked = function(stake)
         if not stake then return false end
-        local unlocked = true
         local save_data = G.PROFILES[G.SETTINGS.profile].deck_usage[SMODS.RunSelect.Setup.choices.deck_choice] and G.PROFILES[G.SETTINGS.profile].deck_usage[SMODS.RunSelect.Setup.choices.deck_choice].wins_by_key or {}
-        for _,v in ipairs(stake.applied_stakes or {}) do
-            if not G.PROFILES[G.SETTINGS.profile].all_unlocked and (not save_data or (save_data and not save_data[v])) then
-                unlocked = false
-            end
-        end
         if save_data and save_data[stake.key] then
             return true, true
         end
-        return unlocked
+        return SMODS.stake_is_unlocked(stake.key, SMODS.RunSelect.Setup.choices.deck_choice)
     end,
     create_selection_card = function(self, stake_key, card_number, area)
         local card = Card(area.T.x, area.T.y, self.sprite_size.w, self.sprite_size.h, nil, G.P_CENTERS.j_joker, {stake = stake_key})

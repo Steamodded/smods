@@ -474,6 +474,7 @@ function SMODS.find_card(key, count_debuffed) end
 ---@field silent? true|{edition?:true, seal?:true} Applies edition and/or seal silently
 ---@field immediate? true|{edition?:true, seal?:true} Applies edition and/or seal immediately
 ---@field attributes? string[] Creates a card with these attributes. All other arguments will be passed to SMODS.poll_object
+---@field scale? {w?:number, h?:number} Creates a card scaled by these width and height multipliers (each defaults to 1)
 
 ---@param t CreateCard|table
 ---@return Card|table
@@ -887,7 +888,7 @@ function SMODS.create_sprite(X, Y, W, H, atlas, pos, sprite_args) end
 function SMODS.is_active_blind(key, ignore_disabled) end
 
 ---Check if `challenge` is unlocked.
----@param challenge SMODS.Challenge
+---@param challenge string|SMODS.Challenge
 ---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
 ---@return boolean
 function SMODS.challenge_is_unlocked(challenge, k) end
@@ -991,3 +992,10 @@ function SMODS.process_loc_element(element) end
 --- Returns if the current ante would have a showdown boss blind.
 ---@return boolean
 function SMODS.is_showdown_ante() end
+
+--- Returns the default ability table for this center
+---@param center SMODS.Center|table
+---@param card? Card|table
+---@param no_copy? boolean Skips copying the config values of the center
+---@return table
+SMODS.get_default_ability_vars = function(center, card, no_copy) end

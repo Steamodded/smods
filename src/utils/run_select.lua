@@ -577,10 +577,12 @@ function SMODS.RunSelect.Functions.build_preview_areas(key)
         end
     end
 
-    SMODS.RunSelect.Internals.preview_area = CardArea(15.475, 0, G.CARD_W * (page_def.selection_limit > 1 and 1.5 or 1), G.CARD_H,
-    {card_limit = page_def.preview_size or page_def.selection_limit, type = page_def.area_type or 'title_2', highlight_limit = 0, run_select_deck_preview = page_def.area_type == 'deck'})
+    local selection_limit = SMODS.RunSelect.Functions.get_selection_limit(page_def)
+
+    SMODS.RunSelect.Internals.preview_area = CardArea(15.475, 0, G.CARD_W * (selection_limit > 1 and 1.5 or 1), G.CARD_H,
+    {card_limit = page_def.preview_size or selection_limit, type = page_def.area_type or 'title_2', highlight_limit = 0, run_select_deck_preview = page_def.area_type == 'deck'})
     SMODS.RunSelect.Internals.preview_area_holding = CardArea(15.475+2*G.CARD_W, -2*G.CARD_H, G.CARD_W, G.CARD_H,
-    {card_limit = page_def.preview_size or page_def.selection_limit, type = page_def.area_type or 'title_2', highlight_limit = 0})
+    {card_limit = page_def.preview_size or selection_limit, type = page_def.area_type or 'title_2', highlight_limit = 0})
 end
 
 function SMODS.RunSelect.Functions.update_preview_texts(page_def)
@@ -639,7 +641,10 @@ end
 function SMODS.RunSelect.Functions.populate_preview_ui(key, to_add, silent, _remove)
     if SMODS.config.run_select_performance then silent = true end
     local page_def = SMODS.RunSelect.Pages[key]
-    if page_def.selection_limit == 1 and not _remove then
+
+    local selection_limit = SMODS.RunSelect.Functions.get_selection_limit(page_def)
+
+    if selection_limit == 1 and not _remove then
         if G.E_MANAGER.queues.run_select then G.E_MANAGER:clear_queue('run_select') end
         remove_all(SMODS.RunSelect.Internals.preview_area.cards)
         SMODS.RunSelect.Internals.preview_area.cards = {}
@@ -859,6 +864,14 @@ function SMODS.RunSelect.Functions.create_info_nodes(info_queue, c, row)
     return tooltips
 end
 
+function SMODS.RunSelect.Functions.get_selection_limit(page_def)
+    if type(page_def.selection_limit) == 'function' then
+        return page_def:selection_limit() or 1
+    else
+        return page_def.selection_limit or 1
+    end
+end
+
 
 local card_hover_ref = Card.hover
 function Card:hover()
@@ -954,7 +967,7 @@ local card_click_ref = Card.click
 function Card:click() 
     if self.params.stake and not self.params.stake_chip_locked and self.params.run_select_selection_choice then
         SMODS.RunSelect.Pages.stake_choice:handle_choice(self.params.stake)
-    elseif self.params.run_select_selection_choice and self.config.center.unlocked ~= false and self.config.center.discovered ~= false then
+    elseif self.params.run_select_selection_choice and self.config.center.unlocked ~= false and (self.config.center.discovered ~= false or self.bypass_discovery_center) then
         local page = SMODS.RunSelect.Pages[self.params.run_select_selection_choice[2]]
         if page.card_click and type(page.card_click) == 'function' then
             return page:card_click(self)

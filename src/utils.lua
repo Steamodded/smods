@@ -1149,8 +1149,8 @@ function SMODS.calculate_quantum_enhancements(card, effects, context)
 end
 
 function SMODS.has_playing_card_property(card, key)
-    if key == 'should_hide_front' then
-        -- Ignore quantum enhancements for 'should_hide_front'
+    if key == 'replace_base_card' then
+        -- Ignore quantum enhancements for 'replace_base_card'
         if card.ability.set == 'Enhanced' and G.P_CENTERS[card.config.center.key][key] then
             return true
         end
@@ -2388,6 +2388,9 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
         end
         local flags = SMODS.calculate_context(context)
         if flags.remove then destroyed = true end
+        if type(flags.remove) == "table" then
+            card.SMODS_destroy_args = flags.remove
+        end
 
         -- TARGET: card destroyed
 
@@ -2675,7 +2678,11 @@ function Card.selectable_from_pack(card, pack)
     local select_area, can_also_use = SMODS.card_select_area(card, pack)
     if select_area then
         if type(select_area) == 'table' then
-            if select_area[card.ability.set] then return select_area[card.ability.set] else return false end
+            if select_area[card.ability.set] then 
+                return select_area[card.ability.set], can_also_use
+            else
+                return false, can_also_use
+            end
         end
         return select_area, can_also_use
     end
@@ -3074,7 +3081,8 @@ function SMODS.destroy_cards(cards, args, ...)
     local playing_cards = {}
     local queued_for_destruction = {}
     for _, card in ipairs(cards) do
-        if args.bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
+        local card_args = card.SMODS_destroy_args or {}
+        if args.bypass_eternal or card_args.bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
             card.getting_sliced = true
             table.insert(queued_for_destruction, card)
             if SMODS.shatters(card) then
@@ -3083,7 +3091,7 @@ function SMODS.destroy_cards(cards, args, ...)
             else
                 card.destroyed = true
             end
-            if card.base.name then
+            if SMODS.is_playing_card(card) then
                 playing_cards[#playing_cards + 1] = card
             end
         end
@@ -3093,7 +3101,7 @@ function SMODS.destroy_cards(cards, args, ...)
 
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
-    local destroy_func = function (card, args)
+    local destroy_func = function(card, args)
         if not card.getting_sliced then return false end
         if args.destroy_func then 
             return args.destroy_func(card, args) ~= false
@@ -3115,6 +3123,7 @@ function SMODS.destroy_cards(cards, args, ...)
     end
 
     for i, card in ipairs(queued_for_destruction) do
+        local args = SMODS.merge_defaults(card.SMODS_destroy_args or {}, args)
         if args.immediate then
             destroy_func(card, args)
         else
@@ -3127,6 +3136,7 @@ function SMODS.destroy_cards(cards, args, ...)
                 end
             }))
         end
+        card.SMODS_destroy_args = nil
     end
     return queued_for_destruction
 end
@@ -3542,6 +3552,7 @@ end
 
 function SMODS.challenge_is_unlocked(challenge, k)
     local challenge_unlocked
+    challenge = type(challenge) == "string" and SMODS.Challenges[challenge] or challenge or {}
     if type(challenge.unlocked) == 'function' then
         challenge_unlocked = challenge:unlocked()
     elseif type(challenge.unlocked) == 'boolean' then
@@ -4601,7 +4612,13 @@ function SMODS.card_to_image(card, scale, filename)
     scale = scale or G.SETTINGS.GRAPHICS.texture_scaling
 	filename = (filename or key == "j_joker" and "jimbo" or key) .. ".png"
     
-	local canvas = love.graphics.newCanvas(71 * scale, 95 * scale, {type = '2d', readable = true})
+    local atlas = card.children and card.children.center and card.children.center.atlas or {}
+    local display = card.config.center.display_size or {}
+    local px,py = display.w or atlas.px or 71, display.h or atlas.py or 95
+    display.w, display.h = display.w or 71, display.h or 95
+    local ratiox,ratioy = px/display.w, py/display.h
+
+	local canvas = love.graphics.newCanvas(px * scale, py * scale, {type = '2d', readable = true})
     canvas:setFilter('nearest', 'nearest')
 
     local old_t = SMODS.shallow_copy(card.T)
@@ -4609,7 +4626,7 @@ function SMODS.card_to_image(card, scale, filename)
     local old_rm = G.SETTINGS.reduced_motion
     card.T.r = 0
     local old_scale = card.T.scale 
-    card.T.scale = scale / G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 -- Don't ask me why I had to multiply by 1.5 here, and by the per-dimension factors below, I do not know,,, (this may have been brute-tinkered)
+    card.T.scale = scale / G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 * ratiox -- Don't ask me why I had to multiply by 1.5 here, and by the per-dimension factors below, I do not know,,, (this may have been brute-tinkered)
     local w, h = old_t.w * 0.997, old_t.h * 0.99348                                                         -- (well these factors are needed to remove extra pixels in height/width for scales == 2.0 -> 16.0 (at least))
     card:hard_set_T(w/2*(card.T.scale-1), h/2*(card.T.scale-1), w, h)
 	card.no_shadow = true

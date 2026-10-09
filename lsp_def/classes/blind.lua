@@ -55,3 +55,8 @@ SMODS.Blind = setmetatable({}, {
 
 ---@type table<string, SMODS.Blind|table>
 SMODS.Blinds = {}
+
+---Returns the prototype object from the game object.
+---@param blind Blind|table
+---@return SMODS.Blind|table 
+SMODS.Blind.get_prototype_object = function (blind) end
