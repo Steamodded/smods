@@ -3232,6 +3232,46 @@ SMODS.UndiscoveredCompat = {
         end
     }
 
+    function SMODS.create_tag(args)
+        args = args or {}
+        if not args.key then
+            local tag_pool = get_current_pool('Tag')
+            args.key = pseudorandom_element(tag_pool, args.seed or 'smods_create_tag')
+            local it = 0
+            while args.key == 'UNAVAILABLE' do
+                it = it + 1
+                args.key = pseudorandom_element(tag_pool, args.seed or 'smods_create_tag'..it)
+            end
+        end 
+
+        local tag = Tag(args.key, args.collection, args.blind_type)
+
+        G.E_MANAGER:add_event(Event({
+            trigger = args.immediate and 'immediate' or 'after', delay = args.immediate and 0 or 0.4,
+            blockable = not args.immediate,
+            func = (function()
+                add_tag(tag)
+                return true
+            end)
+        }))
+        if not args.silent then
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    if args.sound and type(args.sound) == 'function' then
+                        args.sound()
+                    else
+                        play_sound('generic1', 0.9 + math.random()*0.1, 0.8)
+                        play_sound('holo1', 1.2 + math.random()*0.1, 0.4)
+                    end
+                    return true
+                end
+            }))
+        end
+        
+        return tag
+    end
+
+
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Sticker
     -------------------------------------------------------------------------------------------------
