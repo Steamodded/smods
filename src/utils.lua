@@ -19,6 +19,26 @@ function utf8CharAt(text, i)
 	local next_pos = utf8Offset(text, i + 1)
 	return text:sub(start, next_pos and next_pos - 1 or -1)
 end
+function utf8Sub(s, start, stop)
+    local len = utf8Len(s)
+    if not len then return nil end
+
+    start = start or 1
+    stop = stop or len
+
+    if start < 0 then start = len + start + 1 end
+    if stop < 0 then stop = len + stop + 1 end
+
+    start = math.max(1, start)
+    stop = math.min(len, stop)
+
+    if start > stop then return "" end
+
+    local i = utf8Offset(s, start)
+    local j = utf8Offset(s, stop + 1)
+
+    return string.sub(s, i, j and j - 1 or -1)
+end
 
 function inspect(table)
     if type(table) ~= 'table' then

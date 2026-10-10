@@ -3408,8 +3408,9 @@ function SMODS.GUI.text_input(args)
     args.w = args.w or 2.5
     args.h = args.h or 0.7
     args.text_scale = args.text_scale or 0.4
-    args.max_length = args.max_length or 16
+    args.max_length = args.max_length or nil
     args.all_caps = args.all_caps or false
+    args.no_caps = args.no_caps or false
     args.prompt_text = args.prompt_text or localize('k_enter_text')
     args.prompt_colour = args.prompt_colour or lighten(copy_table(args.colour), 0.4)
     args.current_prompt_text = ''
@@ -3420,19 +3421,24 @@ function SMODS.GUI.text_input(args)
     if args.ref_table[args.ref_value] then
         args.ref_table[args.ref_value] = tostring(args.ref_table[args.ref_value])
     end
-    local text = {ref_table = args.ref_table, ref_value = args.ref_value, letters = {}, current_position = utf8Len(args.ref_table[args.ref_value])}
-
-    local ui_letters = {}
-    for i = 1, args.max_length do
-        text.letters[i] = (args.ref_table[args.ref_value] and (utf8CharAt(args.ref_table[args.ref_value], i) or '')) or ''
-        ui_letters[i] = {n=G.UIT.T, config={ref_table = text.letters, ref_value = i, scale = args.text_scale, colour = args.text_colour, id = args.id..'_letter_'..i, font = args.font}}
-    end
+    local text = {
+        smods_gui_input = true,
+        ref_table = args.ref_table, ref_value = args.ref_value,
+        prefix = args.ref_table[args.ref_value], suffix = "",
+        current_position = utf8Len(args.ref_table[args.ref_value])
+    }
     args.text = text
-
     local position_text_colour = lighten(copy_table(G.C.BLUE), 0.4)
 
-    ui_letters[#ui_letters+1] = {n=G.UIT.T, config={ref_table = args, ref_value = 'current_prompt_text', scale = args.text_scale, colour = args.prompt_colour, id = args.id..'_prompt', font = args.font}}
+    local ui_letters = {}
+    -- Prefix: all text before positioner
+    ui_letters[#ui_letters+1] = {n=G.UIT.T, config={ref_table = text, ref_value = "prefix", scale = args.text_scale, colour = args.text_colour, id = args.id..'_prefix', font = args.font}}
+    -- Positioner itself
     ui_letters[#ui_letters+1] = {n=G.UIT.B, config={r = 0.03,w=0, h=0.4, colour = position_text_colour, id = args.id..'_position', func = 'flash'}}
+    -- Suffix: all text after positioner
+    ui_letters[#ui_letters+1] = {n=G.UIT.T, config={ref_table = text, ref_value = "suffix", scale = args.text_scale, colour = args.text_colour, id = args.id..'_suffix', font = args.font}}
+    -- Placeholder
+    ui_letters[#ui_letters+1] = {n=G.UIT.T, config={ref_table = args, ref_value = 'current_prompt_text', scale = args.text_scale, colour = args.prompt_colour, id = args.id..'_prompt', font = args.font}}
 
     local t = 
         {n=G.UIT.C, config={align = "cm", colour = G.C.CLEAR}, nodes = {
@@ -3445,6 +3451,50 @@ function SMODS.GUI.text_input(args)
             }}
         }}
     return t
+end
+
+local old_transpose_text_input = TRANSPOSE_TEXT_INPUT
+function TRANSPOSE_TEXT_INPUT(amount, ...)
+    local hook = G.CONTROLLER.text_input_hook
+    if hook.config.ref_table.smods_gui_input then
+        local text = hook.config.ref_table.text
+        local text_value = text.ref_table[text.ref_value]
+        text.current_position = math.min(#text_value, math.max(0, text.current_position + amount))
+        text.prefix = utf8Sub(text_value, 1, text.current_position)
+        text.suffix = utf8Sub(text_value, text.current_position + 1)
+        hook.UIBox:recalculate(true)
+        return
+    end
+    return old_transpose_text_input(amount, ...)
+end
+local old_modify_text_input = MODIFY_TEXT_INPUT
+function MODIFY_TEXT_INPUT(args, ...)
+    args = args or {}
+    if args.text_table.smods_gui_input then
+        local text = args.text_table
+        local text_value = text.ref_table[text.ref_value]
+
+        if args.delete and args.pos > 0 then 
+            text.ref_table[text.ref_value] = utf8Sub(text_value, 1, args.pos - 1) .. utf8Sub(text_value, args.pos + 1)
+            return
+        end
+        if args.letter and args.pos >= 0 then
+            text.ref_table[text.ref_value] = utf8Sub(text_value, 1, args.pos - 1) .. args.letter .. utf8Sub(text_value, args.pos)
+            return
+        end
+        return
+    end
+    return old_modify_text_input(args, ...)
+end
+local old_get_text_from_input = GET_TEXT_FROM_INPUT
+function GET_TEXT_FROM_INPUT(...)
+    local hook = G.CONTROLLER.text_input_hook
+    if hook.config.ref_table.smods_gui_input then
+        local prefix = hook.children[1]
+        local suffix = hook.children[3]
+        return prefix.config.text .. suffix.config.text
+    end
+    return old_get_text_from_input(...)
 end
 
 G.FUNCS.smods_gui_text_input_key = function(args)
@@ -3547,7 +3597,7 @@ G.FUNCS.smods_gui_text_input_key = function(args)
         TRANSPOSE_TEXT_INPUT(-1)
     elseif args.key == 'RIGHT' then --Move cursor position to the right
         TRANSPOSE_TEXT_INPUT(1)
-    elseif hook_config.max_length > utf8Len(text.ref_table[text.ref_value]) and (utf8Len(args.key) == 1) then --check to make sure the key is in the valid corpus, add it to the string
+    elseif (not hook_config.max_length or hook_config.max_length > utf8Len(text.ref_table[text.ref_value])) and (utf8Len(args.key) == 1) then --check to make sure the key is in the valid corpus, add it to the string
         MODIFY_TEXT_INPUT{
             letter = args.key,
             text_table = text,
