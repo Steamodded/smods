@@ -3473,9 +3473,11 @@ G.FUNCS.smods_gui_text_input_key = function(args)
         if not (hook_config.multi_language or (utf8Codepoint(args.key) > 31 and utf8Codepoint(args.key) < 128)) then return end
     end
 
-    -- Process capslock
-    args.caps = (args.caps or G.CONTROLLER.capslock or hook_config.all_caps) and not hook_config.no_caps
-    if not keymap[args.key] and args.caps then args.key = string.upper(args.key) end
+    -- Process all_caps/no_caps
+    if not keymap[args.key] then
+        if args.all_caps or hook_config.all_caps then args.key = string.upper(args.key) end
+        if args.no_caps or hook_config.no_caps then args.key = string.lower(args.key) end
+    end
 
     -- Modify function
     if hook_config.func then
@@ -3578,7 +3580,7 @@ local old_text_input_key = G.FUNCS.text_input_key
 function G.FUNCS.text_input_key(args, ...)
     local e = G.CONTROLLER.text_input_hook
     if e and not e.REMOVED and e.config.ref_table and e.config.ref_table.smods_gui_input then
-        return G.FUNCS.smods_gui_text_input_key(args)
+        return G.FUNCS.smods_gui_text_input_key(args, ...)
     end
     return old_text_input_key(args, ...)
 end
@@ -3587,11 +3589,7 @@ local love_textinput = love.textinput or function() end
 function love.textinput(text, ...)
 	local e = G.CONTROLLER.text_input_hook
 	if e and not e.REMOVED and e.config.ref_table and e.config.ref_table.smods_gui_input then
-		G.FUNCS.smods_gui_text_input_key({
-			key = text,
-			caps = G.CONTROLLER.held_keys["lshift"] or G.CONTROLLER.held_keys["rshift"],
-            textinput = true,
-		})
+		G.FUNCS.smods_gui_text_input_key({ key = text, textinput = true })
 	end
 	love_textinput(text, ...)
 end

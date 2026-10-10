@@ -11,8 +11,8 @@ elseif key == "capslock" then
     self.capslock = not self.capslock'''
 position = "after"
 payload = '''
-elseif self.text_input_hook.config.ref_table.smods_gui_input then
-    G.FUNCS.smods_gui_text_input_key({ key = key, caps = G.CONTROLLER.held_keys["lshift"] or G.CONTROLLER.held_keys["rshift"], keypressed = true })
+elseif self.text_input_hook.config.ref_table and self.text_input_hook.config.ref_table.smods_gui_input then
+    G.FUNCS.smods_gui_text_input_key({ key = key, keypressed = true })
 '''
 match_indent = true
 
