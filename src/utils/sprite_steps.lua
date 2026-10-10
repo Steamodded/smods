@@ -97,3 +97,54 @@ function Sprite:draw_self(overlay)
 	sds_hook(self, overlay)
 	self.atlas.image = old_img
 end
+
+local asds_hook = AnimatedSprite.draw_self
+function AnimatedSprite:draw_self(overlay)
+	-- Skip if no SpriteSteps are applicable
+	local do_the_thing = false
+	for i, k in ipairs(SMODS.SpriteStep.obj_buffer) do
+		local step = SMODS.SpriteSteps[k]
+		if step.should_apply and step:should_apply(self) or type(step.should_apply) == "nil" then do_the_thing = true break end
+	end
+	if not do_the_thing then asds_hook(self, overlay) return end
+
+	love.graphics.push("all")
+
+	-- Get Canvas to use
+	local qx,qy = self.image_dims[1], self.image_dims[2]
+	local canvas_name = qx.."_"..qy
+	if not SMODS.SpriteStepCanvases[canvas_name] then
+		SMODS.SpriteStepCanvases[canvas_name] = love.graphics.newCanvas(qx,qy)
+		SMODS.SpriteStepStorageCanvases[canvas_name] = love.graphics.newCanvas(qx,qy)
+	end
+	local canvas = SMODS.SpriteStepCanvases[canvas_name]
+	local storagecanvas = SMODS.SpriteStepStorageCanvases[canvas_name]
+
+	local vx,vy = self.sprite:getViewport()
+
+	SMODS.SpriteStepQuad:setViewport(vx,vy,self.scale.x,self.scale.y,qx,qy)
+
+    love.graphics.setBlendMode("alpha", "premultiplied")
+	local first = true
+	for i, k in ipairs(SMODS.SpriteStep.obj_buffer) do
+		local step = SMODS.SpriteSteps[k]
+		if step.should_apply and step:should_apply(self) or type(step.should_apply) == "nil" then
+			love.graphics.push()
+			love.graphics.setColor(1,1,1,1)
+			love.graphics.setShader()
+			love.graphics.origin()
+			storagecanvas:renderTo(draw_storage, first, self, canvas)
+			canvas:renderTo(draw_thingy, step, storagecanvas, SMODS.SpriteStepQuad, self)
+			love.graphics.pop()
+			first = false
+		end
+	end
+	
+	love.graphics.pop()
+
+	-- Draw with the new canvas
+	local old_img = self.atlas.image
+	self.atlas.image = canvas
+	asds_hook(self, overlay)
+	self.atlas.image = old_img
+end
