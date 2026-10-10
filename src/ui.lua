@@ -3473,8 +3473,9 @@ G.FUNCS.smods_gui_text_input_key = function(args)
         if not (hook_config.multi_language or (utf8Codepoint(args.key) > 31 and utf8Codepoint(args.key) < 128)) then return end
     end
 
-    -- Process all_caps/no_caps
+    -- Process caps
     if not keymap[args.key] then
+        if args.caps ~= nil then args.key = args.caps and string.upper(args.key) or string.lower(args.key) end
         if args.all_caps or hook_config.all_caps then args.key = string.upper(args.key) end
         if args.no_caps or hook_config.no_caps then args.key = string.lower(args.key) end
     end
