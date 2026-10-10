@@ -3467,8 +3467,6 @@ G.FUNCS.smods_gui_text_input_key = function(args)
     if not keymap[args.key] then
         -- Reject input from keypressed unless it's from in-game screen keyboard
         if args.keypressed and not SMODS.keypress_from_os_keyboard then return end
-        -- Ignore input longer than 1 symbol
-        if utf8Len(args.key) ~= 1 then return end
         -- Ignore non-printable keys if input is not multi-language
         if not (hook_config.multi_language or (utf8Codepoint(args.key) > 31 and utf8Codepoint(args.key) < 128)) then return end
     end
@@ -3494,6 +3492,8 @@ G.FUNCS.smods_gui_text_input_key = function(args)
 
     if keymap[args.key] then
         args.key = keymap[args.key]
+    elseif utf8Len(args.key) ~= 1 then
+        return
     else
         -- Various filters
         if hook_config.corpus and not string.find(hook_config.corpus, args.key, 1, true) then return end
