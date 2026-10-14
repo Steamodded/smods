@@ -440,12 +440,13 @@ function SMODS.RunSelect.Functions.build_selection_areas(key)
     end
 end
 
-function SMODS.RunSelect.Functions.build_selection_ui(key, ignore_click)
+function SMODS.RunSelect.Functions.build_selection_ui(key, ignore_click, pool)
     local page_def = SMODS.RunSelect.Pages[key]
-    local dim = {math.min(page_def.grid_size[1], math.ceil(#page_def.pool/page_def.grid_size[2])), page_def.grid_size[2]}
+    pool = pool or page_def.pool
+    local pool_size = #pool
+    local dim = {math.min(page_def.grid_size[1], math.ceil(pool_size/page_def.grid_size[2])), page_def.grid_size[2]}
     local ui_nodes = {}
     local count = 1
-    local pool_size = #page_def.pool
     for row=1, dim[1] do
         local row_container = {n=G.UIT.R, config = {minw = 5}, nodes = {}}
         for col=1, dim[2] do
@@ -457,24 +458,25 @@ function SMODS.RunSelect.Functions.build_selection_ui(key, ignore_click)
         table.insert(ui_nodes, row_container)
     end
 
-    SMODS.RunSelect.Functions.populate_selection_ui(key, 1, ignore_click)
+    SMODS.RunSelect.Functions.populate_selection_ui(key, 1, ignore_click, pool)
 
     return {n=G.UIT.R, config={align = "cm", minh = 0.45+G.CARD_H+G.CARD_H, colour = G.C.BLACK, padding = 0.15, r = 0.1, emboss = 0.05}, nodes=ui_nodes}
 end
 
-function SMODS.RunSelect.Functions.populate_selection_ui(key, page, ignore_click)
+function SMODS.RunSelect.Functions.populate_selection_ui(key, page, ignore_click, pool)
     local page_def = SMODS.RunSelect.Pages[key]
+    pool = pool or page_def.pool
     local areas = SMODS.RunSelect.Internals.select_areas
     
     local card_size = page_def.sprite_size or {w = G.CARD_W, h = G.CARD_H}
     local count = 1 + (page - 1) * page_def.amount
     
     for i=1, (page_def.amount or 10) do
-        if count > #page_def.pool then return end
+        if count > #pool then return end
         SMODS.RunSelect.Internals.stack_size = SMODS.config.run_select_performance and math.min(5, page_def.stack_size) or page_def.stack_size
         for j=1, SMODS.RunSelect.Internals.stack_size do
-            local card = page_def.create_selection_card and page_def:create_selection_card(page_def.pool[count].key, j, areas[i]) 
-            or Card(areas[i].T.x, areas[i].T.y, card_size.w, card_size.h, nil, page_def.pool[count])
+            local card = page_def.create_selection_card and page_def:create_selection_card(pool[count].key, j, areas[i]) 
+            or Card(areas[i].T.x, areas[i].T.y, card_size.w, card_size.h, nil, pool[count])
             if not ignore_click then
                 card.params.run_select_selection_choice = {i, key}
             else
@@ -543,21 +545,22 @@ G.FUNCS.cycler_default = function(e)
     end
 end
 
-function SMODS.RunSelect.Functions.create_page_cycle(key, count_per_page)
+function SMODS.RunSelect.Functions.create_page_cycle(key, count_per_page, ignore_click, pool)
     local page_def = SMODS.RunSelect.Pages[key]
+    pool = pool or page_def.pool
     local cycler_text = {}
-    local total_pages = math.ceil(#page_def.pool / count_per_page)
+    local total_pages = math.ceil(#pool / count_per_page)
     for i=1, total_pages do
         table.insert(cycler_text, localize('k_page')..' '..i..' / '..total_pages)
     end
 
     local switch_func = function(args)
         SMODS.RunSelect.Functions.clean_up(true)
-        SMODS.RunSelect.Functions.populate_selection_ui(key, args.to)
+        SMODS.RunSelect.Functions.populate_selection_ui(key, args.to, ignore_click, pool)
     end
 
     local cycle = cycler({
-        object_table = page_def.pool,
+        object_table = pool,
         page_size = count_per_page,
         key = page_def.key..'_select_cycle',
         switch_func = switch_func,

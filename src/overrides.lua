@@ -3139,11 +3139,11 @@ function create_UIBox_your_collection_decks()
     SMODS.RunSelect.Setup.choices[key] = SMODS.RunSelect.Setup.choices[key] or page_def:set_default(G.PROFILES[G.SETTINGS.profile].last_choices[key])
     SMODS.RunSelect.Functions.build_selection_areas(key)
 
-
+	local pool = SMODS.collection_pool(G.P_CENTER_POOLS.Back)
     local page_ui = function()
         return {n=G.UIT.C, config = {padding = 0.1}, nodes ={
-                SMODS.RunSelect.Functions.build_selection_ui(key, true),
-                SMODS.RunSelect.Functions.create_page_cycle(key, page_def.amount)
+                SMODS.RunSelect.Functions.build_selection_ui(key, true, pool),
+                SMODS.RunSelect.Functions.create_page_cycle(key, page_def.amount, true, pool)
             }}
         end
 
