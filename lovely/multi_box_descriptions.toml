@@ -238,7 +238,7 @@ position = 'before'
 match_indent = true
 payload = '''
 local config = {}
-config = {minh = (min_dims*2.5)/(1+#(AUT.multi_box or {})), emboss = 0.1*min_dims/0.8, r = 0.1, align = "cm", padding = 0.1, minw = min_dims*5}
+config = {minh = (min_dims*3)/(1+#(AUT.multi_box or {})), emboss = 0.1*min_dims/0.8, r = 0.1, align = "cm", padding = 0.1, minw = min_dims*5.4}
 local conf = config
 for i, v in pairs(config) do
     conf[i] = v
@@ -263,7 +263,7 @@ for i, v in pairs(AUT.multi_box or {}) do
 end
 if true then
     return
-    {n=G.UIT.ROOT, config={align = "cm", minw = min_dims*5, minh = min_dims*2.5, id = self.name, colour = G.C.CLEAR}, nodes={
+    {n=G.UIT.ROOT, config={align = "cm", minw = min_dims*5, minh = min_dims*2.5, padding = 0, id = self.name, colour = G.C.CLEAR}, nodes={
         unpack(nodes)
     }}
 end
