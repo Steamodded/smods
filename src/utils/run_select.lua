@@ -822,12 +822,21 @@ function SMODS.RunSelect.Functions.grab_tooltips(set, key)
     local loc_target = G.localization.descriptions[set][key]
     for _, lines in ipairs(loc_target.text_parsed) do
         for _, part in ipairs(lines) do
-            if part.control and part.control.T then 
-                info_queue[#info_queue+1] = G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T] or {
+            if part.control and part.control.T then
+                info_queue[#info_queue + 1] = G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T] or {
                     set = part.control.T_set or 'Other',
                     key = part.control.T,
                     vars = part.control.T_vars and parse_tooltip_vars(part.control.T_vars) or {}
                 }
+            end
+            for _, multibox_part in ipairs(part) do
+                if multibox_part.control and multibox_part.control.T then
+                    info_queue[#info_queue + 1] = G.P_CENTERS[multibox_part.control.T] or G.P_TAGS[multibox_part.control.T] or {
+                        set = multibox_part.control.T_set or 'Other',
+                        key = multibox_part.control.T,
+                        vars = multibox_part.control.T_vars and parse_tooltip_vars(multibox_part.control.T_vars) or {}
+                    }
+                end
             end
         end
     end
