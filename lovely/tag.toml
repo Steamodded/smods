@@ -62,6 +62,19 @@ if self.ability.orbital_hand == '['..localize('k_poker_hand')..']' then
     self.ability.orbital_hand = pseudorandom_element(_poker_hands, pseudoseed('orbital'))
 end
 '''
+# Safeguard
+[[patches]]
+[patches.pattern]
+target = 'tag.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if G.GAME.orbital_choices and G.GAME.orbital_choices[G.GAME.round_resets.ante][self.ability.blind_type] then
+'''
+payload = '''
+if G.GAME.orbital_choices and G.GAME.orbital_choices[G.GAME.round_resets.ante] and G.GAME.orbital_choices[G.GAME.round_resets.ante][self.ability.blind_type] then
+'''
+
 
 # create_UIBox_your_collection_tags()
 [[patches]]

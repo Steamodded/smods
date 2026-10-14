@@ -34,7 +34,7 @@ match_indent = true
 payload = '''
 function eval_card(card, context)
     context = context or {}
-    if not card:can_calculate(context.ignore_debuff, context.remove_playing_cards or context.joker_type_destroyed) then
+    if not card:can_calculate(context.ignore_debuff, context.remove_playing_cards or context.joker_type_destroyed) and not context.debuffed_calculation then
         if card.ability.rental then
             local ret = {}
             ret[SMODS.Stickers.rental] = card:calculate_sticker(context, 'rental')
@@ -44,7 +44,7 @@ function eval_card(card, context)
     end
 	local vanilla_debuff_handling
     for _, key in ipairs(SMODS.custom_debuff_handling) do if card.config.center_key == key then vanilla_debuff_handling = true; break end end
-    if context.other_card and context.other_card.can_calculate and not context.other_card:can_calculate(context.ignore_other_debuff or context.ignore_debuff) and not vanilla_debuff_handling then return {}, {} end
+    if context.other_card and context.other_card.can_calculate and not context.other_card:can_calculate(context.ignore_other_debuff or context.ignore_debuff) and not vanilla_debuff_handling and not context.debuffed_calculation then return {}, {} end
     local ret = {}
 '''
 

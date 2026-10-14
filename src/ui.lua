@@ -3326,6 +3326,24 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
     }
 end
 
+function SMODS.cleanup_infoqueue_dupes(info_queue)
+    local old_queue = SMODS.shallow_copy(info_queue)
+    info_queue = EMPTY(info_queue)
+    for _, v in ipairs(old_queue) do
+        local already_added = false
+        for _, j in ipairs(info_queue) do
+            if v == j then
+                already_added = true
+                break
+            end
+        end
+        if not already_added then
+            info_queue[#info_queue+1] = v
+        end
+    end
+    return info_queue
+end
+
 -- #region blind tooltips
 
 local old_blind_popup = create_UIBox_blind_popup
