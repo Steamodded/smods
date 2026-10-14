@@ -33,7 +33,7 @@
 ---@field modifiers? fun() Applies changes to the game state when this stake is applied at the start of a run.
 ---@field calculate? fun(self: SMODS.Stake|table, context: CalcContext|table): table?, boolean? Calculates effects based on parameters in `context`. See [SMODS calculation](https://docs.smods.dev/API%20Documentation/Calculate-Functions) docs for details. 
 ---@field loc_vars? fun(self: SMODS.Stake|table): table? Provides control over displaying descriptions of the stake. See [SMODS.Stakes `loc_vars` implementation](https://docs.smods.dev/Game%20Objects/SMODS.Stake#api-methods) documentation for details. 
----@field calc_dollar_bonus? fun(self: SMODS.Stake|table): number?, {text?:string, text_colour?:table, scale?:number, key?:string, set?:string}? Calculates reward money. 
+---@field calc_dollar_bonus? fun(self: SMODS.Stake|table): number?, smods_calc_dollar_bonus_row_args? Calculates reward money. 
 ---@overload fun(self: SMODS.Stake): SMODS.Stake
 SMODS.Stake = setmetatable({}, {
     __call = function(self)

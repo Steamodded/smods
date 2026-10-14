@@ -1490,9 +1490,16 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
                 effect.cashout_row.bonus = true
                 effect.cashout_row.pitch = SMODS.cashout_pitch
                 effect.cashout_row.dollars = effect.cashout_row.dollars or amount
-                add_round_eval_row(effect.cashout_row)
+                if effect.cashout_row.text then
+                    effect.cashout_row.text = type(effect.cashout_row.text) == "table" and effect.cashout_row.text or
+                    { string = effect.cashout_row.text or '' }
+                    effect.cashout_row.text.colour = effect.cashout_row.text.colour or effect.cashout_row.text_colour or
+                    G.C.FILTER
+                    effect.cashout_row.text.scale = effect.cashout_row.text.scale or effect.cashout_row.scale or 0.6
+                end
+                SMODS.add_round_eval_row(effect.cashout_row)
             else
-                add_round_eval_row({dollars = amount, bonus = true, name='joker'..SMODS.cashout_index, pitch = SMODS.cashout_pitch, card = scored_card})
+                SMODS.add_round_eval_row({dollars = amount, bonus = true, id='joker'..SMODS.cashout_index, pitch = SMODS.cashout_pitch, card = scored_card})
             end
         end
     end
@@ -2985,7 +2992,7 @@ function SMODS.localize_box(lines, args)
                     shadow = not args.no_shadow,
                     y_offset = args.y_offset or -0.6,
                     spacing = (not args.no_spacing and math.max(0, 0.32*(17 - #(final_name_assembled_string or assembled_string)))) or nil,
-                    scale = (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*thunk.scale_mod*(args.fixed_scale or 1),
+                    scale = (args.set_scale and args.set_scale*thunk.scale_mod) or (0.55 - 0.004*#(final_name_assembled_string or assembled_string))*thunk.scale_mod*(args.fixed_scale or 1),
                 })
             }}
         elseif part.control.E then
