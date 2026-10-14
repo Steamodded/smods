@@ -34,3 +34,29 @@ target = "game.lua"
 pattern = 'G.SETTINGS.GRAPHICS.crt =(.*\n)*\s*G.SETTINGS.GRAPHICS.crt =.*'
 position = 'at'
 payload = ''
+
+# These next 3 patches fix DPI in vortex shader
+# (it doesn't go to the center with different dpi)
+[[patches]]
+[patches.pattern]
+target = "vortex.fs"
+pattern = "extern float vortex_amt;"
+position = "after"
+payload = "extern float DPI;"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "vortex.fs"
+pattern = "vec2 uv = (vertex_position.xy - 0.5*love_ScreenSize.xy)/length(love_ScreenSize.xy);"
+position = "before"
+payload = "vertex_position = vertex_position * DPI;"
+match_indent = true
+
+[[patches]]
+[patches.pattern]
+target = "engine/sprite.lua"
+pattern = "G.SHADERS['vortex']:send('vortex_amt', G.TIMERS.REAL - (G.vortex_time or 0))"
+position = "after"
+payload = "G.SHADERS['vortex']:send('DPI', love.graphics.getDPIScale())"
+match_indent = true

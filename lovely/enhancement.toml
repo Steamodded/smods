@@ -231,14 +231,6 @@ position = "at"
 payload = "if SMODS.shatters(scoring_hand[i]) then"
 match_indent = true
 
-[[patches]]
-[patches.pattern]
-target = "functions/state_events.lua"
-pattern = "if cards_destroyed[i].ability.name == 'Glass Card' then"
-position = "at"
-payload = "if cards_destroyed[i].shattered then"
-match_indent = true
-
 # Prevent blue seals from applying on quantum enhancement calc
 [[patches]]
 [patches.pattern]

@@ -11,6 +11,7 @@ SMODS.Blind = SMODS.GameObject:extend {
     atlas = 'blind_chips',
     discovered = false,
     pos = { x = 0, y = 0 },
+    boss_colour = G.C.GREY,
     required_params = {
         'key',
     },
@@ -32,6 +33,14 @@ SMODS.Blind = SMODS.GameObject:extend {
         }
 
         G.P_BLINDS[self.key] = self
+        if self.attributes then
+            for _, attribute in ipairs(self.attributes) do
+                if SMODS.Attributes[attribute] then
+                    self.attributes[attribute] = true
+                    SMODS.Attributes[attribute].keys = SMODS.merge_lists({SMODS.Attributes[attribute].keys or {}, {self.key}})
+                end
+            end
+        end
         if self.modifies_draw then SMODS.Blinds.modifies_draw[self.key] = true end
     end
 }
@@ -112,7 +121,15 @@ end
 
 function SMODS.get_new_blind(blind_type)
     local ret_boss
-    if SMODS.optional_features.object_weights then
+    local is_boss = not blind_type or blind_type == 'boss'
+    G.GAME.perscribed_bosses = G.GAME.perscribed_bosses or {}
+    
+    if is_boss and G.GAME.perscribed_bosses[G.GAME.round_resets.ante] then
+        ret_boss = G.GAME.perscribed_bosses[G.GAME.round_resets.ante]
+        G.GAME.perscribed_bosses[G.GAME.round_resets.ante] = nil
+    elseif is_boss and G.FORCE_BOSS then
+        return G.FORCE_BOSS
+    elseif SMODS.optional_features.object_weights then
         ret_boss = SMODS.poll_object({type = 'Blind', blind_type = blind_type, seed = blind_type or 'boss'})
     else
         ret_boss = pseudorandom_element(SMODS.create_blind_pool(blind_type), pseudoseed(blind_type or 'boss'))
@@ -144,4 +161,9 @@ function SMODS.reset_blind_choices(choices)
     for _, k in ipairs(G.GAME.round_resets.blind_order) do
         choices[k] = SMODS.get_new_blind(string.lower(k))
     end
+end
+
+-- completely bypass get_new_boss()
+function get_new_boss()
+	return SMODS.get_new_blind("boss")
 end
