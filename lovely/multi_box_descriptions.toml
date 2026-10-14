@@ -246,7 +246,7 @@ end
 conf.colour = (AUT.main or loc_nodes).background_colour or AUT.box_colours and AUT.box_colours[1] or G.C.WHITE
 local nodes = {
     {n=G.UIT.R, config=conf, nodes={
-        desc_from_rows(loc_nodes, true, min_dims*5)
+        challenge.id and UIBox_button({button = 'deck_view_challenge', label = {localize(challenge.id, 'challenge_names')},  minw = 2.2, minh = 1, scale = 0.6, id = challenge}) or desc_from_rows(loc_nodes, true, min_dims*5)
     }}
 }
 for i, v in pairs(AUT.multi_box or {}) do
@@ -264,7 +264,7 @@ end
 if true then
     return
     {n=G.UIT.ROOT, config={align = "cm", minw = min_dims*5, minh = min_dims*2.5, id = self.name, colour = G.C.CLEAR}, nodes={
-        challenge.id and UIBox_button({button = 'deck_view_challenge', label = {localize(challenge.id, 'challenge_names')},  minw = 2.2, minh = 1, scale = 0.6, id = challenge}) or unpack(nodes)
+        unpack(nodes)
     }}
 end
 '''
