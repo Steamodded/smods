@@ -39,3 +39,7 @@ SMODS.Challenge = setmetatable({}, {
 
 ---@type table<string, SMODS.Challenge|table>
 SMODS.Challenges = {}
+
+---Gets all current challenge if any
+---@return SMODS.Challenge|table?
+SMODS.Challenge.get_current = function() end

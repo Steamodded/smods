@@ -382,6 +382,17 @@ match_indent = true
 
 [[patches]]
 [patches.pattern]
+target = 'functions/common_events.lua'
+pattern = """elseif _c.name == "The World" then loc_vars = {_c.config.max_highlighted, localize(_c.config.suit_conv, 'suits_plural'), colours = {G.C.SUITS[_c.config.suit_conv]}}
+end
+localize{type = 'descriptions', key = _c.key, set = _c.set, nodes = desc_nodes, vars = _c.vars or loc_vars}"""
+position = "after"
+payload = """    elseif _c.set then --Fallback for unrecognized sets
+        localize{type = 'descriptions', key = _c.key, set = _c.set, nodes = desc_nodes, vars = _c.vars or loc_vars}"""
+match_indent = false
+
+[[patches]]
+[patches.pattern]
 target = 'functions/UI_definitions.lua'
 pattern = '''
 function info_tip_from_rows(desc_nodes, name)
@@ -662,4 +673,22 @@ if custom_shape and type(custom_shape) == 'string' and SMODS.CUSTOM_UI_SHAPES_FU
     toth = toth,
   })
 end
+'''
+# this patch was made for when you still want to show card's abilities even when it is debuffed
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''    elseif specific_vars and specific_vars.debuffed then'''
+payload = '''elseif specific_vars and specific_vars.debuffed and SMODS.should_use_debuffed_description({ vars = (specific_vars or _c.vars) })  then'''
+# this one too lol
+# rationale of these being at patches is because these are elseif clauses and there are not a lot of ways you can go about it
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''    elseif self.debuff then'''
+payload = '''elseif self.debuff and SMODS.should_use_debuffed_description({ card = self }) then
 '''

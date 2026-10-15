@@ -41,10 +41,18 @@ G.UIT = {
 ---@field maxw? number Maximum width.
 ---@field padding? number Extra padding in the edges of the node.
 ---@field r? number Roundness of the node's corners.
----@field colour? table HEX color fill of the node.
 ---@field no_fill? boolean Set the node to no fill. Also sets text color for text nodes.
+---@field colour? table HEX color fill of the node.
+---@field colour_opacity? number Multiplier to colour's opacity
 ---@field outline? number Thickness of the outline.
 ---@field outline_colour? table HEX color of the outline.
+---@field outline_colour_opacity? number Multiplier to outline colour's opacity
+---@field overline? table Set colour for text overline
+---@field overline_colour_opacity? number Multiplier to overline colour's opacity
+---@field underline? table Set colour for text underline
+---@field underline_colour_opacity? number Multiplier to underline colour's opacity
+---@field strikethrough? table Set colour for text strike
+---@field strikethrough_colour_opacity? number Multiplier to strikethrough colour's opacity
 ---@field emboss? number How raised the current node is from its parent node.
 ---@field hover? boolean Renders the node as hovering above the parent node.
 ---@field shadow? boolean Renders a shadow below the node.
