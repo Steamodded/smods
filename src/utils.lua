@@ -4777,6 +4777,7 @@ function SMODS.calculate_corners(vertices, config)
         vertices[#vertices+1] = corner_from[1] + (x_neg and -1 or 1)*xcorner*res
         vertices[#vertices+1] = corner_from[2] + (y_neg and -1 or 1)*ycorner*res - ext_up
     end
+end
 -- card will always override center and that will override vars
 function SMODS.should_use_debuffed_description(conf)
     local conf = conf or {}
