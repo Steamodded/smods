@@ -5,14 +5,18 @@
 ---@field super? SMODS.GameObject|table Parent class. 
 ---@field px? string|number Width of individual sprites using this atlas. 
 ---@field py? string|number Height of individual sprite using this atlas. 
----@field path? string Name of the image file, including extension.
+---@field path? string Name of the image file, including extension. 
 ---@field path_mod? Mod|table The mod this object's `path` belongs to, if this is not the same mod it was created by.
----@field atlas_table? "ASSET_ATLAS"|"ANIMATION_ATLAS"|"ASSET_IMAGES"|string Type of atlas. `ASSET_ATLAS`: non-animated sprites, `ANIMATION_ATLAS`: animated sprites, `ASSET_IMAGES`: anything other image, e.g. logos. 
+---@field atlas_table? "ASSET_ATLAS"|"ANIMATION_ATLAS"|"ASSET_IMAGES"|"STATE_ATLAS"|string Type of atlas. `ASSET_ATLAS`: non-animated sprites, `ANIMATION_ATLAS`: animated sprites, `STATE_ATLAS`: StateSprites, `ASSET_IMAGES`: anything other image, e.g. logos.
 ---@field frames? number Number of frames in the animation. 
 ---@field fps? number Speed of animation based on frames per second. Default: 10 or G.ANIMATION_FPS.
+---@field sprite_args? table Default sprite_args passed to Animated/StateSprites with this atlas. (Sprite.init()'s argument param and this field are merged, with the init param taking priority) (Allows defining defaults like e.g. sprite_args.frame_durations on the atlas)
+---@field columns? number Number of columns (= sprites horizontally).
+---@field rows? number Number of rows (= sprites vertically).
 ---@field raw_key? boolean Sets whether the mod prefix is added to atlas key. Used for overriding vanilla sprites. 
 ---@field language? string Key to a language. Restricts the atlas to only when this language is enabled. 
 ---@field disable_mipmap? boolean Sets if the sprite is affected by the mipmap. 
+---@field force_pixel? boolean If enabled, will always load the 1x sprite and force pixel smoothing off. Useful for lower resolution pixel art that looks odd with smoothing. 
 ---@field __call? fun(self: SMODS.Atlas|table, o: SMODS.Atlas|table): nil|table|SMODS.Atlas
 ---@field extend? fun(self: SMODS.Atlas|table, o: SMODS.Atlas|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Atlas|table): boolean? Ensures objects already registered will not register. 

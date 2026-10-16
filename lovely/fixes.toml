@@ -218,9 +218,11 @@ position = 'at'
 line_prepend = '$indent'
 payload = '''
 local new_ability = $2
+new_ability = SMODS.merge_defaults(new_ability, SMODS.get_default_ability_vars(self, center, true))
+
 self.ability = self.ability or {}
 new_ability.extra_value = nil
-new_ability.debuff_sources = {}
+new_ability.debuff_sources = self.ability.debuff_sources or {}
 self.ability.extra_value = self.ability.extra_value or 0
 for k, v in pairs(new_ability) do
     self.ability[k] = v
@@ -706,6 +708,15 @@ if other.edition and strip_edition then
     new_card.ability.extra_slots_used = new_card.ability.extra_slots_used - (other.edition.extra_slots_used or 0)
 end'''
 
+# copy_card: call set_cost again at the end because the reordering makes prior calls inaccurate
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+position = 'before'
+match_indent = true
+pattern = 'return new_card'
+payload = '''new_card:set_cost()'''
+
 # copy_card edition config
 [[patches]]
 [patches.pattern]
@@ -794,7 +805,8 @@ target = "game.lua"
 pattern = 'function Game:delete_run()'
 position = 'after'
 payload = '''    G.in_delete_run = true
-    booster_obj = nil'''
+    booster_obj = nil
+    G.TAROT_INTERRUPT = nil'''
 match_indent = true
 [[patches]]
 [patches.pattern]
@@ -803,6 +815,17 @@ pattern = 'G.STATE = -1'
 position = 'after'
 payload = 'G.in_delete_run = false'
 match_indent = true
+
+## Re-apply save data conversion on profile load to restore stake/sticker progress
+# Game:load_profile()
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = 'recursive_init(temp_profile, G.PROFILES[G.SETTINGS.profile])'
+payload = '''if convert_save_data and G.P_STAKES then convert_save_data(G.PROFILES[G.SETTINGS.profile], true) end'''
+
 # Card:remove()
 [[patches]]
 [patches.pattern]
@@ -928,4 +951,58 @@ pattern = '''
 '''
 payload = '''
 (self.ability.consumeable or SMODS.UndiscoveredCompat[self.ability.set]) and
+'''
+
+# Unlock All enabled if locked centers exist
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+(_profile == G.SETTINGS.profile and not G.PROFILES[G.SETTINGS.profile].all_unlocked) and {n=G.UIT.R, config={align = "cm", padding = 0, minh = 0.7}, nodes={
+'''
+payload = '''
+(_profile == G.SETTINGS.profile and (#G.P_LOCKED > 0 or not G.PROFILES[G.SETTINGS.profile].all_unlocked)) and {n=G.UIT.R, config={align = "cm", padding = 0, minh = 0.7}, nodes={
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if G.PROFILES[G.SETTINGS.profile].all_unlocked or e.config.disable_button then
+'''
+payload = '''
+if #G.P_LOCKED == 0 and (G.PROFILES[G.SETTINGS.profile].all_unlocked or e.config.disable_button) then
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+G.PROFILES[G.SETTINGS.profile].all_unlocked = true
+'''
+payload = '''
+EMPTY(G.P_LOCKED)
+'''
+
+# Fix negative hand levels causing a crash
+[[patches]]
+[patches.pattern]
+target = 'functions/common_events.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if type(vals.level) == 'number' then 
+    G.hand_text_area.hand_level.config.colour = G.C.HAND_LEVELS[math.min(vals.level, 7)]
+else
+    G.hand_text_area.hand_level.config.colour = G.C.HAND_LEVELS[1]
+end
+'''
+payload = '''
+if not G.hand_text_area.hand_level.config.colour then
+    G.hand_text_area.hand_level.config.colour = G.C.HAND_LEVELS[0]
+end
 '''

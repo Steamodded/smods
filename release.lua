@@ -1,1 +1,1 @@
-return "1.0.0~BETA-1620a-STEAMODDED"
+return "26.1002.0"

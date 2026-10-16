@@ -232,6 +232,11 @@ if self.UIT ~= G.UIT.T then
 end
 end
 
+local old_colour_opacity
+if self.config.colour_opacity then
+    old_colour_opacity = self.config.colour[4]
+    self.config.colour[4] = self.config.colour[4] * self.config.colour_opacity
+end
 local element_shaders = SMODS.resolve_ui_shaders(self, self.states.visible and self.UIT ~= G.UIT.T and self.config.shader, nil)
 for _, v in ipairs(element_shaders) do
     if v then
@@ -239,6 +244,9 @@ for _, v in ipairs(element_shaders) do
     else
         self.ARGS.cached_draw(self, nil, nil, button_active, parallax_dist, button_being_pressed)
     end
+end
+if old_colour_opacity then
+    self.config.colour[4] = old_colour_opacity
 end
 """
 match_indent = true
@@ -276,6 +284,7 @@ end
 match_indent = true
 
 # Apply shaders on text elements
+# Also draw text outline
 # UIElement:draw_self
 [[patches]]
 [patches.pattern]
@@ -294,6 +303,9 @@ payload = """
 local text_shaders = SMODS.resolve_ui_shaders(self, self.states.visible and self.config.shader, nil)
 for _, v in ipairs(text_shaders) do
     if v then self:set_text_shader(v.shader, v.send, false) end
+    if self.config.text_outline then
+        self:draw_text_outline(button_active)
+    end
     love.graphics.draw(
         self.config.text_drawable,
         self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
@@ -306,3 +318,99 @@ for _, v in ipairs(text_shaders) do
 end
 """
 match_indent = true
+
+
+# Slider adjustments
+# Sliders now round their values
+# side effect: sliders with a smaller range of options may "slide" in a blocky way
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+rt.ref_table[rt.ref_value] = math.min(rt.max,math.max(rt.min, rt.min + (rt.max - rt.min)*(G.CURSOR.T.x - e.parent.T.x - G.ROOM.T.x)/e.T.w))
+'''
+payload = '''
+    local modifier = 10^(rt.decimal_places or 0)
+    rt.ref_table[rt.ref_value] = math.floor(rt.ref_table[rt.ref_value] * modifier + 0.5)/modifier
+'''
+
+# Customise background colour of sliders
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{n=G.UIT.C, config={align = "cl", minw = args.w, r = 0.1,min_h = args.h,collideable = true, hover = true, colour = G.C.BLACK,emboss = 0.05,func = 'slider', refresh_movement = true}, nodes={
+'''
+payload = '''
+{n=G.UIT.C, config={align = "cl", minw = args.w, r = 0.1,min_h = args.h,collideable = true, hover = true, colour = args.background_colour or G.C.BLACK,emboss = 0.05,func = 'slider', refresh_movement = true}, nodes={
+'''
+
+# Handle controller for scrollbars
+[[patches]]
+[patches.pattern]
+target = 'engine/controller.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if focused.config.focus_args.type == 'slider' then
+'''
+payload = '''
+if focused.config.focus_args.type == "scrollbar" then
+    self.no_holdcap = true
+    local was_moved = nil
+    if input_type == 'hold' and self.held_button_times[button] > 0.2 then
+        was_moved = G.FUNCS.controller_scroll(focused, G.real_dt*self.held_button_times[button] * 500, button)
+    end
+    if input_type == 'press' then
+        was_moved = G.FUNCS.controller_scroll(focused, 3, button)
+    end
+    ret = was_moved
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'engine/controller.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+self.focused.target.config.focus_args and
+'''
+payload = '''
+self.focused.target.config.focus_args.type == "scrollbar" and
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'engine/controller.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+if eligible then
+'''
+payload = '''
+if self.focused.target and self.focused.target.UIBox and self.focused.target.UIBox.config.instance_type == "DROPDOWN" then
+    if not (v.config.dropdown_button ~= nil or self.focused.target.config.dropdown_button == v or v.config._attached_dropdown_button == self.focused.target.config.dropdown_button) then
+        eligible = false
+    end
+end
+'''
+
+# Add initial work for stretch argument
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+function UIBox:calculate_xywh(node, _T, recalculate, _scale)
+'''
+payload = '''
+    if node.config.stretch then
+        node.config.minw = node.UIBox.T.w - (node.config.diff or 0)
+    end
+'''

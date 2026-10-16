@@ -1,7 +1,7 @@
 ---@meta
 
 ---@class SMODS.PokerHand: SMODS.GameObject
----@field obj_buffer? PokerHands|string[] Array of keys to all objects registered to this class. 
+---@field obj_buffer? PokerHands[]|string[] Array of keys to all objects registered to this class. 
 ---@field obj_table? table<PokerHands|string, SMODS.PokerHand|table> Table of objects registered to this class. 
 ---@field loc_txt? table|{name: string, description: string[]} Contains strings used for displaying text related to this object. 
 ---@field super? SMODS.GameObject|table Parent class. 
@@ -13,7 +13,7 @@
 ---@field visible? boolean|fun(self:SMODS.PokerHand|table): boolean? Sets hand visibility in the poker hands menu. If `false`, poker hand is shown only after being played once.  A function allows more precise control over hand visibility in the poker hands menu.  
 ---@field above_hand? PokerHands|string Key to a poker hand. Used to order this poker hand above specified poker hand. 
 ---@field order_offset? number Adds this value to poker hand's mult and chips to offset ordering. 
----@field no_collection? boolean|fun():boolean Sets whether the poker hand shows up in the collections menu. 
+---@field no_collection? boolean|fun(self: SMODS.PokerHand|table, args?: table):boolean Sets whether the poker hand shows up in the collections menu. 
 ---@field __call? fun(self: SMODS.PokerHand|table, o: SMODS.PokerHand|table): nil|table|SMODS.PokerHand
 ---@field extend? fun(self: SMODS.PokerHand|table, o: SMODS.PokerHand|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.PokerHand|table): boolean? Ensures objects already registered will not register. 

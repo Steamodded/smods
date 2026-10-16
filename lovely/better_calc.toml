@@ -34,7 +34,7 @@ match_indent = true
 payload = '''
 function eval_card(card, context)
     context = context or {}
-    if not card:can_calculate(context.ignore_debuff, context.remove_playing_cards or context.joker_type_destroyed) then
+    if not card:can_calculate(context.ignore_debuff, context.remove_playing_cards or context.joker_type_destroyed) and not context.debuffed_calculation then
         if card.ability.rental then
             local ret = {}
             ret[SMODS.Stickers.rental] = card:calculate_sticker(context, 'rental')
@@ -44,7 +44,7 @@ function eval_card(card, context)
     end
 	local vanilla_debuff_handling
     for _, key in ipairs(SMODS.custom_debuff_handling) do if card.config.center_key == key then vanilla_debuff_handling = true; break end end
-    if context.other_card and context.other_card.can_calculate and not context.other_card:can_calculate(context.ignore_other_debuff or context.ignore_debuff) and not vanilla_debuff_handling then return {}, {} end
+    if context.other_card and context.other_card.can_calculate and not context.other_card:can_calculate(context.ignore_other_debuff or context.ignore_debuff) and not vanilla_debuff_handling and not context.debuffed_calculation then return {}, {} end
     local ret = {}
 '''
 
@@ -324,13 +324,13 @@ if card.area and area_set[card.area] then
     if type(jokers) ~= 'table' then jokers = nil end
     if jokers or triggered then
         ret.jokers = jokers
-        if not (context.retrigger_joker_check or context.retrigger_joker) and not (jokers and jokers.no_retrigger) and not SMODS.is_getter_context(context) then
+        if not (jokers and jokers.no_retrigger) then
             local retriggers = SMODS.calculate_retriggers(card, context, ret)
             if next(retriggers) then
                 ret.retriggers = retriggers
             end
         end
-        if not context.post_trigger and not context.retrigger_joker_check and SMODS.optional_features.post_trigger then
+        if SMODS.optional_features.post_trigger and SMODS.can_context_post_trigger(context) then
             SMODS.calculate_context({blueprint_card = context.blueprint_card, post_trigger = true, other_card = card, other_context = context, other_ret = ret}, post_trig)
         end
     end
@@ -727,14 +727,36 @@ for _,v in ipairs(SMODS.get_card_areas('playing_cards', 'destroying_cards')) do
     SMODS.calculate_destroying_cards({ full_hand = G.play.cards, scoring_hand = scoring_hand, scoring_name = text, poker_hands = poker_hands, cardarea = v }, cards_destroyed, v == G.play and scoring_hand or nil)
 end
 
--- context.remove_playing_cards calculations
-if cards_destroyed[1] then
-    SMODS.calculate_context({scoring_hand = scoring_hand, remove_playing_cards = true, removed = cards_destroyed})
-end
+SMODS.destroy_cards(cards_destroyed)
 
 -- TARGET: effects when cards are removed
-
 '''
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''        local glass_shattered = {}
+        for k, v in ipairs(cards_destroyed) do
+            if v.shattered then glass_shattered[#glass_shattered+1] = v end
+        end
+
+        check_for_unlock{type = 'shatter', shattered = glass_shattered}
+        
+        for i=1, #cards_destroyed do
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    if cards_destroyed[i].ability.name == 'Glass Card' then 
+                        cards_destroyed[i]:shatter()
+                    else
+                        cards_destroyed[i]:start_dissolve()
+                    end
+                  return true
+                end
+              }))
+        end'''
+position = "at"
+payload = ''
+match_indent = true
 
 [[patches]]
 [patches.regex]
@@ -866,7 +888,7 @@ for _, target in ipairs(SMODS.get_card_areas('individual', 'calc_dollar_bonus'))
         if ret then
             if not ret_opts.no_eval_row then
                 if ret_opts.text then
-                    name = text
+                    name = ret_opts.text
                 elseif (ret_opts.set or target.set) and (ret_opts.key or target.key) then
                     if ret_opts.set == "Challenge" or (not ret_opts.set and target.set == "Challenge") then
                         name = localize(ret_opts.key or target.key, 'challenge_names')
@@ -1171,6 +1193,7 @@ G.E_MANAGER:add_event(Event({
     trigger = 'immediate',
     func = function()                
         SMODS.cards_to_draw = SMODS.cards_to_draw - hand_space
+        SMODS.cards_to_draw = math.min(SMODS.cards_to_draw, #G.deck.cards)
         return true
     end
 }))
@@ -1197,12 +1220,12 @@ pattern = '''
 draw_card(G.deck,G.hand, i*100/hand_space,'up', true)
 '''
 payload = '''
-if cards_to_draw[i] and cards_to_draw[i].ability and cards_to_draw[i].ability.extra_slots_used then
-    SMODS.cards_to_draw = SMODS.cards_to_draw + cards_to_draw[i].ability.extra_slots_used
+if cards_to_draw[i] and cards_to_draw[i].ability and (cards_to_draw[i].ability.extra_slots_used or cards_to_draw[i].ability.card_limit) then
+    SMODS.cards_to_draw = SMODS.cards_to_draw + (SMODS.cards_to_draw < #G.deck.cards and (cards_to_draw[i].ability.extra_slots_used or 0) - (cards_to_draw[i].ability.card_limit or 0) or 0)
     G.E_MANAGER:add_event(Event({
         trigger = 'immediate',
         func = function()                
-            SMODS.cards_to_draw = SMODS.cards_to_draw - cards_to_draw[i].ability.extra_slots_used
+            SMODS.cards_to_draw = SMODS.cards_to_draw - (cards_to_draw[i].ability.extra_slots_used or 0) + (cards_to_draw[i].ability.card_limit or 0)
             return true
         end
     }))
@@ -1353,7 +1376,7 @@ pattern = '''
 position = 'at'
 match_indent = true
 payload = '''
-SMODS.calculate_context({skip_blind = true})
+SMODS.calculate_context({skip_blind = true, skipped_blind = G.GAME.round_resets.blind_choices[skipped], skip_to = G.GAME.round_resets.blind_choices[skip_to]})
 '''
 
 # context.reroll_shop
@@ -1891,6 +1914,34 @@ payload = '''
 SMODS.destroy_cards(self, nil, nil, true)
 '''
 
+# Adjust Mr. Bones
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.E_MANAGER:add_event(Event({
+    func = function()
+        G.hand_text_area.blind_chips:juice_up()
+        G.hand_text_area.game_chips:juice_up()
+        play_sound('tarot1')
+        self:start_dissolve()
+        return true
+    end
+}))
+'''
+payload = '''
+G.E_MANAGER:add_event(Event({
+    func = function()
+        G.hand_text_area.blind_chips:juice_up()
+        G.hand_text_area.game_chips:juice_up()
+        return true
+    end
+}))
+SMODS.destroy_cards(self, nil, nil, nil)
+'''
+
 # Joker-type removed context added
 [[patches]]
 [patches.pattern]
@@ -1901,28 +1952,9 @@ pattern = '''
 function Card:start_dissolve(dissolve_colours, silent, dissolve_time_fac, no_juice)
 '''
 payload = '''
-    if self.getting_sliced and not (self.ability.set == 'Default' or self.ability.set == 'Enhanced') then
+    if self.getting_sliced and not SMODS.is_playing_card(self) and not SMODS.skip_destroy_calc then
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self})
-        if flags.no_destroy then self.getting_sliced = nil; return end
-    end
-    if self.skip_destroy_animation then
-        G.E_MANAGER:add_event(Event({
-            func = function()
-                play_sound('tarot1')
-                self.T.r = -0.2
-                self:juice_up(0.3, 0.4)
-                self.states.drag.is = true
-                self.children.center.pinch.x = true
-                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
-                    func = function()
-                            G.jokers:remove_card(self)
-                            self:remove()
-                            self = nil
-                        return true; end})) 
-                return true
-            end
-        })) 
-        return
+        if flags.no_destroy then self.getting_sliced = nil; return false end
     end
 '''
 [[patches]]
@@ -1934,31 +1966,53 @@ pattern = '''
 function Card:shatter()
 '''
 payload = '''
-    if self.getting_sliced and not (self.ability.set == 'Default' or self.ability.set == 'Enhanced') then
+    if self.getting_sliced and not SMODS.is_playing_card(self) and not args.skip_calc then
         local flags = SMODS.calculate_context({joker_type_destroyed = true, card = self, shatters = true})
-        if flags.no_destroy then self.getting_sliced = nil; return end
-    end
-    if self.skip_destroy_animation then
-        G.E_MANAGER:add_event(Event({
-            func = function()
-                play_sound('tarot1')
-                self.T.r = -0.2
-                self:juice_up(0.3, 0.4)
-                self.states.drag.is = true
-                self.children.center.pinch.x = true
-                G.E_MANAGER:add_event(Event({trigger = 'after', delay = 0.3, blockable = false,
-                    func = function()
-                            G.jokers:remove_card(self)
-                            self:remove()
-                            self = nil
-                        return true; end})) 
-                return true
-            end
-        })) 
-        return
+        if flags.no_destroy then self.getting_sliced = nil; return false end
     end
 '''
 
+# card.lua : Card:shatter() : Add args support
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+function Card:shatter()
+'''
+payload = '''
+function Card:shatter(args)
+    args = args or {}
+'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.dissolve_colours = {{1,1,1,0.8}}
+self:juice_up()
+'''
+payload = '''
+self.dissolve_colours = {{1,1,1,0.8}}
+if not args.no_juice then self:juice_up() end
+'''
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+play_sound('glass'..math.random(1, 6), math.random()*0.2 + 0.9,0.5)
+play_sound('generic1', math.random()*0.2 + 0.9,0.5)
+'''
+payload = '''
+if not args.silent then
+    play_sound('glass'..math.random(1, 6), math.random()*0.2 + 0.9,0.5)
+    play_sound('generic1', math.random()*0.2 + 0.9,0.5)
+end
+'''
 
 ## Change eternal checks
 # Ceremonial Dagger
@@ -2009,7 +2063,7 @@ if v ~= eligible_card and (not v.ability.eternal) then v:start_dissolve(nil, _fi
 payload = '''
 if v ~= eligible_card and (not SMODS.is_eternal(v, self)) then v.getting_sliced = true; v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
 '''
-# Card:can_sell()
+# Card:can_sell(), Add can_sell API method
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -2020,6 +2074,11 @@ not self.ability.eternal then
 '''
 payload = '''
 not SMODS.is_eternal(self, {from_sell = true}) then
+
+local obj = self.config.center
+if self.ability.set ~= "Enhanced" and obj.can_sell and type(obj.can_sell) == 'function' then
+	return obj:can_sell(self, context)
+end
 '''
 
 # Adds tag_added context
@@ -2143,6 +2202,39 @@ if ret then
 end
 '''
 
+# Prep from_cashout field for context.money_altered
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+ease_dollars(G.GAME.current_round.dollars)
+'''
+payload = '''
+SMODS.money_from_cashout = true
+ease_dollars(G.GAME.current_round.dollars)
+SMODS.money_from_cashout = nil
+'''
+
+# Add context.modify_final_cashout
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''
+    dollars = dollars + G.GAME.interest_amount*math.min(math.floor(G.GAME.dollars/5), G.GAME.interest_cap/5)
+end
+'''
+position = "after"
+payload = '''
+
+    SMODS.cashout_pitch = pitch; SMODS.cashout_index = i; SMODS.cashout_dollars = dollars
+    SMODS.calculate_context({modify_final_cashout = true, amount = dollars})
+    dollars = SMODS.cashout_dollars
+    SMODS.cashout_pitch = nil; SMODS.cashout_index = nil; SMODS.cashout_dollars = nil
+'''
+match_indent = false
+
 # Reload SMODS.last_hand
 [[patches]]
 [patches.pattern]
@@ -2165,4 +2257,37 @@ if saveTable then
         end
 	end
 end
+'''
+
+# Draw to play area context
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "table.sort(G.hand.highlighted, function(a,b) return a.T.x < b.T.x end)"
+position = 'before'
+match_indent = true
+payload = '''
+for i=1, #G.hand.cards do
+    local effects = {}
+    SMODS.calculate_context({drawing_to_play_area = true, other_card = G.hand.cards[i], cardarea = G.hand, full_hand = G.hand.highlighted, ignore_other_debuff = true}, effects)
+    local flags = SMODS.trigger_effects(effects, G.hand.cards[i])
+    if flags.remove_from_hand then
+        G.hand:remove_from_highlighted(G.hand.cards[i])
+    elseif flags.add_to_hand then
+        G.hand:add_to_highlighted(G.hand.cards[i])
+    end
+    if flags.return_to_hand and G.hand.cards[i].highlighted then
+        G.hand.cards[i].ability.return_to_hand = true
+    end
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = "v.ability.forced_selection = nil"
+position = 'after'
+match_indent = true
+payload = '''
+v.ability.return_to_hand = nil
 '''

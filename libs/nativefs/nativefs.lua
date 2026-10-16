@@ -549,4 +549,18 @@ do
     end
 end
 
+function nativefs.getNormalizedPath(path)
+    if nativefs.getInfo(path) then return path end
+    path = path:gsub("\\","/"):gsub("/$","")
+    local parent_dir = nativefs.getNormalizedPath(path:gsub("/[^/]*$",""))
+    for _,v in pairs(nativefs.getDirectoryItems(parent_dir)) do
+        if (parent_dir.."/"..v):lower() == path:lower() then
+            return parent_dir.."/"..v
+        end
+    end
+    -- No valid path found. This will propagate out to return a partial match.
+    return path
+end
+
+
 return nativefs

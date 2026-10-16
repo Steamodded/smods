@@ -1,0 +1,24 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+# Extend loc parsing to allow control to be a 2-deep struct
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = "return parsed_line"
+position = "before"
+match_indent = true
+payload = """
+for _, part in ipairs(parsed_line) do
+    for k,v in pairs(part.control) do
+        if v:match("^%[[^%[%]]*%]$") then
+            part.control[k] = {}
+            for kk,vv in v:gmatch("([^=;%[%]]+)=([^=;%[%]]+)") do
+                part.control[k][kk] = vv
+            end
+        end
+    end
+end
+"""
