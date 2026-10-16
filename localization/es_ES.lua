@@ -384,7 +384,7 @@ return {
             run_select_locked_stake_and = " y ",
             run_select_nothing = 'Ninguno',
             run_select_selected = 'ELEGIDA',
-            run_select_quick_start = 'Inicio Rápido',
+            run_select_quick_start = 'Última partida',
             run_select_play = 'Jugar',
             run_setup_enable_seed = 'Habilitar código',
             run_select_deck_choice = 'Elegir baraja',

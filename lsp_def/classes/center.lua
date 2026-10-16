@@ -9,7 +9,7 @@
 ---@field soul_pos? table|{x: integer, y: integer, draw?: fun(card: Card|table, scale_mod?: number, rotate_mod?: number)} Position of the "soul" sprite. Separate front layer sprite that hovers over the card. 
 ---@field unlocked? boolean Sets the unlock state of the center. 
 ---@field discovered? boolean Sets the discovery state of the center. 
----@field no_collection? boolean|fun():boolean Sets whether the card shows up in the collections menu. 
+---@field no_collection? boolean|fun(self: Card|table, args?: table):boolean Sets whether the card shows up in the collections menu. 
 ---@field loc_txt? table|{name: string|string[], text: string[]|string[][]} Contains strings used for displaying text related to this object. 
 ---@field pools? string[] Array of keys to ObjectTypes this center will be added to.
 ---@field attributes? string[]|table<string,true> Array of Attributes this center has. Converted into a dictionary after injection.
@@ -22,6 +22,7 @@
 ---@field pixel_size? table|{w: integer, h: integer} Change the size of the sprite drawn onto the card.
 ---@field badge_text_colour? table Colour of the label for the badge (supersedes Rarities and ConsumableTypes).
 ---@field badge_colour? table Colour of the badge (supersedes Rarities and ConsumableTypes).
+---@field no_mod_badges? boolean Hides the mod's badge from the tooltip.
 ---@field __call? fun(self: SMODS.Center|table, o: SMODS.Center|table): nil|table|SMODS.Center
 ---@field extend? fun(self: SMODS.Center|table, o: SMODS.Center|table): table Primary method of creating a class. 
 ---@field check_duplicate_register? fun(self: SMODS.Center|table): boolean? Ensures objects already registered will not register. 
@@ -65,3 +66,8 @@ SMODS.Center = setmetatable({}, {
 
 ---@type table<string, SMODS.Center|table>
 SMODS.Centers = {}
+
+---Returns the prototype object from the game object.
+---@param card Card|table
+---@return SMODS.Center|table 
+SMODS.Center.get_prototype_object = function (card) end

@@ -409,6 +409,7 @@ function SMODS.create_card(t)
         t.front = t.front or (t.suit and t.rank and (t.suit .. "_" .. t.rank)) or nil
     end
     t.silent = t.silent == true and { edition = true, seal = true } or type(t.silent) ~= "table" and {} or t.silent
+    t.immediate = t.immediate == true and { edition = true, seal = true } or type(t.immediate) ~= "table" and {} or t.immediate
     SMODS.bypass_create_card_edition = t.no_edition or t.edition
     SMODS.bypass_create_card_discover = t.discover
     SMODS.bypass_create_card_discovery_center = t.bypass_discovery_center
@@ -427,8 +428,8 @@ function SMODS.create_card(t)
 
     -- Should this be restricted to only cards able to handle these
     -- or should that be left to the person calling SMODS.create_card to use it correctly?
-    if t.edition then _card:set_edition(t.edition, nil, t.silent.edition) end
-    if t.seal then _card:set_seal(t.seal, t.silent.seal); _card.ability.delay_seal = false end
+    if t.edition then _card:set_edition(t.edition, t.immediate.edition, t.silent.edition) end
+    if t.seal then _card:set_seal(t.seal, t.silent.seal, t.immediate.seal); _card.ability.delay_seal = false end
     if t.stickers or type(t.force_stickers) == "table" then
         local applied_stickers = {}
         if type(t.force_stickers) == "table" then
@@ -530,7 +531,7 @@ function SMODS.create_mod_badge(mod, obj, width, text_height)
     local mod_name = mod.display_name
     local max_text_width = width or 1.732
     local scale_fac = 1
-    local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE}, maxw = mod.no_marquee and max_text_width, float = true, shadow = true, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = text_height or 0.297})
+    local badge_text = DynaText({string = mod_name or 'ERROR', colours = {mod.badge_text_colour or G.C.WHITE}, maxw = mod.no_marquee and max_text_width, float = true, shadow = not mod.badge_text_no_shadow, offset_y = -0.05, silent = true, spacing = 1*scale_fac, scale = text_height or 0.297})
     local badge_scroll = SMODS.UIScrollBox({
         content = badge_text,
         container = {
@@ -833,6 +834,7 @@ function SMODS.stake_from_index(index)
 end
 
 function convert_usage_entry(entry)
+    if type(entry) ~= 'table' then return entry end
     for _,keys in ipairs{ {"wins","wins_by_key"},{"losses","losses_by_key"}} do
         entry[keys[1]] = entry[keys[1]] or {}
         entry[keys[2]] = entry[keys[2]] or {}
@@ -840,20 +842,20 @@ function convert_usage_entry(entry)
         local data_by_key = entry[keys[2]]
         setmetatable(data_by_key, {
             __index = function(t, k) 
-                if (G.P_STAKES[k] or {}).vanilla_index then
+                if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                     return data[G.P_STAKES[k].vanilla_index]
                 end
                 return rawget(t,k)
             end,
             __newindex = function(t,k,w)
-                if (G.P_STAKES[k] or {}).vanilla_index then
+                if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                     data[G.P_STAKES[k].vanilla_index] = w
                 end
                 rawset(t,k,w)
             end,
         })
         for k,w in pairs(data_by_key) do
-            if (G.P_STAKES[k] or {}).vanilla_index then
+            if G.P_STAKES and (G.P_STAKES[k] or {}).vanilla_index then
                 data[G.P_STAKES[k].vanilla_index] = math.max(data[G.P_STAKES[k].vanilla_index] or 0, w)
                 rawset(data_by_key, k, nil)
             end
@@ -862,14 +864,17 @@ function convert_usage_entry(entry)
     return entry
 end
 
-function convert_save_data()
-    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].deck_usage) do
+-- Convert usage tables. silent=true only fixes the in-memory wins_by_key <-> wins
+-- metatable bridge (used on profile load); omit it to also queue a profile save.
+function convert_save_data(profile, silent)
+    profile = profile or G.PROFILES[G.SETTINGS.profile]
+    for _, v in pairs(profile.deck_usage or {}) do
         convert_usage_entry(v)
     end
-    for _, v in pairs(G.PROFILES[G.SETTINGS.profile].joker_usage) do
+    for _, v in pairs(profile.joker_usage or {}) do
         convert_usage_entry(v)
     end
-    G:save_settings()
+    if not silent then G:save_settings() end
 end
 
 
@@ -1027,13 +1032,13 @@ function Card:calculate_enhancement(context)
 end
 
 function SMODS.get_enhancements(card, extra_only)
-    if not SMODS.optional_features.quantum_enhancements or not G.hand then
+    if not SMODS.optional_features.quantum_enhancements or not G.hand or G.OVERLAY_MENU then
         return not extra_only and card.ability.set == 'Enhanced' and { [card.config.center.key] = true } or {}
     end
     if not SMODS.enh_cache:read(card, extra_only) then
 
         local enhancements = {}
-        if card.config.center.key ~= "c_base" then
+        if card.config.center.key ~= "c_base" and G.P_CENTERS[card.config.center.key] then
             enhancements[card.config.center.key] = true
         end
         local calc_return = {}
@@ -1126,9 +1131,16 @@ function SMODS.calculate_quantum_enhancements(card, effects, context)
     SMODS.extra_enhancement_calc_in_progress = nil
 end
 
-function SMODS.has_playing_card_property(card, key) 
-    for k, _ in pairs(SMODS.get_enhancements(card)) do
-        if G.P_CENTERS[k][key] then return true end
+function SMODS.has_playing_card_property(card, key)
+    if key == 'replace_base_card' then
+        -- Ignore quantum enhancements for 'replace_base_card'
+        if card.ability.set == 'Enhanced' and G.P_CENTERS[card.config.center.key][key] then
+            return true
+        end
+    else
+        for k, _ in pairs(SMODS.get_enhancements(card)) do
+            if G.P_CENTERS[k][key] then return true end
+        end
     end
     if (G.P_CENTERS[(card.edition or {}).key] or {})[key] then return true end
     if (G.P_SEALS[card.seal or {}] or {})[key] then return true end
@@ -2228,11 +2240,21 @@ function SMODS.score_card(card, context)
             percent = percent + percent_delta
         end
 
-        context.main_scoring = true
+        
+        if context.debuffed_calculation then
+            context.debuffed_main_scoring = true
+        else
+            context.main_scoring = true
+        end
         local effects = { eval_card(card, context) }
         SMODS.calculate_quantum_enhancements(card, effects, context)
         context.main_scoring = nil
-        context.individual = true
+        context.debuffed_main_scoring = nil
+        if context.debuffed_calculation then
+            context.debuffed_individual = true
+        else
+            context.individual = true
+        end
         context.other_card = card
 
         if next(effects) then
@@ -2243,11 +2265,18 @@ function SMODS.score_card(card, context)
         local flags = SMODS.trigger_effects(effects, card)
 
         context.individual = nil
+        context.debuffed_individual = nil
+
         if reps[j] == 1 and flags.calculated then
-            context.repetition = true
+            if context.debuffed_calculation then
+                context.debuffed_repetition = true
+            else
+                context.repetition = true
+            end
             context.card_effects = effects
             SMODS.calculate_repetitions(card, context, reps)
             context.repetition = nil
+            context.debuffed_repetition = nil
             context.card_effects = nil
         end
         j = j + (flags.calculated and 1 or #reps)
@@ -2277,6 +2306,12 @@ function SMODS.calculate_main_scoring(context, scoring_hand)
                 }))
                 card_eval_status_text(card, 'debuff')
             end
+            if scoring_hand then
+                if in_scoring then context.cardarea = G.play else context.cardarea = 'unscored' end
+            end
+            context.debuffed_calculation = true
+            SMODS.score_card(card, context)
+            context.debuffed_calculation = nil
         else
             if scoring_hand then
                 if in_scoring then context.cardarea = G.play else context.cardarea = 'unscored' end
@@ -2305,7 +2340,11 @@ function SMODS.calculate_end_of_round_effects(context)
             SMODS.calculate_quantum_enhancements(card, effects, context)
 
             context.playing_card_end_of_round = nil
-            context.individual = true
+            if context.debuffed_calculation then
+                context.debuffed_individual = true
+            else
+                context.individual = true
+            end
             context.other_card = card
             -- context.end_of_round individual calculations
 
@@ -2315,13 +2354,19 @@ function SMODS.calculate_end_of_round_effects(context)
             local flags = SMODS.trigger_effects(effects, card)
 
             context.individual = nil
-            context.repetition = true
+            context.debuffed_individual = nil
+            if context.debuffed_calculation then
+                context.debuffed_repetition = true
+            else
+                context.repetition = true
+            end
             context.card_effects = effects
             if reps[j] == 1 then
                 SMODS.calculate_repetitions(card, context, reps)
             end
 
             context.repetition = nil
+            context.debuffed_repetition = nil
             context.card_effects = nil
             context.other_card = nil
             j = j + (flags.calculated and 1 or #reps)
@@ -2359,6 +2404,9 @@ function SMODS.calculate_destroying_cards(context, cards_destroyed, scoring_hand
         end
         local flags = SMODS.calculate_context(context)
         if flags.remove then destroyed = true end
+        if type(flags.remove) == "table" then
+            card.SMODS_destroy_args = flags.remove
+        end
 
         -- TARGET: card destroyed
 
@@ -2646,7 +2694,11 @@ function Card.selectable_from_pack(card, pack)
     local select_area, can_also_use = SMODS.card_select_area(card, pack)
     if select_area then
         if type(select_area) == 'table' then
-            if select_area[card.ability.set] then return select_area[card.ability.set] else return false end
+            if select_area[card.ability.set] then 
+                return select_area[card.ability.set], can_also_use
+            else
+                return false, can_also_use
+            end
         end
         return select_area, can_also_use
     end
@@ -3045,7 +3097,8 @@ function SMODS.destroy_cards(cards, args, ...)
     local playing_cards = {}
     local queued_for_destruction = {}
     for _, card in ipairs(cards) do
-        if args.bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
+        local card_args = card.SMODS_destroy_args or {}
+        if args.bypass_eternal or card_args.bypass_eternal or not SMODS.is_eternal(card, {destroy_cards = true}) then
             card.getting_sliced = true
             table.insert(queued_for_destruction, card)
             if SMODS.shatters(card) then
@@ -3054,7 +3107,7 @@ function SMODS.destroy_cards(cards, args, ...)
             else
                 card.destroyed = true
             end
-            if card.base.name then
+            if SMODS.is_playing_card(card) then
                 playing_cards[#playing_cards + 1] = card
             end
         end
@@ -3064,7 +3117,7 @@ function SMODS.destroy_cards(cards, args, ...)
 
     if next(playing_cards) then SMODS.calculate_context({scoring_hand = cards, remove_playing_cards = true, removed = playing_cards}) end
 
-    local destroy_func = function (card, args)
+    local destroy_func = function(card, args)
         if not card.getting_sliced then return false end
         if args.destroy_func then 
             return args.destroy_func(card, args) ~= false
@@ -3086,6 +3139,7 @@ function SMODS.destroy_cards(cards, args, ...)
     end
 
     for i, card in ipairs(queued_for_destruction) do
+        local args = SMODS.merge_defaults(card.SMODS_destroy_args or {}, args)
         if args.immediate then
             destroy_func(card, args)
         else
@@ -3098,6 +3152,7 @@ function SMODS.destroy_cards(cards, args, ...)
                 end
             }))
         end
+        card.SMODS_destroy_args = nil
     end
     return queued_for_destruction
 end
@@ -3286,6 +3341,7 @@ local game_start_run = Game.start_run
 function Game:start_run(args)
     game_start_run(self, args)
     G.SCORE_DISPLAY_QUEUE = nil
+    G.BLIND_SIZE_DISPLAY_QUEUE = nil
     G.E_MANAGER:add_event(Event({
         trigger = 'immediate',
         func = function()
@@ -3513,6 +3569,7 @@ end
 
 function SMODS.challenge_is_unlocked(challenge, k)
     local challenge_unlocked
+    challenge = type(challenge) == "string" and SMODS.Challenges[challenge] or challenge or {}
     if type(challenge.unlocked) == 'function' then
         challenge_unlocked = challenge:unlocked()
     elseif type(challenge.unlocked) == 'boolean' then
@@ -4598,7 +4655,13 @@ function SMODS.card_to_image(card, scale, filename)
     scale = scale or G.SETTINGS.GRAPHICS.texture_scaling
 	filename = (filename or key == "j_joker" and "jimbo" or key) .. ".png"
     
-	local canvas = love.graphics.newCanvas(71 * scale, 95 * scale, {type = '2d', readable = true})
+    local atlas = card.children and card.children.center and card.children.center.atlas or {}
+    local display = card.config.center.display_size or {}
+    local px,py = display.w or atlas.px or 71, display.h or atlas.py or 95
+    display.w, display.h = display.w or 71, display.h or 95
+    local ratiox,ratioy = px/display.w, py/display.h
+
+	local canvas = love.graphics.newCanvas(px * scale, py * scale, {type = '2d', readable = true})
     canvas:setFilter('nearest', 'nearest')
 
     local old_t = SMODS.shallow_copy(card.T)
@@ -4606,7 +4669,7 @@ function SMODS.card_to_image(card, scale, filename)
     local old_rm = G.SETTINGS.reduced_motion
     card.T.r = 0
     local old_scale = card.T.scale 
-    card.T.scale = scale / G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 -- Don't ask me why I had to multiply by 1.5 here, and by the per-dimension factors below, I do not know,,, (this may have been brute-tinkered)
+    card.T.scale = scale / G.TILE_H * G.window_prev.orig_scale * G.window_prev.orig_scale/G.TILESCALE * 1.5 * ratiox -- Don't ask me why I had to multiply by 1.5 here, and by the per-dimension factors below, I do not know,,, (this may have been brute-tinkered)
     local w, h = old_t.w * 0.997, old_t.h * 0.99348                                                         -- (well these factors are needed to remove extra pixels in height/width for scales == 2.0 -> 16.0 (at least))
     card:hard_set_T(w/2*(card.T.scale-1), h/2*(card.T.scale-1), w, h)
 	card.no_shadow = true
@@ -4644,6 +4707,8 @@ end
 
 assert(load(SMODS.NFS.read(SMODS.path..'src/utils/run_select.lua'), ('=[SMODS _ "src/utils/run_select.lua"]')))()
 
+-------------------------------------------------------------------------------------------------
+
 function SMODS.table_size(t)
     local size = 0
     for _,_ in pairs(t) do
@@ -4680,4 +4745,34 @@ end
 
 function SMODS.get_slots_available(area, ignore_buffer)
     return area and (area.config.card_limit - (#area.cards + (not ignore_buffer and area.config.buffer or 0))) or 0
+end
+
+---@param config table? table that contains config to be parsed. `default` may be passed to properly assign default value
+---@param key_tables table? table that contains list of keys and that order determines the default order if no key is provided
+function SMODS.parse_ui_config_table(config, key_tables)
+    if not config or not type(config) == 'table' or not next(config) then return end -- if config is empty
+    if not key_tables or not type(key_tables) == 'table' or not next(key_tables) then return end -- if key_tables is empty
+    local defaults = config.default or config[1] or config[key_tables[1]]
+    local return_table = {}
+    for index, key in ipairs(key_tables) do
+        return_table[key] = config[key] or config[index] or defaults
+    end
+    return return_table
+end
+
+-- card will always override center and that will override vars
+function SMODS.should_use_debuffed_description(conf)
+    local conf = conf or {}
+    local vars = conf.vars or {}
+    local center = conf.center
+    local card = conf.card
+    if card then 
+        center = card.config.center
+    end
+    if center then 
+        vars = center.loc_vars and type(center.loc_vars) == 'function' and 
+                center:loc_vars({}, card or (center.create_fake_card and center:create_fake_card())) or {}
+    end
+    vars = vars or {}
+    return not vars.no_debuffed_description and not (vars.vars or {}).no_debuffed_description
 end

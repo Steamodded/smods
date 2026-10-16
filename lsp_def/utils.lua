@@ -31,8 +31,11 @@
 ---@field before? true Check if `true` for effects that happen before hand scoring.
 ---@field after? true Check if `true` for effects that happen after hand scoring.
 ---@field main_scoring? true Check if `true` for effects that happen during scoring.
+---@field debuffed_main_scoring? true Check if `true` for effects that happen during "scoring" of debuffed cards.
 ---@field individual? true Check if `true` for effects on individual playing cards during scoring.
+---@field debuffed_individual? true Check if `true` for effects on a debuffed individual playing cards during scoring.
 ---@field repetition? true Check if `true` for adding repetitions to playing cards.
+---@field debuffed_repetition? true Check if `true` for adding repetitions to debuffed playing cards.
 ---@field edition? true `true` for any Edition-specific context (e.x. context.pre_joker and context.post_joker).
 ---@field pre_joker? true Check if `true` for triggering editions on jokers before they score.
 ---@field post_joker? true Check if `true` for triggering editions on jokers after they score.
@@ -472,10 +475,12 @@ function SMODS.find_card(key, count_debuffed) end
 ---@field front? string|false Front of the playing card. Ignores rank and suit.
 ---@field enhanced_poll? number Chance to pick 'Base' over 'Enhanced' with set 'Playing Card'.
 ---@field silent? true|{edition?:true, seal?:true} Applies edition and/or seal silently
+---@field immediate? true|{edition?:true, seal?:true} Applies edition and/or seal immediately
 ---@field attributes? string[] Creates a card with these attributes. All other arguments will be passed to SMODS.poll_object
 ---@field create_event? boolean|table Adds the card in an event instead of immediately. Can be a table with the event's parameters. Automatically increments the area's buffer unless `ignore_buffer` is `true`
 ---@field ignore_buffer? boolean Doesn't increment the area's buffer when called with `create_event` set to `true`
 ---@field buffer_increment? integer Increments buffer by this specific value instead of calculating it automatically when called with `create_event` set to `true`
+---@field scale? {w?:number, h?:number} Creates a card scaled by these width and height multipliers (each defaults to 1)
 
 ---@param t CreateCard|table
 ---@return Card|table
@@ -727,7 +732,7 @@ function SMODS.is_playing_card(card) end
 function SMODS.pinch_and_remove(card, args) end
 
 ---@param cards Card|Card[]
----@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], silent?: boolean, delay?: number, destroy_func?: fun(card: Card, args: table<>), skip_calc? boolean}
+---@param args? {bypass_eternal?: boolean, immediate?: boolean, pinch_anim?: boolean, colours?: table<integer, table>[], silent?: boolean, delay?: number, destroy_func?: fun(card: Card, args: table), skip_calc?: boolean}
 ---@param ... ... Old signature arguments in the above order, up to and including colours
 ---@return Card[] destroy_queued
 --- Destroys the cards passed to the function, handling calculation events that need to happen.
@@ -828,7 +833,7 @@ function SMODS.get_context_evaluee(stack_index) end
 
 ---@param previous_context boolean? Whether or not to check the current context's previous evaluee, skipped if this is true.
 --- Returns the previous evaluee, first checking the current SMODS.context_stack entry's previous evaluee and then checking the previous entry's latest evaluee.
-function SMODS.get_previous_evaluee() end
+function SMODS.get_previous_evaluee(previous_context) end
 
 ---@return CalcContext|table|nil
 --- Returns the second to last context from the SMODS.context_stack.
@@ -873,17 +878,23 @@ function SMODS.get_atlas(atlas_key) end
 --- This function returns the Sprite or the AnimatedSprite class depending on the atlas type
 function SMODS.get_atlas_sprite_class(atlas_key) end
 
----@param ... any The same parameters as Sprite() takes individually. The atlas may be an atlas_key instead.
+---@param X number X position
+---@param Y number Y position
+---@param W number Width scale
+---@param H number Height scale
+---@param atlas SMODS.Atlas|table|string Atlas for the sprite. It can be the atlas' key.
+---@param pos? {x?: integer, y?: integer, v: number} Position of the sprite in the atlas
+---@param sprite_args? table
 ---@return Sprite|AnimatedSprite|table
 --- This function creates a Sprite or AnimatedSprite depending on the atlas passed
-function SMODS.create_sprite(X, Y, W, H, atlas, pos) end
+function SMODS.create_sprite(X, Y, W, H, atlas, pos, sprite_args) end
 
 ---@param key string The key or name of the Blind to check
 ---@param ignore_disabled? boolean Whether to ignore the Blind being disabled
 function SMODS.is_active_blind(key, ignore_disabled) end
 
 ---Check if `challenge` is unlocked.
----@param challenge SMODS.Challenge
+---@param challenge string|SMODS.Challenge
 ---@param k? number Index of challenge in G.CHALLENGES. Only relevant for challenges defined outside SMODS
 ---@return boolean
 function SMODS.challenge_is_unlocked(challenge, k) end
@@ -993,3 +1004,26 @@ function SMODS.is_showdown_ante() end
 ---@param ignore_buffer? boolean
 ---@return number
 function SMODS.get_slots_available(area, ignore_buffer) end
+
+--- Returns the default ability table for this center
+---@param center SMODS.Center|table
+---@param card? Card|table
+---@param no_copy? boolean Skips copying the config values of the center
+---@return table
+SMODS.get_default_ability_vars = function(center, card, no_copy) end
+
+---Returns the size of the table
+---@param t table
+---@return integer
+function SMODS.table_size(t) end
+
+---Splits a string into multiple lines based on its words
+---@param _string string
+---@param parts integer
+---@return table
+function SMODS.split_string(_string, parts) end
+
+---Checks if the card should display its description even if debuffed
+---@param conf {vars?: table, center?: SMODS.Center|table, card?: Card|table}
+---@return boolean
+function SMODS.should_use_debuffed_description(conf) end
