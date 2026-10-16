@@ -408,3 +408,11 @@ function SMODS.GUI.dropdown_select(args) end
 ---@param args DropdownSelectArgs
 ---@param parent_width number
 function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width) end
+
+
+---Automatically generate superellipse corner. For more information, Please read the [Wikipedia article on Superellipse](https://en.wikipedia.org/wiki/Superellipse)
+---@param n number Superellipse Constant, define how the corners are shaped. In essence, n < 1 will create concave cut out (like a ticket corner), n = 1 will create a straight 45 degree cut, and n > 1 will create your typical rounded corner. Specifically, n = 2 will create corner with a perfect circle curve.
+---@param res number corner "radius", in vanilla, this maxes out at 4 but you can go as big as you want
+---@param counts integer how many points should the function generate
+---@return number[] list_of_points list of points for UI corners
+function SMODS.GUI.superellipse(n, res, counts) end
