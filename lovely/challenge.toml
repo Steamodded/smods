@@ -130,3 +130,16 @@ name_to_check == 'Challenge Deck' and UIBox_button({button = 'deck_view_challeng
 payload = '''
 challenge.id and UIBox_button({button = 'deck_view_challenge', label = {localize(challenge.id, 'challenge_names')},  minw = 2.2, minh = 1, scale = 0.6, id = challenge})
 '''
+
+# Ban Black Hole in Jokerless
+[[patches]]
+[patches.pattern]
+target = 'challenges.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+{id = 'c_soul'},
+'''
+payload = '''
+{id = 'c_soul', ids = {'c_soul', 'c_black_hole'}},
+'''

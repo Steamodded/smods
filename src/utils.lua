@@ -756,6 +756,117 @@ function SMODS.poll_edition(args)
     return poll_edition(args.key or 'edition_generic', args.mod, args.no_negative, args.guaranteed, args.options)
 end
 
+function SMODS.poll_soul(args)
+    assert(args and (args.set or args.sets and type(args.sets) == "table" and next(args.sets)), "SMODS.poll_soul called without a set")
+
+    local sets = args.sets or { args.set }
+    local set_map = {}
+    for _, set in ipairs(sets) do
+        set_map[set] = true
+    end
+    local forced_key
+    local soul_total_rate = 0
+    local non_soul_rate = 1
+    local modded_souls = {}
+
+    for _, prototype in ipairs(SMODS.Consumable.legendaries) do
+        if not G.GAME.banned_keys[prototype.key] and
+            prototype.key ~= "c_soul" and prototype.key ~= "c_black_hole" then
+            local can_repeat = args.allow_duplicates or prototype.can_repeat_soul or SMODS.showman(prototype.key)
+            local is_soul_set = set_map[prototype.type.key]
+            if not is_soul_set and prototype.soul_set then
+                local consumable_soul_sets = type(prototype.soul_set) == "table" and prototype.soul_set or
+                    { prototype.soul_set }
+                for _, soul_set in ipairs(consumable_soul_sets) do
+                    is_soul_set = set_map[soul_set]
+                    if is_soul_set then break end
+                end
+            end
+            if is_soul_set and (not G.GAME.used_jokers[prototype.key] or can_repeat) and SMODS.add_to_pool(prototype, args) then
+                local soul_rate = assert(SMODS.get_soul_rate(prototype, set_map)) * (args.mod or 1)
+                prototype.temp_soul_rate = soul_rate -- to ensure it doesn't change and so it isn't calculated twice
+                soul_total_rate = soul_total_rate + soul_rate
+                non_soul_rate = non_soul_rate * (1 - soul_rate)
+                non_soul_rate = math.max(non_soul_rate, 0)
+                table.insert(modded_souls, prototype)
+            end
+        end
+    end
+    local roll = pseudorandom(args.key or ('soul_smods_' .. (args.set or '') .. G.GAME.round_resets.ante))
+    local threshold = 1
+    non_soul_rate = args.guaranteed and 0 or non_soul_rate
+    for _, v in ipairs(modded_souls) do
+        local soul_rate = v.temp_soul_rate
+        threshold = threshold - soul_rate / soul_total_rate * (1 - non_soul_rate)
+        v.temp_soul_rate = nil
+        if roll > threshold then
+            forced_key = v.key
+            break
+        end
+    end
+    if not args.ignore_vanilla then
+        local guaranteed_poll = {}
+        if not G.GAME.banned_keys['c_soul'] then
+            local prototype = G.P_CENTERS.c_soul
+            local can_repeat = args.allow_duplicates or prototype.can_repeat_soul or SMODS.showman(prototype.key)
+            local is_soul_set = set_map[(prototype.type or {}).key]
+            if not is_soul_set then
+                if prototype.soul_set then
+                    local consumable_soul_sets = type(prototype.soul_set) == "table" and prototype.soul_set or
+                        { prototype.soul_set }
+                    for _, soul_set in ipairs(consumable_soul_sets) do
+                        is_soul_set = set_map[soul_set]
+                        if is_soul_set then break end
+                    end
+                elseif set_map['Tarot'] or set_map['Spectral'] or set_map['Tarot_Planet'] then
+                    is_soul_set = true
+                end
+            end
+            if is_soul_set and (not G.GAME.used_jokers[prototype.key] or can_repeat) and SMODS.add_to_pool(prototype, args) then
+                guaranteed_poll[#guaranteed_poll + 1] = 'c_soul'
+                if pseudorandom(args.key or ('soul_' .. (args.set or '') .. G.GAME.round_resets.ante)) > 1 - (assert(SMODS.get_soul_rate(prototype, set_map)) * ((G.GAME.soul_mod or 1) * (args.mod or 1))) then
+                    forced_key = 'c_soul'
+                end
+            end
+        end
+        if not G.GAME.banned_keys['c_black_hole'] then
+            local prototype = G.P_CENTERS.c_black_hole
+            local can_repeat = args.allow_duplicates or prototype.can_repeat_soul or SMODS.showman(prototype.key)
+            local is_soul_set = set_map[(prototype.type or {}).key]
+            if not is_soul_set then
+                if prototype.soul_set then
+                    local consumable_soul_sets = type(prototype.soul_set) == "table" and prototype.soul_set or
+                        { prototype.soul_set }
+                    for _, soul_set in ipairs(consumable_soul_sets) do
+                        is_soul_set = set_map[soul_set]
+                        if is_soul_set then break end
+                    end
+                elseif set_map['Planet'] or set_map['Spectral'] then
+                    is_soul_set = true
+                end
+            end
+            if is_soul_set and (not G.GAME.used_jokers[prototype.key] or can_repeat) and SMODS.add_to_pool(prototype, args) then
+                guaranteed_poll[#guaranteed_poll + 1] = 'c_black_hole'
+                if pseudorandom(args.key or ('soul_' .. (args.set or '') .. G.GAME.round_resets.ante)) > 1 - (assert(SMODS.get_soul_rate(prototype, set_map)) * ((G.GAME.soul_mod or 1) * (args.mod or 1))) then
+                    forced_key = 'c_black_hole'
+                end
+            end
+        end
+        if not forced_key and args.guaranteed then
+            forced_key, _ =  pseudorandom_element(guaranteed_poll, (args.key or ('soul_smods_' .. (args.set or '') .. G.GAME.round_resets.ante)) .. "guaranteed")
+        end
+    end
+    return forced_key
+end
+
+function SMODS.get_soul_rate(consumable, set_map)
+    local prototype = type(consumable) == "string" and G.P_CENTERS[consumable] or consumable
+    if not prototype then return nil, "SMODS.get_soul_rate was called with an invalid consumable" end
+    local soul_rate = type(prototype.soul_rate) == "function" and prototype.soul_rate(set_map) or
+        prototype.soul_rate or 0.003
+    return soul_rate * (G.GAME.soul_mod or 1)
+end
+
 function SMODS.poll_seal(args)
     -- Use SMODS object weight system when enabled
     if SMODS.optional_features.object_weights then args.type = 'Seal'; args.pool = args.options or nil; return SMODS.poll_object(args) end
