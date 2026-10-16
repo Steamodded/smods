@@ -757,36 +757,42 @@ function SMODS.poll_edition(args)
 end
 
 function SMODS.poll_soul(args)
-    assert(args and args.set, "SMODS.poll_soul called without a set")
+    assert(args and (args.set or args.sets and type(args.sets) == "table" and next(args.sets)), "SMODS.poll_soul called without a set")
 
-    local set = args.set
+    local sets = args.sets or { args.set }
+    local set_map = {}
+    for _, set in ipairs(sets) do
+        set_map[set] = true
+    end
     local forced_key
     local soul_total_rate = 0
     local non_soul_rate = 1
     local modded_souls = {}
 
-    for _, v in ipairs(SMODS.Consumable.legendaries) do
-        if not G.GAME.banned_keys[v.key] then
-            local can_repeat = SMODS.showman(v.key) or v.can_repeat_soul or args.allow_duplicates
-            local is_soul_set = set == v.type.key
-            if not is_soul_set and v.soul_set then
-                local consumable_soul_sets = type(v.soul_set) == "table" and v.soul_set or { v.soul_set }
+    for _, prototype in ipairs(SMODS.Consumable.legendaries) do
+        if not G.GAME.banned_keys[prototype.key] and
+            prototype.key ~= "c_soul" and prototype.key ~= "c_black_hole" then
+            local can_repeat = args.allow_duplicates or prototype.can_repeat_soul or SMODS.showman(prototype.key)
+            local is_soul_set = set_map[prototype.type.key]
+            if not is_soul_set and prototype.soul_set then
+                local consumable_soul_sets = type(prototype.soul_set) == "table" and prototype.soul_set or
+                    { prototype.soul_set }
                 for _, soul_set in ipairs(consumable_soul_sets) do
-                    is_soul_set = set == soul_set
+                    is_soul_set = set_map[soul_set]
                     if is_soul_set then break end
                 end
             end
-            if is_soul_set and not (G.GAME.used_jokers[v.key] and not can_repeat) and SMODS.add_to_pool(v) then
-                local soul_rate = SMODS.get_soul_rate(v, set) * (args.mod or 1)
-                v.temp_soul_rate = soul_rate -- to ensure it doesn't change and so it isn't calculated twice
+            if is_soul_set and (not G.GAME.used_jokers[prototype.key] or can_repeat) and SMODS.add_to_pool(prototype, args) then
+                local soul_rate = assert(SMODS.get_soul_rate(prototype, set_map)) * (args.mod or 1)
+                prototype.temp_soul_rate = soul_rate -- to ensure it doesn't change and so it isn't calculated twice
                 soul_total_rate = soul_total_rate + soul_rate
                 non_soul_rate = non_soul_rate * (1 - soul_rate)
                 non_soul_rate = math.max(non_soul_rate, 0)
-                table.insert(modded_souls, v)
+                table.insert(modded_souls, prototype)
             end
         end
     end
-    local roll = pseudorandom(args.key or ('soul_smods_' .. set .. G.GAME.round_resets.ante))
+    local roll = pseudorandom(args.key or ('soul_smods_' .. (args.set or '') .. G.GAME.round_resets.ante))
     local threshold = 1
     non_soul_rate = args.guaranteed and 0 or non_soul_rate
     for _, v in ipairs(modded_souls) do
@@ -798,28 +804,66 @@ function SMODS.poll_soul(args)
             break
         end
     end
-    if not G.GAME.banned_keys['c_soul'] and not args.ignore_vanilla then
-        if (set == 'Tarot' or set == 'Spectral' or set == 'Tarot_Planet') and
-            not (G.GAME.used_jokers['c_soul'] and not SMODS.showman('c_soul')) then
-            if (not forced_key and args.guaranteed) or pseudorandom(args.key or ('soul_' .. set .. G.GAME.round_resets.ante)) > 0.997 - (0.003 * ((G.GAME.soul_mod or 1) * (args.mod or 1) - 1)) then
-                forced_key = 'c_soul'
+    if not args.ignore_vanilla then
+        local guaranteed_poll = {}
+        if not G.GAME.banned_keys['c_soul'] then
+            local prototype = G.P_CENTERS.c_soul
+            local can_repeat = args.allow_duplicates or prototype.can_repeat_soul or SMODS.showman(prototype.key)
+            local is_soul_set = set_map[(prototype.type or {}).key]
+            if not is_soul_set then
+                if prototype.soul_set then
+                    local consumable_soul_sets = type(prototype.soul_set) == "table" and prototype.soul_set or
+                        { prototype.soul_set }
+                    for _, soul_set in ipairs(consumable_soul_sets) do
+                        is_soul_set = set_map[soul_set]
+                        if is_soul_set then break end
+                    end
+                elseif set_map['Tarot'] or set_map['Spectral'] or set_map['Tarot_Planet'] then
+                    is_soul_set = true
+                end
+            end
+            if is_soul_set and (not G.GAME.used_jokers[prototype.key] or can_repeat) and SMODS.add_to_pool(prototype, args) then
+                guaranteed_poll[#guaranteed_poll + 1] = 'c_soul'
+                if pseudorandom(args.key or ('soul_' .. (args.set or '') .. G.GAME.round_resets.ante)) > 1 - (assert(SMODS.get_soul_rate(prototype, set_map)) * ((G.GAME.soul_mod or 1) * (args.mod or 1))) then
+                    forced_key = 'c_soul'
+                end
             end
         end
-        if (set == 'Planet' or set == 'Spectral') and
-            not (G.GAME.used_jokers['c_black_hole'] and not SMODS.showman('c_black_hole')) then
-            if ((not forced_key or forced_key == 'c_soul') and args.guaranteed) or pseudorandom(args.key or ('soul_' .. set .. G.GAME.round_resets.ante)) > 0.997 - (0.003 * ((G.GAME.soul_mod or 1) * (args.mod or 1) - 1)) then
-                forced_key = 'c_black_hole'
+        if not G.GAME.banned_keys['c_black_hole'] then
+            local prototype = G.P_CENTERS.c_black_hole
+            local can_repeat = args.allow_duplicates or prototype.can_repeat_soul or SMODS.showman(prototype.key)
+            local is_soul_set = set_map[(prototype.type or {}).key]
+            if not is_soul_set then
+                if prototype.soul_set then
+                    local consumable_soul_sets = type(prototype.soul_set) == "table" and prototype.soul_set or
+                        { prototype.soul_set }
+                    for _, soul_set in ipairs(consumable_soul_sets) do
+                        is_soul_set = set_map[soul_set]
+                        if is_soul_set then break end
+                    end
+                elseif set_map['Planet'] or set_map['Spectral'] then
+                    is_soul_set = true
+                end
             end
+            if is_soul_set and (not G.GAME.used_jokers[prototype.key] or can_repeat) and SMODS.add_to_pool(prototype, args) then
+                guaranteed_poll[#guaranteed_poll + 1] = 'c_black_hole'
+                if pseudorandom(args.key or ('soul_' .. (args.set or '') .. G.GAME.round_resets.ante)) > 1 - (assert(SMODS.get_soul_rate(prototype, set_map)) * ((G.GAME.soul_mod or 1) * (args.mod or 1))) then
+                    forced_key = 'c_black_hole'
+                end
+            end
+        end
+        if not forced_key and args.guaranteed then
+            forced_key, _ =  pseudorandom_element(guaranteed_poll, (args.key or ('soul_smods_' .. (args.set or '') .. G.GAME.round_resets.ante)) .. "guaranteed")
         end
     end
     return forced_key
 end
 
-function SMODS.get_soul_rate(consumable, set)
+function SMODS.get_soul_rate(consumable, set_map)
     local prototype = type(consumable) == "string" and G.P_CENTERS[consumable] or consumable
     if not prototype then return nil, "SMODS.get_soul_rate was called with an invalid consumable" end
-    local soul_rate = type(prototype.soul_rate) == "function" and prototype.soul_rate(set) or
-        prototype.soul_rate or 0
+    local soul_rate = type(prototype.soul_rate) == "function" and prototype.soul_rate(set_map) or
+        prototype.soul_rate or 0.003
     return soul_rate * (G.GAME.soul_mod or 1)
 end
 

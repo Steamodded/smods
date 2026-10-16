@@ -4,7 +4,7 @@
 ---@field super? SMODS.Center|table Parent class. 
 ---@field hidden? boolean Sets if this consumable is considered "legendary" (e.x. behaves like "The Soul"). 
 ---@field soul_set? string|table Key(s) to the ConsumableType set(s) this consumable can replace. Requires `hidden` to be true.
----@field soul_rate? number|fun(set: string):number Chance this card replaces a consumable. Requires `hidden` to be true.
+---@field soul_rate? number|fun(set_map: table<string,true>):number Chance this card replaces a consumable. Requires `hidden` to be true. 
 ---@field type? SMODS.ConsumableType|table ConsumableType this center belongs to. 
 ---@field legendaries? (SMODS.Consumable|table)[] All injected "legendary" consumables.
 ---@field disable_shine? boolean If true, disables the default shine shader (for Spectrals).
@@ -41,8 +41,8 @@ SMODS.Consumable = setmetatable({}, {
 function SMODS.poll_soul(args) end
 
 ---@param consumable SMODS.Consumable|table|string
----@param set string
----@return number?
----@return string
+---@param set_map table<string, true> Map of sets polled. When regularly replacing a card it will only contain 1 set, but mods may choose to call it with multiple.
+---@return number? Rate
+---@return string? Error
 --- Gets soul rate of a consumable. 
-function SMODS.get_soul_rate(consumable, set) end
+function SMODS.get_soul_rate(consumable, set_map) end
