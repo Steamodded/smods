@@ -2297,7 +2297,7 @@ function SMODS.calculate_main_scoring(context, scoring_hand)
             end
         end
         --if card is debuffed
-        if scoring_hand and card.debuff then
+        if card.debuff then
             if in_scoring then
                 G.GAME.blind.triggered = true
                 G.E_MANAGER:add_event(Event({
