@@ -3326,6 +3326,24 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width, parent)
     }
 end
 
+function SMODS.cleanup_infoqueue_dupes(info_queue)
+    local old_queue = SMODS.shallow_copy(info_queue)
+    info_queue = EMPTY(info_queue)
+    for _, v in ipairs(old_queue) do
+        local already_added = false
+        for _, j in ipairs(info_queue) do
+            if v == j then
+                already_added = true
+                break
+            end
+        end
+        if not already_added then
+            info_queue[#info_queue+1] = v
+        end
+    end
+    return info_queue
+end
+
 -- #region blind tooltips
 
 local old_blind_popup = create_UIBox_blind_popup
@@ -3492,4 +3510,55 @@ function G.UIDEF.SMODS_current_stake()
     }}
 end
 
+-- #endregion
+
+-- #region UI corner radii and custom UI Box Shapes
+
+function SMODS.GUI.superellipse(n, res, counts)
+    local ret = {}
+    local n = n or 2
+    local res = res or 4
+    local angle = 0
+    local step_val = 90 / (counts or 18) 
+    while angle <= 90 do
+        -- i want x component of something rotating from -x axis to +y axis
+        local t = (angle - 90) * math.pi / 180 -- convert to radians
+        local a = math.abs( math.cos ( t ) / 1 ) ^ n
+        local b = math.abs( math.sin ( t ) / 1 ) ^ n
+        local c = 1 / ( ( a + b ) ^ ( 1 / n ) )
+        ret[#ret+1] = res + c * math.sin ( t ) * res
+        angle = angle + step_val
+    end
+    return ret
+end
+
+-- these should preferrably max out at 4 but it's quite flexible
+SMODS.GUI.CUSTOM_UI_SHAPES_FUNCTION = {
+    default = { 0, 1, 1, 2, 2, 4, 4, },
+    bevel = {0, 4,},
+    fast_rounded = {0, 1, 2, 4,},
+}
+
+SMODS.GUI.default_box_corner = { 0, 1, 1, 2, 2, 4, 4, }
+
+function SMODS.GUI.calculate_corners(vertices, config)
+    config = config or {}
+    local ext_up = config.ext_up or 0
+    local x_neg = config.x_neg
+    local y_neg = config.y_neg
+    local corners = config.corners or SMODS.GUI.default_box_corner
+    local inverted = config.inverted
+    local res = config.res or 1
+    local corner_from = config.corner_from or { 0 , 0 }
+    for i = 1, #corners do
+        local xcorner, ycorner
+        if inverted then 
+            xcorner, ycorner = corners[#corners - i + 1], corners[i]
+        else
+            xcorner, ycorner = corners[i], corners[#corners - i + 1]
+        end
+        vertices[#vertices+1] = corner_from[1] + (x_neg and -1 or 1)*xcorner*res
+        vertices[#vertices+1] = corner_from[2] + (y_neg and -1 or 1)*ycorner*res - ext_up
+    end
+end
 -- #endregion

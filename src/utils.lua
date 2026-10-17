@@ -2173,10 +2173,20 @@ function SMODS.score_card(card, context)
             percent = percent + percent_delta
         end
 
-        context.main_scoring = true
+        
+        if context.debuffed_calculation then
+            context.debuffed_main_scoring = true
+        else
+            context.main_scoring = true
+        end
         local effects = { eval_card(card, context) }
         context.main_scoring = nil
-        context.individual = true
+        context.debuffed_main_scoring = nil
+        if context.debuffed_calculation then
+            context.debuffed_individual = true
+        else
+            context.individual = true
+        end
         context.other_card = card
 
         if next(effects) then
@@ -2187,11 +2197,18 @@ function SMODS.score_card(card, context)
         local flags = SMODS.trigger_effects(effects, card)
 
         context.individual = nil
+        context.debuffed_individual = nil
+
         if reps[j] == 1 and flags.calculated then
-            context.repetition = true
+            if context.debuffed_calculation then
+                context.debuffed_repetition = true
+            else
+                context.repetition = true
+            end
             context.card_effects = effects
             SMODS.calculate_repetitions(card, context, reps)
             context.repetition = nil
+            context.debuffed_repetition = nil
             context.card_effects = nil
         end
         j = j + (flags.calculated and 1 or #reps)
@@ -2212,7 +2229,7 @@ function SMODS.calculate_main_scoring(context, scoring_hand)
             end
         end
         --if card is debuffed
-        if scoring_hand and card.debuff then
+        if card.debuff then
             if in_scoring then
                 G.GAME.blind.triggered = true
                 G.E_MANAGER:add_event(Event({
@@ -2221,6 +2238,12 @@ function SMODS.calculate_main_scoring(context, scoring_hand)
                 }))
                 card_eval_status_text(card, 'debuff')
             end
+            if scoring_hand then
+                if in_scoring then context.cardarea = G.play else context.cardarea = 'unscored' end
+            end
+            context.debuffed_calculation = true
+            SMODS.score_card(card, context)
+            context.debuffed_calculation = nil
         else
             if scoring_hand then
                 if in_scoring then context.cardarea = G.play else context.cardarea = 'unscored' end
@@ -2248,7 +2271,11 @@ function SMODS.calculate_end_of_round_effects(context)
             local effects = {eval_card(card, context)}
 
             context.playing_card_end_of_round = nil
-            context.individual = true
+            if context.debuffed_calculation then
+                context.debuffed_individual = true
+            else
+                context.individual = true
+            end
             context.other_card = card
             -- context.end_of_round individual calculations
 
@@ -2258,13 +2285,19 @@ function SMODS.calculate_end_of_round_effects(context)
             local flags = SMODS.trigger_effects(effects, card)
 
             context.individual = nil
-            context.repetition = true
+            context.debuffed_individual = nil
+            if context.debuffed_calculation then
+                context.debuffed_repetition = true
+            else
+                context.repetition = true
+            end
             context.card_effects = effects
             if reps[j] == 1 then
                 SMODS.calculate_repetitions(card, context, reps)
             end
 
             context.repetition = nil
+            context.debuffed_repetition = nil
             context.card_effects = nil
             context.other_card = nil
             j = j + (flags.calculated and 1 or #reps)
@@ -3233,6 +3266,7 @@ local game_start_run = Game.start_run
 function Game:start_run(args)
     game_start_run(self, args)
     G.SCORE_DISPLAY_QUEUE = nil
+    G.BLIND_SIZE_DISPLAY_QUEUE = nil
     G.E_MANAGER:add_event(Event({
         trigger = 'immediate',
         func = function()
@@ -4651,6 +4685,8 @@ end
 
 assert(load(SMODS.NFS.read(SMODS.path..'src/utils/run_select.lua'), ('=[SMODS _ "src/utils/run_select.lua"]')))()
 
+-------------------------------------------------------------------------------------------------
+
 function SMODS.table_size(t)
     local size = 0
     for _,_ in pairs(t) do
@@ -4683,4 +4719,34 @@ function SMODS.split_string(_string, parts)
     end
 
     return text_output
+end
+
+---@param config table? table that contains config to be parsed. `default` may be passed to properly assign default value
+---@param key_tables table? table that contains list of keys and that order determines the default order if no key is provided
+function SMODS.parse_ui_config_table(config, key_tables)
+    if not config or not type(config) == 'table' or not next(config) then return end -- if config is empty
+    if not key_tables or not type(key_tables) == 'table' or not next(key_tables) then return end -- if key_tables is empty
+    local defaults = config.default or config[1] or config[key_tables[1]]
+    local return_table = {}
+    for index, key in ipairs(key_tables) do
+        return_table[key] = config[key] or config[index] or defaults
+    end
+    return return_table
+end
+
+-- card will always override center and that will override vars
+function SMODS.should_use_debuffed_description(conf)
+    local conf = conf or {}
+    local vars = conf.vars or {}
+    local center = conf.center
+    local card = conf.card
+    if card then 
+        center = card.config.center
+    end
+    if center then 
+        vars = center.loc_vars and type(center.loc_vars) == 'function' and 
+                center:loc_vars({}, card or (center.create_fake_card and center:create_fake_card())) or {}
+    end
+    vars = vars or {}
+    return not vars.no_debuffed_description and not (vars.vars or {}).no_debuffed_description
 end

@@ -31,8 +31,11 @@
 ---@field before? true Check if `true` for effects that happen before hand scoring.
 ---@field after? true Check if `true` for effects that happen after hand scoring.
 ---@field main_scoring? true Check if `true` for effects that happen during scoring.
+---@field debuffed_main_scoring? true Check if `true` for effects that happen during "scoring" of debuffed cards.
 ---@field individual? true Check if `true` for effects on individual playing cards during scoring.
+---@field debuffed_individual? true Check if `true` for effects on a debuffed individual playing cards during scoring.
 ---@field repetition? true Check if `true` for adding repetitions to playing cards.
+---@field debuffed_repetition? true Check if `true` for adding repetitions to debuffed playing cards.
 ---@field edition? true `true` for any Edition-specific context (e.x. context.pre_joker and context.post_joker).
 ---@field pre_joker? true Check if `true` for triggering editions on jokers before they score.
 ---@field post_joker? true Check if `true` for triggering editions on jokers after they score.
@@ -1016,3 +1019,19 @@ function SMODS.is_showdown_ante() end
 ---@param no_copy? boolean Skips copying the config values of the center
 ---@return table
 SMODS.get_default_ability_vars = function(center, card, no_copy) end
+
+---Returns the size of the table
+---@param t table
+---@return integer
+function SMODS.table_size(t) end
+
+---Splits a string into multiple lines based on its words
+---@param _string string
+---@param parts integer
+---@return table
+function SMODS.split_string(_string, parts) end
+
+---Checks if the card should display its description even if debuffed
+---@param conf {vars?: table, center?: SMODS.Center|table, card?: Card|table}
+---@return boolean
+function SMODS.should_use_debuffed_description(conf) end

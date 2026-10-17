@@ -733,7 +733,7 @@ local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W, G.CARD_H, front, ce
 '''
 payload = '''
 SMODS.create_card_scale = SMODS.create_card_scale or {w = 1, h = 1}
-local card = Card(area.T.x + area.T.w/2, area.T.y, G.CARD_W*SMODS.create_card_scale.w, G.CARD_H*SMODS.create_card_scale.h, front, center,
+local card = Card(area and (area.T.x + area.T.w/2) or 0, area and area.T.y or 0, G.CARD_W*SMODS.create_card_scale.w, G.CARD_H*SMODS.create_card_scale.h, front, center,
 '''
 
 # Automatically get the colour of a custom consumable type for materializing
