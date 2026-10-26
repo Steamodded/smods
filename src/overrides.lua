@@ -2808,8 +2808,6 @@ SMODS.get_default_ability_vars = function(center, card, no_copy)
 		burnt_hand = center.name == 'Loyalty Card' and 0 or nil,
 		loyalty_remaining = center.name == 'Loyalty Card' and (center.config.extra or {}).every or nil,
         hands_played_at_create = G.GAME and G.GAME.hands_played or 0,
-		
-		bonus = (card.ability.bonus or 0) + (center.config.bonus or 0)
 	}
 
 	if not no_copy then
@@ -2855,7 +2853,7 @@ function Card:quantum_set_ability(center)
     end
 
     self.ARGS.smods_quantum_ability = self.ARGS.smods_quantum_ability or {}
-    local new_ability = SMODS.merge_defaults(SMODS.get_default_ability_vars(self, center, true), self.ARGS.smods_quantum_ability)
+    local new_ability = SMODS.merge_defaults(self.ARGS.smods_quantum_ability, SMODS.get_default_ability_vars(center, self, true))
     
     self.ability = self.ability or {}
     new_ability.extra_value = nil
@@ -3133,10 +3131,17 @@ function AnimatedSprite:get_pos_pixel()
     return self.RETS.get_pos_pixel
 end
 
+local your_collection_decks_ref = G.FUNCS.your_collection_decks
+G.FUNCS.your_collection_decks = function(...)
+    local ret = your_collection_decks_ref(...)
+	if G.OVERLAY_MENU then G.OVERLAY_MENU.smods_deck_collection = true end
+	return ret
+end
+
 function create_UIBox_your_collection_decks()
 	key = "deck_choice"
 	local page_def = SMODS.RunSelect.Pages[key]
-    SMODS.RunSelect.Setup.choices[key] = SMODS.RunSelect.Setup.choices[key] or page_def:set_default(G.PROFILES[G.SETTINGS.profile].last_choices[key])
+    --SMODS.RunSelect.Setup.choices[key] = SMODS.RunSelect.Setup.choices[key] or page_def:set_default(G.PROFILES[G.SETTINGS.profile].last_choices[key])
     SMODS.RunSelect.Functions.build_selection_areas(key)
 
 	local pool = SMODS.collection_pool(G.P_CENTER_POOLS.Back)
