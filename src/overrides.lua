@@ -3131,6 +3131,13 @@ function AnimatedSprite:get_pos_pixel()
     return self.RETS.get_pos_pixel
 end
 
+local your_collection_decks_ref = G.FUNCS.your_collection_decks
+G.FUNCS.your_collection_decks = function(...)
+    local ret = your_collection_decks_ref(...)
+	if G.OVERLAY_MENU then G.OVERLAY_MENU.smods_deck_collection = true end
+	return ret
+end
+
 function create_UIBox_your_collection_decks()
 	key = "deck_choice"
 	local page_def = SMODS.RunSelect.Pages[key]
