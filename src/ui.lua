@@ -3532,6 +3532,15 @@ function SMODS.GUI.superellipse(n, res, counts)
     return ret
 end
 
+-- rotate in radians
+function SMODS.GUI.rotate_vertex(vertex, angle)
+    local x, y = vertex.x, vertex.y
+    return {
+        x = x * math.cos(angle) - y * math.sin(angle),
+        y = x * math.sin(angle) + y * math.cos(angle),
+    }
+end
+
 -- these should preferrably max out at 4 but it's quite flexible
 SMODS.GUI.CUSTOM_UI_SHAPES_FUNCTION = {
     default = { 0, 1, 1, 2, 2, 4, 4, },

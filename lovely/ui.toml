@@ -674,11 +674,11 @@ else
   vertices[#vertices+1] = vertices[3]
   vertices[#vertices+1] = vertices[4]
 end
-local transform = self.config.transform
+local transform = self.config.box_transform
 if type(transform) == 'function' then
   for i = 1, #vertices, 2 do
-    local transformed = transform({ x = vertices[i], y = vertices[i + 1]})
-    vertices[i], vertices[i + 1] = transformed.x, transformed.y
+    local transformed = transform({ x = vertices[i] - totw / 2, y = vertices[i + 1] - toth / 2, w = totw, h = toth})
+    vertices[i], vertices[i + 1] = transformed.x + totw / 2, transformed.y + toth / 2
   end
 end
 
