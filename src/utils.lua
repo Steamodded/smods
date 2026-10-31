@@ -2874,7 +2874,7 @@ function SMODS.localize_box(lines, args)
                 end
                 final_name_assembled_string = final_name_assembled_string..assembled_string_part
             end
-            final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, padding = 0.03, res = 0.15}, nodes={}}
+            final_line[#final_line+1] = {n=G.UIT.C, config={align = "m", colour = thunk.bg_col, r = 0.05, res = 0.15}, nodes={}}
             final_line[#final_line].nodes[1] = {n=G.UIT.O, config=base_config{
                 object = DynaText(base_config{
                     string = {assembled_string},

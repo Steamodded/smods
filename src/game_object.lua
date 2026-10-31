@@ -2853,8 +2853,17 @@ SMODS.UndiscoveredCompat = {
             local prototype = SMODS.DeckSkins[key]
 
             local conv_palette_loc_options = {}
-            for i, p in ipairs(prototype.palettes) do
-                conv_palette_loc_options[i] = G.localization.misc.collab_palettes[key][i] or ({ lc = true, hc = true, def = true })[p.key] and localize('b_deckskins_'..p.key) or p.key
+            if not prototype.outdated then
+                for i, p in ipairs(prototype.palettes) do
+                    conv_palette_loc_options[i] = G.localization.misc.collab_palettes[key][i] or ({ lc = true, hc = true, def = true })[p.key] and localize('b_deckskins_'..p.key) or p.key
+                end
+            else
+                if prototype.lc_atlas == prototype.hc_atlas then
+                    table.insert(conv_palette_loc_options, localize('b_deckskins_def'))
+                else
+                    table.insert(conv_palette_loc_options, localize('b_deckskins_lc'))
+                    table.insert(conv_palette_loc_options, localize('b_deckskins_hc'))
+                end
             end
 
             return conv_palette_loc_options

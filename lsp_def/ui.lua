@@ -416,3 +416,9 @@ function SMODS.GUI.create_UIBox_dropdown_menu(args, parent_width) end
 ---@param counts integer how many points should the function generate
 ---@return number[] list_of_points list of points for UI corners
 function SMODS.GUI.superellipse(n, res, counts) end
+
+---Returns a rotated `vertex` that has been rotated by `angle` radians
+---@param vertex {x:number, y:number} vertex in x, y format
+---@param angle number Angle in radians
+---@return {x:number, y:number}
+function SMODS.GUI.rotate_vertex(vertex, angle) end

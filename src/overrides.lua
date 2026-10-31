@@ -2124,7 +2124,8 @@ function Card:set_sprites(_center, _front)
 				else			
 					self.children.center = SMODS.create_sprite(self.T.x, self.T.y, self.T.w, self.T.h, "Joker", G.j_locked.pos)
 				end
-			elseif not self.params.bypass_discovery_center and (_center.consumeable or SMODS.UndiscoveredCompat[_center.set]) and not _center.discovered then
+            elseif not self.params.bypass_discovery_center and (_center.consumeable or SMODS.UndiscoveredCompat[_center.set]) and not _center.discovered then
+				local undiscovered_sprite = SMODS.UndiscoveredSprites[_center.set]
 				local atlas = SMODS.get_atlas(
 					(_center.undiscovered and
 						(_center.undiscovered[G.SETTINGS.colourblind_option and 'hc_atlas' or 'lc_atlas'] or
@@ -2964,8 +2965,6 @@ SMODS.get_default_ability_vars = function(center, card, no_copy)
 		burnt_hand = center.name == 'Loyalty Card' and 0 or nil,
 		loyalty_remaining = center.name == 'Loyalty Card' and (center.config.extra or {}).every or nil,
         hands_played_at_create = G.GAME and G.GAME.hands_played or 0,
-		
-		bonus = (card.ability.bonus or 0) + (center.config.bonus or 0)
 	}
 
 	if not no_copy then
@@ -3193,10 +3192,17 @@ function AnimatedSprite:get_pos_pixel()
     return self.RETS.get_pos_pixel
 end
 
+local your_collection_decks_ref = G.FUNCS.your_collection_decks
+G.FUNCS.your_collection_decks = function(...)
+    local ret = your_collection_decks_ref(...)
+	if G.OVERLAY_MENU then G.OVERLAY_MENU.smods_deck_collection = true end
+	return ret
+end
+
 function create_UIBox_your_collection_decks()
 	key = "deck_choice"
 	local page_def = SMODS.RunSelect.Pages[key]
-    SMODS.RunSelect.Setup.choices[key] = SMODS.RunSelect.Setup.choices[key] or page_def:set_default(G.PROFILES[G.SETTINGS.profile].last_choices[key])
+    --SMODS.RunSelect.Setup.choices[key] = SMODS.RunSelect.Setup.choices[key] or page_def:set_default(G.PROFILES[G.SETTINGS.profile].last_choices[key])
     SMODS.RunSelect.Functions.build_selection_areas(key)
 
 	local pool = SMODS.collection_pool(G.P_CENTER_POOLS.Back)
