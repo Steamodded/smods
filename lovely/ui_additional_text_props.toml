@@ -539,7 +539,32 @@ end
 '''
 match_indent = true
 
-# Fix empty loc tags being ignored
+# Add conditional variables
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+local _c, _c_name, _c_val, _c_gather = nil, nil, nil, nil
+'''
+payload = '''
+local condition, _cond_val, _cond_gather = {}, nil, nil
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+control, _c, _c_name, _c_val, _c_gather = {}, nil, nil, nil, nil
+'''
+payload = '''
+condition, _cond_val, _cond_gather = {}, nil, nil
+'''
+
+# Extend parsed lines + Fix empty loc tags being ignored
 [[patches]]
 [patches.pattern]
 target = 'functions/misc_functions.lua'
@@ -549,5 +574,42 @@ pattern = '''
 if str_parts[1] then parsed_line[#parsed_line+1] = {strings = str_parts, control = control or {}} end
 '''
 payload = '''
-if str_parts[1] or control.element then parsed_line[#parsed_line+1] = {strings = str_parts, control = control or {}} end
+if str_parts[1] or control.element then parsed_line[#parsed_line+1] = {strings = str_parts, control = SMODS.shallow_copy(control or {}), control_snapshot = control or {}, condition = condition or {}} end
+'''
+
+# Check and gather conditional
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+elseif _c and not (char == ':' or char == '}') and not _c_gather then _c_name = (_c_name or '')..char
+'''
+payload = '''
+elseif _c and not _cond_gather and char == "?" then _cond_gather = true
+elseif _c and _cond_gather and not (char == ',' or char == '}') then _cond_val = (_cond_val or "")..char
+'''
+
+# Process conditionals
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+elseif _c and (char == ',' or char == '}') then _c_gather = nil; if _c_name then control[_c_name] = _c_val end; _c_name = nil; _c_val = nil; if char == '}' then _c = nil end
+'''
+payload = '''
+elseif _c and (char == ',' or char == '}') then
+    _c_gather = nil; _cond_gather = nil;
+    if _c_name then
+        control[_c_name] = _c_val
+        condition[_c_name] = condition[_c_name] or {}
+        if not _cond_val then condition[_c_name] = { value = _c_val }
+        else table.insert(condition[_c_name], { condition = _cond_val, value = _c_val }) end
+    end
+    _c_name = nil; _c_val = nil; _cond_val = nil;
+    if char == '}' then _c = nil end
+
 '''
