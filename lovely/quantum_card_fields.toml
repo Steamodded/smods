@@ -1,0 +1,344 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+
+### Seal ###
+
+# functions/state_events.lua : G.FUNCS.discard_cards_from_highlighted() : Remove (now) duplicate Seal calc
+[[patches]]
+[patches.pattern]
+target = "functions/state_events.lua"
+pattern = '''G.hand.highlighted[i]:calculate_seal({discard = true})'''
+position = "at"
+match_indent = true
+payload = ''''''
+
+
+### Suit ###
+
+# blind.lua : Blind:debuff_card() : update card:is_suit() check and add card:is_rank() check
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+pattern = '''if self.debuff.suit and card:is_suit(self.debuff.suit, true) then'''
+position = "at"
+match_indent = true
+payload = '''if self.debuff.suit and card:is_suit(self.debuff.suit, {bypass_debuff = true}) then'''
+[[patches]]
+[patches.pattern]
+target = "blind.lua"
+pattern = '''if self.debuff.value and self.debuff.value == card.base.value then'''
+position = "at"
+match_indent = true
+payload = '''if self.debuff.value and card:is_rank(self.debuff.value) then'''
+
+# Blackboard
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''if v:is_suit('Clubs', nil, true) or v:is_suit('Spades', nil, true) then'''
+position = "at"
+match_indent = true
+payload = '''if v:is_suits({Clubs = true, Spades = true}) then'''
+
+### Rank ###
+
+# Oh boy.
+
+# Help
+# [[patches]]
+# [patches.regex]
+# target = "functions/common_events.lua"
+# pattern = ''':get_id\(\)\s+==\s+([^\)]*?)\s(and|then)'''
+# position = 'at'
+# payload = ''':is_rank(SMODS.get_rank_from_id($1)) $2'''
+
+# Sixth Sense 
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:get_id() == 6 and not context.full_hand[1].sixth_sense and G.GAME.current_round.hands_played == 0 then'''
+position = "at"
+match_indent = true
+payload = '''
+if self.ability.name == 'Sixth Sense' and #context.full_hand == 1 and context.full_hand[1]:is_rank("6") and not context.full_hand[1].sixth_sense and G.GAME.current_round.hands_played == 0 then'''
+
+# Mail-In Rebate
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+            context.other_card:get_id() == G.GAME.current_round.mail_card.id then'''
+position = "at"
+match_indent = false
+payload = '''
+            context.other_card:is_rank(G.GAME.current_round.mail_card.rank) then'''
+
+# Hit the Road
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''context.other_card:get_id() == 11 and not context.blueprint then'''
+position = "at"
+match_indent = true
+payload = '''context.other_card:is_rank("Jack") and not context.blueprint then'''
+
+# Wee Joker
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''context.other_card:get_id() == 2 and not context.blueprint then'''
+position = "at"
+match_indent = true
+payload = '''context.other_card:is_rank("2") and not context.blueprint then'''
+
+# 8 Ball
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                    if (context.other_card:get_id() == 8) and (pseudorandom('8ball') < G.GAME.probabilities.normal/self.ability.extra) then''' # This gets injected before listed_probabilities.toml
+position = "at"
+match_indent = false
+payload = '''
+                    if (context.other_card:is_rank("8")) and (pseudorandom('8ball') < G.GAME.probabilities.normal/self.ability.extra) then''' 
+
+# The Idol
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                    context.other_card:get_id() == G.GAME.current_round.idol_card.id and '''
+position = "at"
+match_indent = false
+payload = '''
+                    context.other_card:is_rank(G.GAME.current_round.idol_card.rank) and '''
+
+# Scholar
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                    context.other_card:get_id() == 14 then'''
+position = "at"
+match_indent = false
+payload = '''
+                    context.other_card:is_rank("Ace") then'''
+
+# Walkie Talkie
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                (context.other_card:get_id() == 10 or context.other_card:get_id() == 4) then'''
+position = "at"
+match_indent = false
+payload = '''
+                (context.other_card:is_ranks({["10"]=true, ["4"]=true})) then'''
+
+# Fibonacci
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Fibonacci' and (
+                context.other_card:get_id() == 2 or 
+                context.other_card:get_id() == 3 or 
+                context.other_card:get_id() == 5 or 
+                context.other_card:get_id() == 8 or 
+                context.other_card:get_id() == 14) then
+                    return {
+                        mult = self.ability.extra,
+                        card = self
+                    }
+                end
+'''
+position = "at"
+match_indent = true
+payload = '''
+if self.ability.name == 'Fibonacci' and (
+    context.other_card:is_ranks({["2"]=true, ["3"]=true, ["5"]=true, ["8"]=true, ["Ace"]=true})) then
+        return {
+            mult = self.ability.extra,
+            card = self
+        }
+    end
+'''
+
+# Triboulet
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                    (context.other_card:get_id() == 12 or context.other_card:get_id() == 13) then'''
+position = "at"
+match_indent = false
+payload = '''
+                    (context.other_card:is_ranks({["Queen"]=true, ["King"]=true})) then'''
+
+# Shoot the Moon
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                        context.other_card:get_id() == 12 then'''
+position = "at"
+match_indent = false
+payload = '''
+                        context.other_card:is_rank("Queen") then'''
+
+# Baron
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                        context.other_card:get_id() == 13 then'''
+position = "at"
+match_indent = false
+payload = '''
+                        context.other_card:is_rank("King") then'''
+
+# Hack
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Hack' and (
+                context.other_card:get_id() == 2 or 
+                context.other_card:get_id() == 3 or 
+                context.other_card:get_id() == 4 or 
+                context.other_card:get_id() == 5) then
+                    return {
+                        message = localize('k_again_ex'),
+                        repetitions = self.ability.extra,
+                        card = self
+                    }
+                end
+'''
+position = "at"
+match_indent = true
+payload = '''
+if self.ability.name == 'Hack' and (
+    context.other_card:is_ranks({["2"]=true, ["3"]=true, ["4"]=true, ["5"]=true})) then
+        return {
+            message = localize('k_again_ex'),
+            repetitions = self.ability.extra,
+            card = self
+        }
+    end
+'''
+
+# Superposition
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+                                if context.scoring_hand[i]:get_id() == 14 then aces = aces + 1 end'''
+position = "at"
+match_indent = false
+payload = '''
+                                if context.scoring_hand[i]:is_rank("Ace") then aces = aces + 1 end'''
+
+# Even Steven and Odd Todd
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.name == 'Even Steven' and
+context.other_card:get_id() <= 10 and 
+context.other_card:get_id() >= 0 and
+context.other_card:get_id()%2 == 0
+then
+    return {
+        mult = self.ability.extra,
+        card = self
+    }
+end
+if self.ability.name == 'Odd Todd' and
+((context.other_card:get_id() <= 10 and 
+context.other_card:get_id() >= 0 and
+context.other_card:get_id()%2 == 1) or
+(context.other_card:get_id() == 14))
+then
+    return {
+        chips = self.ability.extra,
+        card = self
+    }
+end
+'''
+position = "at"
+match_indent = true
+payload = '''
+if self.ability.name == 'Even Steven' and
+context.other_card:is_parity(0)
+then
+    return {
+        mult = self.ability.extra,
+        card = self
+    }
+end
+if self.ability.name == 'Odd Todd' and
+context.other_card:is_parity(1)
+then
+    return {
+        chips = self.ability.extra,
+        card = self
+    }
+end
+'''
+
+### Sticker ###
+# card.lua : Card:calculate_perishable() : update logic
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.perishable and self.ability.perish_tally > 0 then
+    if self.ability.perish_tally == 1 then
+        self.ability.perish_tally = 0
+        card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize('k_disabled_ex'),colour = G.C.FILTER, delay = 0.45})
+        self:set_debuff()
+    else
+        self.ability.perish_tally = self.ability.perish_tally - 1
+        card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type='variable',key='a_remaining',vars={self.ability.perish_tally}},colour = G.C.FILTER, delay = 0.45})
+    end
+end'''
+position = "at"
+match_indent = true
+payload = '''
+local is_perishable = self:has_sticker("perishable", {bypass_debuff = true})
+if is_perishable and self.ability.perish_tally and self.ability.perish_tally > 0 then
+    if self.ability.perish_tally == 1 then
+        self.ability.perish_tally = 0
+        card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize('k_disabled_ex'),colour = G.C.FILTER, delay = 0.45})
+        self:set_debuff()
+    else
+        self.ability.perish_tally = self.ability.perish_tally - 1
+        card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type='variable',key='a_remaining',vars={self.ability.perish_tally}},colour = G.C.FILTER, delay = 0.45})
+    end
+elseif is_perishable then
+    self.ability.perish_tally = 4
+    card_eval_status_text(self, 'extra', nil, nil, nil, {message = localize{type='variable',key='a_remaining',vars={self.ability.perish_tally}},colour = G.C.FILTER, delay = 0.45})
+else
+    self.ability.perish_tally = nil
+end'''
+
+# card.lua : Card:calculate_rental() : update logic
+[[patches]]
+[patches.pattern]
+target = "card.lua"
+pattern = '''
+if self.ability.rental then
+    ease_dollars(-G.GAME.rental_rate)
+    card_eval_status_text(self, 'dollars', -G.GAME.rental_rate)
+end'''
+position = "at"
+match_indent = true
+payload = '''
+if self:has_sticker("rental", {bypass_debuff = true}) then
+    ease_dollars(-G.GAME.rental_rate)
+    card_eval_status_text(self, 'dollars', -G.GAME.rental_rate)
+end'''
