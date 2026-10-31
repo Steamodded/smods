@@ -45,6 +45,7 @@ self.config = setmetatable({card_limits = {card_limit}}, {
 })
 
 SMODS.merge_defaults(self.config, config)
+self.config.buffer = 0
 '''
 
 # Load metatable
