@@ -354,8 +354,8 @@ function SMODS.RunSelect.Functions.start_run(_quick_start, _skip_wipe)
     end
     G:save_settings()
     
-    run_args.deck_choice = {name = G.P_CENTERS[run_args.deck_choice].name}
-    run_args.stake_choice = G.P_STAKES[run_args.stake_choice].order
+    run_args.deck_choice = {name = (G.P_CENTERS[run_args.deck_choice] or G.P_CENTERS['b_red']).name}
+    run_args.stake_choice = (G.P_STAKES[run_args.stake_choice] or G.P_STAKES['stake_white']).order
     
     if _skip_wipe then
         G:delete_run()
