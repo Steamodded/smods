@@ -1375,11 +1375,41 @@ SMODS.calculate_individual_effect = function(effect, scored_card, key, amount, f
         return true
     end
 
-    if key == 'balance' then
+    if key == 'balance' or key == "balance_raw" or key == "balance_points" then
         if effect.card and effect.card ~= scored_card then juice_card(effect.card) end
-        local total = mult + hand_chips
-        mult = mod_mult(total/2)
-        hand_chips = mod_chips(total/2)
+        local halfdiff = math.abs(mult - hand_chips)/2
+
+        local pctdef = key == "balance_raw" and 1 or key == "balance_points" and 100 or 100 --Do we want the default to be raw or points? Either way, the user can specify.
+        local pct = type(amount) == "number" and amount or pctdef
+
+        if math.abs(pct) ~= pct then halfdiff = math.min(mult, hand_chips)/2 end --Negative balance takes from the smaller and gives to the larger
+
+        local function determine_multiplier(input_pct)
+            -- Passed 150% balance,
+            -- default: subtract 100%, add 150%
+            -- capped: subtract 100%, add 100%
+            -- penalized: subtract 150%, add 150%
+            local mag = math.abs(input_pct)
+            local sign = input_pct/mag
+            if mag <= 1 then return input_pct end
+        
+            local res
+            if effect.overbalance_penalty then res = input_pct 
+            elseif effect.balance_cap then res = math.min(mag, 1)*sign 
+            else res = math.max(input_pct, sign) end
+            --print(input_pct, res)
+            return res
+        end
+
+        if effect.balance_cap then pct = math.min(pct, pctdef) end
+
+        if mult > hand_chips then
+            mult = mod_mult(mult + halfdiff*determine_multiplier(-pct/pctdef))
+            hand_chips = mod_chips(hand_chips + halfdiff*determine_multiplier(pct/pctdef))
+        else
+            mult = mod_mult(mult + halfdiff*determine_multiplier(pct/pctdef))
+            hand_chips = mod_chips(hand_chips + halfdiff*determine_multiplier(-pct/pctdef))
+        end
         update_hand_text({delay = 0}, {chips = hand_chips, mult = mult})
         G.E_MANAGER:add_event(Event({
             func = (function()
@@ -1595,7 +1625,7 @@ SMODS.other_calculation_keys = {
     'xscore', 'x_score', 'h_x_score', 'h_xscore',
     'blind_size', 'blindsize', 'h_blind_size',  'h_blindsize',
     'xblind_size', 'x_blind_size', 'xblindsize', 'x_blindsize', 'h_x_blind_size', 'h_xblind_size',  'h_x_blindsize', 'h_xblindsize',
-    'swap', 'balance',
+    'swap', 'balance', 'balance_raw', 'balance_points',
     'saved', 'effect', 'remove',
     'debuff', 'prevent_debuff', 'debuff_text',
     'add_to_hand', 'remove_from_hand', 'return_to_hand',
