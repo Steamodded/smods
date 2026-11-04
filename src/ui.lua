@@ -2461,6 +2461,7 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
 
     G.FUNCS.SMODS_card_collection_page = function(e)
         if not e or not e.cycle_config then return end
+        SMODS.LAST_SELECTED_COLLECTION_PAGE = e.cycle_config.current_option
         for j = 1, #G.your_collection do
             for i = #G.your_collection[j].cards, 1, -1 do
             local c = G.your_collection[j]:remove_card(G.your_collection[j].cards[i])
@@ -2481,7 +2482,7 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
         INIT_COLLECTION_CARD_ALERTS()
     end
 
-    G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = 1 }}
+    G.FUNCS.SMODS_card_collection_page{ cycle_config = { current_option = args.current_option or 1 }}
 
     local t = create_UIBox_generic_options({
         colour = G.ACTIVE_MOD_UI and ((G.ACTIVE_MOD_UI.ui_config or {}).collection_colour or (G.ACTIVE_MOD_UI.ui_config or {}).colour),
@@ -2492,7 +2493,7 @@ SMODS.card_collection_UIBox = function(_pool, rows, args)
         back_func = (args and args.back_func) or G.ACTIVE_MOD_UI and "openModUI_"..G.ACTIVE_MOD_UI.id or 'your_collection', snap_back = args.snap_back, infotip = args.infotip, contents = {
           {n=G.UIT.R, config={align = "cm", r = 0.1, colour = G.C.BLACK, emboss = 0.05}, nodes=deck_tables},
           (not args.hide_single_page or cards_per_page < #pool) and {n=G.UIT.R, config={align = "cm"}, nodes={
-            create_option_cycle({options = options, w = 4.5, cycle_shoulders = true, opt_callback = 'SMODS_card_collection_page', current_option = 1, colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED, no_pips = true, focus_args = {snap_to = true, nav = 'wide'}})
+            create_option_cycle({options = options, w = 4.5, cycle_shoulders = true, opt_callback = 'SMODS_card_collection_page', current_option = args.current_option or 1, colour = G.ACTIVE_MOD_UI and (G.ACTIVE_MOD_UI.ui_config or {}).collection_option_cycle_colour or G.C.RED, no_pips = true, focus_args = {snap_to = true, nav = 'wide'}})
           }} or nil,
       }})
     return t
