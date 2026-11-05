@@ -833,7 +833,7 @@ function SMODS.RunSelect.Functions.grab_tooltips(set, key)
                 info_queue[#info_queue+1] = G.P_CENTERS[part.control.T] or G.P_TAGS[part.control.T] or {
                     set = part.control.T_set or 'Other',
                     key = part.control.T,
-                    vars = part.control.T_vars and parse_tooltip_vars(part.control.T_vars) or {}
+                    vars = part.control.T_vars and SMODS.parse_tooltip_vars(part.control.T_vars) or {}
                 }
             end
         end
