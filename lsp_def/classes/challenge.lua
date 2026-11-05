@@ -5,8 +5,8 @@
 ---@field loc_txt? table|{name: string} Contains strings used for displaying text related to this object.
 ---@field super? SMODS.GameObject|table Parent class.
 ---@field rules? table|{custom?: table[]|{id: string, value?: any, no_ui?: boolean}[], modifiers?: table[]|{id: string, value?: any, no_ui?: boolean}} List of tables setting custom rules and modifiers. Each rule/modifier has an `id`, with optional `value` param (defaults to `true`) and optional `no_ui` parameter (not set by default). See [SMODS.Challenge](https://docs.smods.dev/Game%20Objects/SMODS.Challenge) Documentation for default rules/modifiers.
----@field jokers? table[]|{id: string, edition?: string, eternal?: boolean, pinned?: boolean}[] List of tables setting jokers to start with.
----@field consumeables? table[]|{id: string, edition?: string, eternal?: boolean}[] List of tables setting consumables to start with.
+---@field jokers? table[]|{id: string, edition?: string, eternal?: boolean, pinned?: boolean, rental?: boolean, perishable?: boolean, stickers?: string[]}[] List of tables setting jokers to start with.
+---@field consumeables? table[]|{id: string, edition?: string, eternal?: boolean, pinned?: boolean, rental?: boolean, perishable?: boolean, stickers?: string[]}[] List of tables setting consumables to start with.
 ---@field vouchers? table[]|{id: string}[] List of tables setting vouchers to start with.
 ---@field restrictions? table|{banned_cards?: table[]|{id: string}[], banned_tags?: table[]|{id: string}[], banned_other?: table[]|{id: string, type: "blind"}[]} Contains IDs to objects to ban from the challenge.
 ---@field deck? table|{type?: string|"Challenge Deck", cards?: table[], yes_ranks?: table<string, true>, yes_suits?: table<string, true>, no_ranks?: table<string, true>, no_suits?: table<string, true>, enhancement?: string, edition?: string, seal?: string} Defines the Challenge's deck. See [SMODS.Challenge](https://docs.smods.dev/Game%20Objects/SMODS.Challenge) Documentation for details.
