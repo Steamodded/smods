@@ -272,8 +272,8 @@ for _, v in ipairs(text_shaders) do
     if v then self:set_text_shader(v.shader, v.send, true) end
     love.graphics.draw(
         self.config.text_drawable,
-        (self.config.lang.font.TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
-        (self.config.lang.font.TEXT_OFFSET.y + (self.config.vert and self.ARGS.text_parallax.sx or self.ARGS.text_parallax.sy))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        ((self.config.x_off or 0)*G.TILESIZE*G.TILESCALE + (self.config.font or self.config.lang.font).TEXT_OFFSET.x + (self.config.vert and -self.ARGS.text_parallax.sy or self.ARGS.text_parallax.sx))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        ((self.config.y_off or 0)*G.TILESIZE*G.TILESCALE + (self.config.font or self.config.lang.font).TEXT_OFFSET.y + (self.config.vert and self.ARGS.text_parallax.sx or self.ARGS.text_parallax.sy))*(self.config.scale or 1)*self.config.lang.font.FONTSCALE/G.TILESIZE,
         0,
         (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
         (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
@@ -308,8 +308,8 @@ for _, v in ipairs(text_shaders) do
     end
     love.graphics.draw(
         self.config.text_drawable,
-        self.config.lang.font.TEXT_OFFSET.x*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
-        self.config.lang.font.TEXT_OFFSET.y*(self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE,
+        ((self.config.x_off or 0)*G.TILESIZE*G.TILESCALE + (self.config.font or self.config.lang.font).TEXT_OFFSET.x)*(self.config.scale)*(self.config.font or self.config.lang.font).FONTSCALE/G.TILESIZE,
+        ((self.config.y_off or 0)*G.TILESIZE*G.TILESCALE + (self.config.font or self.config.lang.font).TEXT_OFFSET.y)*(self.config.scale)*(self.config.font or self.config.lang.font).FONTSCALE/G.TILESIZE,
         0,
         (self.config.scale)*self.config.lang.font.squish*self.config.lang.font.FONTSCALE/G.TILESIZE,
         (self.config.scale)*self.config.lang.font.FONTSCALE/G.TILESIZE
@@ -318,6 +318,25 @@ for _, v in ipairs(text_shaders) do
 end
 """
 match_indent = true
+
+# Allow concave shapes with `concave = true` config flag, and allow type override using `force_type = 'line'` or `force_type = 'fill'`
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+love.graphics.polygon((_type == 'line' or _type == 'line_emboss') and 'line' or "fill", self.pixellated_rect[_type].vertices)
+'''
+payload = '''
+local triangles = self.config.concave and love.math.triangulate(self.pixellated_rect[_type].vertices) or {self.pixellated_rect[_type].vertices}
+local width = love.graphics.getLineWidth()
+if self.config.line_width then love.graphics.setLineWidth(self.config.line_width) end
+for _, triangle in ipairs(triangles) do
+    love.graphics.polygon(self.config.force_type or (_type == 'line' or _type == 'line_emboss') and 'line' or "fill", triangle)
+end
+love.graphics.setLineWidth(width)
+'''
 
 
 # Slider adjustments

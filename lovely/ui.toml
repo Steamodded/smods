@@ -622,7 +622,7 @@ if custom_shape and type(custom_shape) == 'function' then
     corner_radius_config = parsed_res_config,
     corner_shapes_config = parsed_corners_config,
   }
-  vertices = custom_shape(pass_table)
+  vertices = custom_shape(pass_table, self)
 else
   if parsed_res_config.tl then
     local res = vanilla_res and res or parsed_res_config.tl
@@ -677,7 +677,7 @@ end
 local transform = self.config.box_transform
 if type(transform) == 'function' then
   for i = 1, #vertices, 2 do
-    local transformed = transform({ x = vertices[i] - totw / 2, y = vertices[i + 1] - toth / 2, w = totw, h = toth})
+    local transformed = transform({ x = vertices[i] - totw / 2, y = vertices[i + 1] - toth / 2, w = totw, h = toth}, self)
     vertices[i], vertices[i + 1] = transformed.x + totw / 2, transformed.y + toth / 2
   end
 end
