@@ -113,15 +113,3 @@ position = "after"
 payload = '''G.GAME.hands[text].played_this_ante = G.GAME.hands[text].played_this_ante + 1'''
 match_indent = true
 times = 1
-
-# end_round()
-[[patches]]
-[patches.pattern]
-target = "functions/state_events.lua"
-pattern = '''G.GAME.voucher_restock = nil'''
-position = "after"
-payload = '''for k, v in pairs(G.GAME.hands) do
-    v.played_this_ante = 0
-end'''
-match_indent = true
-times = 1

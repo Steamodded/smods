@@ -1,0 +1,263 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+
+# game.lua : Game:update() : inject SMODS.GameStates
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+pattern = '''
+        if self.STATE == self.STATES.MENU then
+            self:update_menu(dt)
+        end
+'''
+position = 'after'
+match_indent = true
+payload = '''
+if SMODS.GameStates[self.STATE] then
+    SMODS.GameStates[self.STATE]:update(dt)
+end
+'''
+
+# game.lua : Game:start_run()
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self:prep_stage(G.STAGES.RUN, saveTable and saveTable.STATE or G.STATES.BLIND_SELECT)
+'''
+payload = '''
+self:prep_stage(G.STAGES.RUN, saveTable and saveTable.STATE or SMODS.STATES.BLIND_SELECT)
+'''
+# game.lua : Game:prep_stage()
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+self.STATE = new_state or self.STATES.MENU
+'''
+payload = '''
+SMODS.enter_state(new_state or self.STATES.MENU, {from_load = true})
+'''
+
+# game.lua : Game:update_selecting_hand(dt) / Game:update_hand_played(dt) / etc. : Avoid deleting the shop in case it is held in the SMODS.state_stack
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''if self.shop then self.shop:remove(); self.shop = nil end'''
+payload = ''''''
+[[patches]] # Repatch Game:delete_run()
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'after'
+pattern = '''if self.deck_preview then self.deck_preview:remove(); self.deck_preview = nil end'''
+payload = '''if self.shop then self.shop:remove(); self.shop = nil end'''
+
+
+# cardarea.lua : CardArea:draw() : update logic
+[[patches]]
+[patches.pattern]
+target = 'cardarea.lua'
+pattern = '''(self.config.type == 'hand' and ({[G.STATES.SHOP]=1, [G.STATES.TAROT_PACK]=1, [G.STATES.SPECTRAL_PACK]=1, [G.STATES.STANDARD_PACK]=1,[G.STATES.BUFFOON_PACK]=1,[G.STATES.PLANET_PACK]=1, [G.STATES.ROUND_EVAL]=1, [G.STATES.BLIND_SELECT]=1})[state]) or'''
+position = 'at'
+match_indent = true
+payload = '''(self.config.type == 'hand' and ({[SMODS.STATES.SHOP]=1, [G.STATES.TAROT_PACK]=1, [G.STATES.SPECTRAL_PACK]=1, [G.STATES.STANDARD_PACK]=1,[G.STATES.BUFFOON_PACK]=1,[G.STATES.PLANET_PACK]=1, [SMODS.STATES.ROUND_EVAL]=1, [SMODS.STATES.BLIND_SELECT]=1})[state]) or'''
+
+# functions/button_callbacks.lua : G.FUNCS.use_card() : update logic
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''if card.ability.set == 'Booster' and not nosave and G.STATE == G.STATES.SHOP then'''
+payload = '''if card.ability.set == 'Booster' and not nosave and G.STATE == SMODS.STATES.SHOP then'''
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if G.shop and not G.shop.alignment.offset.py then
+    G.shop.alignment.offset.py = G.shop.alignment.offset.y
+    G.shop.alignment.offset.y = G.ROOM.T.y + 29
+end
+if G.blind_select and not G.blind_select.alignment.offset.py then
+    G.blind_select.alignment.offset.py = G.blind_select.alignment.offset.y
+    G.blind_select.alignment.offset.y = G.ROOM.T.y + 39
+end
+if G.round_eval and not G.round_eval.alignment.offset.py then
+    G.round_eval.alignment.offset.py = G.round_eval.alignment.offset.y
+    G.round_eval.alignment.offset.y = G.ROOM.T.y + 29
+end
+'''
+payload = '''
+
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if G.shop then 
+    G.shop.alignment.offset.y = G.shop.alignment.offset.py
+    G.shop.alignment.offset.py = nil
+end
+if G.blind_select then
+    G.blind_select.alignment.offset.y = G.blind_select.alignment.offset.py
+    G.blind_select.alignment.offset.py = nil
+end
+if G.round_eval then
+    G.round_eval.alignment.offset.y = G.round_eval.alignment.offset.py
+    G.round_eval.alignment.offset.py = nil
+end
+'''
+payload = '''
+
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''G.STATE = prev_state'''
+payload = '''
+if SMODS.GameStates[G.STATE] and SMODS.GameStates[G.STATE].exit_after_use_card then -- SMODS.STATES.BOOSTER_OPENED is handled by G.FUNCS.end_consumeable() below
+    SMODS.exit_state(nil, {no_shop_calc = true, leave_data = true, no_sound = true}, {state_override=prev_state})
+elseif not SMODS.GameStates[G.STATE] then
+    G.STATE = prev_state
+end
+'''
+
+# functions/button_callbacks.lua : G.FUNCS.end_consumeable() : update logic
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if G.shop and G.shop.alignment.offset.py then 
+    G.shop.alignment.offset.y = G.shop.alignment.offset.py
+    G.shop.alignment.offset.py = nil
+end
+if G.blind_select and G.blind_select.alignment.offset.py then
+    G.blind_select.alignment.offset.y = G.blind_select.alignment.offset.py
+    G.blind_select.alignment.offset.py = nil
+end
+if G.round_eval and G.round_eval.alignment.offset.py then
+    G.round_eval.alignment.offset.y = G.round_eval.alignment.offset.py
+    G.round_eval.alignment.offset.py = nil
+end
+'''
+payload = '''
+
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''G.STATE = G.GAME.PACK_INTERRUPT'''
+payload = '''
+if SMODS.GameStates[G.STATE] and SMODS.GameStates[G.STATE].exit_after_end_consumable then
+    SMODS.exit_state(nil, {no_shop_calc = true, no_sound = true}, {state_override=G.GAME.PACK_INTERRUPT})
+elseif not SMODS.GameStates[G.STATE] then
+    G.STATE = G.GAME.PACK_INTERRUPT
+end
+'''
+
+# functions/state_events.lua : G.FUNCS.evaluate_round() : remove Blind:defeat() call -> moved to SMODS.STATES.BLIND's on_exit() 
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.E_MANAGER:add_event(Event({
+    trigger = 'before',
+    delay = 1.3*math.min(G.GAME.blind.dollars+2, 7)/2*0.15 + 0.5,
+    func = function()
+        G.GAME.blind:defeat()
+        return true
+    end
+    }))
+delay(0.2)
+'''
+payload = '''
+-- Blind:defeat() call moved to SMODS.STATES.BLIND's on_exit() 
+'''
+
+# functions/state_events.lua : end_round() : update logic
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+G.STATE = G.STATES.ROUND_EVAL
+G.STATE_COMPLETE = false
+'''
+payload = '''
+if #SMODS.state_queue == 0 then
+    SMODS.queue_state(SMODS.STATES.ROUND_EVAL)
+end
+SMODS.advance_state_queue()
+'''
+[[patches]]
+[patches.pattern]
+target = 'functions/state_events.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+if G.STATE == G.STATES.ROUND_EVAL then 
+    win_game()
+    G.GAME.won = true
+    return true
+end
+'''
+payload = '''
+win_game()
+G.GAME.won = true
+return true
+'''
+
+
+### SMODS.STATES.USE_CONSUMABLE
+
+# card.lua : Card:use_consumable() : inject SMODS.enter_state
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'after'
+pattern = '''local used_tarot = copier or self'''
+payload = '''
+SMODS.enter_state(SMODS.STATES.USE_CONSUMABLE, nil, {from_hold = true, leave_shop_sign = true, leave_HUD_blind = true, leave_data = true, no_sound = true})
+'''
+
+# card.lua : Card:can_use_consumeable() : update logic
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+position = 'at'
+pattern = '''if G.STATE ~= G.STATES.HAND_PLAYED and G.STATE ~= G.STATES.DRAW_TO_HAND and G.STATE ~= G.STATES.PLAY_TAROT or any_state then'''
+payload = '''if G.STATE ~= G.STATES.HAND_PLAYED and G.STATE ~= G.STATES.DRAW_TO_HAND and G.STATE ~= SMODS.STATES.USE_CONSUMABLE or any_state then'''
+
+# functions/button_callbacks.lua : G.FUNCS.use_card() : update logic
+[[patches]]
+[patches.pattern]
+target = 'functions/button_callbacks.lua'
+match_indent = true
+position = 'at'
+pattern = '''G.STATES.PLAY_TAROT'''
+payload = '''SMODS.STATES.USE_CONSUMABLE'''
