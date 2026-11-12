@@ -46,8 +46,8 @@ function SMODS.reset_stencil_stack()
     love.graphics.setStencilTest()
     love.graphics.stencil(function() end)
 end
-function SMODS.reload_stencil_stack(full)
-    love.graphics.setCanvas({ love.graphics.getCanvas(), depthstencil = SMODS.stencil_canvas })
+function SMODS.reload_stencil_stack(full, canvas)
+    love.graphics.setCanvas({ canvas or love.graphics.getCanvas(), depthstencil = SMODS.stencil_canvas })
     if full then
         local stack_snapshot = SMODS.shallow_copy(SMODS.stencil_stack)
         SMODS.reset_stencil_stack()
@@ -66,7 +66,7 @@ end
 local old_get_canvas = love.graphics.getCanvas
 function love.graphics.getCanvas(...)
     local r = old_get_canvas(...)
-    return r.depthstencil and r[1] or r
+    return r and r.depthstencil and r[1] or r
 end
 
 local old_resize = love.resize
