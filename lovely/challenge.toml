@@ -130,3 +130,69 @@ name_to_check == 'Challenge Deck' and UIBox_button({button = 'deck_view_challeng
 payload = '''
 challenge.id and UIBox_button({button = 'deck_view_challenge', label = {localize(challenge.id, 'challenge_names')},  minw = 2.2, minh = 1, scale = 0.6, id = challenge})
 '''
+
+# Extend sticker support
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = 'if v.pinned then _joker.pinned = true end'
+position = 'after'
+match_indent = true
+payload = '''
+if v.rental then _joker:add_sticker('rental', true) end
+if v.perishable then _joker:add_sticker('perishable', true) end
+if type(v.stickers) == "table" then
+    for _, sticker in ipairs(v.stickers) do
+        _joker:add_sticker(sticker, true)
+    end
+end
+'''
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "if v.pinned then card.pinned = true end"
+position = 'after'
+match_indent = true
+payload = '''
+if v.rental then card:add_sticker('rental', true) end
+if v.perishable then card:add_sticker('perishable', true) end
+if type(v.stickers) == "table" then
+    for _, sticker in ipairs(v.stickers) do
+        card:add_sticker(sticker, true)
+    end
+end
+'''
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = 'add_joker(v.id, nil, k ~= 1)'
+position = 'at'
+match_indent = true
+payload = '''
+local _consumable = add_joker(v.id, v.edition, k ~= 1)
+if v.eternal then _consumable:add_sticker('eternal', true) end
+if v.pinned then _consumable:add_sticker('pinned', true) end
+if v.rental then _consumable:add_sticker('rental', true) end
+if v.perishable then _consumable:add_sticker('perishable', true) end
+if type(v.stickers) == "table" then
+    for _, sticker in ipairs(v.stickers) do
+        _consumable:add_sticker(sticker, true)
+    end
+end
+'''
+[[patches]]
+[patches.pattern]
+target = "functions/UI_definitions.lua"
+pattern = "consumeables:emplace(card)"
+position = 'before'
+match_indent = true
+payload = '''
+if v.pinned then card:add_sticker('pinned', true) end
+if v.rental then card:add_sticker('rental', true) end
+if v.perishable then card:add_sticker('perishable', true) end
+if type(v.stickers) == "table" then
+    for _, sticker in ipairs(v.stickers) do
+        card:add_sticker(sticker, true)
+    end
+end
+'''

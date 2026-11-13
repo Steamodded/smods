@@ -2783,8 +2783,17 @@ SMODS.UndiscoveredCompat = {
             local prototype = SMODS.DeckSkins[key]
 
             local conv_palette_loc_options = {}
-            for i, p in ipairs(prototype.palettes) do
-                conv_palette_loc_options[i] = G.localization.misc.collab_palettes[key][i] or ({ lc = true, hc = true, def = true })[p.key] and localize('b_deckskins_'..p.key) or p.key
+            if not prototype.outdated then
+                for i, p in ipairs(prototype.palettes) do
+                    conv_palette_loc_options[i] = G.localization.misc.collab_palettes[key][i] or ({ lc = true, hc = true, def = true })[p.key] and localize('b_deckskins_'..p.key) or p.key
+                end
+            else
+                if prototype.lc_atlas == prototype.hc_atlas then
+                    table.insert(conv_palette_loc_options, localize('b_deckskins_def'))
+                else
+                    table.insert(conv_palette_loc_options, localize('b_deckskins_lc'))
+                    table.insert(conv_palette_loc_options, localize('b_deckskins_hc'))
+                end
             end
 
             return conv_palette_loc_options
@@ -3231,6 +3240,46 @@ SMODS.UndiscoveredCompat = {
             desc_nodes.background_colour = res.background_colour
         end
     }
+
+    function SMODS.create_tag(args)
+        args = args or {}
+        if not args.key then
+            local tag_pool = get_current_pool('Tag')
+            args.key = pseudorandom_element(tag_pool, args.seed or 'smods_create_tag')
+            local it = 0
+            while args.key == 'UNAVAILABLE' do
+                it = it + 1
+                args.key = pseudorandom_element(tag_pool, args.seed or 'smods_create_tag'..it)
+            end
+        end 
+
+        local tag = Tag(args.key, args.collection, args.blind_type)
+
+        G.E_MANAGER:add_event(Event({
+            trigger = args.immediate and 'immediate' or 'after', delay = args.immediate and 0 or 0.4,
+            blockable = not args.immediate,
+            func = (function()
+                add_tag(tag)
+                return true
+            end)
+        }))
+        if not args.silent then
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    if args.sound and type(args.sound) == 'function' then
+                        args.sound()
+                    else
+                        play_sound('generic1', 0.9 + math.random()*0.1, 0.8)
+                        play_sound('holo1', 1.2 + math.random()*0.1, 0.4)
+                    end
+                    return true
+                end
+            }))
+        end
+        
+        return tag
+    end
+
 
     -------------------------------------------------------------------------------------------------
     ----- API CODE GameObject.Sticker

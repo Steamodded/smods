@@ -232,11 +232,20 @@ function StateSprite:get_pos_pixel()
     return self.RETS.get_pos_pixel
 end
 
+function StateSprite:update(dt)
+    local ret = AnimatedSprite.update(self, dt)
+    if type((self.sprite_args or {}).update_func) == "function" then
+        self.sprite_args.update_func(self, dt)
+    end
+    return ret
+end
 
-function Card:set_sprite_state(new_state)
-    if self.children.center:is(StateSprite) then
-        return self.children.center:set_state(new_state)
+
+function Card:set_sprite_state(new_state, child_name)
+    child_name = child_name or 'center'
+    if self.children[child_name]:is(StateSprite) then
+        return self.children[child_name]:set_state(new_state)
     else
-        sendWarnMessage("Card:card_set_sprite_state() called on card with no StateSprite as .children.center", "utils")
+        sendWarnMessage("Card:card_set_sprite_state() called on card with no StateSprite as .children."..child_name, "utils")
     end
 end

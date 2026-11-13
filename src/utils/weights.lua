@@ -62,7 +62,7 @@ function SMODS.poll_object(args)
     end
     
     -- Allow calculate functions to modify the pool table
-    SMODS.calculate_context({modify_weights = true, pool = weight_pool, pool_types = types_used})
+    SMODS.calculate_context({modify_weights = true, pool = weight_pool, pool_types = types_used, args = args})
     local modded_weight = 0
 
     -- Prepare final table to poll

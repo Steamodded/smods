@@ -17,11 +17,14 @@ payload = """function pseudorandom_element(_t, seed, args)
     -- TODO special cases for now
     -- Preserves reverse nominal order for Suits, nominal+face_nominal order for Ranks
     -- for vanilla RNG
+    local use_add_to_pool
     if _t == SMODS.Suits then
         _t = SMODS.Suit:obj_list(true)
+        use_add_to_pool = true
     end
     if _t == SMODS.Ranks then
         _t = SMODS.Rank:obj_list()
+        use_add_to_pool = true
     end
 """
 match_indent = true
@@ -35,6 +38,7 @@ payload = """
 local keep = true
 local in_pool_func =
     args and args.in_pool
+    or (use_add_to_pool or args and args.use_add_to_pool) and SMODS.add_to_pool
     or type(v) == 'table' and type(v.in_pool) == 'function' and v.in_pool
     or _t == G.P_CARDS and function(c)
             --Handles special case for Erratic Deck

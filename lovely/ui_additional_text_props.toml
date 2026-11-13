@@ -101,6 +101,50 @@ if pcall(function()
 end) then
 '''
 
+# Align parsing
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+local part_scale = 1
+'''
+payload = '''
+local part_align = self.config.text_align or ""
+'''
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+outer_colour = v.outer_colour or nil
+'''
+payload = '''
+part_align = v.text_align or part_align or ""
+'''
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+if self.start_pop_in then self.reset_pop_in = true end
+'''
+payload = '''
+self.strings[k].align_list = {
+    a = part_align == 'a',
+    m = string.find(part_align, "m"),
+    c = string.find(part_align, "c"),
+    b = string.find(part_align, "b"),
+    t = string.find(part_align, "t"),
+    l = string.find(part_align, "l"),
+    r = string.find(part_align, "r"),
+    i = string.find(part_align, "i"),
+}
+'''
+
 # Marquee text in DynaText
 # Adjust width when marquee is enabled
 [[patches]]
@@ -138,6 +182,7 @@ payload = '''
 if self.config.maxw and self.config.W > self.config.maxw and not self.config.marquee then
 '''
 # Adjust width when marquee is enabled
+# Apply align property to x position
 [[patches]]
 [patches.pattern]
 target = 'engine/text.lua'
@@ -148,6 +193,21 @@ v.W_offset = 0.5*(self.config.W - v.W)
 '''
 payload = '''
 v.W_offset = 0.5*(self.config.W - (self.config.marquee and self.config.maxw and self.config.maxw < v.W and self.config.maxw or v.W))
+if v.align_list.l then v.W_offset = 0 end
+if v.align_list.r then v.W_offset = v.W_offset * 2 end
+'''
+# Apply align property to y position (respecting offset_y)
+[[patches]]
+[patches.pattern]
+target = 'engine/text.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+v.H_offset = 0.5*(self.config.H - v.H + (self.config.offset_y or 0))
+'''
+payload = '''
+if v.align_list.t then v.H_offset = 0.5*(self.config.offset_y or 0) end
+if v.align_list.b then v.H_offset = v.H_offset * 2 - 0.5*(self.config.offset_y or 0) end
 '''
 
 # Add start/end index calculation
@@ -232,6 +292,41 @@ payload = '''
 v:update(dt*self.SPEEDFACTOR, self.real_dt)
 '''
 
+# Add outline_colour_opacity
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+--Draw the outline of the object
+if self.config.outline and self.config.outline_colour[4] > 0.01 then
+'''
+payload = '''
+local old_outline_opacity
+--Draw the outline of the object
+if self.config.outline and self.config.outline_colour[4] > 0.01 then
+    if self.config.outline_colour_opacity then
+        old_outline_opacity = self.config.outline_colour[4]
+        self.config.outline_colour[4] = self.config.outline_colour[4] * self.config.outline_colour_opacity
+    end
+'''
+
+# Cancel outline_colour_opacity
+[[patches]]
+[patches.pattern]
+target = 'engine/ui.lua'
+match_indent = true
+position = 'before'
+pattern = '''
+--Draw the outline for highlighted buttons
+'''
+payload = '''
+if old_outline_opacity then
+    self.config.outline_colour[4] = old_outline_opacity
+end
+
+'''
 
 # Add under-/overline and strikethrough properties for text
 [[patches]]
@@ -244,28 +339,52 @@ pattern = '''
 '''
 payload = '''
 if self.config.strikethrough and self.config.strikethrough[4] > 0.01 then 
+    local old_colour_opacity
+    if self.config.strikethrough_colour_opacity then
+        old_colour_opacity = self.config.strikethrough[4]
+        self.config.strikethrough[4] = self.config.strikethrough[4] * self.config.strikethrough_colour_opacity
+    end
     prep_draw(self, 1)
     love.graphics.scale(1/(G.TILESIZE))
     love.graphics.setLineWidth(1)
     love.graphics.setColor(self.config.strikethrough)
     self:draw_pixellated_strikethough('line', parallax_dist)
     love.graphics.pop()
+    if old_colour_opacity then
+        self.config.strikethrough[4] = old_colour_opacity
+    end
 end
 if self.config.underline and self.config.underline[4] > 0.01 then 
+    local old_colour_opacity
+    if self.config.underline_colour_opacity then
+        old_colour_opacity = self.config.underline[4]
+        self.config.underline[4] = self.config.underline[4] * self.config.underline_colour_opacity
+    end
     prep_draw(self, 1)
     love.graphics.scale(1/(G.TILESIZE))
     love.graphics.setLineWidth(1)
     love.graphics.setColor(self.config.underline)
     self:draw_pixellated_under('line', parallax_dist)
     love.graphics.pop()
+    if old_colour_opacity then
+        self.config.underline[4] = old_colour_opacity
+    end
 end
 if self.config.overline and self.config.overline[4] > 0.01 then
+    local old_colour_opacity
+    if self.config.overline_colour_opacity then
+        old_colour_opacity = self.config.overline[4]
+        self.config.overline[4] = self.config.overline[4] * self.config.overline_colour_opacity
+    end
     prep_draw(self, 1)
     love.graphics.scale(1/(G.TILESIZE))
     love.graphics.setLineWidth(1)
     love.graphics.setColor(self.config.overline)
     self:draw_pixellated_over('line', parallax_dist)
     love.graphics.pop()
+    if old_colour_opacity then
+        self.config.overline[4] = old_colour_opacity
+    end
 end
 '''
 

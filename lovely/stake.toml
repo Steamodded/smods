@@ -294,3 +294,16 @@ tab_definition_function = G.UIDEF.current_stake,
 payload = '''
 tab_definition_function = SMODS.config.vanilla_stake and G.UIDEF.current_stake or G.UIDEF.SMODS_current_stake,
 '''
+
+# Animated Stakes
+[[patches]]
+[patches.pattern]
+target = 'functions/misc_functions.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+local stake_sprite = Sprite(0,0,_scale*1,_scale*1,G.ASSET_ATLAS[G.P_CENTER_POOLS.Stake[_stake].atlas], G.P_CENTER_POOLS.Stake[_stake].pos)
+'''
+payload = '''
+local stake_sprite = SMODS.create_sprite(0,0,_scale*1,_scale*1,G.P_CENTER_POOLS.Stake[_stake].atlas, G.P_CENTER_POOLS.Stake[_stake].pos)
+'''

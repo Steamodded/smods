@@ -43,3 +43,8 @@ SMODS.Tags = {}
 ---@param tag Tag|Sprite|table
 ---@return SMODS.Tag|table
 SMODS.Tag.get_prototype_object = function (tag) end
+
+---@param args table|{key?: string, seed?: string, collection?: boolean, blind_type?: string, immediate?: boolean, silent?: boolean, sound?: fun()}
+---@return Tag|table
+--- Creates and adds a tag. Returns the tag object.
+function SMODS.create_tag(args) end
