@@ -35,7 +35,6 @@ pattern = "for _, v in ipairs(info_queue) do"
 position = 'before'
 payload = '''
 SMODS.compat_0_9_8.generate_UIBox_ability_table_card = nil
-info_queue = SMODS.cleanup_infoqueue_dupes(info_queue)
 '''
 match_indent = true
 

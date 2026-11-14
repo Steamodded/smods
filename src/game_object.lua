@@ -1415,6 +1415,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
     
                     localize{type = 'name', key = res.name_key or target.key, set = res.name_set or target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = res.name_vars or target.vars} 
                     desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.args = self or {}
                     desc_nodes.name_styled.config.align = "cm"
                 end
             end
@@ -1534,6 +1535,31 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
         atlas = 'Spectral',
         cost = 4,
     }
+
+    SMODS.Planet:take_ownership('pluto', {
+        set_card_type_badge = function(self, card, badges)
+            badges[#badges + 1] = create_badge(localize("k_dwarf_planet"), G.C.SECONDARY_SET.Planet, SMODS.ConsumableTypes.Planet.text_colour, 1.2)
+        end,
+    })
+
+    SMODS.Planet:take_ownership('ceres', {
+        set_card_type_badge = function(self, card, badges)
+            badges[#badges + 1] = create_badge(localize("k_dwarf_planet"), G.C.SECONDARY_SET.Planet, SMODS.ConsumableTypes.Planet.text_colour, 1.2)
+        end,
+    })
+
+    SMODS.Planet:take_ownership('eris', {
+        set_card_type_badge = function(self, card, badges)
+            badges[#badges + 1] = create_badge(localize("k_dwarf_planet"), G.C.SECONDARY_SET.Planet, SMODS.ConsumableTypes.Planet.text_colour, 1.2)
+        end,
+    })
+
+    SMODS.Planet:take_ownership('planet_x', {
+        set_card_type_badge = function(self, card, badges)
+            badges[#badges + 1] = create_badge(localize("k_planet_q"), G.C.SECONDARY_SET.Planet, SMODS.ConsumableTypes.Planet.text_colour, 1.2)
+        end,
+    })
+
 
 
     -------------------------------------------------------------------------------------------------
@@ -1664,6 +1690,7 @@ Set `prefix_config.key = false` on your object instead.]]):format(obj.key), obj.
 
                     localize{type = 'name', key = res.name_key or target.key, set = 'Other', nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = res.name_vars or target.vars} 
                     desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.args = self or {}
                     desc_nodes.name_styled.config.align = "cm"
                 end
             end
@@ -2044,6 +2071,7 @@ SMODS.UndiscoveredCompat = {
 
                     localize{type = 'name', key = res.name_key or target.key, set = res.name_set or target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = res.name_vars or target.vars} 
                     desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.args = self or {}
                     desc_nodes.name_styled.config.align = "cm"
                 end
             end
@@ -3227,6 +3255,7 @@ SMODS.UndiscoveredCompat = {
 
                     localize{type = 'name', key = res.name_key or target.key, set = res.name_set or target.set, nodes = desc_nodes.name_styled, fixed_scale = 0.63, no_pop_in = true, no_shadow = true, y_offset = 0, no_spacing = true, no_bump = true, vars = target.vars} 
                     desc_nodes.name_styled = SMODS.info_queue_desc_from_rows(desc_nodes.name_styled, true)
+                    desc_nodes.args = self or {}
                     desc_nodes.name_styled.config.align = "cm"
                 end
             end

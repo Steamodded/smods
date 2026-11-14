@@ -1,0 +1,23 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+# Add SMODS.current_mod.custom_tooltip_badges
+[[patches]]
+[patches.pattern]
+target = 'functions/UI_definitions.lua'
+match_indent = true
+position = 'after'
+pattern = '''
+scaling = scaling or 1
+'''
+payload = '''
+for _, mod in ipairs(SMODS.mod_list) do
+    if mod.can_load and mod.custom_tooltip and mod.custom_tooltip.badges and type(mod.custom_tooltip.badges) == "function" then
+        local res, skip = mod.custom_tooltip.badges(SMODS.current_tooltip_card, _string, _badge_col, _text_col, scaling)
+        if skip then return end
+        if res then return res end
+    end
+end
+'''
