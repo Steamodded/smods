@@ -3027,18 +3027,6 @@ function SMODS.localize_box(lines, args)
     return final_line
 end
 
-function SMODS.get_multi_boxes(multi_box)
-    local multi_boxes = {}
-    if multi_box then
-        for i, box in ipairs(multi_box) do
-            if i > 1 then multi_boxes[#multi_boxes+1] = {n=G.UIT.R, config={minh = 0.07}} end
-            local _box = desc_from_rows(box)
-            multi_boxes[#multi_boxes+1] = _box
-        end
-    end
-    return multi_boxes
-end
-
 function SMODS.info_queue_desc_from_rows(desc_nodes, empty, maxw)
   local t = {}
   for k, v in ipairs(desc_nodes) do
@@ -4683,6 +4671,13 @@ assert(load(SMODS.NFS.read(SMODS.path..'src/utils/run_select.lua'), ('=[SMODS _ 
 
 -------------------------------------------------------------------------------------------------
 
+----------------------------------------------------------------------------------------------------
+----- API IMPORT Custom Tooltips
+-------------------------------------------------------------------------------------------------
+
+assert(load(SMODS.NFS.read(SMODS.path..'src/utils/tooltips.lua'), ('=[SMODS _ "src/utils/tooltips.lua"]')))()
+
+-------------------------------------------------------------------------------------------------
 function SMODS.table_size(t)
     local size = 0
     for _,_ in pairs(t) do

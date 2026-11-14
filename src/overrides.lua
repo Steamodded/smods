@@ -2939,6 +2939,7 @@ end
 --Patch to allow `type = "name_text"` to take vars
 local oldlocalize = localize
 function localize(args, misc_cat)
+	if SMODS.new_multibox and args.type == 'name' then return end
     local ret = oldlocalize(args, misc_cat)
 
     if type(args) == "table" and type(ret) == "string" and args.type == "name_text" and (args.vars) then

@@ -87,94 +87,18 @@ for _, line in ipairs(center.text) do
 end
 '''
 
-# Create extra boxes
+# Early return for adding mutli boxes to other cards
 [[patches]]
 [patches.pattern]
-target = 'functions/UI_definitions.lua'
+target = 'functions/common_events.lua'
 match_indent = true
 position = 'before'
 pattern = '''
-if AUT.info then
+for _, v in ipairs(info_queue) do
 '''
 payload = '''
-AUT.main.background_colour = AUT.main.background_colour or AUT.box_colours and AUT.box_colours[1] or nil
-local multi_boxes = {}
-if AUT.multi_box then
-    for i, box in ipairs(AUT.multi_box) do
-        box.background_colour = box.background_colour or AUT.box_colours and AUT.box_colours[i+1] or nil
-        if AUT.box_starts and AUT.box_starts[i] then table.insert(box, 1, AUT.box_starts[i]) end
-        if AUT.box_ends and AUT.box_ends[i] then table.insert(box, AUT.box_ends[i]) end
-        multi_boxes[#multi_boxes+1] = desc_from_rows(box)
-    end
-end
-'''
-
-# Change return so it can be modified
-# Includes some info_boxes patch that got munched
-[[patches]]
-[patches.pattern]
-target = 'functions/UI_definitions.lua'
-match_indent = true
-position = 'at'
-pattern = '''
-return {n=G.UIT.ROOT, config = {align = 'cm', colour = G.C.CLEAR}, nodes={
-    {n=G.UIT.C, config={align = "cm", func = 'show_infotip',object = Moveable(),ref_table = next(info_boxes) and info_boxes or nil}, nodes={
-'''
-payload = '''
-local cols
-if #info_boxes <= 3 then
-    cols = 1
-elseif #info_boxes <= 10 then
-    cols = 2
-elseif #info_boxes <= 24 then
-    cols = 3
-else
-    cols = 4
-end
-local nodes_per_col = math.ceil(#info_boxes/cols)
-local info_cols = {}
-for i = 0, cols-1 do
-    local col = {}
-    for j = 1, nodes_per_col do
-        local info_box = info_boxes[i*nodes_per_col+j]
-        if info_box then
-            table.insert(col, info_box)
-        else break end
-    end
-    table.insert(info_cols, {n=G.UIT.C, config = {align="cm"}, nodes = col})
-end
-info_boxes = {{n=G.UIT.R, config = {align="cm", padding = 0.05, card_pos = card.T.x }, nodes = info_cols}}
-local ret_val = {n=G.UIT.ROOT, config = {align = 'cm', colour = G.C.CLEAR}, nodes={
-    {n=G.UIT.C, config={align = "cm", func = 'show_infotip',object = Moveable(),ref_table = next(info_boxes) and info_boxes or nil}, nodes={
-'''
-
-# Add multi boxes to return table
-[[patches]]
-[patches.pattern]
-target = 'functions/UI_definitions.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-            badges[1] and {n=G.UIT.R, config={align = "cm", padding = 0.03}, nodes=badges} or nil,
-            }}
-        }}
-    }},
-}}
-'''
-payload = '''
-if multi_boxes[1] then
-    for i=1, #ret_val.nodes[1].nodes[1].nodes[1].nodes do -- find the main box
-        if ret_val.nodes[1].nodes[1].nodes[1].nodes[i] and ret_val.nodes[1].nodes[1].nodes[1].nodes[i].config and ret_val.nodes[1].nodes[1].nodes[1].nodes[i].config.main_box_flag then
-            for j=#multi_boxes, 1, -1 do -- add the extra boxes
-                table.insert(ret_val.nodes[1].nodes[1].nodes[1].nodes, i+1, multi_boxes[j])
-            end
-            break
-        end
-    end
-    
-end
-
-return ret_val
+info_queue = SMODS.cleanup_infoqueue_dupes(info_queue)
+if SMODS.new_multibox then SMODS.new_multibox = {vars = loc_vars, info = info_queue, ms = main_start, me = main_end} return end
 '''
 
 # Add main_box_flag to the main box
