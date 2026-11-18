@@ -4019,6 +4019,19 @@ function CardArea:handle_card_limit()
     end
 end
 
+local old_cardarea_init = CardArea.init
+function CardArea:init(...)
+    local r = old_cardarea_init(self, ...)
+    self:handle_card_limit()
+    return r
+end
+
+local old_cardarea_load = CardArea.load
+function CardArea:load(...)
+    local r = old_cardarea_load(self, ...)
+    self:handle_card_limit()
+    return r
+end
 
 function SMODS.get_atlas(atlas_key)
     return G.ASSET_ATLAS[atlas_key] or G.ANIMATION_ATLAS[atlas_key] -- atlas.atlas_table = STATE_ATLAS -> also stored in G.ANIMATION_ATLAS
