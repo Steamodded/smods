@@ -2279,7 +2279,7 @@ function SMODS.score_card(card, context)
             context.debuffed_repetition = nil
             context.card_effects = nil
         end
-        j = j + (flags.calculated and 1 or #reps)
+        j = j + 1
         context.other_card = nil
         card.lucky_trigger = nil
     end
@@ -2361,7 +2361,7 @@ function SMODS.calculate_end_of_round_effects(context)
                 context.repetition = true
             end
             context.card_effects = effects
-            if reps[j] == 1 then
+            if reps[j] == 1 and flags.calculated then
                 SMODS.calculate_repetitions(card, context, reps)
             end
 
@@ -2369,7 +2369,7 @@ function SMODS.calculate_end_of_round_effects(context)
             context.debuffed_repetition = nil
             context.card_effects = nil
             context.other_card = nil
-            j = j + (flags.calculated and 1 or #reps)
+            j = j + 1
 
             -- TARGET: effects after end of round evaluation
         end
