@@ -243,9 +243,13 @@ end
 
 function Card:set_sprite_state(new_state, child_name)
     child_name = child_name or 'center'
+    if not self.children[child_name] then 
+        sendWarnMessage("Card:set_sprite_state() called with invalid child name '"..child_name.."'", "utils")
+        return 
+    end
     if self.children[child_name]:is(StateSprite) then
         return self.children[child_name]:set_state(new_state)
     else
-        sendWarnMessage("Card:card_set_sprite_state() called on card with no StateSprite as .children."..child_name, "utils")
+        sendWarnMessage("Card:set_sprite_state() called on card with no StateSprite as .children."..child_name, "utils")
     end
 end
