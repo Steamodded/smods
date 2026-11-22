@@ -2866,7 +2866,7 @@ function SMODS.seeing_double_check(hand, suit)
     if saw_double(suit_tally, suit) then return true else return false end
 end
 
-local function parse_tooltip_vars(str, separator)
+function SMODS.parse_tooltip_vars(str, separator)
     separator = separator or ";"
 
     local vars = {}
@@ -2939,7 +2939,7 @@ function SMODS.localize_box(lines, args)
                     i = i+1
                 end
             elseif part.control.T_vars then
-                T.vars = parse_tooltip_vars(part.control.T_vars)
+                T.vars = SMODS.parse_tooltip_vars(part.control.T_vars)
             end
         end
 

@@ -700,6 +700,12 @@ function SMODS.smeared_check(card, suit) end
 --- Checks if the provided `hand` meets the conditions to trigger Seeing Double.
 function SMODS.seeing_double_check(hand, suit) end
 
+---@param str string
+---@param separator? string
+---@return string[]
+--- Splits `str` on `separator` (default `;`) into a list of tooltip vars.
+function SMODS.parse_tooltip_vars(str, separator) end
+
 ---@param ctrl string|table
 ---@param vars table[]
 ---@return table?
