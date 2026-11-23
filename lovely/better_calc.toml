@@ -2280,7 +2280,8 @@ payload = '''
 v.ability.return_to_hand = nil
 '''
 
-# SMODS.destroy_cards for vanilla consumables
+## SMODS.destroy_cards for vanilla consumables
+# Hanged Man
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -2300,6 +2301,7 @@ payload = '''
 SMODS.destroy_cards(G.hand.highlighted, {immediate = true})
 '''
 
+# Familiar, Grim, Incantation
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -2319,6 +2321,7 @@ payload = '''
 SMODS.destroy_cards(destroyed_cards, {immediate = true})
 '''
 
+# Immolate
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -2338,13 +2341,13 @@ payload = '''
 SMODS.destroy_cards(destroyed_cards, {immediate = true})
 '''
 
+# Ankh
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
 pattern = '''
 for k, v in pairs(deletable_jokers) do
     if v ~= chosen_joker then 
-    v.getting_sliced = true
         v:start_dissolve(nil, _first_dissolve)
         _first_dissolve = true
     end
@@ -2362,6 +2365,7 @@ end
 SMODS.destroy_cards(jokers_to_destroy, {immediate = true})
 '''
 
+# Hex
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -2383,6 +2387,7 @@ end
 SMODS.destroy_cards(jokers_to_destroy, {immediate = true})
 '''
 
+# Madness SMODS.destroy_cards
 [[patches]]
 [patches.pattern]
 target = 'card.lua'
@@ -2395,6 +2400,7 @@ payload = '''
 SMODS.destroy_cards(sliced_card, {colours = {HEX("57ecab")}, dissolve_time_fac = 1.6, immediate = true})
 '''
 
+# Ceremonial Dagger SMODS.destroy_cards
 [[patches]]
 [patches.pattern]
 target = 'card.lua'

@@ -854,19 +854,6 @@ self:set_ranks()
 if not G.in_delete_run and self == G.deck then check_for_unlock({type = 'modify_deck', deck = self}) end'''
 match_indent = true
 
-# Assign `getting_sliced` to destruction events
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'after'
-pattern = '''
-if v ~= chosen_joker then 
-'''
-payload = '''
-v.getting_sliced = true
-'''
-
 # Allow pseudoshuffle to take a string as a seed
 [[patches]]
 [patches.pattern]
