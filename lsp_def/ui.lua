@@ -293,6 +293,7 @@ function G.FUNCS.SMODS_change_mipmap(args) end
 ---@field infotip? string Text displayed above the collections menu (e.x. Edition/Seal/Enhancement). 
 ---@field snap_back? boolean Some controller related. TODO define more specific term
 ---@field modify_card? fun(card: Card|table, center: SMODS.GameObject|table, i: number, j: number) Modifies all created cards for this collection. 
+---@field current_option? integer The page that this UI will open on. Defaults to 1.
 
 ---@param _pool table
 ---@param rows number[]
