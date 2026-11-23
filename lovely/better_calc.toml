@@ -2051,18 +2051,6 @@ if not v.ability.eternal then deletable_jokers[#deletable_jokers + 1] = v end
 payload = '''
 if not SMODS.is_eternal(v, self) then deletable_jokers[#deletable_jokers + 1] = v end
 '''
-# Hex SMODS.is_eternal and card.getting_sliced
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-match_indent = true
-position = 'at'
-pattern = '''
-if v ~= eligible_card and (not v.ability.eternal) then v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
-'''
-payload = '''
-if v ~= eligible_card and (not SMODS.is_eternal(v, self)) then v.getting_sliced = true; v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
-'''
 # Card:can_sell(), Add can_sell API method
 [[patches]]
 [patches.pattern]
@@ -2290,4 +2278,131 @@ position = 'after'
 match_indent = true
 payload = '''
 v.ability.return_to_hand = nil
+'''
+
+# SMODS.destroy_cards for vanilla consumables
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''
+for i=#G.hand.highlighted, 1, -1 do
+    local card = G.hand.highlighted[i]
+    if card.ability.name == 'Glass Card' then
+        card:shatter()
+    else
+        card:start_dissolve(nil, i == #G.hand.highlighted)
+    end
+end
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.destroy_cards(G.hand.highlighted, {immediate = true})
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''
+for i=#destroyed_cards, 1, -1 do
+    local card = destroyed_cards[i]
+    if card.ability.name == 'Glass Card' then
+        card:shatter()
+    else
+        card:start_dissolve(nil, i ~= #destroyed_cards)
+    end
+end
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.destroy_cards(destroyed_cards, {immediate = true})
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''
+for i=#destroyed_cards, 1, -1 do
+    local card = destroyed_cards[i]
+    if card.ability.name == 'Glass Card' then 
+        card:shatter()
+    else
+        card:start_dissolve(nil, i == #destroyed_cards)
+    end
+end
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.destroy_cards(destroyed_cards, {immediate = true})
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''
+for k, v in pairs(deletable_jokers) do
+    if v ~= chosen_joker then 
+    v.getting_sliced = true
+        v:start_dissolve(nil, _first_dissolve)
+        _first_dissolve = true
+    end
+end
+'''
+position = 'at'
+match_indent = true
+payload = '''
+local jokers_to_destroy = {}
+for k, v in pairs(deletable_jokers) do
+    if v ~= chosen_joker then
+        table.insert(jokers_to_destroy, v)
+    end
+end
+SMODS.destroy_cards(jokers_to_destroy, {immediate = true})
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''
+local _first_dissolve = nil
+for k, v in pairs(G.jokers.cards) do
+    if v ~= eligible_card and (not v.ability.eternal) then v:start_dissolve(nil, _first_dissolve);_first_dissolve = true end
+end
+'''
+position = 'at'
+match_indent = true
+payload = '''
+local jokers_to_destroy = {}
+for k, v in pairs(G.jokers.cards) do
+    if v ~= eligible_card then
+        table.insert(jokers_to_destroy, v)
+    end
+end
+SMODS.destroy_cards(jokers_to_destroy, {immediate = true})
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''
+sliced_card:start_dissolve({HEX("57ecab")}, nil, 1.6)
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.destroy_cards(sliced_card, {colours = {HEX("57ecab")}, dissolve_time_fac = 1.6, immediate = true})
+'''
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+pattern = '''
+joker_to_destroy:start_dissolve({G.C.RED}, nil, 1.6)
+'''
+position = 'at'
+match_indent = true
+payload = '''
+SMODS.destroy_cards(joker_to_destroy, {colours = {G.C.RED}, dissolve_time_fac = 1.6, immediate = true})
 '''
