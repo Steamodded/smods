@@ -1,0 +1,28 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -5
+
+# Game:start_run()
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+    self:prep_stage(G.STAGES.RUN, saveTable and saveTable.STATE or G.STATES.BLIND_SELECT)
+'''
+payload = '''
+self:prep_stage(G.STAGES.RUN, saveTable and saveTable.STATE or SMODS.STATES.BLIND_SELECT)
+'''
+[[patches]]
+[patches.pattern]
+target = 'game.lua'
+match_indent = true
+position = 'at'
+pattern = '''
+    self:prep_stage(G.STAGES.RUN, saveTable and saveTable.STATE or G.STATES.BLIND_SELECT)
+'''
+payload = '''
+self:prep_stage(G.STAGES.RUN, saveTable and saveTable.STATE or SMODS.STATES.BLIND_SELECT)
+'''
