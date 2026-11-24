@@ -1,0 +1,32 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = -10
+
+### G.GAME.hand_buffer and G.GAME.discard_buffer
+
+# Burglar
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+pattern = '''if self.ability.name == 'Burglar' and not (context.blueprint_card or self).getting_sliced then'''
+position = 'after'
+payload = '''    G.GAME.hand_buffer = G.GAME.hand_buffer + self.ability.extra
+    local remove_discards = math.max(0, G.GAME.discard_buffer + G.GAME.current_round.discards_left)
+    G.GAME.discard_buffer = G.GAME.discard_buffer - remove_discards
+    G.E_MANAGER:add_event(Event({
+      func = function()
+        G.GAME.hand_buffer = 0
+        G.GAME.discard_buffer = 0
+        return true
+      end
+    }))'''
+
+[[patches]]
+[patches.pattern]
+target = 'card.lua'
+match_indent = true
+pattern = '''ease_discard(-G.GAME.current_round.discards_left, nil, true)'''
+position = 'at'
+payload = '''ease_discard(-remove_discards, nil, true)'''
