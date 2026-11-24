@@ -1568,6 +1568,10 @@ function Game:init_game_object()
 			end
 		end
 	end
+
+	-- hands and discards buffer
+	t.hand_buffer = 0
+	t.discard_buffer = 0
 	return t
 end
 
