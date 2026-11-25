@@ -2298,7 +2298,11 @@ end
 position = 'at'
 match_indent = true
 payload = '''
-SMODS.destroy_cards(G.hand.highlighted, {immediate = true})
+local cards_to_destroy = {}
+for i = #G.hand.highlighted, 1, -1 do
+    table.insert(cards_to_destroy, G.hand.highlighted[i])
+end
+SMODS.destroy_cards(cards_to_destroy, {immediate = true})
 '''
 
 # Familiar, Grim, Incantation
@@ -2318,7 +2322,11 @@ end
 position = 'at'
 match_indent = true
 payload = '''
-SMODS.destroy_cards(destroyed_cards, {immediate = true})
+local cards_to_destroy = {}
+for i = #destroyed_cards, 1, -1 do
+    table.insert(cards_to_destroy, destroyed_cards[i])
+end
+SMODS.destroy_cards(cards_to_destroy, {immediate = true})
 '''
 
 # Immolate
@@ -2338,7 +2346,11 @@ end
 position = 'at'
 match_indent = true
 payload = '''
-SMODS.destroy_cards(destroyed_cards, {immediate = true})
+local cards_to_destroy = {}
+for i = #destroyed_cards, 1, -1 do
+    table.insert(cards_to_destroy, destroyed_cards[i])
+end
+SMODS.destroy_cards(cards_to_destroy, {immediate = true})
 '''
 
 # Ankh
