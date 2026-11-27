@@ -220,6 +220,17 @@ function G.UIDEF.card_h_popup(card)
         else missing_section('info_queue') end
     end
 
+    if not bypass.card_credits and card.prototype then
+        local obj = card:prototype()
+        local credit_func = obj.set_card_credits or (obj.mod and obj.mod.set_card_credits)
+        if credit_func then
+            local credit_container = SMODS.deepfind(tooltip_container, 'add_credits', 'i', true)[1] or SMODS.deepfind(tooltip_container, 'add_badges', 'i', true)[1]
+            if credit_container then
+                table.insert(credit_container.objtree[#credit_container.objtree-2].nodes, credit_func(obj, card))
+            end
+        end
+    end
+
     SMODS.current_tooltip_card = nil
     card.type = nil
     return tooltip_container
@@ -238,7 +249,7 @@ function SMODS.create_tooltip(card, aut)
     return {n=G.UIT.ROOT, config = {align = 'cm', colour = G.C.CLEAR}, nodes = {
         {n=G.UIT.C, config = {align = "cm", add_info = true}, nodes = {
             {n=G.UIT.R, config = {padding = 0.05, r = 0.12, colour = lighten(G.C.JOKER_GREY, 0.5), emboss = 0.07}, nodes = {
-                {n=G.UIT.C, config = {align = "cm", padding = 0.07, r = 0.1, colour = adjust_alpha(card_type_background, 0.8), add_name = true, add_main = true, add_badges = true}, nodes = {}}
+                {n=G.UIT.C, config = {align = "cm", padding = 0.07, r = 0.1, colour = adjust_alpha(card_type_background, 0.8), add_name = true, add_main = true, add_badges = true, add_credits = true}, nodes = {}}
             }}
         }}
     }}
