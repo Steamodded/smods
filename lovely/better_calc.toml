@@ -2391,19 +2391,6 @@ end
 SMODS.destroy_cards(jokers_to_destroy, {immediate = true})
 '''
 
-# Comment out redundant func
-[[patches]]
-[patches.pattern]
-target = 'card.lua'
-pattern = '''
-playing_card_joker_effects(cards)
-'''
-position = 'at'
-match_indent = true
-payload = '''
--- playing_card_joker_effects(cards)
-'''
-
 # Madness SMODS.destroy_cards
 [[patches]]
 [patches.pattern]
