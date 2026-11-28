@@ -209,14 +209,6 @@ match_indent = true
 # Glass Card shattering
 [[patches]]
 [patches.pattern]
-target = "card.lua"
-pattern = "if card.ability.name == 'Glass Card' then"
-position = "at"
-payload = "if SMODS.shatters(card) then"
-match_indent = true
-
-[[patches]]
-[patches.pattern]
 target = "functions/state_events.lua"
 pattern = "if G.hand.highlighted[i].ability.name == 'Glass Card' then"
 position = "at"
